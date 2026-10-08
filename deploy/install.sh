@@ -1,13 +1,13 @@
 #!/bin/bash
 # =============================================================================
-#  FUZIL DISPARADOR — instalação automática numa VM Ubuntu (Oracle Cloud)
+#  FUZIL DISPARADOR - instalacao automatica numa VM Ubuntu (Oracle Cloud)
 #
 #  Cole este script inteiro no campo "Cloud-init script" ao criar a VM
-#  (Show advanced options → Management → Paste cloud-init script).
-#  Preencha só as 2 linhas abaixo antes de colar.
+#  (Show advanced options > Management > Paste cloud-init script).
+#  Preencha so as 2 linhas abaixo antes de colar.
 # =============================================================================
-GITHUB_TOKEN="COLE_AQUI_O_TOKEN_DO_GITHUB"
-ADMIN_EMAIL="seu-email@exemplo.com"
+GITHUB_TOKEN="${GITHUB_TOKEN:-COLE_AQUI_O_TOKEN_DO_GITHUB}"
+ADMIN_EMAIL="${ADMIN_EMAIL:-seu-email@exemplo.com}"
 
 DOMAIN="fuzildisparador.com.br"
 APP_DOMAIN="app.${DOMAIN}"
@@ -33,13 +33,13 @@ command -v docker >/dev/null || curl -fsSL https://get.docker.com | sh
 systemctl enable --now docker
 id ubuntu >/dev/null 2>&1 && usermod -aG docker ubuntu || true
 
-# Código
+# Codigo
 if [ ! -d "$DIR/.git" ]; then
   git clone --branch "$BRANCH" "https://x-access-token:${GITHUB_TOKEN}@github.com/${REPO}.git" "$DIR"
 fi
 cd "$DIR"
 
-# Configuração (gerada uma vez, com segredos aleatórios)
+# Configuracao (gerada uma vez, com segredos aleatorios)
 if [ ! -f .env ]; then
   cat > .env <<ENV
 APP_DOMAIN=${APP_DOMAIN}
@@ -61,7 +61,7 @@ fi
 
 docker compose up -d --build
 
-# Backup diário (4h) e atualização automática (a cada 5 min, se houver versão nova)
+# Backup diario (4h) e atualizacao automatica (a cada 5 min, se houver versao nova)
 chmod +x deploy/*.sh
 cat > /etc/cron.d/fuzil <<CRON
 0 4 * * * root ${DIR}/deploy/backup.sh >> /var/log/fuzil-backup.log 2>&1

@@ -1,5 +1,5 @@
 #!/bin/bash
-# Atualiza o servidor quando há commit novo na branch de deploy.
+# Atualiza o servidor quando ha commit novo na branch de deploy.
 set -euo pipefail
 BRANCH="${1:-main}"
 cd "$(dirname "$0")/.."
