@@ -106,6 +106,8 @@ model BusinessManager {
   messagingLimitTier String?
   verificationStatus String?
   notes              String?
+  // Quando a BM bateu o limite de 24h (para avisar uma vez e avisar quando voltar)
+  limitFullSince     DateTime?
   createdAt          DateTime          @default(now())
   updatedAt          DateTime          @updatedAt
   workspace          Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)

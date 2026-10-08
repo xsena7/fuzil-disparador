@@ -7,6 +7,7 @@ import { ConfirmButton } from "@/components/action-form";
 import { syncAllAction } from "@/app/actions/connections";
 import { deleteTemplateAction, updateAutoDeleteAction } from "@/app/actions/templates";
 import type { TComponent } from "@/lib/template-utils";
+import { ago, templateUsage } from "@/lib/limit-windows";
 
 export const dynamic = "force-dynamic";
 
@@ -25,6 +26,7 @@ export default async function TemplatesPage({ searchParams }: { searchParams: Pr
     }),
     prisma.workspace.findUniqueOrThrow({ where: { id: auth.workspace.id } }),
   ]);
+  const usage = await templateUsage(auth.workspace.id);
 
   // Agrupa as cópias do mesmo template (nome + idioma) espalhadas pelas WABAs
   const groups = new Map<string, typeof templates>();
@@ -85,13 +87,32 @@ export default async function TemplatesPage({ searchParams }: { searchParams: Pr
               <div className="mb-2 flex flex-wrap items-center gap-2">
                 <span className="font-semibold">{name}</span>
                 <span className="text-xs text-zinc-500">{language}</span>
-                <span className="ml-auto text-xs text-zinc-500">{usable}/{copies.length} cópias aptas para disparo</span>
+                <span className="ml-auto text-xs text-zinc-500">
+                  {(() => {
+                    const us = copies.map((c) => usage.get(`${c.wabaId}|${c.name}|${c.language}`)).filter(Boolean);
+                    const last = us.reduce<Date | null>((a, u) => (u!.last && (!a || u!.last > a) ? u!.last : a), null);
+                    const day = us.reduce((a, u) => a + u!.day, 0);
+                    return <>{last ? `Último envio ${ago(last)}` : "Nunca enviado"} · {day.toLocaleString("pt-BR")} envios/24h · </>;
+                  })()}
+                  {usable}/{copies.length} cópias aptas
+                </span>
               </div>
               <p className="mb-3 line-clamp-2 whitespace-pre-wrap text-zinc-600">{body}</p>
               <div className="divide-y divide-zinc-100 rounded-lg border border-zinc-100">
                 {copies.map((t) => (
                   <div key={t.id} className="flex flex-wrap items-center gap-2 px-3 py-2">
-                    <span className="min-w-48 flex-1 truncate">{t.waba.business.name} <span className="text-zinc-400">/ {t.waba.name}</span></span>
+                    <span className="min-w-48 flex-1 truncate">
+                      {t.waba.business.name} <span className="text-zinc-400">/ {t.waba.name}</span>
+                      {(() => {
+                        const u = usage.get(`${t.wabaId}|${t.name}|${t.language}`);
+                        return (
+                          <span className="block text-xs text-zinc-500">
+                            Último envio: <b className="font-medium text-zinc-700">{ago(u?.last)}</b>
+                            {u ? <> · {u.day.toLocaleString("pt-BR")} nas últimas 24h · {u.total.toLocaleString("pt-BR")} no total</> : null}
+                          </span>
+                        );
+                      })()}
+                    </span>
                     <TemplateStatusBadge s={t.status} />
                     <CategoryBadge c={t.category} />
                     {t.previousCategory && t.previousCategory !== t.category && <span className="text-xs text-red-600">era {t.previousCategory}</span>}

@@ -3,6 +3,7 @@ import { maybeComplete, recoverStuck, runCampaignTick, startDueCampaigns, TICK_M
 import { syncWaba } from "../lib/sync";
 import { deployBlueprints } from "../lib/blueprints";
 import { startSettingsRefresh } from "../lib/platform-settings";
+import { checkLimitAlerts } from "../lib/limit-alerts";
 
 const SYNC_EVERY_MS = 10 * 60_000;
 const BLUEPRINT_EVERY_MS = 5 * 60_000;
@@ -66,6 +67,7 @@ async function main() {
   void every(SYNC_EVERY_MS, "sync", syncAll);
   void every(BLUEPRINT_EVERY_MS, "blueprints", () => deployBlueprints());
   void every(60_000, "housekeeping", housekeeping);
+  void every(60_000, "limites", checkLimitAlerts);
   await dispatchLoop();
   // Desligamento: espera os envios em andamento terminarem
   while (running.size) await new Promise((r) => setTimeout(r, 200));

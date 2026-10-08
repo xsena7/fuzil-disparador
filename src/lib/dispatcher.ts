@@ -245,14 +245,18 @@ export async function runCampaignTick(campaignId: string) {
   const wanted = Math.min(perSender * plan.senders.length, totalCapacity === Infinity ? Number.MAX_SAFE_INTEGER : totalCapacity);
 
   if (wanted <= 0) {
-    if (campaign.pausedReason !== "Aguardando limite diário das BMs liberar") {
-      await prisma.campaign.update({ where: { id: campaign.id }, data: { pausedReason: "Aguardando limite diário das BMs liberar" } });
+    const { bmWindows, whenText } = await import("./limit-windows");
+    const ws = await bmWindows([...plan.capacity.keys()]);
+    const next = [...ws.values()].map((w) => w.nextReleaseAt).filter((d): d is Date => Boolean(d)).sort((a, b) => a.getTime() - b.getTime())[0];
+    const reason = `Aguardando limite das BMs liberar${next ? ` (volta ${whenText(next)})` : ""}`;
+    if (!campaign.pausedReason?.startsWith("Aguardando limite")) {
+      await prisma.campaign.update({ where: { id: campaign.id }, data: { pausedReason: reason } });
       await createAlert({
         workspaceId: campaign.workspaceId,
         type: "LIMIT_REACHED",
         severity: "WARNING",
         title: `Campanha "${campaign.name}" aguardando limite`,
-        message: "Todas as BMs do grupo atingiram o limite de 24h. O envio continua sozinho quando liberar.",
+        message: `Todas as BMs do grupo atingiram o limite de 24h. O envio continua sozinho quando liberar${next ? `, ${whenText(next)}` : ""}.`,
       });
     }
     return;

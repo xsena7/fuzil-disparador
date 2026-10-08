@@ -9,7 +9,6 @@ export const PLATFORM_KEYS = [
   { key: "META_CONFIG_ID", label: "Config ID do Embedded Signup", secret: false },
   { key: "META_SYSTEM_USER_TOKEN", label: "Token do System User", secret: true },
   { key: "META_GRAPH_VERSION", label: "Versão da Graph API", secret: false },
-  { key: "TELEGRAM_BOT_TOKEN", label: "Token do bot do Telegram", secret: true },
 ] as const;
 
 export type PlatformKey = (typeof PLATFORM_KEYS)[number]["key"];

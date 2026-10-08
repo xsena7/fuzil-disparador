@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { Empty, PageHeader } from "@/components/ui";
 import { ConfirmButton } from "@/components/action-form";
 import { markAlertsReadAction } from "@/app/actions/misc";
+import { EnableBrowserNotifications } from "@/components/alert-toaster";
 
 export const dynamic = "force-dynamic";
 
@@ -21,8 +22,8 @@ export default async function AlertsPage({ searchParams }: { searchParams: Promi
     <div className="mx-auto max-w-4xl">
       <PageHeader
         title="Alertas"
-        description="Recategorização de templates, qualidade e limite dos números, campanhas pausadas e mais. Alertas críticos também vão pro Telegram (configure em Configurações)."
-        actions={<ConfirmButton action={markAlertsReadAction}>Marcar todos como lidos</ConfirmButton>}
+        description="Recategorização de templates, qualidade e limite dos números, campanhas pausadas e mais. Os novos alertas também aparecem como notificação na tela enquanto o painel estiver aberto."
+        actions={<><EnableBrowserNotifications /><ConfirmButton action={markAlertsReadAction}>Marcar todos como lidos</ConfirmButton></>}
       />
       <div className="mb-4 flex gap-2 text-sm">
         {[["", "Todos"], ["CRITICAL", "Críticos"], ["WARNING", "Atenção"], ["INFO", "Informativos"]].map(([v, l]) => (

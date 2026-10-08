@@ -22,7 +22,6 @@ export const env = {
   metaGraphUrl: () => opt("META_GRAPH_URL", "https://graph.facebook.com").replace(/\/$/, ""),
   metaVerifyToken: () => opt("META_WEBHOOK_VERIFY_TOKEN"),
   metaRegisterPin: () => opt("META_REGISTER_PIN", "123456"),
-  telegramBotToken: () => platform("TELEGRAM_BOT_TOKEN"),
 };
 
 export function metaConfigured() {

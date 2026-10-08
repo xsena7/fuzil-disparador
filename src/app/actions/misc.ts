@@ -4,7 +4,6 @@ import { revalidatePath } from "next/cache";
 import { requireAuth, requireSuperAdmin, hashPassword } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { addCredits } from "@/lib/credits";
-import { sendTelegram } from "@/lib/alerts";
 import type { FormState } from "./auth";
 
 export async function markAlertsReadAction() {
@@ -17,18 +16,9 @@ export async function saveSettingsAction(_: FormState, form: FormData): Promise<
   const auth = await requireAuth();
   if (auth.role === "MEMBER") return { error: "Sem permissão" };
   const name = String(form.get("name") ?? "").trim();
-  const telegramChatId = String(form.get("telegramChatId") ?? "").trim() || null;
-  await prisma.workspace.update({ where: { id: auth.workspace.id }, data: { ...(name ? { name } : {}), telegramChatId } });
+  if (name) await prisma.workspace.update({ where: { id: auth.workspace.id }, data: { name } });
   revalidatePath("/", "layout");
   return { ok: "Configurações salvas" };
-}
-
-export async function testTelegramAction(): Promise<FormState> {
-  const auth = await requireAuth();
-  const ws = await prisma.workspace.findUniqueOrThrow({ where: { id: auth.workspace.id } });
-  if (!ws.telegramChatId) return { error: "Informe o Chat ID primeiro" };
-  await sendTelegram(ws.telegramChatId, "✅ Fuzil Disparador conectado. Você vai receber os alertas aqui.");
-  return { ok: "Mensagem de teste enviada" };
 }
 
 export async function addMemberAction(_: FormState, form: FormData): Promise<FormState> {

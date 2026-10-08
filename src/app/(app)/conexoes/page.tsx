@@ -8,6 +8,8 @@ import { Badge, Card, Empty, Field, Input, PageHeader } from "@/components/ui";
 import { PhoneStatusBadge, QualityBadge } from "@/components/status";
 import { ActionForm, ConfirmButton } from "@/components/action-form";
 import { EmbeddedSignup } from "@/components/embedded-signup";
+import { LimitWindow } from "@/components/limit-card";
+import { bmWindows } from "@/lib/limit-windows";
 import {
   connectManualAction,
   deleteWabaAction,
@@ -31,6 +33,7 @@ export default async function ConnectionsPage() {
     },
     orderBy: { name: "asc" },
   });
+  const windows = await bmWindows(businesses.map((b) => b.id));
 
   return (
     <div className="mx-auto max-w-6xl">
@@ -51,6 +54,7 @@ export default async function ConnectionsPage() {
               {bm.groups.map((g) => <Badge key={g.groupId} color="orange" dot={false}>{g.group.name}</Badge>)}
               {bm.metaBusinessId && <span className="text-xs text-zinc-400">BM ID: {bm.metaBusinessId}</span>}
             </div>
+            {windows.get(bm.id) && <div className="mb-4"><LimitWindow w={windows.get(bm.id)!} /></div>}
             <div className="space-y-3">
               {bm.wabas.map((waba) => (
                 <div key={waba.id} className="overflow-hidden rounded-xl border border-zinc-200/80">

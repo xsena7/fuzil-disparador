@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db";
 import { env, metaConfigured, trackedUrlBase } from "@/lib/env";
 import { Badge, Card, Field, Input, PageHeader, Table, Td } from "@/components/ui";
 import { ActionForm } from "@/components/action-form";
-import { addMemberAction, saveSettingsAction, testTelegramAction } from "@/app/actions/misc";
+import { addMemberAction, saveSettingsAction } from "@/app/actions/misc";
 
 export const dynamic = "force-dynamic";
 
@@ -18,7 +18,6 @@ export default async function SettingsPage() {
     { label: "Embedded Signup (META_CONFIG_ID)", ok: Boolean(env.metaConfigId()) },
     { label: "Token do Tech Provider (META_SYSTEM_USER_TOKEN)", ok: Boolean(env.metaSystemToken()) },
     { label: "Token de verificação do webhook", ok: Boolean(env.metaVerifyToken()) },
-    { label: "Bot do Telegram (TELEGRAM_BOT_TOKEN)", ok: Boolean(env.telegramBotToken()) },
     { label: "Painel com HTTPS (APP_URL)", ok: env.appUrl().startsWith("https://") },
   ];
 
@@ -31,12 +30,8 @@ export default async function SettingsPage() {
         <ActionForm action={saveSettingsAction} submit="Salvar">
           <div className="grid gap-4 md:grid-cols-2">
             <Field label="Nome da conta"><Input name="name" defaultValue={ws.name} /></Field>
-            <Field label="Chat ID do Telegram para alertas" hint="Fale com o bot e use @userinfobot para descobrir seu Chat ID. Pode ser um grupo (ID negativo).">
-              <Input name="telegramChatId" defaultValue={ws.telegramChatId ?? ""} placeholder="123456789" />
-            </Field>
           </div>
         </ActionForm>
-        <ActionForm action={testTelegramAction} submit="Enviar teste no Telegram" variant="secondary" />
       </Card>
 
       <Card className="p-5">

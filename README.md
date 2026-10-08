@@ -10,7 +10,7 @@ Painel para gerir BMs do WhatsApp (API oficial / Cloud API) e fazer disparos de 
 - **Grupos de BM**: a campanha dispara por um grupo, com rodízio entre todos os números aptos. O painel mostra o limite somado do grupo e quanto ainda está disponível nas últimas 24h.
 - **Templates**: puxa os templates de todas as WABAs e cria templates pelo painel (sempre como Utilidade) em várias WABAs de uma vez.
 - **Templates padrão**: um template que sobe sozinho em toda BM da conta (ou de um grupo), inclusive nas conectadas depois. Se a Meta classificar como marketing, a cópia é **excluída** e o dono é avisado.
-- **Trava anti-marketing**: o motor de disparo só usa cópias de template **APROVADAS e de UTILIDADE** e reconfere a categoria antes de cada leva de envios. Se um template for recategorizado (ou a Meta avisar que vai recategorizar), os números daquela WABA saem do disparo na hora e chega alerta crítico (no painel e no Telegram).
+- **Trava anti-marketing**: o motor de disparo só usa cópias de template **APROVADAS e de UTILIDADE** e reconfere a categoria antes de cada leva de envios. Se um template for recategorizado (ou a Meta avisar que vai recategorizar), os números daquela WABA saem do disparo na hora e chega alerta crítico no painel.
 - **Redirecionador de links**: aprove o botão como `https://go.fuzildisparador.com.br/{{1}}`. Na campanha você cola o link final, cada pessoa recebe um link único e o painel conta quem clicou (descartando robôs de pré-visualização).
 - **Campanhas** em 5 etapas: Template → Conteúdo (variáveis, imagem, link do botão) → Audiência (CSV) → Envio (agora ou agendado, velocidade por número) → Métricas.
 - **Métricas**: enviadas, entregues, lidas, cliques (únicos e totais), respostas, descadastros ("SAIR"), não entregues, falhas por motivo (com código da Meta), desempenho por número, evolução por hora, tempos medianos até entregar/ler/clicar e exportação em CSV.
@@ -100,10 +100,6 @@ No app da Meta:
 
 A tela **Configurações** do painel mostra o que já está configurado e o que falta.
 
-## Alertas no Telegram
-
-1. Crie um bot com o [@BotFather](https://t.me/BotFather) e cole o token em **Admin → Integração**.
-2. Mande uma mensagem pro bot, pegue seu Chat ID (ex.: com o @userinfobot) e salve em **Configurações** no painel.
 
 ## Observações
 

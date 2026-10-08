@@ -4,6 +4,8 @@ import { AlertTriangle, ArrowRight, Building2, Gauge, Info, MousePointerClick, P
 import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { statsForBusinesses } from "@/lib/group-stats";
+import { bmWindows } from "@/lib/limit-windows";
+import { LimitWindow } from "@/components/limit-card";
 import { formatLimit } from "@/lib/limits";
 import { pct } from "@/lib/campaign-metrics";
 import { Card, LinkButton, PageHeader, Stat } from "@/components/ui";
@@ -16,7 +18,7 @@ export default async function HomePage() {
   const wsId = auth.workspace.id;
   const since = new Date(Date.now() - 86400_000);
   const [businesses, active, recentAlerts, marketing, today] = await Promise.all([
-    prisma.businessManager.findMany({ where: { workspaceId: wsId }, select: { id: true } }),
+    prisma.businessManager.findMany({ where: { workspaceId: wsId }, select: { id: true, name: true }, orderBy: { name: "asc" } }),
     prisma.campaign.findMany({ where: { workspaceId: wsId, status: { in: ["RUNNING", "SCHEDULED", "PAUSED"] } }, orderBy: { updatedAt: "desc" }, take: 6 }),
     prisma.alert.findMany({ where: { workspaceId: wsId }, orderBy: { createdAt: "desc" }, take: 6 }),
     prisma.template.count({ where: { workspaceId: wsId, category: "MARKETING" } }),
@@ -36,6 +38,7 @@ export default async function HomePage() {
     : [];
   const progressById = new Map(progress.map((p) => [p.id, p]));
   const stats = await statsForBusinesses(businesses.map((b) => b.id));
+  const windows = await bmWindows(businesses.map((b) => b.id));
   const t = today[0];
   const n = (v: bigint | number) => Number(v).toLocaleString("pt-BR");
   const q = stats.quality;
@@ -131,6 +134,26 @@ export default async function HomePage() {
           </Card>
         </div>
       </div>
+
+      {businesses.length > 0 && (
+        <Card className="p-6">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="font-semibold">Limite de cada BM (janela de 24h)</h2>
+            <Link href="/conexoes" className="text-sm text-zinc-500 hover:text-brand-600">Ver conexões</Link>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            {businesses.map((b) => {
+              const w = windows.get(b.id);
+              return w ? (
+                <div key={b.id}>
+                  <div className="mb-1.5 text-sm font-medium">{b.name}</div>
+                  <LimitWindow w={w} compact />
+                </div>
+              ) : null;
+            })}
+          </div>
+        </Card>
+      )}
 
       <Card className="p-6">
         <div className="mb-4 flex items-center justify-between">
