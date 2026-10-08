@@ -11,7 +11,7 @@ Painel para gerir BMs do WhatsApp (API oficial / Cloud API) e fazer disparos de 
 - **Templates**: puxa os templates de todas as WABAs e cria templates pelo painel (sempre como Utilidade) em várias WABAs de uma vez.
 - **Templates padrão**: um template que sobe sozinho em toda BM da conta (ou de um grupo), inclusive nas conectadas depois. Se a Meta classificar como marketing, a cópia é **excluída** e o dono é avisado.
 - **Trava anti-marketing**: o motor de disparo só usa cópias de template **APROVADAS e de UTILIDADE** e reconfere a categoria antes de cada leva de envios. Se um template for recategorizado (ou a Meta avisar que vai recategorizar), os números daquela WABA saem do disparo na hora e chega alerta crítico (no painel e no Telegram).
-- **Redirecionador de links**: aprove o botão como `https://SEU_DOMINIO_DE_LINKS/{{1}}`. Na campanha você cola o link final, cada pessoa recebe um link único e o painel conta quem clicou (descartando robôs de pré-visualização).
+- **Redirecionador de links**: aprove o botão como `https://go.fuzildisparador.com.br/{{1}}`. Na campanha você cola o link final, cada pessoa recebe um link único e o painel conta quem clicou (descartando robôs de pré-visualização).
 - **Campanhas** em 5 etapas: Template → Conteúdo (variáveis, imagem, link do botão) → Audiência (CSV) → Envio (agora ou agendado, velocidade por número) → Métricas.
 - **Métricas**: enviadas, entregues, lidas, cliques (únicos e totais), respostas, descadastros ("SAIR"), não entregues, falhas por motivo (com código da Meta), desempenho por número, evolução por hora, tempos medianos até entregar/ler/clicar e exportação em CSV.
 - **Alertas**: recategorização, template rejeitado/pausado, queda de qualidade, mudança de limite, número retirado do disparo, campanha pausada etc.
@@ -54,9 +54,9 @@ O único custo é o domínio (~R$40/ano no registro.br). Painel, banco e disparo
    sudo iptables -I INPUT 6 -m state --state NEW -p tcp --dport 443 -j ACCEPT
    sudo netfilter-persistent save
    ```
-4. **DNS**: no painel do domínio, crie dois registros **A** apontando para o IP público da VM:
-   - `painel.seudominio.com.br` (o painel)
-   - `go.seudominio.com.br` (os links dos botões)
+4. **DNS** (registro.br → domínio → *DNS* → *Configurar zona DNS* / modo avançado, que é grátis): crie dois registros **A** apontando para o IP público da VM:
+   - `app.fuzildisparador.com.br` (o painel)
+   - `go.fuzildisparador.com.br` (os links dos botões)
 5. **Instale e suba**:
    ```bash
    curl -fsSL https://get.docker.com | sudo sh
@@ -67,11 +67,11 @@ O único custo é o domínio (~R$40/ano no registro.br). Painel, banco e disparo
    ```
    No `.env`, preencha:
    - `APP_DOMAIN`, `LINK_DOMAIN`
-   - `APP_URL=https://painel.seudominio.com.br`
-   - `REDIRECT_DOMAIN=go.seudominio.com.br`
+   - `APP_URL=https://app.fuzildisparador.com.br`
+   - `REDIRECT_DOMAIN=go.fuzildisparador.com.br`
    - `POSTGRES_PASSWORD`, `ENCRYPTION_KEY` (gere com `openssl rand -hex 32`)
    - `META_WEBHOOK_VERIFY_TOKEN` (qualquer texto)
-6. Acesse `https://painel.seudominio.com.br/cadastro` e crie sua conta (vira admin).
+6. Acesse `https://app.fuzildisparador.com.br/cadastro` e crie sua conta (vira admin).
 7. **Backup diário**: `crontab -e` e adicione `0 4 * * * /home/ubuntu/fuzil-disparador/deploy/backup.sh`.
 
 Para atualizar depois: `git pull && docker compose up -d --build`.
@@ -88,8 +88,8 @@ No `.env`:
 
 No app da Meta:
 
-1. **Webhook** (WhatsApp → Configuração): URL de callback `https://painel.seudominio.com.br/api/webhook` com o mesmo `META_WEBHOOK_VERIFY_TOKEN`. Assine os campos: `messages`, `message_template_status_update`, `template_category_update`, `message_template_quality_update`, `phone_number_quality_update`, `phone_number_name_update`, `account_update`, `account_review_update`, `business_capability_update`.
-2. **Domínios permitidos** do Facebook Login for Business: adicione `painel.seudominio.com.br` (é por ele que roda o Embedded Signup).
+1. **Webhook** (WhatsApp → Configuração): URL de callback `https://app.fuzildisparador.com.br/api/webhook` com o mesmo `META_WEBHOOK_VERIFY_TOKEN`. Assine os campos: `messages`, `message_template_status_update`, `template_category_update`, `message_template_quality_update`, `phone_number_quality_update`, `phone_number_name_update`, `account_update`, `account_review_update`, `business_capability_update`.
+2. **Domínios permitidos** do Facebook Login for Business: adicione `app.fuzildisparador.com.br` (é por ele que roda o Embedded Signup).
 3. Reinicie: `docker compose up -d`.
 
 A tela **Configurações** do painel mostra o que já está configurado e o que falta.
