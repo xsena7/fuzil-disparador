@@ -4,7 +4,7 @@ import { company } from "@/lib/company";
 
 const FEATURES = [
   { icon: Layers, title: "Várias contas, um disparo só", text: "Conecte quantas contas do WhatsApp Business precisar e agrupe-as. Cada campanha distribui os envios entre todos os números do grupo, respeitando o limite de cada conta." },
-  { icon: ShieldCheck, title: "Só mensagens de utilidade", text: "Avisos de pedido, lembretes e confirmações. A plataforma confere a categoria de cada modelo antes de enviar e bloqueia qualquer modelo classificado como marketing." },
+  { icon: ShieldCheck, title: "Proteção dos seus números", text: "A plataforma acompanha a qualidade de cada número em tempo real, tira do envio os que estão em risco e respeita automaticamente quem pede para sair." },
   { icon: Sparkles, title: "Modelos padronizados", text: "Crie um modelo de mensagem uma vez e ele é cadastrado em todas as suas contas, inclusive nas que você conectar depois." },
   { icon: Link2, title: "Links com contagem de cliques", text: "Cada destinatário recebe um link único. Você vê quem clicou, sem contar robôs de pré-visualização." },
   { icon: BarChart3, title: "Métricas completas", text: "Enviadas, entregues, lidas, cliques, respostas, descadastros e falhas por motivo, por campanha e por número. Exportação em planilha." },
@@ -13,7 +13,7 @@ const FEATURES = [
 
 const STEPS = [
   { title: "Conecte suas contas", text: "Pelo cadastro oficial da Meta (Embedded Signup), em poucos cliques, sem compartilhar senhas." },
-  { title: "Crie o modelo de mensagem", text: "Monte o modelo de utilidade com pré-visualização e envie para aprovação da Meta." },
+  { title: "Crie o modelo de mensagem", text: "Monte o modelo com pré-visualização igual ao WhatsApp e envie para aprovação da Meta." },
   { title: "Suba sua lista e dispare", text: "Importe a planilha dos seus clientes, revise e envie agora ou agende. Acompanhe tudo em tempo real." },
 ];
 
@@ -31,10 +31,10 @@ export default function SitePage() {
               <Zap className="size-3.5" /> API oficial do WhatsApp Business
             </div>
             <h1 className="text-4xl font-semibold leading-tight tracking-tight md:text-5xl">
-              Mensagens de utilidade em escala, <span className="bg-brand-gradient bg-clip-text text-transparent">com controle total</span>.
+              Mensagens pela API oficial em escala, <span className="bg-brand-gradient bg-clip-text text-transparent">com controle total</span>.
             </h1>
             <p className="mt-5 max-w-xl text-lg text-zinc-300">
-              O {c.brand} é uma plataforma para empresas gerenciarem suas contas do WhatsApp Business e enviarem avisos, lembretes e confirmações para seus clientes pela Cloud API oficial.
+              O {c.brand} é uma plataforma para empresas gerenciarem suas contas do WhatsApp Business e enviarem mensagens para seus clientes em grande volume pela Cloud API oficial do WhatsApp.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <a href="#contato" className="rounded-xl bg-brand-gradient px-5 py-3 font-medium text-white shadow-lg shadow-orange-500/20">Quero usar</a>
@@ -45,7 +45,7 @@ export default function SitePage() {
             <div className="rounded-3xl bg-white/5 p-8 ring-1 ring-white/10">
               <Logo className="w-full" />
               <ul className="mt-8 space-y-3 text-zinc-300">
-                {["Distribuição entre várias contas e números", "Bloqueio automático de modelos de marketing", "Cliques, leituras e respostas em tempo real"].map((t) => (
+                {["Distribuição entre várias contas e números", "Proteção automática da qualidade dos números", "Cliques, leituras e respostas em tempo real"].map((t) => (
                   <li key={t} className="flex items-center gap-3"><CheckCircle2 className="size-5 shrink-0 text-orange-400" /> {t}</li>
                 ))}
               </ul>
@@ -56,7 +56,7 @@ export default function SitePage() {
 
       <section id="recursos" className="mx-auto max-w-6xl scroll-mt-20 px-5 py-20">
         <h2 className="text-3xl font-semibold tracking-tight text-zinc-900">Recursos</h2>
-        <p className="mt-2 max-w-2xl text-zinc-500">Tudo o que sua operação precisa para enviar comunicações transacionais com segurança e qualidade.</p>
+        <p className="mt-2 max-w-2xl text-zinc-500">Tudo o que sua operação precisa para enviar mensagens em escala com segurança e qualidade.</p>
         <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {FEATURES.map((f) => (
             <div key={f.title} className="rounded-2xl border border-zinc-200/80 bg-white p-6 shadow-soft">

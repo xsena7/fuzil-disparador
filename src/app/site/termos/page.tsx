@@ -31,7 +31,7 @@ export default function TermsPage() {
       <ul>
         <li>Enviar mensagens somente para pessoas que autorizaram receber contato da sua empresa pelo WhatsApp (opt-in), conforme a LGPD e as políticas do WhatsApp.</li>
         <li>Cumprir a Política Comercial do WhatsApp, a Política de Mensagens do WhatsApp Business e os Termos da Meta.</li>
-        <li>Usar a Plataforma apenas para mensagens de utilidade legítimas (avisos, lembretes, confirmações e similares).</li>
+        <li>Usar apenas modelos de mensagem aprovados pela Meta e com conteúdo legítimo, verdadeiro e relacionado à sua empresa.</li>
         <li>Respeitar pedidos de descadastro. A Plataforma bloqueia automaticamente quem responde SAIR, PARAR ou STOP.</li>
       </ul>
       <p>É proibido usar a Plataforma para spam, golpes, phishing, conteúdo ilegal, enganoso, ofensivo ou que viole direitos de terceiros, ou para contornar limites e regras da Meta.</p>
