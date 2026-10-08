@@ -186,3 +186,73 @@ export async function retryFailedAction(id: string) {
   if (failed.length) await prisma.campaign.update({ where: { id }, data: { status: "RUNNING", pausedReason: null, completedAt: null } });
   revalidatePath(`/campanhas/${id}`);
 }
+
+// ---------------- Pastas e ações rápidas da lista ----------------
+
+export async function moveCampaignAction(campaignId: string, folderId: string | null) {
+  const { auth } = await ownCampaign(campaignId);
+  if (folderId) {
+    const folder = await prisma.campaignFolder.findFirst({ where: { id: folderId, workspaceId: auth.workspace.id } });
+    if (!folder) return;
+  }
+  await prisma.campaign.update({ where: { id: campaignId }, data: { folderId } });
+  revalidatePath("/campanhas");
+}
+
+export async function createFolderAndMoveAction(campaignId: string, name: string) {
+  const { auth } = await ownCampaign(campaignId);
+  const clean = name.trim().slice(0, 60);
+  if (!clean) return;
+  const folder = await prisma.campaignFolder.upsert({
+    where: { workspaceId_name: { workspaceId: auth.workspace.id, name: clean } },
+    create: { workspaceId: auth.workspace.id, name: clean },
+    update: {},
+  });
+  await prisma.campaign.update({ where: { id: campaignId }, data: { folderId: folder.id } });
+  revalidatePath("/campanhas");
+}
+
+export async function renameFolderAction(folderId: string, name: string) {
+  const auth = await requireAuth();
+  const clean = name.trim().slice(0, 60);
+  if (!clean) return;
+  await prisma.campaignFolder.updateMany({ where: { id: folderId, workspaceId: auth.workspace.id }, data: { name: clean } });
+  revalidatePath("/campanhas");
+}
+
+/** Apaga só a pasta: as campanhas voltam para a lista principal. */
+export async function deleteFolderAction(folderId: string) {
+  const auth = await requireAuth();
+  await prisma.campaignFolder.deleteMany({ where: { id: folderId, workspaceId: auth.workspace.id } });
+  revalidatePath("/campanhas");
+}
+
+/** Excluir direto da lista (sem redirecionar). Campanha enviando precisa ser cancelada antes. */
+export async function quickDeleteCampaignAction(id: string): Promise<{ error?: string }> {
+  const { c } = await ownCampaign(id);
+  if (c.status === "RUNNING") return { error: "Pause ou cancele a campanha antes de excluir." };
+  await prisma.campaign.delete({ where: { id } });
+  revalidatePath("/campanhas");
+  return {};
+}
+
+export async function quickDuplicateCampaignAction(id: string) {
+  const { c } = await ownCampaign(id);
+  await prisma.campaign.create({
+    data: {
+      workspaceId: c.workspaceId,
+      name: `${c.name} (cópia)`,
+      groupId: c.groupId,
+      templateName: c.templateName,
+      templateLanguage: c.templateLanguage,
+      variableMapping: c.variableMapping ?? undefined,
+      headerMediaUrl: c.headerMediaUrl,
+      headerMediaType: c.headerMediaType,
+      headerMediaName: c.headerMediaName,
+      buttonUrl: c.buttonUrl,
+      ratePerSecond: c.ratePerSecond,
+      skipRedQuality: c.skipRedQuality,
+    },
+  });
+  revalidatePath("/campanhas");
+}

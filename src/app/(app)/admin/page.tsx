@@ -2,7 +2,9 @@ import { requireSuperAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { Card, Field, Input, PageHeader, Table, Td } from "@/components/ui";
 import { ActionForm } from "@/components/action-form";
-import { adminCreateWorkspaceAction, adminCreditsAction, adminPriceAction, adminSavePlatformAction } from "@/app/actions/misc";
+import { adminCreateWorkspaceAction, adminCreditsAction, adminPriceAction, adminSavePlatformAction, adminTestEmailAction } from "@/app/actions/misc";
+import { emailConfigured } from "@/lib/email";
+import { Badge } from "@/components/ui";
 import { PLATFORM_KEYS } from "@/lib/platform-settings";
 import { env } from "@/lib/env";
 import { cachedSetting } from "@/lib/settings-cache";
@@ -66,13 +68,25 @@ export default async function AdminPage() {
       </Card>
 
       <Card className="p-5">
+        <div className="mb-1 flex items-center gap-3 font-semibold">
+          E-mails da plataforma
+          <Badge color={emailConfigured() ? "green" : "yellow"}>{emailConfigured() ? "Configurado" : "Pendente"}</Badge>
+        </div>
+        <p className="mb-2 text-sm text-zinc-500">
+          Convites, recuperação de senha e alertas críticos. Usa o Resend (grátis até 3.000 e-mails/mês): cole a chave no campo &quot;Chave do Resend&quot; acima.
+        </p>
+        <ActionForm action={adminTestEmailAction} submit="Enviar e-mail de teste para mim" variant="secondary" />
+      </Card>
+
+      <Card className="p-5">
         <div className="mb-4 font-semibold">Criar conta de cliente</div>
-        <ActionForm action={adminCreateWorkspaceAction} submit="Criar conta">
+        <ActionForm action={adminCreateWorkspaceAction} submit="Criar conta e enviar convite">
+          <p className="mb-4 text-sm text-zinc-500">O cliente recebe um e-mail com o layout do Fuzil e um botão para criar a senha.</p>
           <div className="grid gap-4 md:grid-cols-4">
-            <Field label="Nome da conta"><Input name="company" /></Field>
-            <Field label="Nome do dono"><Input name="name" /></Field>
-            <Field label="E-mail"><Input name="email" type="email" /></Field>
-            <Field label="Senha"><Input name="password" type="password" minLength={8} /></Field>
+            <Field label="Nome da conta"><Input name="company" required /></Field>
+            <Field label="Nome do dono"><Input name="name" required /></Field>
+            <Field label="E-mail do cliente"><Input name="email" type="email" required /></Field>
+            <Field label="Créditos iniciais"><Input name="credits" type="number" min={0} defaultValue={0} /></Field>
           </div>
         </ActionForm>
       </Card>

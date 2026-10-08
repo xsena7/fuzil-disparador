@@ -31,6 +31,13 @@ export default async function SettingsPage() {
           <div className="grid gap-4 md:grid-cols-2">
             <Field label="Nome da conta"><Input name="name" defaultValue={ws.name} /></Field>
           </div>
+          <label className="mt-4 flex items-start gap-2.5 text-sm">
+            <input type="checkbox" name="emailAlerts" defaultChecked={ws.emailAlerts} className="mt-0.5" />
+            <span>
+              <b>Receber alertas críticos por e-mail</b>
+              <span className="block text-zinc-500">Só os extremos: template virou marketing, número banido ou com qualidade vermelha, campanha pausada por erro. Vai para os donos e admins da conta.</span>
+            </span>
+          </label>
         </ActionForm>
       </Card>
 
@@ -59,11 +66,10 @@ export default async function SettingsPage() {
           ))}
         </Table>
         {auth.role !== "MEMBER" && (
-          <ActionForm action={addMemberAction} submit="Adicionar usuário" className="mt-4">
-            <div className="grid gap-4 md:grid-cols-3">
-              <Field label="Nome"><Input name="name" /></Field>
-              <Field label="E-mail"><Input name="email" type="email" /></Field>
-              <Field label="Senha inicial"><Input name="password" type="password" minLength={8} /></Field>
+          <ActionForm action={addMemberAction} submit="Enviar convite" className="mt-4">
+            <div className="grid gap-4 md:grid-cols-2">
+              <Field label="Nome"><Input name="name" required /></Field>
+              <Field label="E-mail" hint="A pessoa recebe um convite por e-mail para criar a senha."><Input name="email" type="email" required /></Field>
             </div>
           </ActionForm>
         )}

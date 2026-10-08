@@ -21,6 +21,8 @@ export const env = {
   metaGraphVersion: () => platform("META_GRAPH_VERSION", "v23.0"),
   metaGraphUrl: () => opt("META_GRAPH_URL", "https://graph.facebook.com").replace(/\/$/, ""),
   metaVerifyToken: () => opt("META_WEBHOOK_VERIFY_TOKEN"),
+  resendKey: () => platform("RESEND_API_KEY"),
+  emailFrom: () => platform("EMAIL_FROM", "Fuzil Disparador <avisos@fuzildisparador.com.br>"),
   metaRegisterPin: () => opt("META_REGISTER_PIN", "123456"),
 };
 

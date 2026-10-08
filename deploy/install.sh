@@ -64,6 +64,7 @@ ENV
   chmod 600 .env
 fi
 
+git rev-parse --short HEAD > VERSION
 docker compose up -d --build
 
 # Backup diario (4h) e atualizacao automatica (a cada 5 min, se houver versao nova)

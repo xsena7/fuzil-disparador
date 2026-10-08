@@ -9,6 +9,8 @@ export const PLATFORM_KEYS = [
   { key: "META_CONFIG_ID", label: "Config ID do Embedded Signup", secret: false },
   { key: "META_SYSTEM_USER_TOKEN", label: "Token do System User", secret: true },
   { key: "META_GRAPH_VERSION", label: "Versão da Graph API", secret: false },
+  { key: "RESEND_API_KEY", label: "Chave do Resend (e-mails)", secret: true },
+  { key: "EMAIL_FROM", label: "Remetente dos e-mails", secret: false },
 ] as const;
 
 export type PlatformKey = (typeof PLATFORM_KEYS)[number]["key"];

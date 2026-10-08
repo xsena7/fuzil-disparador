@@ -2,6 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAuth, requireSuperAdmin, hashPassword } from "@/lib/auth";
+import { randomToken } from "@/lib/crypto";
+import { createPasswordLink } from "@/lib/password-tokens";
+import { sendInviteEmail, sendTestEmail } from "@/lib/email-templates";
+import { emailConfigured } from "@/lib/email";
 import { prisma } from "@/lib/db";
 import { addCredits } from "@/lib/credits";
 import type { FormState } from "./auth";
@@ -16,7 +20,10 @@ export async function saveSettingsAction(_: FormState, form: FormData): Promise<
   const auth = await requireAuth();
   if (auth.role === "MEMBER") return { error: "Sem permissão" };
   const name = String(form.get("name") ?? "").trim();
-  if (name) await prisma.workspace.update({ where: { id: auth.workspace.id }, data: { name } });
+  await prisma.workspace.update({
+    where: { id: auth.workspace.id },
+    data: { ...(name ? { name } : {}), emailAlerts: form.get("emailAlerts") === "on" },
+  });
   revalidatePath("/", "layout");
   return { ok: "Configurações salvas" };
 }
@@ -26,17 +33,20 @@ export async function addMemberAction(_: FormState, form: FormData): Promise<For
   if (auth.role === "MEMBER") return { error: "Sem permissão" };
   const email = String(form.get("email") ?? "").trim().toLowerCase();
   const name = String(form.get("name") ?? "").trim();
-  const password = String(form.get("password") ?? "");
-  if (!email || !name || password.length < 8) return { error: "Preencha nome, e-mail e senha (mín. 8)" };
+  if (!email || !name) return { error: "Preencha nome e e-mail" };
   let user = await prisma.user.findUnique({ where: { email } });
-  if (!user) user = await prisma.user.create({ data: { email, name, passwordHash: await hashPassword(password) } });
+  const isNew = !user;
+  if (!user) user = await prisma.user.create({ data: { email, name, passwordHash: await hashPassword(randomToken()) } });
   await prisma.membership.upsert({
     where: { userId_workspaceId: { userId: user.id, workspaceId: auth.workspace.id } },
     create: { userId: user.id, workspaceId: auth.workspace.id, role: "MEMBER" },
     update: {},
   });
   revalidatePath("/configuracoes");
-  return { ok: "Usuário adicionado" };
+  if (!isNew) return { ok: "Usuário já tinha conta e foi adicionado. Ele entra com a senha que já usa." };
+  const link = await createPasswordLink(user.id, "INVITE");
+  const sent = await sendInviteEmail(email, name, auth.workspace.name, link, auth.user.name);
+  return sent ? { ok: `Convite enviado para ${email}.` } : { ok: `E-mail não configurado. Envie este link para a pessoa: ${link}` };
 }
 
 // ---------------- Admin (dono da plataforma) ----------------
@@ -62,18 +72,36 @@ export async function adminPriceAction(_: FormState, form: FormData): Promise<Fo
 }
 
 export async function adminCreateWorkspaceAction(_: FormState, form: FormData): Promise<FormState> {
-  await requireSuperAdmin();
+  const auth = await requireSuperAdmin();
   const company = String(form.get("company") ?? "").trim();
   const name = String(form.get("name") ?? "").trim();
   const email = String(form.get("email") ?? "").trim().toLowerCase();
-  const password = String(form.get("password") ?? "");
-  if (!company || !name || !email || password.length < 8) return { error: "Preencha todos os campos (senha mín. 8)" };
+  const credits = Math.max(0, Math.trunc(Number(form.get("credits") ?? 0) || 0));
+  if (!company || !name || !email) return { error: "Preencha nome da conta, nome do dono e e-mail" };
   if (await prisma.user.findUnique({ where: { email } })) return { error: "E-mail já cadastrado" };
-  await prisma.user.create({
-    data: { name, email, passwordHash: await hashPassword(password), memberships: { create: { role: "OWNER", workspace: { create: { name: company } } } } },
+  const user = await prisma.user.create({
+    data: {
+      name,
+      email,
+      passwordHash: await hashPassword(randomToken()),
+      memberships: { create: { role: "OWNER", workspace: { create: { name: company } } } },
+    },
+    include: { memberships: true },
   });
+  if (credits > 0) await addCredits(user.memberships[0].workspaceId, credits, "TOPUP", "Crédito inicial", { createdById: auth.user.id });
+  const link = await createPasswordLink(user.id, "INVITE");
+  const sent = await sendInviteEmail(email, name, company, link);
   revalidatePath("/admin");
-  return { ok: "Conta criada" };
+  return sent
+    ? { ok: `Conta criada e convite enviado para ${email}.` }
+    : { ok: `Conta criada. E-mail não configurado — envie este link para o cliente: ${link}` };
+}
+
+export async function adminTestEmailAction(): Promise<FormState> {
+  const auth = await requireSuperAdmin();
+  if (!emailConfigured()) return { error: "Cole a chave do Resend em Integração antes de testar." };
+  const ok = await sendTestEmail(auth.user.email);
+  return ok ? { ok: `E-mail de teste enviado para ${auth.user.email}.` } : { error: "O Resend recusou o envio. Confira a chave e se o domínio foi verificado." };
 }
 
 export async function adminSavePlatformAction(_: FormState, form: FormData): Promise<FormState> {

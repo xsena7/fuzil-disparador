@@ -91,6 +91,7 @@ export function Sidebar({ workspace, user, unread, balance, isSuperAdmin }: { wo
             <LogOut className="size-4" /> Sair
           </button>
         </form>
+        <div className="mt-2 px-3 text-[10px] text-zinc-600">versão {process.env.NEXT_PUBLIC_VERSION}</div>
       </div>
     </aside>
   );

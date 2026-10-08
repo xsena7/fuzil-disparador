@@ -20,6 +20,23 @@ model User {
   createdAt    DateTime     @default(now())
   memberships  Membership[]
   sessions     Session[]
+  tokens       PasswordToken[]
+}
+
+enum TokenPurpose {
+  INVITE
+  RESET
+}
+
+// Link de "criar senha" (convite) ou "redefinir senha" enviado por e-mail
+model PasswordToken {
+  id        String       @id // hash sha256 do token
+  userId    String
+  purpose   TokenPurpose
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime     @default(now())
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 enum Role {
@@ -37,6 +54,8 @@ model Workspace {
   telegramChatId    String?
   // Exclui na Meta qualquer template que for recategorizado para marketing
   autoDeleteMarketing Boolean           @default(false)
+  // Envia por e-mail os alertas críticos para donos e admins
+  emailAlerts       Boolean             @default(true)
   createdAt         DateTime            @default(now())
   memberships       Membership[]
   creditTxs         CreditTransaction[]
@@ -49,6 +68,7 @@ model Workspace {
   alerts            Alert[]
   inbound           InboundMessage[]
   blueprints        TemplateBlueprint[]
+  campaignFolders   CampaignFolder[]
 }
 
 model Membership {
@@ -299,10 +319,13 @@ model Campaign {
   pausedReason     String?
   audienceFileName String?
   audienceStats    Json?
+  // Pasta (gaveta) onde a campanha foi guardada; nulo = lista principal
+  folderId         String?
   createdAt        DateTime            @default(now())
   updatedAt        DateTime            @updatedAt
   workspace        Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   group            BmGroup?            @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  folder           CampaignFolder?     @relation(fields: [folderId], references: [id], onDelete: SetNull)
   recipients       CampaignRecipient[]
   clicks           LinkClick[]
 
@@ -448,4 +471,16 @@ model PlatformSetting {
   key       String   @id
   value     String
   updatedAt DateTime @updatedAt
+}
+
+// Pastas para organizar campanhas antigas sem precisar excluir
+model CampaignFolder {
+  id          String     @id @default(cuid())
+  workspaceId String
+  name        String
+  createdAt   DateTime   @default(now())
+  workspace   Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  campaigns   Campaign[]
+
+  @@unique([workspaceId, name])
 }
