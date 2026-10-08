@@ -2,6 +2,13 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "1.7",
+    date: "08/10/2026",
+    items: [
+      "Brilho do mouse agora tem o formato da setinha, encaixado em volta do ponteiro (some na mãozinha de link e no cursor de texto)",
+    ],
+  },
+  {
     version: "1.6",
     date: "08/10/2026",
     items: [
