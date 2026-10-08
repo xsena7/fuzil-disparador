@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "1.9",
+    date: "08/10/2026",
+    items: ["Botão de reportar bug menor e mais discreto no canto da tela (cresce só ao passar o mouse)"],
+  },
+  {
     version: "1.8",
     date: "08/10/2026",
     items: [

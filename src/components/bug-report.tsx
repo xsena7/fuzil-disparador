@@ -46,12 +46,12 @@ export function BugReportButton() {
     <>
       {!open && <button
         onClick={() => setOpen(true)}
-        className="group fixed bottom-5 right-5 z-40 flex items-center gap-2 rounded-2xl bg-white p-2 shadow-lift ring-1 ring-zinc-200 transition hover:-translate-y-0.5 hover:ring-brand-300"
+        className="group fixed bottom-4 right-4 z-40 flex items-center gap-1 rounded-xl bg-white/90 p-1.5 opacity-70 shadow-soft ring-1 ring-zinc-200 backdrop-blur transition hover:opacity-100 hover:ring-brand-300"
         aria-label="Reportar bug"
         title="Reportar bug"
       >
-        <PixelBug className="size-9 transition group-hover:rotate-[-8deg]" />
-        <span className="max-w-0 overflow-hidden whitespace-nowrap pr-0 text-sm font-medium text-zinc-700 transition-all duration-300 group-hover:max-w-32 group-hover:pr-2">Reportar bug</span>
+        <PixelBug className="size-5 transition group-hover:rotate-[-8deg]" />
+        <span className="max-w-0 overflow-hidden whitespace-nowrap pr-0 text-xs font-medium text-zinc-700 transition-all duration-300 group-hover:max-w-28 group-hover:pr-1.5">Reportar bug</span>
       </button>}
 
       {open && (
