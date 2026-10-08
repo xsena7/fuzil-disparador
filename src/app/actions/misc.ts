@@ -119,3 +119,56 @@ export async function adminSavePlatformAction(_: FormState, form: FormData): Pro
   revalidatePath("/", "layout");
   return { ok: "Integração salva. Já está valendo (o worker atualiza em até 30s)." };
 }
+
+// ---------------- Discord ----------------
+
+export async function saveDiscordAction(_: FormState, form: FormData): Promise<FormState> {
+  const auth = await requireAuth();
+  if (auth.role === "MEMBER") return { error: "Sem permissão" };
+  const { DISCORD_CHANNELS } = await import("@/lib/alert-channels");
+  const { isDiscordWebhook } = await import("@/lib/discord");
+  const hooks: Record<string, string> = {};
+  for (const c of DISCORD_CHANNELS) {
+    const v = String(form.get(c.key) ?? "").trim();
+    if (!v) continue;
+    if (!isDiscordWebhook(v)) return { error: `O link de ${c.label} não parece um webhook do Discord (começa com https://discord.com/api/webhooks/...)` };
+    hooks[c.key] = v;
+  }
+  await prisma.workspace.update({ where: { id: auth.workspace.id }, data: { discordWebhooks: hooks } });
+  revalidatePath("/configuracoes");
+  return { ok: "Canais do Discord salvos" };
+}
+
+export async function testDiscordAction(): Promise<FormState> {
+  const auth = await requireAuth();
+  const { DISCORD_CHANNELS } = await import("@/lib/alert-channels");
+  const { sendDiscord, DISCORD_COLORS } = await import("@/lib/discord");
+  const ws = await prisma.workspace.findUniqueOrThrow({ where: { id: auth.workspace.id } });
+  const hooks = (ws.discordWebhooks ?? {}) as Record<string, string>;
+  const results: string[] = [];
+  for (const c of DISCORD_CHANNELS) {
+    if (!hooks[c.key]) continue;
+    const ok = await sendDiscord(hooks[c.key], {
+      title: `✅ Canal ${c.label} conectado`,
+      description: `A partir de agora chegam aqui: ${c.hint.toLowerCase()}.`,
+      color: DISCORD_COLORS.SUCCESS,
+      fields: [{ name: "Conta", value: ws.name, inline: true }],
+    });
+    results.push(`${c.label} ${ok ? "✓" : "✗ falhou"}`);
+  }
+  if (!results.length) return { error: "Nenhum canal configurado ainda." };
+  return results.some((r) => r.includes("✗")) ? { error: results.join(" · ") } : { ok: `Teste enviado: ${results.join(" · ")}` };
+}
+
+export async function testErrorsDiscordAction(): Promise<FormState> {
+  await requireSuperAdmin();
+  const { sendDiscord, DISCORD_COLORS } = await import("@/lib/discord");
+  const { env } = await import("@/lib/env");
+  if (!env.discordErrorsWebhook()) return { error: "Cole o webhook de erros em Integração e salve antes." };
+  const ok = await sendDiscord(env.discordErrorsWebhook(), {
+    title: "✅ Canal #erros conectado",
+    description: "Erros do site e do motor de disparo vão aparecer aqui.",
+    color: DISCORD_COLORS.SUCCESS,
+  });
+  return ok ? { ok: "Mensagem de teste enviada para #erros" } : { error: "O Discord recusou. Confira o link do webhook." };
+}

@@ -11,6 +11,7 @@ export const PLATFORM_KEYS = [
   { key: "META_GRAPH_VERSION", label: "Versão da Graph API", secret: false },
   { key: "RESEND_API_KEY", label: "Chave do Resend (e-mails)", secret: true },
   { key: "EMAIL_FROM", label: "Remetente dos e-mails", secret: false },
+  { key: "DISCORD_ERRORS_WEBHOOK", label: "Webhook do Discord para erros do sistema", secret: true },
 ] as const;
 
 export type PlatformKey = (typeof PLATFORM_KEYS)[number]["key"];

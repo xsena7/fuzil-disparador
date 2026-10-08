@@ -3,7 +3,8 @@ import { prisma } from "@/lib/db";
 import { env, metaConfigured, trackedUrlBase } from "@/lib/env";
 import { Badge, Card, Field, Input, PageHeader, Table, Td } from "@/components/ui";
 import { ActionForm } from "@/components/action-form";
-import { addMemberAction, saveSettingsAction } from "@/app/actions/misc";
+import { addMemberAction, saveDiscordAction, saveSettingsAction, testDiscordAction } from "@/app/actions/misc";
+import { DISCORD_CHANNELS } from "@/lib/alert-channels";
 
 export const dynamic = "force-dynamic";
 
@@ -39,6 +40,24 @@ export default async function SettingsPage() {
             </span>
           </label>
         </ActionForm>
+      </Card>
+
+      <Card className="p-5">
+        <div className="mb-1 font-semibold">Avisos no Discord</div>
+        <p className="mb-4 text-sm text-zinc-500">
+          Cada canal recebe um tipo de aviso. No Discord: abra o canal → ⚙️ Editar canal → Integrações → Webhooks → Novo webhook → Copiar URL do webhook, e cole abaixo.
+          Canal em branco = o aviso vai para o #geral.
+        </p>
+        <ActionForm action={saveDiscordAction} submit="Salvar canais">
+          <div className="grid gap-4 md:grid-cols-2">
+            {DISCORD_CHANNELS.map((c) => (
+              <Field key={c.key} label={c.label} hint={c.hint}>
+                <Input name={c.key} defaultValue={((ws.discordWebhooks ?? {}) as Record<string, string>)[c.key] ?? ""} placeholder="https://discord.com/api/webhooks/..." autoComplete="off" />
+              </Field>
+            ))}
+          </div>
+        </ActionForm>
+        <ActionForm action={testDiscordAction} submit="Enviar mensagem de teste nos canais" variant="secondary" />
       </Card>
 
       <Card className="p-5">

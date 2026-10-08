@@ -56,6 +56,8 @@ model Workspace {
   autoDeleteMarketing Boolean           @default(false)
   // Envia por e-mail os alertas críticos para donos e admins
   emailAlerts       Boolean             @default(true)
+  // Webhooks do Discord por canal: { campaigns, templates, quality, limits, general }
+  discordWebhooks   Json?
   createdAt         DateTime            @default(now())
   memberships       Membership[]
   creditTxs         CreditTransaction[]
@@ -483,4 +485,18 @@ model CampaignFolder {
   campaigns   Campaign[]
 
   @@unique([workspaceId, name])
+}
+
+// Erros do sistema (site e worker), também enviados ao Discord da plataforma
+model SystemLog {
+  id        String   @id @default(cuid())
+  level     String // error | warn
+  source    String // web | worker | webhook | ...
+  message   String
+  detail    String?
+  path      String?
+  digest    String?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
 }

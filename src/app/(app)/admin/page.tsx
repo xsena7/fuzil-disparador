@@ -2,7 +2,9 @@ import { requireSuperAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { Card, Field, Input, PageHeader, Table, Td } from "@/components/ui";
 import { ActionForm } from "@/components/action-form";
-import { adminCreateWorkspaceAction, adminCreditsAction, adminPriceAction, adminSavePlatformAction, adminTestEmailAction } from "@/app/actions/misc";
+import { adminCreateWorkspaceAction, adminCreditsAction, adminPriceAction, adminSavePlatformAction, adminTestEmailAction, testErrorsDiscordAction } from "@/app/actions/misc";
+import { LinkButton } from "@/components/ui";
+import { ScrollText } from "lucide-react";
 import { emailConfigured } from "@/lib/email";
 import { Badge } from "@/components/ui";
 import { PLATFORM_KEYS } from "@/lib/platform-settings";
@@ -19,7 +21,7 @@ export default async function AdminPage() {
   });
   return (
     <div className="mx-auto max-w-6xl space-y-6">
-      <PageHeader title="Admin da plataforma" description="Contas de clientes, saldo e preço por mensagem." />
+      <PageHeader title="Admin da plataforma" description="Contas de clientes, saldo, integrações e logs." actions={<LinkButton href="/admin/logs" variant="secondary"><ScrollText className="size-4" /> Logs do sistema</LinkButton>} />
       <Table head={["Conta", "Dono", "BMs", "Campanhas", "Saldo", "Créditos/msg", "Recarga", "Preço"]}>
         {workspaces.map((w) => (
           <tr key={w.id}>
@@ -76,6 +78,14 @@ export default async function AdminPage() {
           Convites, recuperação de senha e alertas críticos. Usa o Resend (grátis até 3.000 e-mails/mês): cole a chave no campo &quot;Chave do Resend&quot; acima.
         </p>
         <ActionForm action={adminTestEmailAction} submit="Enviar e-mail de teste para mim" variant="secondary" />
+      </Card>
+
+      <Card className="p-5">
+        <div className="mb-1 font-semibold">Discord #erros</div>
+        <p className="mb-2 text-sm text-zinc-500">
+          Cole o webhook do canal de erros no campo &quot;Webhook do Discord para erros do sistema&quot; (em Integração, acima) e salve. Os avisos de campanhas, templates, qualidade e limites ficam em Configurações.
+        </p>
+        <ActionForm action={testErrorsDiscordAction} submit="Testar canal #erros" variant="secondary" />
       </Card>
 
       <Card className="p-5">

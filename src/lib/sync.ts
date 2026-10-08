@@ -74,6 +74,16 @@ export async function syncWaba(wabaRecordId: string) {
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     await prisma.whatsAppAccount.update({ where: { id: waba.id }, data: { lastSyncError: message, lastSyncedAt: new Date() } });
+    if (waba.lastSyncError !== message) {
+      await createAlert({
+        workspaceId: waba.workspaceId,
+        type: "SYNC_ERROR",
+        severity: "WARNING",
+        title: `Falha ao sincronizar ${waba.business.name} / ${waba.name}`,
+        message: `${message}. Qualidade, limite e templates dessa WABA podem estar desatualizados.`,
+        data: { wabaId: waba.id },
+      });
+    }
     throw err;
   }
 }

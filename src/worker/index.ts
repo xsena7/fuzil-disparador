@@ -4,6 +4,7 @@ import { syncWaba } from "../lib/sync";
 import { deployBlueprints } from "../lib/blueprints";
 import { startSettingsRefresh } from "../lib/platform-settings";
 import { checkLimitAlerts } from "../lib/limit-alerts";
+import { reportError } from "../lib/report";
 
 const SYNC_EVERY_MS = 10 * 60_000;
 const BLUEPRINT_EVERY_MS = 5 * 60_000;
@@ -21,11 +22,11 @@ async function dispatchLoop() {
         if (running.has(id)) continue; // tick anterior ainda enviando
         running.add(id);
         runCampaignTick(id)
-          .catch((err) => console.error(`[dispatcher] campanha ${id}`, err))
+          .catch((err) => reportError("worker", err, { path: `campanha ${id}` }))
           .finally(() => running.delete(id));
       }
     } catch (err) {
-      console.error("[dispatcher]", err);
+      await reportError("worker", err, { path: "dispatcher" });
     }
     await new Promise((r) => setTimeout(r, Math.max(200, TICK_MS - (Date.now() - t0))));
   }
@@ -36,7 +37,7 @@ async function every(ms: number, name: string, fn: () => Promise<void>) {
     try {
       await fn();
     } catch (err) {
-      console.error(`[${name}]`, err);
+      await reportError("worker", err, { path: name });
     }
     await new Promise((r) => setTimeout(r, ms));
   }
@@ -61,6 +62,8 @@ async function housekeeping() {
 
 async function main() {
   console.log("[worker] Fuzil Disparador worker iniciado");
+  process.on("unhandledRejection", (err) => void reportError("worker", err, { path: "unhandledRejection" }));
+  process.on("uncaughtException", (err) => void reportError("worker", err, { path: "uncaughtException" }));
   await startSettingsRefresh();
   process.on("SIGTERM", () => (stopping = true));
   process.on("SIGINT", () => (stopping = true));

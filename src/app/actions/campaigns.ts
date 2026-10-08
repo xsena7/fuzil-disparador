@@ -6,7 +6,7 @@ import type { Prisma } from "@prisma/client";
 import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { saveUpload, mediaKind } from "@/lib/uploads";
-import { planSenders } from "@/lib/dispatcher";
+import { announceStart, planSenders } from "@/lib/dispatcher";
 import { createAlert } from "@/lib/alerts";
 import type { FormState } from "./auth";
 
@@ -134,6 +134,7 @@ export async function startCampaignAction(id: string, _: FormState, form: FormDa
       pausedReason: null,
     },
   });
+  if (!future) await announceStart(id);
   redirect(`/campanhas/${id}?etapa=metricas`);
 }
 

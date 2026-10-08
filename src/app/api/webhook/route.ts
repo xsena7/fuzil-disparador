@@ -2,6 +2,7 @@ import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { env } from "@/lib/env";
 import { processWebhook, verifySignature } from "@/lib/webhook";
+import { reportError } from "@/lib/report";
 
 /** Verificação do webhook (feita uma vez pelo painel da Meta). */
 export async function GET(req: Request) {
@@ -27,7 +28,7 @@ export async function POST(req: Request) {
     await processWebhook(payload);
     await prisma.webhookEvent.update({ where: { id: event.id }, data: { processedAt: new Date() } });
   } catch (err) {
-    console.error("[webhook]", err);
+    await reportError("webhook", err, { path: "POST /api/webhook", detail: raw.slice(0, 500) });
     await prisma.webhookEvent.update({ where: { id: event.id }, data: { error: err instanceof Error ? err.message : String(err) } });
   }
   // Sempre 200: a Meta reenvia em caso de erro e isso duplicaria eventos

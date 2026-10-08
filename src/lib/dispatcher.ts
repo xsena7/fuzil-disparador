@@ -398,12 +398,17 @@ export async function maybeComplete(campaignId: string) {
     where: { id: campaignId },
     data: { status: "COMPLETED", completedAt: new Date(), pausedReason: null },
   });
+  const [t] = await prisma.$queryRaw<Array<{ total: bigint; sent: bigint; delivered: bigint; failed: bigint }>>`
+    SELECT COUNT(*) AS total, COUNT(*) FILTER (WHERE "sentAt" IS NOT NULL) AS sent,
+      COUNT(*) FILTER (WHERE "deliveredAt" IS NOT NULL) AS delivered, COUNT(*) FILTER (WHERE status = 'FAILED') AS failed
+    FROM "CampaignRecipient" WHERE "campaignId" = ${campaignId}`;
+  const n = (v: bigint) => Number(v).toLocaleString("pt-BR");
   await createAlert({
     workspaceId: c.workspaceId,
     type: "CAMPAIGN_COMPLETED",
     severity: "INFO",
     title: `Campanha "${c.name}" concluída`,
-    message: "Todos os destinatários foram processados.",
+    message: `${n(t.sent)} de ${n(t.total)} enviadas · ${n(t.delivered)} entregues até agora · ${n(t.failed)} falhas.`,
     data: { campaignId },
   });
 }
@@ -421,6 +426,21 @@ export async function startDueCampaigns() {
   const due = await prisma.campaign.findMany({ where: { status: "SCHEDULED", scheduledAt: { lte: new Date() } } });
   for (const c of due) {
     await prisma.campaign.update({ where: { id: c.id }, data: { status: "RUNNING", startedAt: c.startedAt ?? new Date() } });
-    console.log(`[dispatcher] campanha agendada iniciada: ${c.name}`);
+    await announceStart(c.id, true);
   }
+}
+
+/** Aviso de campanha iniciada (painel + Discord #campanhas). */
+export async function announceStart(campaignId: string, scheduled = false) {
+  const c = await prisma.campaign.findUnique({ where: { id: campaignId }, include: { group: true } });
+  if (!c) return;
+  const total = await prisma.campaignRecipient.count({ where: { campaignId, status: "PENDING" } });
+  await createAlert({
+    workspaceId: c.workspaceId,
+    type: "CAMPAIGN_STARTED",
+    severity: "INFO",
+    title: `Campanha "${c.name}" ${scheduled ? "agendada começou" : "iniciada"}`,
+    message: `${total.toLocaleString("pt-BR")} destinatários · template ${c.templateName} · grupo ${c.group?.name ?? "—"}.`,
+    data: { campaignId },
+  });
 }
