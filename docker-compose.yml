@@ -48,6 +48,8 @@ services:
   caddy:
     image: caddy:2-alpine
     restart: unless-stopped
+    # (comando explícito: mudar esta linha faz o compose recriar o Caddy e reler o Caddyfile)
+    command: ["caddy", "run", "--config", "/etc/caddy/Caddyfile", "--adapter", "caddyfile"]
     ports:
       - "80:80"
       - "443:443"

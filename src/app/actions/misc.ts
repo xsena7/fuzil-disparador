@@ -315,3 +315,21 @@ export async function adminQuickPriceAction(workspaceId: string, price: number):
   revalidatePath("/admin");
   return { ok: "Preço atualizado" };
 }
+
+// ---------------- Empresa (site público) ----------------
+
+export async function adminSaveCompanyAction(_: FormState, form: FormData): Promise<FormState> {
+  await requireSuperAdmin();
+  const { COMPANY_KEYS, savePlatformSetting, refreshPlatformSettings } = await import("@/lib/platform-settings");
+  for (const { key } of COMPANY_KEYS) {
+    const raw = form.get(key);
+    if (raw === null) continue;
+    let value = String(raw).trim();
+    // Aceita colar a tag inteira da Meta: <meta name="facebook-domain-verification" content="abc" />
+    if (key === "META_DOMAIN_VERIFICATION") value = value.match(/content=["']([^"']+)["']/)?.[1] ?? value;
+    await savePlatformSetting(key, value);
+  }
+  await refreshPlatformSettings();
+  revalidatePath("/", "layout");
+  return { ok: "Dados da empresa salvos. O site já mostra as informações novas." };
+}

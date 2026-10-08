@@ -1,5 +1,15 @@
-# HTTPS automático (Let's Encrypt) para o painel e para o domínio dos links.
+# HTTPS automático (Let's Encrypt) para o painel, o domínio dos links e o site.
 {$APP_DOMAIN}, {$LINK_DOMAIN} {
 	encode gzip
 	reverse_proxy app:3000
+}
+
+# Site público (vendas, privacidade, termos)
+{$SITE_DOMAIN:fuzildisparador.com.br} {
+	encode gzip
+	reverse_proxy app:3000
+}
+
+www.{$SITE_DOMAIN:fuzildisparador.com.br} {
+	redir https://{$SITE_DOMAIN:fuzildisparador.com.br}{uri} permanent
 }

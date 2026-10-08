@@ -16,6 +16,18 @@ export const PLATFORM_KEYS = [
 
 export type PlatformKey = (typeof PLATFORM_KEYS)[number]["key"];
 
+/** Dados da empresa dona do Fuzil: aparecem no site público (exigido pela Meta para verificar a empresa e aprovar o app). */
+export const COMPANY_KEYS = [
+  { key: "COMPANY_LEGAL_NAME", label: "Razão social (igual ao cartão CNPJ)", placeholder: "EX.: FULANO SERVICOS DIGITAIS LTDA" },
+  { key: "COMPANY_CNPJ", label: "CNPJ", placeholder: "00.000.000/0000-00" },
+  { key: "COMPANY_ADDRESS", label: "Endereço (igual ao cartão CNPJ)", placeholder: "Rua X, 123, Sala 4 - Bairro, Cidade - UF, CEP 00000-000" },
+  { key: "COMPANY_EMAIL", label: "E-mail de contato (que recebe e-mails)", placeholder: "contato@fuzildisparador.com.br" },
+  { key: "COMPANY_PHONE", label: "Telefone / WhatsApp de contato", placeholder: "+55 11 99999-9999" },
+  { key: "META_DOMAIN_VERIFICATION", label: "Código de verificação do domínio (Meta)", placeholder: "abc123xyz..." },
+] as const;
+
+export type CompanyKey = (typeof COMPANY_KEYS)[number]["key"];
+
 export async function refreshPlatformSettings() {
   const rows = await prisma.platformSetting.findMany();
   const entries: Array<[string, string]> = [];
@@ -29,7 +41,7 @@ export async function refreshPlatformSettings() {
   replaceSettings(entries);
 }
 
-export async function savePlatformSetting(key: PlatformKey | "DISCORD_CHANNELS", value: string) {
+export async function savePlatformSetting(key: PlatformKey | CompanyKey | "DISCORD_CHANNELS", value: string) {
   if (!value) {
     await prisma.platformSetting.deleteMany({ where: { key } });
   } else {

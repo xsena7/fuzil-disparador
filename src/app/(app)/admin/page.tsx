@@ -7,14 +7,15 @@ import { Card, Field, Input, PageHeader, Table, Td } from "@/components/ui";
 import { ActionForm, ConfirmButton } from "@/components/action-form";
 import { PixelBug } from "@/components/pixel-bug";
 import { deleteBugAction, resendBugDiscordAction, setBugStatusAction } from "@/app/actions/bugs";
-import { adminCreateWorkspaceAction, adminSavePlatformAction, adminTestEmailAction, saveDiscordAction, testDiscordAction, testErrorsDiscordAction } from "@/app/actions/misc";
+import { adminCreateWorkspaceAction, adminSaveCompanyAction, adminSavePlatformAction, adminTestEmailAction, saveDiscordAction, testDiscordAction, testErrorsDiscordAction } from "@/app/actions/misc";
 import { DISCORD_CHANNELS } from "@/lib/alert-channels";
 import { platformDiscordHooks } from "@/lib/alerts";
 import { LinkButton } from "@/components/ui";
 import { ScrollText } from "lucide-react";
 import { emailConfigured } from "@/lib/email";
 import { Badge } from "@/components/ui";
-import { PLATFORM_KEYS } from "@/lib/platform-settings";
+import { COMPANY_KEYS, PLATFORM_KEYS } from "@/lib/platform-settings";
+import { company } from "@/lib/company";
 import { env } from "@/lib/env";
 import { cachedSetting } from "@/lib/settings-cache";
 import { PasswordInput } from "@/components/password-input";
@@ -98,6 +99,23 @@ export default async function AdminPage() {
           </Table>
         </Card>
       )}
+
+      <Card className="p-5">
+        <div className="mb-1 font-semibold">Empresa e site</div>
+        <p className="mb-4 text-sm text-zinc-500">
+          Aparece no site público <a href={company().siteUrl} target="_blank" rel="noreferrer" className="font-medium text-brand-600 hover:underline">{company().siteUrl.replace("https://", "")}</a> (rodapé, Política de Privacidade, Termos e Exclusão de dados).
+          A Meta confere esses dados na verificação da empresa: use a razão social e o endereço <b>exatamente</b> como estão no cartão CNPJ.
+        </p>
+        <ActionForm action={adminSaveCompanyAction} submit="Salvar dados da empresa">
+          <div className="grid gap-4 md:grid-cols-2">
+            {COMPANY_KEYS.map(({ key, label, placeholder }) => (
+              <Field key={key} label={label} hint={key === "META_DOMAIN_VERIFICATION" ? "Na Meta: Configurações do negócio → Segurança da marca → Domínios → Adicionar → \"Meta-tag\". Cole o código (ou a tag inteira) aqui." : undefined}>
+                <Input name={key} defaultValue={cachedSetting(key) ?? (key === "COMPANY_CNPJ" ? company().cnpj : "")} placeholder={placeholder} autoComplete="off" />
+              </Field>
+            ))}
+          </div>
+        </ActionForm>
+      </Card>
 
       <Card className="p-5">
         <div className="mb-1 font-semibold">Integração com a Meta (Tech Provider)</div>
