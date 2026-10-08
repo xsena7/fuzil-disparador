@@ -2,6 +2,13 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "1.8",
+    date: "08/10/2026",
+    items: [
+      "Olhinho 👁 em todos os campos de senha (login, cadastro, criar senha, trocar senha e chaves do Admin) para conferir o que foi digitado",
+    ],
+  },
+  {
     version: "1.7",
     date: "08/10/2026",
     items: [

@@ -10,6 +10,7 @@ import { ActionForm, ConfirmButton } from "@/components/action-form";
 import { EmbeddedSignup } from "@/components/embedded-signup";
 import { LimitWindow } from "@/components/limit-card";
 import { bmWindows } from "@/lib/limit-windows";
+import { PasswordInput } from "@/components/password-input";
 import {
   connectManualAction,
   deleteWabaAction,
@@ -113,7 +114,7 @@ export default async function ConnectionsPage() {
           <div className="grid gap-4 md:grid-cols-2">
             <Field label="ID da WABA"><Input name="wabaId" placeholder="1673861331112475" required /></Field>
             <Field label="Token de acesso (opcional)" hint="System User token com whatsapp_business_management e whatsapp_business_messaging">
-              <Input name="token" type="password" placeholder="EAAG..." />
+              <PasswordInput name="token" placeholder="EAAG..." />
             </Field>
           </div>
         </ActionForm>

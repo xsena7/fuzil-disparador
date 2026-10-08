@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useActionState } from "react";
 import { loginAction } from "@/app/actions/auth";
 import { Button, Field, Input } from "@/components/ui";
+import { PasswordInput } from "@/components/password-input";
 
 export default function LoginPage() {
   const [state, action, pending] = useActionState(loginAction, undefined);
@@ -13,7 +14,7 @@ export default function LoginPage() {
       <p className="mb-7 mt-1.5 text-zinc-500">Entre para gerenciar suas BMs e disparos.</p>
       <form action={action} className="space-y-4">
         <Field label="E-mail"><Input name="email" type="email" required autoFocus /></Field>
-        <Field label="Senha" hint={<Link href="/esqueci-senha" className="text-brand-600 hover:underline">Esqueci minha senha</Link>}><Input name="password" type="password" required /></Field>
+        <Field label="Senha" hint={<Link href="/esqueci-senha" className="text-brand-600 hover:underline">Esqueci minha senha</Link>}><PasswordInput name="password" required /></Field>
         {state?.error && <p className="text-red-600">{state.error}</p>}
         <Button className="w-full py-2.5" disabled={pending}>{pending ? "Entrando..." : "Entrar"}</Button>
       </form>

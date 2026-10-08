@@ -17,6 +17,7 @@ import { Badge } from "@/components/ui";
 import { PLATFORM_KEYS } from "@/lib/platform-settings";
 import { env } from "@/lib/env";
 import { cachedSetting } from "@/lib/settings-cache";
+import { PasswordInput } from "@/components/password-input";
 
 export const dynamic = "force-dynamic";
 
@@ -106,7 +107,7 @@ export default async function AdminPage() {
               const current = cachedSetting(key) ?? process.env[key] ?? "";
               return (
                 <Field key={key} label={label} hint={secret ? (current ? "Configurado ✓ (deixe em branco para manter)" : "Não configurado") : undefined}>
-                  <Input name={key} type={secret ? "password" : "text"} defaultValue={secret ? "" : current} placeholder={key === "META_GRAPH_VERSION" ? "v23.0" : ""} autoComplete="off" />
+                  {secret ? <PasswordInput name={key} defaultValue="" autoComplete="off" /> : <Input name={key} defaultValue={current} placeholder={key === "META_GRAPH_VERSION" ? "v23.0" : ""} autoComplete="off" />}
                   {secret && current && <label className="mt-1 flex items-center gap-1.5 text-xs text-zinc-500"><input type="checkbox" name={`${key}__clear`} /> limpar</label>}
                 </Field>
               );

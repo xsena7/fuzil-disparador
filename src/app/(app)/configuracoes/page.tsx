@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { Card, Field, Input, PageHeader, Table, Td } from "@/components/ui";
 import { ActionForm } from "@/components/action-form";
 import { addMemberAction, changePasswordAction, saveProfileAction, saveSettingsAction } from "@/app/actions/misc";
+import { PasswordInput } from "@/components/password-input";
 
 export const dynamic = "force-dynamic";
 
@@ -29,7 +30,7 @@ export default async function SettingsPage() {
                 <Field label="Nome"><Input name="name" defaultValue={auth.user.name} required /></Field>
                 <Field label="E-mail de acesso"><Input name="email" type="email" defaultValue={auth.user.email} required /></Field>
                 <Field label="Senha atual" hint="Só precisa se for trocar o e-mail.">
-                  <Input name="currentPassword" type="password" autoComplete="current-password" />
+                  <PasswordInput name="currentPassword" autoComplete="current-password" />
                 </Field>
               </div>
             </ActionForm>
@@ -39,9 +40,9 @@ export default async function SettingsPage() {
             <div className="mb-4 font-semibold">Trocar senha</div>
             <ActionForm action={changePasswordAction} submit="Trocar senha">
               <div className="space-y-4">
-                <Field label="Senha atual"><Input name="currentPassword" type="password" autoComplete="current-password" required /></Field>
-                <Field label="Nova senha" hint="Pelo menos 8 caracteres."><Input name="newPassword" type="password" autoComplete="new-password" minLength={8} required /></Field>
-                <Field label="Repita a nova senha"><Input name="confirmPassword" type="password" autoComplete="new-password" minLength={8} required /></Field>
+                <Field label="Senha atual"><PasswordInput name="currentPassword" autoComplete="current-password" required /></Field>
+                <Field label="Nova senha" hint="Pelo menos 8 caracteres."><PasswordInput name="newPassword" autoComplete="new-password" minLength={8} required /></Field>
+                <Field label="Repita a nova senha"><PasswordInput name="confirmPassword" autoComplete="new-password" minLength={8} required /></Field>
               </div>
             </ActionForm>
           </Card>
