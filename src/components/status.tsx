@@ -42,3 +42,21 @@ export function CampaignStatusBadge({ s }: { s: string }) {
   const [color, label] = map[s] ?? ["gray", s];
   return <Badge color={color}>{label}</Badge>;
 }
+
+const PHONE_STATUS: Record<string, [BadgeColor, string]> = {
+  CONNECTED: ["green", "Conectado"],
+  PENDING: ["yellow", "Pendente"],
+  UNVERIFIED: ["yellow", "Não verificado"],
+  FLAGGED: ["red", "Sinalizado"],
+  RESTRICTED: ["red", "Restrito"],
+  RATE_LIMITED: ["red", "Limitado"],
+  BANNED: ["red", "Banido"],
+  DISCONNECTED: ["red", "Desconectado"],
+  DELETED: ["gray", "Excluído"],
+  MIGRATED: ["blue", "Migrado"],
+};
+
+export function PhoneStatusBadge({ s }: { s?: string | null }) {
+  const [color, label] = PHONE_STATUS[s ?? ""] ?? ["gray", s ?? "—"];
+  return <Badge color={color}>{label}</Badge>;
+}

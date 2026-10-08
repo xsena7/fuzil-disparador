@@ -41,8 +41,8 @@ export default async function CampaignPage({ params, searchParams }: { params: P
   const step = (await searchParams).etapa ?? (started ? "metricas" : "template");
 
   return (
-    <div className="-m-8 min-h-screen">
-      <div className="flex flex-wrap items-center gap-3 border-b border-zinc-200 bg-white px-6 py-3">
+    <div className="-mx-10 -my-9 min-h-screen">
+      <div className="sticky top-0 z-10 flex flex-wrap items-center gap-3 border-b border-zinc-200/70 bg-white/85 px-6 py-3 backdrop-blur">
         <Link href="/campanhas" className="rounded-full border border-zinc-200 p-1.5 hover:bg-zinc-50"><ArrowLeft className="size-4" /></Link>
         <div className="font-semibold">{campaign.name}</div>
         <CampaignStatusBadge s={campaign.status} />
@@ -58,9 +58,16 @@ export default async function CampaignPage({ params, searchParams }: { params: P
         </div>
       </div>
       <div className="flex">
-        <nav className="w-44 shrink-0 space-y-1 border-r border-zinc-200 p-4">
-          {STEPS.map((s) => (
-            <Link key={s.key} href={`/campanhas/${id}?etapa=${s.key}`} className={clsx("block rounded-lg px-3 py-1.5", step === s.key ? "bg-zinc-100 font-semibold" : "text-zinc-600 hover:bg-zinc-50")}>{s.label}</Link>
+        <nav className="w-52 shrink-0 space-y-1 border-r border-zinc-200/70 p-4">
+          {STEPS.map((s, i) => (
+            <Link
+              key={s.key}
+              href={`/campanhas/${id}?etapa=${s.key}`}
+              className={clsx("flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition", step === s.key ? "bg-white font-medium text-zinc-900 shadow-soft ring-1 ring-zinc-200/70" : "text-zinc-500 hover:bg-white/60 hover:text-zinc-800")}
+            >
+              <span className={clsx("flex size-6 items-center justify-center rounded-full text-xs font-semibold", step === s.key ? "bg-brand-gradient text-white" : "bg-zinc-200/70 text-zinc-600")}>{i + 1}</span>
+              {s.label.replace(/^\d+\. /, "")}
+            </Link>
           ))}
         </nav>
         <div className="min-w-0 flex-1 p-8">

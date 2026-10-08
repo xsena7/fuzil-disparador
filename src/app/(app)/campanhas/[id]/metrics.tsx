@@ -17,7 +17,7 @@ export async function Metrics({ campaignId }: { campaignId: string }) {
           <span>{n(t.total - t.pending)} de {n(t.total)} processados</span>
           <span>{progress}%</span>
         </div>
-        <div className="h-2 overflow-hidden rounded-full bg-zinc-100"><div className="h-full rounded-full bg-brand-500 transition-all" style={{ width: `${progress}%` }} /></div>
+        <div className="h-2 overflow-hidden rounded-full bg-zinc-200/60"><div className="h-full rounded-full bg-brand-gradient transition-all" style={{ width: `${progress}%` }} /></div>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-5">
@@ -51,15 +51,15 @@ export async function Metrics({ campaignId }: { campaignId: string }) {
         <Table head={["Número", "BM", "Qualidade", "Enviadas", "Entregues", "Lidas", "Cliques", "Respostas", "Falhas"]}>
           {m.senders.map((s) => (
             <tr key={s.id}>
-              <Td className="font-medium">{s.display}</Td>
-              <Td>{s.business}</Td>
+              <Td className="whitespace-nowrap font-medium">{s.display}</Td>
+              <Td className="whitespace-nowrap">{s.business}</Td>
               <Td><QualityBadge q={s.quality} /></Td>
-              <Td>{n(s.sent)}</Td>
-              <Td>{n(s.delivered)} <span className="text-xs text-zinc-400">{pct(s.delivered, s.sent)}</span></Td>
-              <Td>{n(s.read)} <span className="text-xs text-zinc-400">{pct(s.read, s.delivered)}</span></Td>
-              <Td>{n(s.clicked)} <span className="text-xs text-zinc-400">{pct(s.clicked, s.delivered)}</span></Td>
-              <Td>{n(s.replied)}</Td>
-              <Td className={s.failed ? "text-red-600" : ""}>{n(s.failed)}</Td>
+              <Td className="whitespace-nowrap">{n(s.sent)}</Td>
+              <Td className="whitespace-nowrap">{n(s.delivered)} <span className="text-xs text-zinc-400">{pct(s.delivered, s.sent)}</span></Td>
+              <Td className="whitespace-nowrap">{n(s.read)} <span className="text-xs text-zinc-400">{pct(s.read, s.delivered)}</span></Td>
+              <Td className="whitespace-nowrap">{n(s.clicked)} <span className="text-xs text-zinc-400">{pct(s.clicked, s.delivered)}</span></Td>
+              <Td className="whitespace-nowrap">{n(s.replied)}</Td>
+              <Td className={s.failed ? "whitespace-nowrap text-red-600" : "whitespace-nowrap"}>{n(s.failed)}</Td>
             </tr>
           ))}
           {m.senders.length === 0 && <tr><Td colSpan={9} className="text-center text-zinc-500">Nenhum envio ainda.</Td></tr>}

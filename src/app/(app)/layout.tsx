@@ -6,9 +6,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const auth = await requireAuth();
   const unread = await prisma.alert.count({ where: { workspaceId: auth.workspace.id, readAt: null, severity: { not: "INFO" } } });
   return (
-    <div className="flex">
+    <div className="flex min-h-screen">
       <Sidebar workspace={auth.workspace.name} user={auth.user.email} unread={unread} balance={auth.workspace.creditBalance} isSuperAdmin={auth.user.isSuperAdmin} />
-      <main className="min-w-0 flex-1 p-8">{children}</main>
+      <main className="min-w-0 flex-1 px-10 py-9">{children}</main>
     </div>
   );
 }

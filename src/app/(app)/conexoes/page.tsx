@@ -5,7 +5,7 @@ import { env } from "@/lib/env";
 import { tierLabel } from "@/lib/limits";
 import { formatPhone } from "@/lib/phone";
 import { Badge, Card, Empty, Field, Input, PageHeader } from "@/components/ui";
-import { QualityBadge } from "@/components/status";
+import { PhoneStatusBadge, QualityBadge } from "@/components/status";
 import { ActionForm, ConfirmButton } from "@/components/action-form";
 import { EmbeddedSignup } from "@/components/embedded-signup";
 import {
@@ -53,8 +53,8 @@ export default async function ConnectionsPage() {
             </div>
             <div className="space-y-3">
               {bm.wabas.map((waba) => (
-                <div key={waba.id} className="rounded-lg border border-zinc-200">
-                  <div className="flex flex-wrap items-center gap-3 border-b border-zinc-100 bg-zinc-50 px-4 py-2.5">
+                <div key={waba.id} className="overflow-hidden rounded-xl border border-zinc-200/80">
+                  <div className="flex flex-wrap items-center gap-3 border-b border-zinc-100 bg-zinc-50/70 px-4 py-2.5">
                     <span className="font-medium">{waba.name}</span>
                     <Badge dot={false}>{CONN_LABEL[waba.connectionType]}</Badge>
                     <span className="text-xs text-zinc-500">WABA: {waba.wabaId}</span>
@@ -71,13 +71,13 @@ export default async function ConnectionsPage() {
                     {waba.phones.length === 0 && <div className="px-4 py-3 text-zinc-500">Nenhum número nesta WABA.</div>}
                     {waba.phones.map((p) => (
                       <div key={p.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
-                        <div className="flex size-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600"><Phone className="size-4" /></div>
+                        <div className="flex size-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 ring-1 ring-emerald-600/10"><Phone className="size-4" /></div>
                         <div className="min-w-48">
                           <div className="font-medium">{formatPhone(p.displayPhoneNumber.replace(/\D/g, ""))}</div>
                           <div className="text-xs text-zinc-500">{p.verifiedName} · Phone ID {p.phoneNumberId}</div>
                         </div>
                         <QualityBadge q={p.qualityRating} />
-                        <Badge color={p.status === "CONNECTED" ? "green" : p.status && ["BANNED", "RESTRICTED", "FLAGGED"].includes(p.status) ? "red" : "gray"}>{p.status ?? "—"}</Badge>
+                        <PhoneStatusBadge s={p.status} />
                         <Badge color="blue" dot={false}>{tierLabel(p.messagingLimitTier)}</Badge>
                         {p.isCoexistence && <Badge dot={false}>Coexistência</Badge>}
                         {!p.enabled && <Badge color="yellow">Fora do rodízio</Badge>}

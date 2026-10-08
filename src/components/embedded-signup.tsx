@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Smartphone, Zap } from "lucide-react";
 import { Button, Card } from "./ui";
 
 declare global {
@@ -95,15 +96,16 @@ export function EmbeddedSignup({ appId, configId, graphVersion }: { appId: strin
   }
 
   const cards = [
-    { type: "CLOUD_API" as const, title: "Cloud API", text: "Números novos ou dedicados à API oficial da Meta.", cta: "Conectar Cloud API" },
-    { type: "COEXISTENCE" as const, title: "Coexistência", text: "Números ativos no WhatsApp Business App.", cta: "Conectar em Coexistência" },
+    { type: "CLOUD_API" as const, title: "Cloud API", text: "Números novos ou dedicados à API oficial da Meta.", cta: "Conectar Cloud API", icon: Zap },
+    { type: "COEXISTENCE" as const, title: "Coexistência", text: "Números ativos no WhatsApp Business App.", cta: "Conectar em Coexistência", icon: Smartphone },
   ];
 
   return (
     <div>
       <div className="grid gap-4 md:grid-cols-2">
         {cards.map((c) => (
-          <Card key={c.type} className="p-5">
+          <Card key={c.type} className="p-6">
+            <div className="mb-3 flex size-10 items-center justify-center rounded-xl bg-brand-50 text-brand-600"><c.icon className="size-5" /></div>
             <div className="font-semibold">{c.title}</div>
             <p className="mt-1 mb-4 text-zinc-500">{c.text}</p>
             <Button onClick={() => launch(c.type)} disabled={!enabled || !ready || busy !== null}>
@@ -113,8 +115,8 @@ export function EmbeddedSignup({ appId, configId, graphVersion }: { appId: strin
         ))}
       </div>
       {!enabled && (
-        <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-amber-800">
-          Conexão automática indisponível: preencha META_APP_ID e META_CONFIG_ID no servidor (dados do Tech Provider). Enquanto isso, use a configuração manual abaixo.
+        <p className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-800">
+          Conexão automática indisponível: cole o App ID e o Config ID do Tech Provider em Admin → Integração com a Meta. Enquanto isso, use a configuração manual abaixo.
         </p>
       )}
       {msg.error && <p className="mt-3 text-red-600">{msg.error}</p>}
