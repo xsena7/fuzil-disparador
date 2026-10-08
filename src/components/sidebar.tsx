@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { Bell, Building2, Coins, FileText, Home, Layers, LogOut, Megaphone, Settings, Shield, Sparkles } from "lucide-react";
 import { logoutAction } from "@/app/actions/auth";
 import { Logo } from "./brand";
+import { APP_VERSION } from "@/version";
 
 const sections = [
   {
@@ -91,7 +92,9 @@ export function Sidebar({ workspace, user, unread, balance, isSuperAdmin }: { wo
             <LogOut className="size-4" /> Sair
           </button>
         </form>
-        <div className="mt-2 px-3 text-[10px] text-zinc-600">versão {process.env.NEXT_PUBLIC_VERSION}</div>
+        <Link href="/novidades" title={`build ${process.env.NEXT_PUBLIC_VERSION}`} className="mt-2 block px-3 text-[11px] text-zinc-500 hover:text-brand-400">
+          v{APP_VERSION} · novidades
+        </Link>
       </div>
     </aside>
   );
