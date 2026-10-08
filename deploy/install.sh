@@ -35,7 +35,12 @@ id ubuntu >/dev/null 2>&1 && usermod -aG docker ubuntu || true
 
 # Codigo
 if [ ! -d "$DIR/.git" ]; then
-  git clone --branch "$BRANCH" "https://x-access-token:${GITHUB_TOKEN}@github.com/${REPO}.git" "$DIR"
+  if [[ "$GITHUB_TOKEN" == github_pat_* || "$GITHUB_TOKEN" == ghp_* ]]; then
+    git clone --branch "$BRANCH" "https://x-access-token:${GITHUB_TOKEN}@github.com/${REPO}.git" "$DIR"
+  else
+    # Sem token: so funciona com o repositorio publico
+    git clone --branch "$BRANCH" "https://github.com/${REPO}.git" "$DIR"
+  fi
 fi
 cd "$DIR"
 
