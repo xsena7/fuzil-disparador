@@ -6,7 +6,7 @@ import { prisma } from "@/lib/db";
 import { Card, Field, Input, PageHeader, Table, Td } from "@/components/ui";
 import { ActionForm, ConfirmButton } from "@/components/action-form";
 import { PixelBug } from "@/components/pixel-bug";
-import { deleteBugAction, setBugStatusAction } from "@/app/actions/bugs";
+import { deleteBugAction, resendBugDiscordAction, setBugStatusAction } from "@/app/actions/bugs";
 import { adminCreateWorkspaceAction, adminSavePlatformAction, adminTestEmailAction, saveDiscordAction, testDiscordAction, testErrorsDiscordAction } from "@/app/actions/misc";
 import { DISCORD_CHANNELS } from "@/lib/alert-channels";
 import { platformDiscordHooks } from "@/lib/alerts";
@@ -55,7 +55,13 @@ export default async function AdminPage() {
               <p className="whitespace-pre-wrap text-sm text-zinc-800">{b.message}</p>
               <div className="mt-3 flex flex-wrap items-center gap-2">
                 {b.screenshotUrl && <a href={b.screenshotUrl} target="_blank" rel="noreferrer" className="text-xs font-medium text-brand-600 hover:underline">Ver print</a>}
+                {b.discordSent ? (
+                  <span className="text-xs text-emerald-700">✓ chegou no Discord</span>
+                ) : (
+                  <span className="text-xs text-rose-600">✗ não chegou no Discord{b.discordError ? `: ${b.discordError}` : ""}</span>
+                )}
                 <span className="flex-1" />
+                {!b.discordSent && <ConfirmButton action={resendBugDiscordAction.bind(null, b.id)} className="px-2.5 py-1 text-xs">Reenviar pro Discord</ConfirmButton>}
                 <ConfirmButton action={setBugStatusAction.bind(null, b.id, b.status === "OPEN")} className="px-2.5 py-1 text-xs">{b.status === "OPEN" ? "Marcar resolvido" : "Reabrir"}</ConfirmButton>
                 <ConfirmButton action={deleteBugAction.bind(null, b.id)} variant="ghost" confirm="Apagar esse relato?" className="px-2.5 py-1 text-xs">Apagar</ConfirmButton>
               </div>
@@ -134,10 +140,15 @@ export default async function AdminPage() {
           Os clientes não veem isso. No Discord: abra o canal → ⚙️ Editar canal → Integrações → Webhooks → Novo webhook → Copiar URL do webhook, e cole abaixo.
           Canal em branco = o aviso vai para o #geral.
         </p>
+        {Object.values(discordHooks).filter(Boolean).length === 0 && (
+          <p className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+            Nenhum canal configurado: hoje <b>nada</b> está indo pro Discord (alertas e bugs). Cole pelo menos o webhook do #geral e salve.
+          </p>
+        )}
         <ActionForm action={saveDiscordAction} submit="Salvar canais">
           <div className="grid gap-4 md:grid-cols-2">
             {DISCORD_CHANNELS.map((c) => (
-              <Field key={c.key} label={c.label} hint={c.hint}>
+              <Field key={c.key} label={<>{c.label} {discordHooks[c.key] ? <span className="text-xs font-normal text-emerald-600">✓ configurado</span> : <span className="text-xs font-normal text-zinc-400">vazio</span>}</>} hint={c.hint}>
                 <Input name={c.key} defaultValue={discordHooks[c.key] ?? ""} placeholder="https://discord.com/api/webhooks/..." autoComplete="off" />
               </Field>
             ))}

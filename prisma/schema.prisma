@@ -522,6 +522,9 @@ model BugReport {
   pagePath      String?
   userAgent     String?
   screenshotUrl String?
+  // Se o aviso chegou no Discord (e o motivo, se não chegou)
+  discordSent   Boolean   @default(false)
+  discordError  String?
   status        BugStatus @default(OPEN)
   resolvedAt    DateTime?
   createdAt     DateTime  @default(now())

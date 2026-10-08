@@ -2,6 +2,15 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "1.10",
+    date: "08/10/2026",
+    items: [
+      "Corrigido: bug reportado não ia pro Discord quando não existia canal #bugs nem #geral. Agora tenta #bugs → #geral → #erros → qualquer canal configurado",
+      "Admin → Bugs reportados mostra se cada relato chegou no Discord (e o motivo, se não chegou), com botão \"Reenviar pro Discord\"",
+      "Admin → Avisos no Discord mostra quais canais estão configurados e avisa quando nada está indo pro Discord",
+    ],
+  },
+  {
     version: "1.9",
     date: "08/10/2026",
     items: ["Botão de reportar bug menor e mais discreto no canto da tela (cresce só ao passar o mouse)"],

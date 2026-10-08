@@ -7,11 +7,16 @@ export function isDiscordWebhook(url: string) {
   return /^https:\/\/(?:ptb\.|canary\.)?discord(?:app)?\.com\/api\/webhooks\/\d+\/[\w-]+/.test(url.trim());
 }
 
-export async function sendDiscord(
-  url: string | null | undefined,
-  embed: { title: string; description?: string; color?: number; url?: string; image?: string; fields?: Array<{ name: string; value: string; inline?: boolean }> },
-): Promise<boolean> {
-  if (!url || !isDiscordWebhook(url)) return false;
+export type DiscordEmbed = { title: string; description?: string; color?: number; url?: string; image?: string; fields?: Array<{ name: string; value: string; inline?: boolean }> };
+
+export async function sendDiscord(url: string | null | undefined, embed: DiscordEmbed): Promise<boolean> {
+  return (await sendDiscordDetailed(url, embed)).ok;
+}
+
+/** Igual ao sendDiscord, mas diz POR QUE não foi (sem canal, link inválido, Discord recusou...). */
+export async function sendDiscordDetailed(url: string | null | undefined, embed: DiscordEmbed): Promise<{ ok: boolean; error?: string }> {
+  if (!url) return { ok: false, error: "nenhum canal do Discord configurado" };
+  if (!isDiscordWebhook(url)) return { ok: false, error: "link do webhook inválido" };
   const clip = (s: string, n: number) => (s.length > n ? `${s.slice(0, n - 1)}…` : s);
   try {
     const res = await fetch(url.trim(), {
@@ -35,8 +40,18 @@ export async function sendDiscord(
       }),
       signal: AbortSignal.timeout(10_000),
     });
-    return res.ok;
-  } catch {
-    return false;
+    if (res.ok) return { ok: true };
+    const body = (await res.text().catch(() => "")).slice(0, 200);
+    const reason =
+      res.status === 404 ? "o webhook foi apagado no Discord (crie outro e cole de novo)" :
+      res.status === 401 || res.status === 403 ? "o Discord recusou o webhook" :
+      res.status === 429 ? "muitas mensagens seguidas (o Discord pediu para esperar)" :
+      `o Discord respondeu ${res.status}${body ? `: ${body}` : ""}`;
+    console.error("[discord]", reason);
+    return { ok: false, error: reason };
+  } catch (e) {
+    const reason = `sem conexão com o Discord (${e instanceof Error ? e.message : String(e)})`;
+    console.error("[discord]", reason);
+    return { ok: false, error: reason };
   }
 }

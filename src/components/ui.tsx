@@ -56,7 +56,7 @@ export function Badge({ color = "gray", children, dot = true }: { color?: BadgeC
   );
 }
 
-export function Field({ label, hint, children }: { label: string; hint?: ReactNode; children: ReactNode }) {
+export function Field({ label, hint, children }: { label: ReactNode; hint?: ReactNode; children: ReactNode }) {
   return (
     <label className="block">
       <span className="mb-1.5 block text-sm font-medium text-zinc-700">{label}</span>
