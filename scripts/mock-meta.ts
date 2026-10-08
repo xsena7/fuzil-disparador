@@ -59,6 +59,12 @@ createServer(async (req, res) => {
   const [id, edge] = parts;
 
   if (id === "__sent") return json(res, 200, sent);
+  // Mídia recebida: GET /{media-id} devolve a URL; GET /download/{media-id} devolve os bytes (um PNG 1x1)
+  if (id?.startsWith("media") && !edge) return json(res, 200, { url: `http://localhost:${PORT}/v23.0/download/${id}`, mime_type: id.includes("audio") ? "audio/ogg" : "image/png", id });
+  if (id === "download") {
+    res.writeHead(200, { "Content-Type": edge?.includes("audio") ? "audio/ogg" : "image/png" });
+    return res.end(Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==", "base64"));
+  }
   if (id === "oauth") return json(res, 200, { access_token: "mock-business-token" });
 
   const waba = wabas[id];

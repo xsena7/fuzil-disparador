@@ -13,8 +13,10 @@ import { CampaignStatusBadge } from "@/components/status";
 import { ConfirmButton } from "@/components/action-form";
 import {
   cancelCampaignAction, deleteCampaignAction, duplicateCampaignAction, pauseCampaignAction, resumeCampaignAction,
-  retryFailedAction, saveContentStepAction, saveTemplateStepAction, startCampaignAction,
+  retryFailedAction, saveAutoReplyAction, saveContentStepAction, saveTemplateStepAction, startCampaignAction,
 } from "@/app/actions/campaigns";
+import { ActionForm } from "@/components/action-form";
+import { Zap } from "lucide-react";
 import { StepTemplate, type TemplateOption } from "./step-template";
 import { StepContent } from "./step-content";
 import { StepAudience, type AudienceStats } from "./step-audience";
@@ -72,7 +74,12 @@ export default async function CampaignPage({ params, searchParams }: { params: P
         </nav>
         <div className="min-w-0 flex-1 p-8">
           {step === "template" && <TemplateStep campaignId={id} workspaceId={auth.workspace.id} locked={started} />}
-          {step === "conteudo" && <ContentStep campaignId={id} locked={started} />}
+          {step === "conteudo" && (
+            <>
+              <ContentStep campaignId={id} locked={started} />
+              <AutoReplyCard campaignId={id} />
+            </>
+          )}
           {step === "audiencia" && (
             <AudienceStep campaignId={id} fileName={campaign.audienceFileName} stats={campaign.audienceStats as unknown as AudienceStats | null} locked={started} />
           )}
@@ -81,6 +88,7 @@ export default async function CampaignPage({ params, searchParams }: { params: P
             <>
               {["RUNNING", "SCHEDULED"].includes(campaign.status) && <AutoRefresh />}
               <Metrics campaignId={id} />
+              <AutoReplyCard campaignId={id} />
             </>
           )}
         </div>
@@ -207,5 +215,50 @@ async function SendStep({ campaignId }: { campaignId: string }) {
         <p className="text-zinc-500">Campanha já iniciada. Acompanhe em <Link href={`/campanhas/${campaignId}?etapa=metricas`} className="underline">Métricas</Link>.</p>
       )}
     </div>
+  );
+}
+
+/** Resposta automática: enviada uma vez, na hora, quando o contato responde a esta campanha. */
+async function AutoReplyCard({ campaignId }: { campaignId: string }) {
+  const [c, sent] = await Promise.all([
+    prisma.campaign.findUniqueOrThrow({ where: { id: campaignId } }),
+    prisma.campaignRecipient.count({ where: { campaignId, autoReplySentAt: { not: null } } }),
+  ]);
+  return (
+    <Card className="mt-6 p-5">
+      <div className="mb-1 flex items-center gap-2 font-semibold">
+        <Zap className="size-4 text-violet-500" /> Resposta automática
+        {c.autoReplyEnabled ? <Badge color="green">Ativa</Badge> : <Badge color="gray">Desligada</Badge>}
+        {sent > 0 && <span className="ml-auto text-xs font-normal text-zinc-500">{sent.toLocaleString("pt-BR")} enviadas</span>}
+      </div>
+      <p className="mb-4 text-sm text-zinc-500">
+        Quando o cliente responder este disparo, o Fuzil manda esta mensagem na hora, pelo mesmo número (uma vez por contato). Não precisa de template: a resposta do cliente abre a janela de 24h.
+        Use <code className="rounded bg-zinc-100 px-1">{"{{primeiro_nome}}"}</code> ou <code className="rounded bg-zinc-100 px-1">{"{{nome}}"}</code> para personalizar. Quem responde SAIR não recebe.
+      </p>
+      <ActionForm action={saveAutoReplyAction.bind(null, campaignId)} submit="Salvar resposta automática">
+        <label className="mb-3 flex items-center gap-2 text-sm font-medium">
+          <input type="checkbox" name="enabled" defaultChecked={c.autoReplyEnabled} /> Ativar resposta automática
+        </label>
+        <textarea
+          name="text"
+          defaultValue={c.autoReplyText ?? ""}
+          rows={4}
+          placeholder={"Ex.: Oi {{primeiro_nome}}! Recebemos sua mensagem 😊\nPara acompanhar seu pedido, acesse: https://..."}
+          className="w-full rounded-xl border border-zinc-200 bg-white px-3.5 py-2.5 text-sm shadow-soft outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+        />
+        <div className="mt-3 flex flex-wrap items-center gap-3 text-sm">
+          <label className="text-zinc-600">
+            Anexo (opcional: imagem, vídeo, áudio ou PDF){" "}
+            <input type="file" name="media" accept="image/jpeg,image/png,video/mp4,audio/mpeg,audio/ogg,audio/aac,audio/mp4,application/pdf" className="mt-1 block text-xs" />
+          </label>
+          {c.autoReplyMediaUrl && (
+            <span className="flex items-center gap-3 rounded-lg bg-zinc-50 px-3 py-1.5 text-xs ring-1 ring-zinc-200/70">
+              <a href={c.autoReplyMediaUrl} target="_blank" rel="noreferrer" className="font-medium text-brand-600 hover:underline">{c.autoReplyMediaName ?? "anexo atual"}</a>
+              <label className="flex items-center gap-1 text-zinc-500"><input type="checkbox" name="removeMedia" /> remover</label>
+            </span>
+          )}
+        </div>
+      </ActionForm>
+    </Card>
   );
 }

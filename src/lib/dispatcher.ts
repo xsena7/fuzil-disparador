@@ -9,6 +9,7 @@ import { addCredits, tryDebit } from "./credits";
 import { buildSendComponents, type TComponent, type VariableMapping } from "./template-utils";
 import { metaErrorLabel, RETRYABLE_CODES, SENDER_FATAL_CODES, TEMPLATE_FATAL_CODES } from "./meta-errors";
 import { formatPhone } from "./phone";
+import { recordCampaignSends, renderCampaignText } from "./chat";
 
 export const TICK_MS = 2000;
 const DEFAULT_RATE = 20; // msgs/s por número
@@ -323,6 +324,7 @@ export async function runCampaignTick(campaignId: string) {
           refund += (items.length - offset) * price;
           break;
         }
+        const sentNow: Array<{ phone: string; name: string | null; wamid: string; text: string }> = [];
         await Promise.all(
           chunk.map(async (r) => {
             if (templateFatal || fatalSenders.has(sender.phoneId)) {
@@ -337,6 +339,7 @@ export async function runCampaignTick(campaignId: string) {
                   where: { id: r.id },
                   data: { status: "SENT", wamid: out.wamid, senderId: sender.phoneId, sentAt: new Date(), creditsCharged: price, errorCode: null, errorTitle: null },
                 });
+                sentNow.push({ phone: r.phone, name: r.name, wamid: out.wamid, text: renderCampaignText(sender.template.components, campaign, r) });
                 break;
               case "retry":
                 refund += price;
@@ -369,6 +372,8 @@ export async function runCampaignTick(campaignId: string) {
             }
           }),
         );
+        // Mostra os disparos no Chat (em lote, sem travar o envio)
+        await recordCampaignSends(campaign.workspaceId, campaign.id, sender.phoneId, sentNow).catch((e) => console.error("[dispatcher] chat", e));
         const elapsed = Date.now() - t0;
         if (offset + rate < items.length && elapsed < 1000) await sleep(1000 - elapsed);
       }

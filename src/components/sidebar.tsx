@@ -3,7 +3,7 @@
 import clsx from "clsx";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bell, Building2, GraduationCap, Coins, FileText, Home, Layers, LogOut, Megaphone, Settings, Shield, Sparkles } from "lucide-react";
+import { Bell, Building2, GraduationCap, MessagesSquare, Coins, FileText, Home, Layers, LogOut, Megaphone, Settings, Shield, Sparkles } from "lucide-react";
 import { logoutAction } from "@/app/actions/auth";
 import { Logo } from "./brand";
 import { APP_VERSION } from "@/version";
@@ -14,6 +14,7 @@ const sections = [
     items: [
       { href: "/", label: "Início", icon: Home },
       { href: "/campanhas", label: "Campanhas", icon: Megaphone },
+      { href: "/chat", label: "Chat", icon: MessagesSquare },
       { href: "/alertas", label: "Alertas", icon: Bell },
     ],
   },
@@ -39,7 +40,7 @@ const sections = [
   },
 ];
 
-export function Sidebar({ workspace, user, unread, balance, isSuperAdmin }: { workspace: string; user: string; unread: number; balance: number; isSuperAdmin: boolean }) {
+export function Sidebar({ workspace, user, unread, chatUnread = 0, balance, isSuperAdmin }: { workspace: string; user: string; unread: number; chatUnread?: number; balance: number; isSuperAdmin: boolean }) {
   const path = usePathname();
   const all = isSuperAdmin ? [...sections, { title: "Plataforma", items: [{ href: "/admin", label: "Admin", icon: Shield }] }] : sections;
   return (
@@ -75,6 +76,9 @@ export function Sidebar({ workspace, user, unread, balance, isSuperAdmin }: { wo
                     {active && <span className="absolute inset-y-2 left-0 w-1 rounded-full bg-brand-gradient" />}
                     <Icon className={clsx("size-4", active ? "text-brand-400" : "text-zinc-500 group-hover:text-zinc-300")} />
                     <span className="flex-1">{label}</span>
+                    {href === "/chat" && chatUnread > 0 && (
+                      <span className="rounded-full bg-emerald-500 px-1.5 text-[11px] font-semibold text-white">{chatUnread}</span>
+                    )}
                     {href === "/alertas" && unread > 0 && (
                       <span className="rounded-full bg-brand-gradient px-1.5 text-[11px] font-semibold text-white">{unread}</span>
                     )}

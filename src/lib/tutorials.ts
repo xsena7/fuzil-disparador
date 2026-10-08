@@ -12,7 +12,7 @@ export type Tutorial = {
   slug: string;
   title: string;
   summary: string;
-  icon: "rocket" | "building" | "layers" | "file" | "sparkles" | "megaphone" | "chart" | "bell" | "coins" | "settings" | "shield" | "help";
+  icon: "rocket" | "building" | "layers" | "file" | "sparkles" | "megaphone" | "chart" | "chat" | "bell" | "coins" | "settings" | "shield" | "help";
   /** Página do painel a que o tutorial se refere */
   href?: string;
   minutes: number;
@@ -182,6 +182,7 @@ export const TUTORIALS: Tutorial[] = [
       },
       { kind: "image", src: "/tutoriais/campanha-envio.png", caption: "Etapa Envio: custo, capacidade das BMs e opções de segurança." },
       { kind: "tip", text: "Se o limite de 24h das BMs acabar no meio da campanha, ela NÃO para: fica \"aguardando limite\" e continua sozinha quando liberar. Se o saldo acabar, ela pausa; coloque créditos e clique em Retomar." },
+      { kind: "tip", text: "Quer responder sozinho quem responder o disparo? Ative a Resposta automática na etapa Conteúdo (veja o tutorial do Chat)." },
       { kind: "text", text: "Durante o disparo dá para Pausar, Retomar ou Cancelar pela tela da campanha. Depois de concluída, use \"Reenviar falhas\" para tentar de novo quem falhou por erro temporário." },
     ],
   },
@@ -209,6 +210,33 @@ export const TUTORIALS: Tutorial[] = [
       },
       { kind: "tip", text: "Em \"Exportar relatório (CSV)\" você baixa a lista completa com o status de cada pessoa (dá para abrir no Excel)." },
       { kind: "text", text: "Bloqueios: a Meta não informa quem bloqueou. Eles aparecem como \"não entregue\", junto com números sem WhatsApp." },
+    ],
+  },
+  {
+    slug: "chat",
+    title: "Chat e resposta automática",
+    summary: "Responder clientes, ver os disparos de cada contato e responder sozinho quando o cliente fala.",
+    icon: "chat",
+    href: "/chat",
+    minutes: 4,
+    blocks: [
+      { kind: "text", text: "Tudo o que os clientes respondem aos seus disparos chega no Chat, em tempo real. Você responde pelo mesmo número que enviou a mensagem, e vê na conversa o disparo que a pessoa recebeu." },
+      { kind: "image", src: "/tutoriais/chat.png", caption: "Chat: números à esquerda, conversas no meio, a conversa aberta e o painel do contato com os disparos que ele recebeu." },
+      {
+        kind: "steps",
+        items: [
+          "À esquerda, escolha um grupo ou um número para ver só as conversas dele (o número vermelho mostra quantas não lidas).",
+          "Abas: \"Respondidas\" mostra só quem falou com você; \"Todas\" inclui quem só recebeu o disparo.",
+          "Abra a conversa e escreva embaixo. Enter envia, Shift+Enter quebra a linha. O clipe anexa imagem, vídeo, áudio ou PDF.",
+          "Digite / para usar uma resposta rápida (cadastre as suas no raio ⚡ ao lado do campo).",
+          "\"Assumir\" marca que você está atendendo. \"Finalizar\" tira a conversa da lista; se o cliente falar de novo, ela volta sozinha.",
+        ],
+      },
+      { kind: "warn", text: "Janela de 24h (regra da Meta): você só pode mandar mensagem livre até 24h depois da última mensagem do cliente. O relógio verde no topo da conversa mostra quanto tempo falta. Depois disso, só dá para mandar template (botão \"Enviar template\")." },
+      { kind: "text", text: "Resposta automática: em cada campanha (etapa Conteúdo ou Métricas) você pode deixar uma mensagem que é enviada sozinha, na hora, quando o cliente responde ao disparo. Ela vai uma única vez por contato e pode ter imagem, vídeo, áudio ou PDF." },
+      { kind: "image", src: "/tutoriais/campanha-resposta-automatica.png", caption: "Resposta automática na campanha: dá para ligar, desligar e mudar o texto a qualquer momento, até com a campanha rodando." },
+      { kind: "tip", text: "Use {{primeiro_nome}} na resposta automática para chamar o cliente pelo nome. Quem responde SAIR não recebe a resposta automática e é descadastrado." },
+      { kind: "tip", text: "Nova conversa: o botão laranja ao lado da busca inicia uma conversa com qualquer número, começando por um template aprovado." },
     ],
   },
   {

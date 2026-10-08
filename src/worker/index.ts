@@ -58,6 +58,8 @@ async function housekeeping() {
   // Sessões vencidas e eventos de webhook antigos (já processados)
   await prisma.session.deleteMany({ where: { expiresAt: { lt: new Date() } } });
   await prisma.webhookEvent.deleteMany({ where: { createdAt: { lt: new Date(Date.now() - 3 * 86400_000) } } });
+  // Chat: conversas que são só disparo (cliente nunca respondeu) somem depois de 45 dias
+  await prisma.conversation.deleteMany({ where: { hasInbound: false, lastMessageAt: { lt: new Date(Date.now() - 45 * 86400_000) } } });
 }
 
 async function main() {

@@ -75,6 +75,8 @@ model Workspace {
   inbound           InboundMessage[]
   blueprints        TemplateBlueprint[]
   campaignFolders   CampaignFolder[]
+  conversations     Conversation[]
+  quickReplies      QuickReply[]
 }
 
 model Membership {
@@ -195,6 +197,7 @@ model PhoneNumber {
   waba               WhatsAppAccount @relation(fields: [wabaId], references: [id], onDelete: Cascade)
   recipients         CampaignRecipient[]
   inbound            InboundMessage[]
+  conversations      Conversation[]
 }
 
 model BmGroup {
@@ -327,6 +330,12 @@ model Campaign {
   audienceStats    Json?
   // Pasta (gaveta) onde a campanha foi guardada; nulo = lista principal
   folderId         String?
+  // Resposta automática: enviada uma vez quando o contato responde a esta campanha
+  autoReplyEnabled   Boolean           @default(false)
+  autoReplyText      String?
+  autoReplyMediaUrl  String?
+  autoReplyMediaType String? // IMAGE, VIDEO, AUDIO, DOCUMENT
+  autoReplyMediaName String?
   createdAt        DateTime            @default(now())
   updatedAt        DateTime            @updatedAt
   workspace        Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
@@ -366,6 +375,7 @@ model CampaignRecipient {
   repliedAt     DateTime?
   optedOutAt    DateTime?
   creditsCharged Int            @default(0)
+  autoReplySentAt DateTime?
   attempts      Int             @default(0)
   queuedAt      DateTime?
   sentAt        DateTime?
@@ -530,4 +540,71 @@ model BugReport {
   createdAt     DateTime  @default(now())
 
   @@index([status, createdAt])
+}
+
+enum ConversationStatus {
+  OPEN // aguardando atendimento
+  ATTENDING // alguém está atendendo
+  CLOSED // finalizada
+}
+
+// Conversa = um contato falando com UM dos nossos números
+model Conversation {
+  id             String             @id @default(cuid())
+  workspaceId    String
+  phoneId        String
+  contactPhone   String
+  contactName    String?
+  status         ConversationStatus @default(OPEN)
+  unread         Int                @default(0)
+  hasInbound     Boolean            @default(false)
+  lastMessageAt  DateTime           @default(now())
+  lastMessageText String?
+  lastDirection  String? // IN | OUT
+  lastInboundAt  DateTime? // abre a janela de 24h para mensagem livre
+  assignedUserId String?
+  closedAt       DateTime?
+  createdAt      DateTime           @default(now())
+  workspace      Workspace          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  phone          PhoneNumber        @relation(fields: [phoneId], references: [id], onDelete: Cascade)
+  messages       ChatMessage[]
+
+  @@unique([phoneId, contactPhone])
+  @@index([workspaceId, lastMessageAt])
+  @@index([workspaceId, hasInbound, lastMessageAt])
+}
+
+model ChatMessage {
+  id             String       @id @default(cuid())
+  conversationId String
+  workspaceId    String
+  direction      String // IN | OUT
+  kind           String // text, template, image, audio, video, document, sticker, location, button, reaction, contacts, unknown
+  text           String?
+  mediaId        String? // id da mídia na Meta (recebida)
+  mediaUrl       String? // url pública da mídia que enviamos
+  mediaMime      String?
+  mediaName      String?
+  wamid          String?      @unique
+  status         String? // pending, sent, delivered, read, failed
+  error          String?
+  source         String // CAMPAIGN | AUTO_REPLY | AGENT | CUSTOMER
+  campaignId     String?
+  senderUserId   String?
+  createdAt      DateTime     @default(now())
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
+}
+
+// Respostas rápidas do chat (atalho "/")
+model QuickReply {
+  id          String    @id @default(cuid())
+  workspaceId String
+  shortcut    String
+  text        String
+  createdAt   DateTime  @default(now())
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, shortcut])
 }

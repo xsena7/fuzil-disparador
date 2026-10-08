@@ -5,6 +5,7 @@ import { env } from "./env";
 import { createAlert } from "./alerts";
 import { onCategoryChanged, onStatusChanged, syncWaba } from "./sync";
 import { metaErrorLabel } from "./meta-errors";
+import { applyChatStatus, ingestInbound, maybeAutoReply } from "./chat";
 
 export function verifySignature(raw: string, header: string | null): boolean {
   const secret = env.metaAppSecret();
@@ -80,6 +81,7 @@ async function handleMessages(value: any, workspaceIds: string[]) {
   const phoneNumberId: string | undefined = value.metadata?.phone_number_id;
 
   for (const st of value.statuses ?? []) {
+    await applyChatStatus(st).catch((e) => console.error("[webhook] chat status", e));
     const r = await prisma.campaignRecipient.findUnique({ where: { wamid: st.id } });
     if (!r) continue;
     const at = new Date(Number(st.timestamp) * 1000);
@@ -106,7 +108,8 @@ async function handleMessages(value: any, workspaceIds: string[]) {
     const from: string = msg.from;
     const text: string | null =
       msg.text?.body ?? msg.button?.text ?? msg.interactive?.button_reply?.title ?? msg.interactive?.list_reply?.title ?? null;
-    const phone = phoneNumberId ? await prisma.phoneNumber.findUnique({ where: { phoneNumberId } }) : null;
+    const phone = phoneNumberId ? await prisma.phoneNumber.findUnique({ where: { phoneNumberId }, include: { waba: true } }) : null;
+    const contactName: string | null = value.contacts?.find((c: any) => c.wa_id === from)?.profile?.name ?? null;
 
     // Liga a resposta à última campanha enviada pra esse contato
     const recipient = await prisma.campaignRecipient.findFirst({
@@ -144,6 +147,16 @@ async function handleMessages(value: any, workspaceIds: string[]) {
         where: { id: recipient.id },
         data: { repliedAt: recipient.repliedAt ?? new Date(), ...(optOut ? { optedOutAt: new Date() } : {}) },
       });
+    }
+
+    // Chat: grava a mensagem na conversa e dispara a resposta automática da campanha (se tiver)
+    if (phone) {
+      try {
+        const conv = await ingestInbound(phone.waba.workspaceId, phone, msg, contactName);
+        if (conv && !optOut && msg.type !== "reaction") await maybeAutoReply(conv.id, recipient);
+      } catch (e) {
+        console.error("[webhook] chat", e);
+      }
     }
   }
 }

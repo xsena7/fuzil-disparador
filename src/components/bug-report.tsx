@@ -1,5 +1,6 @@
 "use client";
 
+import clsx from "clsx";
 import { useRef, useState, useTransition } from "react";
 import { usePathname } from "next/navigation";
 import { ImagePlus, X } from "lucide-react";
@@ -46,7 +47,7 @@ export function BugReportButton() {
     <>
       {!open && <button
         onClick={() => setOpen(true)}
-        className="group fixed bottom-4 right-4 z-40 flex items-center gap-1 rounded-xl bg-white/90 p-1.5 opacity-70 shadow-soft ring-1 ring-zinc-200 backdrop-blur transition hover:opacity-100 hover:ring-brand-300"
+        className={clsx("group fixed right-4 z-40 flex items-center gap-1 rounded-xl bg-white/90 p-1.5 opacity-70 shadow-soft ring-1 ring-zinc-200 backdrop-blur transition hover:opacity-100 hover:ring-brand-300", path.startsWith("/chat") ? "bottom-28" : "bottom-4")}
         aria-label="Reportar bug"
         title="Reportar bug"
       >

@@ -86,6 +86,7 @@ export async function saveContentStepAction(id: string, _: FormState, form: Form
   const data: Prisma.CampaignUpdateInput = { variableMapping: mapping, buttonUrl };
   const file = form.get("media");
   if (file instanceof File && file.size > 0) {
+    if (!/^(image\/(jpeg|png)|video\/mp4|application\/pdf)$/.test(file.type)) return { error: "Cabeçalho aceita só JPG, PNG, MP4 ou PDF." };
     try {
       const saved = await saveUpload(file);
       data.headerMediaUrl = saved.url;
@@ -256,4 +257,26 @@ export async function quickDuplicateCampaignAction(id: string) {
     },
   });
   revalidatePath("/campanhas");
+}
+
+/** Resposta automática da campanha (pode mudar a qualquer momento, até com a campanha rodando). */
+export async function saveAutoReplyAction(campaignId: string, _: FormState, form: FormData): Promise<FormState> {
+  const { c } = await ownCampaign(campaignId);
+  const enabled = form.get("enabled") === "on";
+  const text = String(form.get("text") ?? "").replace(/\r\n/g, "\n").trim().slice(0, 4096);
+  const data: Prisma.CampaignUpdateInput = { autoReplyEnabled: enabled, autoReplyText: text || null };
+  if (form.get("removeMedia") === "on") Object.assign(data, { autoReplyMediaUrl: null, autoReplyMediaType: null, autoReplyMediaName: null });
+  const file = form.get("media");
+  if (file instanceof File && file.size > 0) {
+    try {
+      const saved = await saveUpload(file);
+      Object.assign(data, { autoReplyMediaUrl: saved.url, autoReplyMediaType: mediaKind(saved.mime), autoReplyMediaName: saved.name });
+    } catch (err) {
+      return { error: err instanceof Error ? err.message : String(err) };
+    }
+  }
+  const hasMedia = data.autoReplyMediaUrl !== undefined ? Boolean(data.autoReplyMediaUrl) : Boolean(c.autoReplyMediaUrl);
+  if (enabled && !text && !hasMedia) return { error: "Escreva a mensagem ou anexe um arquivo para ativar." };
+  await prisma.campaign.update({ where: { id: c.id }, data });
+  return { ok: enabled ? "Resposta automática ativada" : "Resposta automática desligada" };
 }

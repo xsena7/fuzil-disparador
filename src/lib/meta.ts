@@ -216,6 +216,48 @@ export const meta = {
     });
   },
 
+  /** Mensagem livre (só dentro da janela de 24h depois que o contato falou com a gente). */
+  sendText(token: string, phoneNumberId: string, to: string, body: string, replyTo?: string) {
+    return graph<{ messages: Array<{ id: string }> }>(token, "POST", `${phoneNumberId}/messages`, {
+      body: {
+        messaging_product: "whatsapp",
+        recipient_type: "individual",
+        to,
+        type: "text",
+        text: { body, preview_url: true },
+        ...(replyTo ? { context: { message_id: replyTo } } : {}),
+      },
+    });
+  },
+
+  /** Imagem, vídeo, áudio ou documento por link público. */
+  sendMedia(token: string, phoneNumberId: string, to: string, kind: "image" | "video" | "audio" | "document", link: string, caption?: string, filename?: string) {
+    const media: Record<string, string> = { link };
+    if (caption && kind !== "audio") media.caption = caption;
+    if (filename && kind === "document") media.filename = filename;
+    return graph<{ messages: Array<{ id: string }> }>(token, "POST", `${phoneNumberId}/messages`, {
+      body: { messaging_product: "whatsapp", recipient_type: "individual", to, type: kind, [kind]: media },
+    });
+  },
+
+  /** Marca a mensagem recebida como lida (os tracinhos azuis para o cliente). */
+  markRead(token: string, phoneNumberId: string, wamid: string) {
+    return graph<{ success: boolean }>(token, "POST", `${phoneNumberId}/messages`, {
+      body: { messaging_product: "whatsapp", status: "read", message_id: wamid },
+    });
+  },
+
+  /** URL temporária de uma mídia recebida. */
+  getMedia(token: string, mediaId: string) {
+    return graph<{ url: string; mime_type: string; file_size?: number }>(token, "GET", mediaId);
+  },
+
+  async downloadMedia(token: string, url: string): Promise<Buffer> {
+    const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(60_000) });
+    if (!res.ok) throw new MetaError(`Falha ao baixar mídia (${res.status})`, null, null, res.status);
+    return Buffer.from(await res.arrayBuffer());
+  },
+
   // -------------------------------------------------------------------------
   // Embedded Signup
   // -------------------------------------------------------------------------
