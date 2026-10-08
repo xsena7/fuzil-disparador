@@ -207,7 +207,7 @@ async function sendOne(sender: Sender, campaign: Campaign, r: CampaignRecipient)
     return { kind: "sent", wamid };
   } catch (err) {
     if (err instanceof MetaError) {
-      const title = metaErrorLabel(err.code) + (err.message ? ` — ${err.message}` : "");
+      const title = metaErrorLabel(err.code) + (err.code !== null ? ` (código ${err.code})` : "") + (err.message ? ` — ${err.message}` : "");
       if (err.code !== null && SENDER_FATAL_CODES.has(err.code)) return { kind: "sender_fatal", code: err.code, title };
       if (err.code !== null && TEMPLATE_FATAL_CODES.has(err.code)) return { kind: "template_fatal", code: err.code, title };
       if ((err.code !== null && RETRYABLE_CODES.has(err.code)) || err.httpStatus >= 500) return { kind: "retry", code: err.code };

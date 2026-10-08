@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireAuth, requireSuperAdmin, hashPassword, switchSessionWorkspace } from "@/lib/auth";
+import { requireAuth, requireSuperAdmin, hashPassword, verifyPassword, switchSessionWorkspace } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { randomToken } from "@/lib/crypto";
 import { createPasswordLink } from "@/lib/password-tokens";
@@ -27,6 +27,38 @@ export async function saveSettingsAction(_: FormState, form: FormData): Promise<
   });
   revalidatePath("/", "layout");
   return { ok: "Configurações salvas" };
+}
+
+// ---------------- Meu perfil ----------------
+
+export async function saveProfileAction(_: FormState, form: FormData): Promise<FormState> {
+  const auth = await requireAuth();
+  const name = String(form.get("name") ?? "").trim();
+  const email = String(form.get("email") ?? "").trim().toLowerCase();
+  const current = String(form.get("currentPassword") ?? "");
+  if (name.length < 2) return { error: "Informe seu nome" };
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { error: "E-mail inválido" };
+  const user = await prisma.user.findUniqueOrThrow({ where: { id: auth.user.id } });
+  if (email !== user.email) {
+    if (!current || !(await verifyPassword(current, user.passwordHash))) return { error: "Para trocar o e-mail, digite sua senha atual." };
+    if (await prisma.user.findUnique({ where: { email } })) return { error: "Esse e-mail já está em uso por outro usuário." };
+  }
+  await prisma.user.update({ where: { id: user.id }, data: { name, email } });
+  revalidatePath("/", "layout");
+  return { ok: email !== user.email ? `Dados salvos. Agora você entra com ${email}.` : "Dados salvos" };
+}
+
+export async function changePasswordAction(_: FormState, form: FormData): Promise<FormState> {
+  const auth = await requireAuth();
+  const current = String(form.get("currentPassword") ?? "");
+  const next = String(form.get("newPassword") ?? "");
+  const confirm = String(form.get("confirmPassword") ?? "");
+  if (next.length < 8) return { error: "A nova senha precisa ter pelo menos 8 caracteres" };
+  if (next !== confirm) return { error: "A confirmação não bate com a nova senha" };
+  const user = await prisma.user.findUniqueOrThrow({ where: { id: auth.user.id } });
+  if (!(await verifyPassword(current, user.passwordHash))) return { error: "Senha atual incorreta" };
+  await prisma.user.update({ where: { id: user.id }, data: { passwordHash: await hashPassword(next) } });
+  return { ok: "Senha alterada" };
 }
 
 export async function addMemberAction(_: FormState, form: FormData): Promise<FormState> {
@@ -124,10 +156,10 @@ export async function adminSavePlatformAction(_: FormState, form: FormData): Pro
 // ---------------- Discord ----------------
 
 export async function saveDiscordAction(_: FormState, form: FormData): Promise<FormState> {
-  const auth = await requireAuth();
-  if (auth.role === "MEMBER") return { error: "Sem permissão" };
+  await requireSuperAdmin();
   const { DISCORD_CHANNELS } = await import("@/lib/alert-channels");
   const { isDiscordWebhook } = await import("@/lib/discord");
+  const { savePlatformSetting, refreshPlatformSettings } = await import("@/lib/platform-settings");
   const hooks: Record<string, string> = {};
   for (const c of DISCORD_CHANNELS) {
     const v = String(form.get(c.key) ?? "").trim();
@@ -135,25 +167,25 @@ export async function saveDiscordAction(_: FormState, form: FormData): Promise<F
     if (!isDiscordWebhook(v)) return { error: `O link de ${c.label} não parece um webhook do Discord (começa com https://discord.com/api/webhooks/...)` };
     hooks[c.key] = v;
   }
-  await prisma.workspace.update({ where: { id: auth.workspace.id }, data: { discordWebhooks: hooks } });
-  revalidatePath("/configuracoes");
+  await savePlatformSetting("DISCORD_CHANNELS", JSON.stringify(hooks));
+  await refreshPlatformSettings();
+  revalidatePath("/admin");
   return { ok: "Canais do Discord salvos" };
 }
 
 export async function testDiscordAction(): Promise<FormState> {
-  const auth = await requireAuth();
+  await requireSuperAdmin();
   const { DISCORD_CHANNELS } = await import("@/lib/alert-channels");
   const { sendDiscord, DISCORD_COLORS } = await import("@/lib/discord");
-  const ws = await prisma.workspace.findUniqueOrThrow({ where: { id: auth.workspace.id } });
-  const hooks = (ws.discordWebhooks ?? {}) as Record<string, string>;
+  const { platformDiscordHooks } = await import("@/lib/alerts");
+  const hooks = ((await platformDiscordHooks()) ?? {}) as Record<string, string>;
   const results: string[] = [];
   for (const c of DISCORD_CHANNELS) {
     if (!hooks[c.key]) continue;
     const ok = await sendDiscord(hooks[c.key], {
       title: `✅ Canal ${c.label} conectado`,
-      description: `A partir de agora chegam aqui: ${c.hint.toLowerCase()}.`,
+      description: `A partir de agora chegam aqui, de todas as contas: ${c.hint.toLowerCase()}.\n\nCada aviso vem explicado: **o que significa**, **o que fazer** e se é 🔴 urgente, 🟡 atenção ou 🟢 só aviso.`,
       color: DISCORD_COLORS.SUCCESS,
-      fields: [{ name: "Conta", value: ws.name, inline: true }],
     });
     results.push(`${c.label} ${ok ? "✓" : "✗ falhou"}`);
   }

@@ -1,90 +1,79 @@
 import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { env, metaConfigured, trackedUrlBase } from "@/lib/env";
-import { Badge, Card, Field, Input, PageHeader, Table, Td } from "@/components/ui";
+import { Card, Field, Input, PageHeader, Table, Td } from "@/components/ui";
 import { ActionForm } from "@/components/action-form";
-import { addMemberAction, saveDiscordAction, saveSettingsAction, testDiscordAction } from "@/app/actions/misc";
-import { DISCORD_CHANNELS } from "@/lib/alert-channels";
+import { addMemberAction, changePasswordAction, saveProfileAction, saveSettingsAction } from "@/app/actions/misc";
 
 export const dynamic = "force-dynamic";
+
+const ROLE: Record<string, string> = { OWNER: "Dono", ADMIN: "Admin", MEMBER: "Membro" };
 
 export default async function SettingsPage() {
   const auth = await requireAuth();
   const [ws, members] = await Promise.all([
     prisma.workspace.findUniqueOrThrow({ where: { id: auth.workspace.id } }),
-    prisma.membership.findMany({ where: { workspaceId: auth.workspace.id }, include: { user: true } }),
+    prisma.membership.findMany({ where: { workspaceId: auth.workspace.id }, include: { user: true }, orderBy: { role: "asc" } }),
   ]);
-  const checks = [
-    { label: "App da Meta (META_APP_ID / META_APP_SECRET)", ok: metaConfigured() },
-    { label: "Embedded Signup (META_CONFIG_ID)", ok: Boolean(env.metaConfigId()) },
-    { label: "Token do Tech Provider (META_SYSTEM_USER_TOKEN)", ok: Boolean(env.metaSystemToken()) },
-    { label: "Token de verificação do webhook", ok: Boolean(env.metaVerifyToken()) },
-    { label: "Painel com HTTPS (APP_URL)", ok: env.appUrl().startsWith("https://") },
-  ];
+  const canManage = auth.role !== "MEMBER";
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
-      <PageHeader title="Configurações" />
+      <PageHeader title="Configurações" description="Seus dados de acesso e as preferências da conta." />
 
-      <Card className="p-5">
-        <div className="mb-4 font-semibold">Conta</div>
-        <ActionForm action={saveSettingsAction} submit="Salvar">
-          <div className="grid gap-4 md:grid-cols-2">
-            <Field label="Nome da conta"><Input name="name" defaultValue={ws.name} /></Field>
-          </div>
-          <label className="mt-4 flex items-start gap-2.5 text-sm">
-            <input type="checkbox" name="emailAlerts" defaultChecked={ws.emailAlerts} className="mt-0.5" />
-            <span>
-              <b>Receber alertas críticos por e-mail</b>
-              <span className="block text-zinc-500">Só os extremos: template virou marketing, número banido ou com qualidade vermelha, campanha pausada por erro. Vai para os donos e admins da conta.</span>
-            </span>
-          </label>
-        </ActionForm>
-      </Card>
+      {!auth.inspecting && (
+        <div className="grid gap-6 md:grid-cols-2">
+          <Card className="p-5">
+            <div className="mb-4 font-semibold">Meus dados</div>
+            <ActionForm action={saveProfileAction} submit="Salvar">
+              <div className="space-y-4">
+                <Field label="Nome"><Input name="name" defaultValue={auth.user.name} required /></Field>
+                <Field label="E-mail de acesso"><Input name="email" type="email" defaultValue={auth.user.email} required /></Field>
+                <Field label="Senha atual" hint="Só precisa se for trocar o e-mail.">
+                  <Input name="currentPassword" type="password" autoComplete="current-password" />
+                </Field>
+              </div>
+            </ActionForm>
+          </Card>
 
-      <Card className="p-5">
-        <div className="mb-1 font-semibold">Avisos no Discord</div>
-        <p className="mb-4 text-sm text-zinc-500">
-          Cada canal recebe um tipo de aviso. No Discord: abra o canal → ⚙️ Editar canal → Integrações → Webhooks → Novo webhook → Copiar URL do webhook, e cole abaixo.
-          Canal em branco = o aviso vai para o #geral.
-        </p>
-        <ActionForm action={saveDiscordAction} submit="Salvar canais">
-          <div className="grid gap-4 md:grid-cols-2">
-            {DISCORD_CHANNELS.map((c) => (
-              <Field key={c.key} label={c.label} hint={c.hint}>
-                <Input name={c.key} defaultValue={((ws.discordWebhooks ?? {}) as Record<string, string>)[c.key] ?? ""} placeholder="https://discord.com/api/webhooks/..." autoComplete="off" />
-              </Field>
-            ))}
-          </div>
-        </ActionForm>
-        <ActionForm action={testDiscordAction} submit="Enviar mensagem de teste nos canais" variant="secondary" />
-      </Card>
+          <Card className="p-5">
+            <div className="mb-4 font-semibold">Trocar senha</div>
+            <ActionForm action={changePasswordAction} submit="Trocar senha">
+              <div className="space-y-4">
+                <Field label="Senha atual"><Input name="currentPassword" type="password" autoComplete="current-password" required /></Field>
+                <Field label="Nova senha" hint="Pelo menos 8 caracteres."><Input name="newPassword" type="password" autoComplete="new-password" minLength={8} required /></Field>
+                <Field label="Repita a nova senha"><Input name="confirmPassword" type="password" autoComplete="new-password" minLength={8} required /></Field>
+              </div>
+            </ActionForm>
+          </Card>
+        </div>
+      )}
 
-      <Card className="p-5">
-        <div className="mb-4 font-semibold">Integração com a Meta</div>
-        <div className="mb-4 space-y-2">
-          {checks.map((c) => (
-            <div key={c.label} className="flex items-center justify-between">
-              <span>{c.label}</span>
-              <Badge color={c.ok ? "green" : "yellow"}>{c.ok ? "OK" : "Pendente"}</Badge>
+      {canManage && (
+        <Card className="p-5">
+          <div className="mb-4 font-semibold">Conta</div>
+          <ActionForm action={saveSettingsAction} submit="Salvar">
+            <div className="grid gap-4 md:grid-cols-2">
+              <Field label="Nome da conta"><Input name="name" defaultValue={ws.name} /></Field>
             </div>
-          ))}
-        </div>
-        <div className="space-y-2 rounded-lg bg-zinc-50 p-4 text-xs">
-          <div>Webhook: <b>não precisa mudar o webhook do app</b>. Ao conectar cada BM, o Fuzil inscreve a WABA com a URL própria <code className="font-semibold">{env.appUrl()}/api/webhook</code>.</div>
-          <div>Domínio a liberar no app (Domínios do app e Facebook Login for Business): <code className="font-semibold">{env.appUrl().replace(/^https?:\/\//, "")}</code></div>
-          <div>URL dos botões rastreados (para aprovar templates): <code className="font-semibold">https://{trackedUrlBase()}/{"{{1}}"}</code></div>
-        </div>
-      </Card>
+            <label className="mt-4 flex items-start gap-2.5 text-sm">
+              <input type="checkbox" name="emailAlerts" defaultChecked={ws.emailAlerts} className="mt-0.5" />
+              <span>
+                <b>Receber alertas críticos por e-mail</b>
+                <span className="block text-zinc-500">Só os extremos: template virou marketing, número banido ou com qualidade vermelha, campanha pausada por erro. Vai para os donos e admins da conta.</span>
+              </span>
+            </label>
+          </ActionForm>
+        </Card>
+      )}
 
       <Card className="p-5">
         <div className="mb-4 font-semibold">Usuários da conta</div>
         <Table head={["Nome", "E-mail", "Papel"]}>
           {members.map((m) => (
-            <tr key={m.id}><Td>{m.user.name}</Td><Td>{m.user.email}</Td><Td>{m.role}</Td></tr>
+            <tr key={m.id}><Td>{m.user.name}</Td><Td>{m.user.email}</Td><Td>{ROLE[m.role] ?? m.role}</Td></tr>
           ))}
         </Table>
-        {auth.role !== "MEMBER" && (
+        {canManage && (
           <ActionForm action={addMemberAction} submit="Enviar convite" className="mt-4">
             <div className="grid gap-4 md:grid-cols-2">
               <Field label="Nome"><Input name="name" required /></Field>

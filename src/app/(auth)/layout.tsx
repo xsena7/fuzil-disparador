@@ -1,5 +1,6 @@
 import { CheckCircle2 } from "lucide-react";
 import { Logo } from "@/components/brand";
+import { CursorGlow } from "@/components/cursor-glow";
 
 const points = [
   "Disparo distribuído entre vários números e BMs",
@@ -34,6 +35,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           {children}
         </div>
       </div>
+      <CursorGlow />
     </div>
   );
 }

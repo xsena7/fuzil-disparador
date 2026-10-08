@@ -6,6 +6,7 @@ import { Empty, PageHeader } from "@/components/ui";
 import { ConfirmButton } from "@/components/action-form";
 import { markAlertsReadAction } from "@/app/actions/misc";
 import { EnableBrowserNotifications } from "@/components/alert-toaster";
+import { explainAlert } from "@/lib/explain";
 
 export const dynamic = "force-dynamic";
 
@@ -34,6 +35,7 @@ export default async function AlertsPage({ searchParams }: { searchParams: Promi
       <div className="space-y-2">
         {alerts.map((a) => {
           const Icon = icon[a.severity];
+          const ex = a.severity === "INFO" ? null : explainAlert(a);
           return (
             <div key={a.id} className={clsx("flex gap-3 rounded-xl border bg-white p-4", a.severity === "CRITICAL" ? "border-red-200" : a.severity === "WARNING" ? "border-amber-200" : "border-zinc-200", !a.readAt && "shadow-sm")}>
               <Icon className={clsx("mt-0.5 size-5 shrink-0", a.severity === "CRITICAL" ? "text-red-600" : a.severity === "WARNING" ? "text-amber-600" : "text-sky-600")} />
@@ -43,6 +45,9 @@ export default async function AlertsPage({ searchParams }: { searchParams: Promi
                   {!a.readAt && <span className="size-2 rounded-full bg-red-500" />}
                 </div>
                 <p className="text-zinc-600">{a.message}</p>
+                {ex && ex.urgency !== "INFO" && (
+                  <p className="mt-1.5 text-sm text-zinc-500"><b className="text-zinc-700">O que fazer:</b> {ex.action}</p>
+                )}
               </div>
               <span className="shrink-0 text-xs text-zinc-400">{a.createdAt.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}</span>
             </div>

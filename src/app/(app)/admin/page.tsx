@@ -5,7 +5,9 @@ import { listAccounts } from "@/lib/admin-accounts";
 import { prisma } from "@/lib/db";
 import { Card, Field, Input, PageHeader, Table, Td } from "@/components/ui";
 import { ActionForm } from "@/components/action-form";
-import { adminCreateWorkspaceAction, adminSavePlatformAction, adminTestEmailAction, testErrorsDiscordAction } from "@/app/actions/misc";
+import { adminCreateWorkspaceAction, adminSavePlatformAction, adminTestEmailAction, saveDiscordAction, testDiscordAction, testErrorsDiscordAction } from "@/app/actions/misc";
+import { DISCORD_CHANNELS } from "@/lib/alert-channels";
+import { platformDiscordHooks } from "@/lib/alerts";
 import { LinkButton } from "@/components/ui";
 import { ScrollText } from "lucide-react";
 import { emailConfigured } from "@/lib/email";
@@ -18,10 +20,12 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminPage() {
   const auth = await requireSuperAdmin();
-  const [accounts, orphans] = await Promise.all([
+  const [accounts, orphans, hooks] = await Promise.all([
     listAccounts(auth.user.id),
     prisma.user.findMany({ where: { memberships: { none: {} } }, orderBy: { createdAt: "desc" } }),
+    platformDiscordHooks(),
   ]);
+  const discordHooks = (hooks ?? {}) as Record<string, string>;
   return (
     <div className="mx-auto max-w-6xl space-y-6">
       <PageHeader title="Admin da plataforma" description="Contas de clientes, integrações e logs." actions={<LinkButton href="/admin/logs" variant="secondary"><ScrollText className="size-4" /> Logs do sistema</LinkButton>} />
@@ -91,9 +95,28 @@ export default async function AdminPage() {
       </Card>
 
       <Card className="p-5">
+        <div className="mb-1 font-semibold">Avisos no Discord (todas as contas)</div>
+        <p className="mb-4 text-sm text-zinc-500">
+          Os avisos de todas as contas chegam nesses canais, com o nome da conta e explicados: o que significa, o que fazer e se é urgente.
+          Os clientes não veem isso. No Discord: abra o canal → ⚙️ Editar canal → Integrações → Webhooks → Novo webhook → Copiar URL do webhook, e cole abaixo.
+          Canal em branco = o aviso vai para o #geral.
+        </p>
+        <ActionForm action={saveDiscordAction} submit="Salvar canais">
+          <div className="grid gap-4 md:grid-cols-2">
+            {DISCORD_CHANNELS.map((c) => (
+              <Field key={c.key} label={c.label} hint={c.hint}>
+                <Input name={c.key} defaultValue={discordHooks[c.key] ?? ""} placeholder="https://discord.com/api/webhooks/..." autoComplete="off" />
+              </Field>
+            ))}
+          </div>
+        </ActionForm>
+        <ActionForm action={testDiscordAction} submit="Enviar mensagem de teste nos canais" variant="secondary" />
+      </Card>
+
+      <Card className="p-5">
         <div className="mb-1 font-semibold">Discord #erros</div>
         <p className="mb-2 text-sm text-zinc-500">
-          Cole o webhook do canal de erros no campo &quot;Webhook do Discord para erros do sistema&quot; (em Integração, acima) e salve. Os avisos de campanhas, templates, qualidade e limites ficam em Configurações.
+          Cole o webhook do canal de erros no campo &quot;Webhook do Discord para erros do sistema&quot; (em Integração, acima) e salve. Os avisos de campanhas, templates, qualidade e limites ficam no card acima.
         </p>
         <ActionForm action={testErrorsDiscordAction} submit="Testar canal #erros" variant="secondary" />
       </Card>

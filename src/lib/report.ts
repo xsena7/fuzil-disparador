@@ -1,6 +1,7 @@
 import { prisma } from "./db";
 import { env } from "./env";
 import { DISCORD_COLORS, sendDiscord } from "./discord";
+import { explainSystemError, URGENCY_LABEL } from "./explain";
 
 const recent = new Map<string, number>();
 
@@ -22,15 +23,16 @@ export async function reportError(source: string, err: unknown, ctx: { path?: st
   const last = recent.get(key) ?? 0;
   if (Date.now() - last < 10 * 60_000) return;
   recent.set(key, Date.now());
+  const ex = explainSystemError(source, message, detail);
   await sendDiscord(env.discordErrorsWebhook(), {
-    title: `❌ Erro no ${source === "web" ? "site" : source}`,
-    description: "```\n" + message + "\n```",
-    color: DISCORD_COLORS.ERROR,
+    title: `${ex.urgency === "URGENTE" ? "🚨" : ex.urgency === "ATENCAO" ? "⚠️" : "ℹ️"} Erro ${source === "web" ? "no site" : source === "worker" ? "no motor de disparo" : source === "webhook" ? "nos eventos da Meta" : `no ${source}`}`,
+    description: [`**${URGENCY_LABEL[ex.urgency]}**`, "", `**O que significa:** ${ex.meaning}`, `**O que fazer:** ${ex.action}`].join("\n"),
+    color: ex.urgency === "URGENTE" ? DISCORD_COLORS.ERROR : ex.urgency === "ATENCAO" ? DISCORD_COLORS.WARNING : DISCORD_COLORS.INFO,
     url: `${env.appUrl()}/admin/logs`,
     fields: [
-      ...(ctx.path ? [{ name: "Página / rota", value: ctx.path, inline: true }] : []),
+      ...(ctx.path ? [{ name: "Onde", value: ctx.path, inline: true }] : []),
       ...(ctx.digest ? [{ name: "Código (digest)", value: ctx.digest, inline: true }] : []),
-      ...(detail ? [{ name: "Detalhe", value: "```\n" + detail.slice(0, 900) + "\n```" }] : []),
+      { name: "Detalhe técnico (para o suporte)", value: "```\n" + [message, detail].filter(Boolean).join("\n").slice(0, 900) + "\n```" },
     ],
   });
 }

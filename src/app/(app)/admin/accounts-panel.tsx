@@ -2,6 +2,7 @@
 
 import { Fragment, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { createPortal } from "react-dom";
 import clsx from "clsx";
 import {
   Ban,
@@ -212,17 +213,37 @@ export function AccountsPanel({ accounts, selfId }: { accounts: AccountRow[]; se
 
 function AccountMenu({ account: a, onDialog, onFlash }: { account: AccountRow; onDialog: (d: Dialog) => void; onFlash: (f: { text: string; error?: boolean }) => void }) {
   const [open, setOpen] = useState(false);
+  const [pos, setPos] = useState<{ top?: number; bottom?: number; left: number; maxHeight: number }>({ left: 0, maxHeight: 400 });
   const [pending, start] = useTransition();
   const router = useRouter();
   const ref = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   const owner = a.users.find((u) => u.role === "OWNER") ?? a.users[0];
 
   useEffect(() => {
     if (!open) return;
-    const close = (e: MouseEvent) => !ref.current?.contains(e.target as Node) && setOpen(false);
+    const close = (e: MouseEvent) => !ref.current?.contains(e.target as Node) && !menuRef.current?.contains(e.target as Node) && setOpen(false);
+    const hide = () => setOpen(false);
     document.addEventListener("mousedown", close);
-    return () => document.removeEventListener("mousedown", close);
+    window.addEventListener("scroll", hide, true);
+    window.addEventListener("resize", hide);
+    return () => {
+      document.removeEventListener("mousedown", close);
+      window.removeEventListener("scroll", hide, true);
+      window.removeEventListener("resize", hide);
+    };
   }, [open]);
+
+  // O menu flutua por cima da página (não é cortado pela tabela); abre para cima se não couber embaixo
+  const toggleMenu = () => {
+    if (open) return setOpen(false);
+    const r = ref.current!.getBoundingClientRect();
+    const left = Math.max(8, r.right - 256);
+    const below = window.innerHeight - r.bottom - 12;
+    const above = r.top - 12;
+    setPos(below >= 340 || below >= above ? { top: r.bottom + 4, left, maxHeight: below } : { bottom: window.innerHeight - r.top + 4, left, maxHeight: above });
+    setOpen(true);
+  };
 
   const pick = (fn: () => void) => () => { setOpen(false); fn(); };
   const run = (fn: () => Promise<{ ok?: string; error?: string } | void>) =>
@@ -235,11 +256,11 @@ function AccountMenu({ account: a, onDialog, onFlash }: { account: AccountRow; o
   const item = "flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-sm hover:bg-zinc-100 disabled:opacity-40 disabled:hover:bg-transparent";
   return (
     <div ref={ref} className="relative">
-      <button onClick={() => setOpen(!open)} className={clsx("rounded-lg p-1.5 text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700", pending && "animate-pulse")} aria-label="Ações da conta">
+      <button onClick={toggleMenu} className={clsx("rounded-lg p-1.5 text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700", open && "bg-zinc-100 text-zinc-700", pending && "animate-pulse")} aria-label="Ações da conta">
         <MoreVertical className="size-4" />
       </button>
-      {open && (
-        <div className="animate-fade-up absolute right-0 top-9 z-20 w-60 rounded-xl border border-zinc-200 bg-white p-1.5 shadow-lift">
+      {open && createPortal(
+        <div ref={menuRef} style={{ position: "fixed", ...pos }} className="animate-fade-up z-50 w-64 overflow-y-auto rounded-xl border border-zinc-200 bg-white p-1.5 shadow-lift">
           <button className={item} disabled={a.isMine} onClick={run(() => adminEnterWorkspaceAction(a.id))}><Eye className="size-4 text-brand-500" /> Entrar na conta</button>
           <button
             className={item}
@@ -265,7 +286,8 @@ function AccountMenu({ account: a, onDialog, onFlash }: { account: AccountRow; o
           <button className={clsx(item, "text-rose-600 hover:bg-rose-50")} disabled={a.isMine} title={a.isMine ? "Esta é a sua conta" : undefined} onClick={pick(() => onDialog({ kind: "delete", account: a }))}>
             <Trash2 className="size-4" /> Excluir conta
           </button>
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );

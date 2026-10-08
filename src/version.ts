@@ -2,6 +2,18 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "1.5",
+    date: "08/10/2026",
+    items: [
+      "Discord explicado: cada aviso diz o que significa, o que fazer e se é 🔴 urgente, 🟡 atenção ou 🟢 só aviso (detalhe técnico fica embaixo, para o suporte)",
+      "Canais do Discord agora ficam no Admin e recebem os avisos de todas as contas, com o nome da conta",
+      "Configurações simplificada para o cliente: meus dados (nome e e-mail), trocar senha, nome da conta, alertas por e-mail e usuários. Discord e Meta só no Admin",
+      "Alertas no painel mostram \"O que fazer\" nos avisos importantes",
+      "Admin → Contas: o menu ⋮ não fica mais cortado (abre por cima da tela)",
+      "Brilho laranja suave acompanhando o mouse",
+    ],
+  },
+  {
     version: "1.4",
     date: "08/10/2026",
     items: [
