@@ -71,8 +71,8 @@ export default async function SettingsPage() {
           ))}
         </div>
         <div className="space-y-2 rounded-lg bg-zinc-50 p-4 text-xs">
-          <div>URL do webhook (cole no app da Meta): <code className="font-semibold">{env.appUrl()}/api/webhook</code></div>
-          <div>Campos do webhook a assinar: <code>messages, message_template_status_update, template_category_update, message_template_quality_update, phone_number_quality_update, phone_number_name_update, account_update, account_review_update, business_capability_update</code></div>
+          <div>Webhook: <b>não precisa mudar o webhook do app</b>. Ao conectar cada BM, o Fuzil inscreve a WABA com a URL própria <code className="font-semibold">{env.appUrl()}/api/webhook</code>.</div>
+          <div>Domínio a liberar no app (Domínios do app e Facebook Login for Business): <code className="font-semibold">{env.appUrl().replace(/^https?:\/\//, "")}</code></div>
           <div>URL dos botões rastreados (para aprovar templates): <code className="font-semibold">https://{trackedUrlBase()}/{"{{1}}"}</code></div>
         </div>
       </Card>

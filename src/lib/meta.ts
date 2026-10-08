@@ -139,8 +139,14 @@ export const meta = {
     });
   },
 
-  subscribeApp(token: string, wabaId: string) {
-    return graph<{ success: boolean }>(token, "POST", `${wabaId}/subscribed_apps`);
+  /**
+   * Inscreve o app na WABA. Com `override`, os eventos DESSA WABA vão para a nossa URL,
+   * sem mexer no webhook padrão do app (que pode estar sendo usado por outro sistema).
+   */
+  subscribeApp(token: string, wabaId: string, override?: { callbackUrl: string; verifyToken: string }) {
+    return graph<{ success: boolean }>(token, "POST", `${wabaId}/subscribed_apps`, {
+      body: override ? { override_callback_uri: override.callbackUrl, verify_token: override.verifyToken } : undefined,
+    });
   },
 
   registerPhone(token: string, phoneNumberId: string, pin: string) {

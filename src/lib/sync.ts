@@ -25,6 +25,7 @@ export function qualityLabel(q?: string | null) {
 export async function syncWaba(wabaRecordId: string) {
   const waba = await prisma.whatsAppAccount.findUniqueOrThrow({ where: { id: wabaRecordId }, include: { business: true } });
   const token = wabaToken(waba);
+  if (!waba.webhookSubscribed && waba.lastSyncedAt) await ensureWebhook(waba.id).catch(() => undefined);
   try {
     const info = await meta.getWaba(token, waba.wabaId);
     await prisma.whatsAppAccount.update({
@@ -279,13 +280,33 @@ export async function connectWaba(input: {
     });
   }
 
-  const token = wabaToken(waba);
-  try {
-    await meta.subscribeApp(token, waba.wabaId);
-    await prisma.whatsAppAccount.update({ where: { id: waba.id }, data: { webhookSubscribed: true } });
-  } catch (err) {
-    console.warn("[connect] não foi possível inscrever o app no webhook da WABA", err);
-  }
+  await ensureWebhook(waba.id);
   await syncWaba(waba.id);
   return waba;
+}
+
+/** Inscreve o webhook da WABA (com URL própria do Fuzil). Avisa se não conseguir. */
+export async function ensureWebhook(wabaRecordId: string) {
+  const waba = await prisma.whatsAppAccount.findUniqueOrThrow({ where: { id: wabaRecordId }, include: { business: true } });
+  const override =
+    env.appUrl().startsWith("https://") && env.metaVerifyToken()
+      ? { callbackUrl: `${env.appUrl()}/api/webhook`, verifyToken: env.metaVerifyToken() }
+      : undefined;
+  try {
+    await meta.subscribeApp(wabaToken(waba), waba.wabaId, override);
+    await prisma.whatsAppAccount.update({ where: { id: waba.id }, data: { webhookSubscribed: true } });
+    return true;
+  } catch (err) {
+    if (waba.webhookSubscribed !== false || !waba.lastSyncedAt) {
+      await createAlert({
+        workspaceId: waba.workspaceId,
+        type: "SYNC_ERROR",
+        severity: "WARNING",
+        title: `Webhook não inscrito: ${waba.business.name} / ${waba.name}`,
+        message: `Sem o webhook, entregas, leituras, respostas e recategorizações dessa WABA não chegam ao painel. Erro: ${err instanceof Error ? err.message : err}`,
+      });
+    }
+    await prisma.whatsAppAccount.update({ where: { id: waba.id }, data: { webhookSubscribed: false } });
+    return false;
+  }
 }

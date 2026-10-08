@@ -2,6 +2,14 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "1.2",
+    date: "08/10/2026",
+    items: [
+      "Webhook por WABA: ao conectar uma BM, os eventos dela vêm direto para o Fuzil sem mexer no webhook padrão do app (dá para dividir o app do Tech Provider com outro sistema)",
+      "Se a inscrição do webhook falhar, o painel avisa e tenta de novo sozinho na próxima sincronização",
+    ],
+  },
+  {
     version: "1.1",
     date: "08/10/2026",
     items: [

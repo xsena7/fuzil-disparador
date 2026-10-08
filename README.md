@@ -95,7 +95,7 @@ No painel, em **Admin → Integração com a Meta** (não precisa mexer no servi
 
 No app da Meta:
 
-1. **Webhook** (WhatsApp → Configuração): use a URL de callback e o token de verificação que aparecem na tela Admin. Assine os campos: `messages`, `message_template_status_update`, `template_category_update`, `message_template_quality_update`, `phone_number_quality_update`, `phone_number_name_update`, `account_update`, `account_review_update`, `business_capability_update`.
+1. **Webhook**: não precisa alterar o webhook padrão do app (ele pode continuar apontando para outro sistema). Ao conectar cada BM, o Fuzil inscreve a WABA com uma URL própria (`override_callback_uri`) e recebe os eventos só dela. Se o app for exclusivo do Fuzil, também pode usar a URL e o token que aparecem na tela Admin. Assine os campos: `messages`, `message_template_status_update`, `template_category_update`, `message_template_quality_update`, `phone_number_quality_update`, `phone_number_name_update`, `account_update`, `account_review_update`, `business_capability_update`.
 2. **Domínios permitidos** do Facebook Login for Business: adicione `app.fuzildisparador.com.br` (é por ele que roda o Embedded Signup).
 
 A tela **Configurações** do painel mostra o que já está configurado e o que falta.
