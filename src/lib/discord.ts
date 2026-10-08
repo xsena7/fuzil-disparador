@@ -9,7 +9,7 @@ export function isDiscordWebhook(url: string) {
 
 export async function sendDiscord(
   url: string | null | undefined,
-  embed: { title: string; description?: string; color?: number; url?: string; fields?: Array<{ name: string; value: string; inline?: boolean }> },
+  embed: { title: string; description?: string; color?: number; url?: string; image?: string; fields?: Array<{ name: string; value: string; inline?: boolean }> },
 ): Promise<boolean> {
   if (!url || !isDiscordWebhook(url)) return false;
   const clip = (s: string, n: number) => (s.length > n ? `${s.slice(0, n - 1)}…` : s);
@@ -26,6 +26,7 @@ export async function sendDiscord(
             description: embed.description ? clip(embed.description, 3900) : undefined,
             color: embed.color ?? DISCORD_COLORS.INFO,
             url: embed.url,
+            image: embed.image ? { url: embed.image } : undefined,
             fields: embed.fields?.slice(0, 10).map((f) => ({ ...f, name: clip(f.name, 250), value: clip(f.value || "—", 1000) })),
             timestamp: new Date().toISOString(),
             footer: { text: "Fuzil Disparador" },

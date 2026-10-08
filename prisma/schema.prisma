@@ -504,3 +504,27 @@ model SystemLog {
 
   @@index([createdAt])
 }
+
+enum BugStatus {
+  OPEN
+  RESOLVED
+}
+
+// Bug reportado pelo cliente (botão do bichinho no canto da tela)
+model BugReport {
+  id            String    @id @default(cuid())
+  userId        String?
+  userName      String
+  userEmail     String
+  workspaceId   String?
+  workspaceName String
+  message       String
+  pagePath      String?
+  userAgent     String?
+  screenshotUrl String?
+  status        BugStatus @default(OPEN)
+  resolvedAt    DateTime?
+  createdAt     DateTime  @default(now())
+
+  @@index([status, createdAt])
+}

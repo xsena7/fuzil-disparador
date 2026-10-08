@@ -6,6 +6,7 @@ export const DISCORD_CHANNELS = [
   { key: "quality", label: "#qualidade", hint: "Qualidade dos números, número sinalizado/banido, problemas na WABA" },
   { key: "limits", label: "#limites", hint: "BM bateu o limite, limite liberado, mudança de tier" },
   { key: "general", label: "#geral", hint: "Todo o resto (e o que não tiver canal próprio configurado)" },
+  { key: "bugs", label: "#bugs", hint: "Bugs reportados pelos clientes no botão do bichinho (canto da tela)" },
 ] as const;
 
 export type ChannelKey = (typeof DISCORD_CHANNELS)[number]["key"];

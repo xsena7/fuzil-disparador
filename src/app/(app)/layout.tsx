@@ -5,6 +5,7 @@ import { AlertToaster } from "@/components/alert-toaster";
 import { backToMyWorkspaceAction } from "@/app/actions/misc";
 import { Eye } from "lucide-react";
 import { CursorGlow } from "@/components/cursor-glow";
+import { BugReportButton } from "@/components/bug-report";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const auth = await requireAuth();
@@ -24,6 +25,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       </main>
       <AlertToaster />
       <CursorGlow />
+      <BugReportButton />
     </div>
   );
 }

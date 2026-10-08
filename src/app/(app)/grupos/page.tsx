@@ -87,7 +87,7 @@ export default async function GroupsPage() {
         <div className="mb-4 font-semibold">Novo grupo</div>
         <ActionForm action={saveGroupAction} submit="Criar grupo">
           <div className="mb-4 grid gap-4 md:grid-cols-2">
-            <Field label="Nome"><Input name="name" placeholder="Ex.: Grupo Felipe" required /></Field>
+            <Field label="Nome"><Input name="name" placeholder="Ex.: Disparos principais" required /></Field>
             <Field label="Descrição"><Input name="description" /></Field>
           </div>
           {bmCheckboxes([])}

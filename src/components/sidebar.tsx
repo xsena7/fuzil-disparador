@@ -3,7 +3,7 @@
 import clsx from "clsx";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bell, Building2, Coins, FileText, Home, Layers, LogOut, Megaphone, Settings, Shield, Sparkles } from "lucide-react";
+import { Bell, Building2, GraduationCap, Coins, FileText, Home, Layers, LogOut, Megaphone, Settings, Shield, Sparkles } from "lucide-react";
 import { logoutAction } from "@/app/actions/auth";
 import { Logo } from "./brand";
 import { APP_VERSION } from "@/version";
@@ -32,6 +32,10 @@ const sections = [
       { href: "/saldo", label: "Saldo", icon: Coins },
       { href: "/configuracoes", label: "Configurações", icon: Settings },
     ],
+  },
+  {
+    title: "Ajuda",
+    items: [{ href: "/tutoriais", label: "Tutoriais", icon: GraduationCap }],
   },
 ];
 

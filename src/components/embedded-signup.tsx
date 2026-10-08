@@ -116,7 +116,7 @@ export function EmbeddedSignup({ appId, configId, graphVersion }: { appId: strin
       </div>
       {!enabled && (
         <p className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-800">
-          Conexão automática indisponível: cole o App ID e o Config ID do Tech Provider em Admin → Integração com a Meta. Enquanto isso, use a configuração manual abaixo.
+          Conexão automática ainda não está liberada na plataforma. Enquanto isso, use a configuração manual abaixo.
         </p>
       )}
       {msg.error && <p className="mt-3 text-red-600">{msg.error}</p>}

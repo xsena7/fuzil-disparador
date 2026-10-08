@@ -4,7 +4,9 @@ import { AccountsPanel } from "./accounts-panel";
 import { listAccounts } from "@/lib/admin-accounts";
 import { prisma } from "@/lib/db";
 import { Card, Field, Input, PageHeader, Table, Td } from "@/components/ui";
-import { ActionForm } from "@/components/action-form";
+import { ActionForm, ConfirmButton } from "@/components/action-form";
+import { PixelBug } from "@/components/pixel-bug";
+import { deleteBugAction, setBugStatusAction } from "@/app/actions/bugs";
 import { adminCreateWorkspaceAction, adminSavePlatformAction, adminTestEmailAction, saveDiscordAction, testDiscordAction, testErrorsDiscordAction } from "@/app/actions/misc";
 import { DISCORD_CHANNELS } from "@/lib/alert-channels";
 import { platformDiscordHooks } from "@/lib/alerts";
@@ -25,11 +27,41 @@ export default async function AdminPage() {
     prisma.user.findMany({ where: { memberships: { none: {} } }, orderBy: { createdAt: "desc" } }),
     platformDiscordHooks(),
   ]);
+  const bugs = await prisma.bugReport.findMany({ orderBy: [{ status: "asc" }, { createdAt: "desc" }], take: 50 });
+  const openBugs = bugs.filter((b) => b.status === "OPEN").length;
   const discordHooks = (hooks ?? {}) as Record<string, string>;
   return (
     <div className="mx-auto max-w-6xl space-y-6">
       <PageHeader title="Admin da plataforma" description="Contas de clientes, integrações e logs." actions={<LinkButton href="/admin/logs" variant="secondary"><ScrollText className="size-4" /> Logs do sistema</LinkButton>} />
       <AccountsPanel accounts={accounts} selfId={auth.user.id} />
+
+      <Card className="p-5" id="bugs">
+        <div className="mb-1 flex items-center gap-3 font-semibold">
+          <PixelBug className="size-6" /> Bugs reportados
+          {openBugs > 0 ? <Badge color="red">{openBugs} em aberto</Badge> : <Badge color="green">Nada em aberto</Badge>}
+        </div>
+        <p className="mb-4 text-sm text-zinc-500">O que os clientes mandam pelo botão do bichinho no canto da tela. Também chega no Discord #bugs.</p>
+        {bugs.length === 0 && <p className="text-sm text-zinc-400">Nenhum bug reportado ainda.</p>}
+        <div className="space-y-2">
+          {bugs.map((b) => (
+            <div key={b.id} className={`rounded-xl border p-4 ${b.status === "OPEN" ? "border-amber-200 bg-amber-50/40" : "border-zinc-200 opacity-70"}`}>
+              <div className="mb-1 flex flex-wrap items-center gap-2 text-xs text-zinc-500">
+                <span className="font-mono font-semibold text-zinc-700">#{b.id.slice(-6).toUpperCase()}</span>
+                <span>{b.userName} ({b.userEmail}) · {b.workspaceName}</span>
+                {b.pagePath && <span>· página <code>{b.pagePath}</code></span>}
+                <span className="ml-auto">{b.createdAt.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}</span>
+              </div>
+              <p className="whitespace-pre-wrap text-sm text-zinc-800">{b.message}</p>
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                {b.screenshotUrl && <a href={b.screenshotUrl} target="_blank" rel="noreferrer" className="text-xs font-medium text-brand-600 hover:underline">Ver print</a>}
+                <span className="flex-1" />
+                <ConfirmButton action={setBugStatusAction.bind(null, b.id, b.status === "OPEN")} className="px-2.5 py-1 text-xs">{b.status === "OPEN" ? "Marcar resolvido" : "Reabrir"}</ConfirmButton>
+                <ConfirmButton action={deleteBugAction.bind(null, b.id)} variant="ghost" confirm="Apagar esse relato?" className="px-2.5 py-1 text-xs">Apagar</ConfirmButton>
+              </div>
+            </div>
+          ))}
+        </div>
+      </Card>
 
       <Card className="p-5">
         <div className="mb-4 font-semibold">Criar conta de cliente</div>

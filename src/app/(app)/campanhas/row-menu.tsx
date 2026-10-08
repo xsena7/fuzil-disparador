@@ -67,7 +67,7 @@ export function CampaignRowMenu({
           <button
             className={item}
             onClick={() => {
-              const n = window.prompt("Nome da nova pasta (ex.: Outubro, Felipe, Testes):");
+              const n = window.prompt("Nome da nova pasta (ex.: Outubro, Cliente X, Testes):");
               if (n?.trim()) run(() => createFolderAndMoveAction(id, n));
             }}
           >
