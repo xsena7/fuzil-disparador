@@ -1,0 +1,442 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Usuários, workspaces e sessões
+// ---------------------------------------------------------------------------
+
+model User {
+  id           String       @id @default(cuid())
+  email        String       @unique
+  name         String
+  passwordHash String
+  isSuperAdmin Boolean      @default(false)
+  createdAt    DateTime     @default(now())
+  memberships  Membership[]
+  sessions     Session[]
+}
+
+enum Role {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+model Workspace {
+  id                String              @id @default(cuid())
+  name              String
+  // Saldo em créditos (1 crédito = 1 mensagem por padrão)
+  creditBalance     Int                 @default(0)
+  creditsPerMessage Int                 @default(1)
+  telegramChatId    String?
+  // Exclui na Meta qualquer template que for recategorizado para marketing
+  autoDeleteMarketing Boolean           @default(false)
+  createdAt         DateTime            @default(now())
+  memberships       Membership[]
+  creditTxs         CreditTransaction[]
+  businesses        BusinessManager[]
+  wabas             WhatsAppAccount[]
+  groups            BmGroup[]
+  templates         Template[]
+  campaigns         Campaign[]
+  contacts          Contact[]
+  alerts            Alert[]
+  inbound           InboundMessage[]
+  blueprints        TemplateBlueprint[]
+}
+
+model Membership {
+  id          String    @id @default(cuid())
+  userId      String
+  workspaceId String
+  role        Role      @default(MEMBER)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, workspaceId])
+}
+
+model Session {
+  id          String   @id // hash sha256 do token
+  userId      String
+  workspaceId String
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+enum CreditTxType {
+  TOPUP
+  DEBIT
+  REFUND
+  ADJUST
+}
+
+model CreditTransaction {
+  id           String       @id @default(cuid())
+  workspaceId  String
+  type         CreditTxType
+  amount       Int // positivo = entrada, negativo = saída
+  balanceAfter Int
+  description  String
+  campaignId   String?
+  createdById  String?
+  createdAt    DateTime     @default(now())
+  workspace    Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, createdAt])
+}
+
+// ---------------------------------------------------------------------------
+// Meta: BMs, WABAs e números
+// ---------------------------------------------------------------------------
+
+model BusinessManager {
+  id                 String            @id @default(cuid())
+  workspaceId        String
+  metaBusinessId     String?
+  name               String
+  // Limite de mensagens do portfólio (ex.: TIER_250, TIER_2K, TIER_10K, TIER_100K, TIER_UNLIMITED)
+  messagingLimitTier String?
+  verificationStatus String?
+  notes              String?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  workspace          Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  wabas              WhatsAppAccount[]
+  groups             BmGroupMember[]
+
+  @@unique([workspaceId, metaBusinessId])
+}
+
+enum ConnectionType {
+  CLOUD_API
+  COEXISTENCE
+  MANUAL
+}
+
+model WhatsAppAccount {
+  id                   String          @id @default(cuid())
+  workspaceId          String
+  businessId           String
+  wabaId               String
+  name                 String
+  connectionType       ConnectionType  @default(MANUAL)
+  // Token criptografado (AES-256-GCM). Se nulo, usa META_SYSTEM_USER_TOKEN
+  accessTokenEnc       String?
+  currency             String?
+  timezoneId           String?
+  reviewStatus         String?
+  status               String? // ex.: ACTIVE, DISABLED, BANNED
+  webhookSubscribed    Boolean         @default(false)
+  lastSyncedAt         DateTime?
+  lastSyncError        String?
+  createdAt            DateTime        @default(now())
+  workspace            Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  business             BusinessManager @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  phones               PhoneNumber[]
+  templates            Template[]
+  deployments          TemplateDeployment[]
+
+  @@unique([workspaceId, wabaId])
+}
+
+model PhoneNumber {
+  id                 String          @id @default(cuid())
+  wabaId             String
+  phoneNumberId      String          @unique
+  displayPhoneNumber String
+  verifiedName       String?
+  qualityRating      String? // GREEN, YELLOW, RED, UNKNOWN
+  messagingLimitTier String?
+  status             String? // CONNECTED, FLAGGED, RESTRICTED, BANNED...
+  nameStatus         String?
+  throughputLevel    String?
+  isCoexistence      Boolean         @default(false)
+  // Permite tirar o número do rodízio sem desconectar
+  enabled            Boolean         @default(true)
+  isDefault          Boolean         @default(false)
+  lastSyncedAt       DateTime?
+  createdAt          DateTime        @default(now())
+  waba               WhatsAppAccount @relation(fields: [wabaId], references: [id], onDelete: Cascade)
+  recipients         CampaignRecipient[]
+  inbound            InboundMessage[]
+}
+
+model BmGroup {
+  id          String          @id @default(cuid())
+  workspaceId String
+  name        String
+  description String?
+  createdAt   DateTime        @default(now())
+  workspace   Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  members     BmGroupMember[]
+  campaigns   Campaign[]
+  blueprints  TemplateBlueprint[]
+}
+
+model BmGroupMember {
+  groupId    String
+  businessId String
+  group      BmGroup         @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  business   BusinessManager @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@id([groupId, businessId])
+}
+
+// ---------------------------------------------------------------------------
+// Templates
+// ---------------------------------------------------------------------------
+
+model Template {
+  id               String          @id @default(cuid())
+  workspaceId      String
+  wabaId           String
+  metaTemplateId   String?
+  name             String
+  language         String
+  category         String // UTILITY, MARKETING, AUTHENTICATION
+  previousCategory String?
+  status           String // APPROVED, PENDING, REJECTED, PAUSED, DISABLED...
+  rejectedReason   String?
+  qualityScore     String?
+  components       Json
+  lastSyncedAt     DateTime        @default(now())
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  workspace        Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  waba             WhatsAppAccount @relation(fields: [wabaId], references: [id], onDelete: Cascade)
+
+  @@unique([wabaId, name, language])
+  @@index([workspaceId, name, language])
+}
+
+// ---------------------------------------------------------------------------
+// Alertas
+// ---------------------------------------------------------------------------
+
+enum AlertSeverity {
+  INFO
+  WARNING
+  CRITICAL
+}
+
+model Alert {
+  id          String        @id @default(cuid())
+  workspaceId String
+  type        String // TEMPLATE_RECATEGORIZED, TEMPLATE_REJECTED, TEMPLATE_PAUSED, QUALITY_CHANGE, LIMIT_CHANGE, NUMBER_STATUS, CAMPAIGN_PAUSED, LOW_BALANCE
+  severity    AlertSeverity @default(INFO)
+  title       String
+  message     String
+  data        Json?
+  readAt      DateTime?
+  createdAt   DateTime      @default(now())
+  workspace   Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, createdAt])
+}
+
+// ---------------------------------------------------------------------------
+// Contatos e campanhas
+// ---------------------------------------------------------------------------
+
+model Contact {
+  id          String    @id @default(cuid())
+  workspaceId String
+  phone       String // somente dígitos, com DDI
+  name        String?
+  email       String?
+  optedOut    Boolean   @default(false)
+  optedOutAt  DateTime?
+  createdAt   DateTime  @default(now())
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, phone])
+}
+
+enum CampaignStatus {
+  DRAFT
+  SCHEDULED
+  RUNNING
+  PAUSED
+  COMPLETED
+  CANCELLED
+}
+
+model Campaign {
+  id               String              @id @default(cuid())
+  workspaceId      String
+  name             String
+  status           CampaignStatus      @default(DRAFT)
+  groupId          String?
+  templateName     String?
+  templateLanguage String?
+  // { "body": [{ "type": "field", "value": "firstName" } | { "type": "fixed", "value": "..." }], "header": [...] }
+  variableMapping  Json?
+  headerMediaUrl   String?
+  headerMediaType  String? // IMAGE, VIDEO, DOCUMENT
+  headerMediaName  String?
+  // URL de destino do botão (o redirecionador manda o clique pra cá)
+  buttonUrl        String?
+  // Mensagens por segundo por número (0 = automático)
+  ratePerSecond    Int                 @default(0)
+  // Não usar números com qualidade vermelha
+  skipRedQuality   Boolean             @default(true)
+  // Números retirados desta campanha por erro grave (ids de PhoneNumber)
+  excludedSenders  String[]            @default([])
+  creditsRefunded  Boolean             @default(false)
+  scheduledAt      DateTime?
+  startedAt        DateTime?
+  completedAt      DateTime?
+  pausedReason     String?
+  audienceFileName String?
+  audienceStats    Json?
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+  workspace        Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  group            BmGroup?            @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  recipients       CampaignRecipient[]
+  clicks           LinkClick[]
+
+  @@index([workspaceId, status])
+}
+
+enum RecipientStatus {
+  PENDING
+  SENDING
+  SENT
+  DELIVERED
+  READ
+  FAILED
+  SKIPPED
+}
+
+model CampaignRecipient {
+  id            String          @id @default(cuid())
+  campaignId    String
+  phone         String
+  name          String?
+  data          Json // linha da planilha (para variáveis)
+  status        RecipientStatus @default(PENDING)
+  senderId      String?
+  wamid         String?         @unique
+  errorCode     Int?
+  errorTitle    String?
+  errorDetail   String?
+  clickToken    String          @unique
+  clickCount    Int             @default(0)
+  firstClickAt  DateTime?
+  repliedAt     DateTime?
+  optedOutAt    DateTime?
+  creditsCharged Int            @default(0)
+  attempts      Int             @default(0)
+  queuedAt      DateTime?
+  sentAt        DateTime?
+  deliveredAt   DateTime?
+  readAt        DateTime?
+  failedAt      DateTime?
+  createdAt     DateTime        @default(now())
+  campaign      Campaign        @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  sender        PhoneNumber?    @relation(fields: [senderId], references: [id], onDelete: SetNull)
+  clicks        LinkClick[]
+
+  @@unique([campaignId, phone])
+  @@index([campaignId, status])
+  @@index([phone, sentAt])
+}
+
+model LinkClick {
+  id          String            @id @default(cuid())
+  campaignId  String
+  recipientId String
+  ip          String?
+  userAgent   String?
+  isBot       Boolean           @default(false)
+  createdAt   DateTime          @default(now())
+  campaign    Campaign          @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  recipient   CampaignRecipient @relation(fields: [recipientId], references: [id], onDelete: Cascade)
+
+  @@index([campaignId, createdAt])
+}
+
+model InboundMessage {
+  id          String       @id @default(cuid())
+  workspaceId String
+  phoneId     String?
+  from        String
+  wamid       String       @unique
+  type        String
+  text        String?
+  payload     Json
+  recipientId String?
+  receivedAt  DateTime
+  createdAt   DateTime     @default(now())
+  workspace   Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  phone       PhoneNumber? @relation(fields: [phoneId], references: [id], onDelete: SetNull)
+
+  @@index([workspaceId, receivedAt])
+}
+
+model WebhookEvent {
+  id          String    @id @default(cuid())
+  payload     Json
+  processedAt DateTime?
+  error       String?
+  createdAt   DateTime  @default(now())
+
+  @@index([processedAt])
+}
+
+// ---------------------------------------------------------------------------
+// Template padrão: replicado automaticamente em todas as WABAs do escopo
+// ---------------------------------------------------------------------------
+
+model TemplateBlueprint {
+  id               String               @id @default(cuid())
+  workspaceId      String
+  // Nulo = todas as BMs da conta
+  groupId          String?
+  name             String
+  language         String
+  components       Json
+  // Arquivo de exemplo da mídia do cabeçalho (obrigatório pela Meta em headers de mídia)
+  headerSamplePath String?
+  headerSampleMime String?
+  active           Boolean              @default(true)
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+  workspace        Workspace            @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  group            BmGroup?             @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  deployments      TemplateDeployment[]
+
+  @@unique([workspaceId, name, language])
+}
+
+enum DeploymentStatus {
+  SUBMITTED
+  APPROVED
+  REJECTED
+  RECATEGORIZED_DELETED
+  ERROR
+}
+
+model TemplateDeployment {
+  id          String            @id @default(cuid())
+  blueprintId String
+  wabaId      String
+  status      DeploymentStatus
+  error       String?
+  attempts    Int               @default(1)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  blueprint   TemplateBlueprint @relation(fields: [blueprintId], references: [id], onDelete: Cascade)
+  waba        WhatsAppAccount   @relation(fields: [wabaId], references: [id], onDelete: Cascade)
+
+  @@unique([blueprintId, wabaId])
+}
