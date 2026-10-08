@@ -2,6 +2,17 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "1.4",
+    date: "08/10/2026",
+    items: [
+      "Admin → Contas: painel novo com busca, filtro (ativas/bloqueadas) e páginas. Cada conta mostra dono, status, limite geral de 24h (soma de todas as BMs) e quantos disparos já fez",
+      "Clicando na conta abre os usuários (com reenviar convite/excluir) e as BMs com o limite de cada uma",
+      "Menu ⋮ de cada conta: entrar na conta, gerar link de login, reenviar convite, créditos, preço por mensagem, renomear, bloquear/desbloquear e excluir",
+      "Conta bloqueada: o cliente vê a tela \"Conta bloqueada\" (com o motivo) e as campanhas rodando ou agendadas são pausadas",
+      "Excluir conta pede para digitar o nome dela, e apaga junto os usuários que só tinham aquela conta",
+    ],
+  },
+  {
     version: "1.3",
     date: "08/10/2026",
     items: [

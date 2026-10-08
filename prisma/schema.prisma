@@ -59,6 +59,9 @@ model Workspace {
   emailAlerts       Boolean             @default(true)
   // Webhooks do Discord por canal: { campaigns, templates, quality, limits, general }
   discordWebhooks   Json?
+  // Conta bloqueada pelo admin da plataforma: ninguém entra e nada é disparado
+  blockedAt         DateTime?
+  blockedReason     String?
   createdAt         DateTime            @default(now())
   memberships       Membership[]
   creditTxs         CreditTransaction[]

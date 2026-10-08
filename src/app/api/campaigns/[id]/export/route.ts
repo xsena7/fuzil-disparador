@@ -1,5 +1,5 @@
 import Papa from "papaparse";
-import { getAuth } from "@/lib/auth";
+import { getActiveAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { formatPhone } from "@/lib/phone";
 
@@ -9,7 +9,7 @@ const STATUS_PT: Record<string, string> = {
 
 /** Exporta o relatório completo da campanha, um destinatário por linha. */
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const auth = await getAuth();
+  const auth = await getActiveAuth();
   if (!auth) return new Response("Não autenticado", { status: 401 });
   const { id } = await params;
   const campaign = await prisma.campaign.findFirst({ where: { id, workspaceId: auth.workspace.id } });

@@ -1,11 +1,11 @@
 import { requireSuperAdmin } from "@/lib/auth";
 import { UserActions } from "./user-actions";
-import { adminEnterWorkspaceAction } from "@/app/actions/misc";
-import { ConfirmButton } from "@/components/action-form";
+import { AccountsPanel } from "./accounts-panel";
+import { listAccounts } from "@/lib/admin-accounts";
 import { prisma } from "@/lib/db";
 import { Card, Field, Input, PageHeader, Table, Td } from "@/components/ui";
 import { ActionForm } from "@/components/action-form";
-import { adminCreateWorkspaceAction, adminCreditsAction, adminPriceAction, adminSavePlatformAction, adminTestEmailAction, testErrorsDiscordAction } from "@/app/actions/misc";
+import { adminCreateWorkspaceAction, adminSavePlatformAction, adminTestEmailAction, testErrorsDiscordAction } from "@/app/actions/misc";
 import { LinkButton } from "@/components/ui";
 import { ScrollText } from "lucide-react";
 import { emailConfigured } from "@/lib/email";
@@ -18,44 +18,44 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminPage() {
   const auth = await requireSuperAdmin();
-  const users = await prisma.user.findMany({
-    include: { memberships: { include: { workspace: { select: { name: true } } } } },
-    orderBy: { createdAt: "desc" },
-  });
-  const workspaces = await prisma.workspace.findMany({
-    include: { memberships: { include: { user: true }, where: { role: "OWNER" } }, _count: { select: { businesses: true, campaigns: true } } },
-    orderBy: { createdAt: "asc" },
-  });
+  const [accounts, orphans] = await Promise.all([
+    listAccounts(auth.user.id),
+    prisma.user.findMany({ where: { memberships: { none: {} } }, orderBy: { createdAt: "desc" } }),
+  ]);
   return (
     <div className="mx-auto max-w-6xl space-y-6">
-      <PageHeader title="Admin da plataforma" description="Contas de clientes, saldo, integrações e logs." actions={<LinkButton href="/admin/logs" variant="secondary"><ScrollText className="size-4" /> Logs do sistema</LinkButton>} />
-      <Table head={["Conta", "Dono", "BMs", "Campanhas", "Saldo", "Créditos/msg", "Recarga", "Preço"]}>
-        {workspaces.map((w) => (
-          <tr key={w.id}>
-            <Td className="font-medium">
-              {w.name}
-              <div className="mt-1"><ConfirmButton action={adminEnterWorkspaceAction.bind(null, w.id)} variant="secondary" className="px-2.5 py-1 text-xs">Entrar na conta</ConfirmButton></div>
-            </Td>
-            <Td className="text-xs">{w.memberships[0]?.user.email}</Td>
-            <Td>{w._count.businesses}</Td>
-            <Td>{w._count.campaigns}</Td>
-            <Td>{w.creditBalance.toLocaleString("pt-BR")}</Td>
-            <Td>{w.creditsPerMessage}</Td>
-            <Td>
-              <ActionForm action={adminCreditsAction} submit="Lançar" variant="secondary">
-                <input type="hidden" name="workspaceId" value={w.id} />
-                <div className="flex gap-2"><Input name="amount" type="number" placeholder="+10000 ou -500" className="w-32" /><Input name="note" placeholder="Obs." className="w-28" /></div>
-              </ActionForm>
-            </Td>
-            <Td>
-              <ActionForm action={adminPriceAction} submit="Salvar" variant="secondary">
-                <input type="hidden" name="workspaceId" value={w.id} />
-                <Input name="price" type="number" min={0} defaultValue={w.creditsPerMessage} className="w-20" />
-              </ActionForm>
-            </Td>
-          </tr>
-        ))}
-      </Table>
+      <PageHeader title="Admin da plataforma" description="Contas de clientes, integrações e logs." actions={<LinkButton href="/admin/logs" variant="secondary"><ScrollText className="size-4" /> Logs do sistema</LinkButton>} />
+      <AccountsPanel accounts={accounts} selfId={auth.user.id} />
+
+      <Card className="p-5">
+        <div className="mb-4 font-semibold">Criar conta de cliente</div>
+        <ActionForm action={adminCreateWorkspaceAction} submit="Criar conta e enviar convite">
+          <p className="mb-4 text-sm text-zinc-500">O cliente recebe um e-mail com o layout do Fuzil e um botão para criar a senha.</p>
+          <div className="grid gap-4 md:grid-cols-4">
+            <Field label="Nome da conta"><Input name="company" required /></Field>
+            <Field label="Nome do dono"><Input name="name" required /></Field>
+            <Field label="E-mail do cliente"><Input name="email" type="email" required /></Field>
+            <Field label="Créditos iniciais"><Input name="credits" type="number" min={0} defaultValue={0} /></Field>
+          </div>
+        </ActionForm>
+      </Card>
+
+      {orphans.length > 0 && (
+        <Card className="p-5">
+          <div className="mb-1 font-semibold">Usuários sem conta ({orphans.length})</div>
+          <p className="mb-4 text-sm text-zinc-500">Usuários que não estão em nenhuma conta. Pode excluir.</p>
+          <Table head={["Nome", "E-mail", ""]}>
+            {orphans.map((u) => (
+              <tr key={u.id}>
+                <Td className="font-medium">{u.name}</Td>
+                <Td className="text-xs">{u.email}</Td>
+                <Td className="text-right"><UserActions id={u.id} email={u.email} isSelf={u.id === auth.user.id} /></Td>
+              </tr>
+            ))}
+          </Table>
+        </Card>
+      )}
+
       <Card className="p-5">
         <div className="mb-1 font-semibold">Integração com a Meta (Tech Provider)</div>
         <p className="mb-4 text-zinc-500">Cole aqui os dados do app do Tech Provider. Campos secretos em branco mantêm o valor atual.</p>
@@ -98,46 +98,7 @@ export default async function AdminPage() {
         <ActionForm action={testErrorsDiscordAction} submit="Testar canal #erros" variant="secondary" />
       </Card>
 
-      <Card className="p-5">
-        <div className="mb-1 font-semibold">Usuários ({users.length})</div>
-        <p className="mb-4 text-sm text-zinc-500">Todos os usuários da plataforma. &quot;Convite pendente&quot; = ainda não criou a senha; use Reenviar convite.</p>
-        <Table head={["Nome", "E-mail", "Conta / papel", "Status", ""]}>
-          {users.map((u) => (
-            <tr key={u.id}>
-              <Td className="font-medium">
-                {u.name}
-                {u.isSuperAdmin && <span className="ml-2"><Badge color="orange" dot={false}>Admin da plataforma</Badge></span>}
-              </Td>
-              <Td className="text-xs">{u.email}</Td>
-              <Td className="text-xs">
-                {u.memberships.map((m) => <div key={m.id}>{m.workspace.name} · <span className="text-zinc-500">{m.role === "OWNER" ? "dono" : m.role === "ADMIN" ? "admin" : "membro"}</span></div>)}
-                {u.memberships.length === 0 && <span className="text-zinc-400">sem conta</span>}
-              </Td>
-              <Td>
-                {u.lastLoginAt ? (
-                  <span className="text-xs text-zinc-500">Último acesso {u.lastLoginAt.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}</span>
-                ) : (
-                  <Badge color="yellow">Convite pendente</Badge>
-                )}
-              </Td>
-              <Td className="text-right"><UserActions id={u.id} email={u.email} isSelf={u.id === auth.user.id} /></Td>
-            </tr>
-          ))}
-        </Table>
-      </Card>
 
-      <Card className="p-5">
-        <div className="mb-4 font-semibold">Criar conta de cliente</div>
-        <ActionForm action={adminCreateWorkspaceAction} submit="Criar conta e enviar convite">
-          <p className="mb-4 text-sm text-zinc-500">O cliente recebe um e-mail com o layout do Fuzil e um botão para criar a senha.</p>
-          <div className="grid gap-4 md:grid-cols-4">
-            <Field label="Nome da conta"><Input name="company" required /></Field>
-            <Field label="Nome do dono"><Input name="name" required /></Field>
-            <Field label="E-mail do cliente"><Input name="email" type="email" required /></Field>
-            <Field label="Créditos iniciais"><Input name="credits" type="number" min={0} defaultValue={0} /></Field>
-          </div>
-        </ActionForm>
-      </Card>
     </div>
   );
 }

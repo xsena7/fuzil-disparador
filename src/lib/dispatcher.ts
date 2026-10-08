@@ -231,6 +231,10 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 export async function runCampaignTick(campaignId: string) {
   const campaign = await prisma.campaign.findUnique({ where: { id: campaignId }, include: { workspace: true } });
   if (!campaign || campaign.status !== "RUNNING") return;
+  if (campaign.workspace.blockedAt) {
+    await prisma.campaign.update({ where: { id: campaignId }, data: { status: "PAUSED", pausedReason: "Conta bloqueada pelo administrador" } });
+    return;
+  }
 
   const plan = await planSenders(campaign);
   if (!plan.senders.length) {
@@ -423,7 +427,7 @@ export async function recoverStuck() {
 }
 
 export async function startDueCampaigns() {
-  const due = await prisma.campaign.findMany({ where: { status: "SCHEDULED", scheduledAt: { lte: new Date() } } });
+  const due = await prisma.campaign.findMany({ where: { status: "SCHEDULED", scheduledAt: { lte: new Date() }, workspace: { blockedAt: null } } });
   for (const c of due) {
     await prisma.campaign.update({ where: { id: c.id }, data: { status: "RUNNING", startedAt: c.startedAt ?? new Date() } });
     await announceStart(c.id, true);

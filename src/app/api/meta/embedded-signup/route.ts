@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getAuth } from "@/lib/auth";
+import { getActiveAuth } from "@/lib/auth";
 import { encrypt } from "@/lib/crypto";
 import { env } from "@/lib/env";
 import { meta } from "@/lib/meta";
@@ -9,7 +9,7 @@ import { prisma } from "@/lib/db";
 
 /** Recebe o resultado do Embedded Signup (Cloud API ou Coexistência) e conecta a WABA. */
 export async function POST(req: Request) {
-  const auth = await getAuth();
+  const auth = await getActiveAuth();
   if (!auth) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
   const body = (await req.json()) as { code?: string; wabaId?: string; phoneNumberId?: string; type?: "CLOUD_API" | "COEXISTENCE" };
   if (!body.code || !body.wabaId) return NextResponse.json({ error: "Dados do cadastro incompletos" }, { status: 400 });

@@ -79,7 +79,7 @@ export async function adminCreateWorkspaceAction(_: FormState, form: FormData): 
   const email = String(form.get("email") ?? "").trim().toLowerCase();
   const credits = Math.max(0, Math.trunc(Number(form.get("credits") ?? 0) || 0));
   if (!company || !name || !email) return { error: "Preencha nome da conta, nome do dono e e-mail" };
-  if (await prisma.user.findUnique({ where: { email } })) return { error: "Esse e-mail já tem usuário. Veja na lista de Usuários acima e use \"Reenviar convite\"." };
+  if (await prisma.user.findUnique({ where: { email } })) return { error: "Esse e-mail já tem usuário. Procure na lista de Contas acima e use ⋮ → Reenviar convite." };
   const user = await prisma.user.create({
     data: {
       name,
@@ -208,4 +208,78 @@ export async function backToMyWorkspaceAction() {
   const own = await prisma.membership.findFirst({ where: { userId: auth.user.id }, orderBy: { role: "asc" } });
   if (own) await switchSessionWorkspace(own.workspaceId);
   redirect("/admin");
+}
+
+// ---------------- Painel de contas (Admin) ----------------
+
+type Result = { ok?: string; error?: string; link?: string };
+
+export async function adminBlockWorkspaceAction(workspaceId: string, reason: string): Promise<Result> {
+  const auth = await requireSuperAdmin();
+  if (await prisma.membership.findFirst({ where: { workspaceId, userId: auth.user.id } })) return { error: "Você não pode bloquear a sua própria conta." };
+  const ws = await prisma.workspace.update({ where: { id: workspaceId }, data: { blockedAt: new Date(), blockedReason: reason.trim() || null } });
+  // Para tudo que estava rodando ou agendado; ao desbloquear, o cliente retoma pela tela da campanha
+  const paused = await prisma.campaign.updateMany({
+    where: { workspaceId, status: { in: ["RUNNING", "SCHEDULED"] } },
+    data: { status: "PAUSED", pausedReason: "Conta bloqueada pelo administrador" },
+  });
+  revalidatePath("/admin");
+  return { ok: `${ws.name} bloqueada${paused.count ? ` · ${paused.count} campanha(s) pausada(s)` : ""}` };
+}
+
+export async function adminUnblockWorkspaceAction(workspaceId: string): Promise<Result> {
+  await requireSuperAdmin();
+  const ws = await prisma.workspace.update({ where: { id: workspaceId }, data: { blockedAt: null, blockedReason: null } });
+  revalidatePath("/admin");
+  return { ok: `${ws.name} desbloqueada` };
+}
+
+export async function adminDeleteWorkspaceAction(workspaceId: string, confirmName: string): Promise<Result> {
+  const auth = await requireSuperAdmin();
+  const ws = await prisma.workspace.findUnique({ where: { id: workspaceId }, include: { memberships: { include: { user: { include: { _count: { select: { memberships: true } } } } } } } });
+  if (!ws) return { error: "Conta não encontrada" };
+  if (ws.memberships.some((m) => m.userId === auth.user.id)) return { error: "Você não pode excluir a sua própria conta." };
+  if (confirmName.trim() !== ws.name) return { error: "O nome digitado não confere. Nada foi excluído." };
+  // Usuários que só tinham essa conta saem junto (o admin da plataforma nunca)
+  const orphanUsers = ws.memberships.filter((m) => m.user._count.memberships === 1 && !m.user.isSuperAdmin).map((m) => m.userId);
+  await prisma.$transaction([
+    prisma.session.deleteMany({ where: { workspaceId } }),
+    prisma.workspace.delete({ where: { id: workspaceId } }),
+    prisma.user.deleteMany({ where: { id: { in: orphanUsers } } }),
+  ]);
+  revalidatePath("/admin");
+  return { ok: `Conta ${ws.name} excluída${orphanUsers.length ? ` com ${orphanUsers.length} usuário(s)` : ""}` };
+}
+
+export async function adminRenameWorkspaceAction(workspaceId: string, name: string): Promise<Result> {
+  await requireSuperAdmin();
+  if (!name.trim()) return { error: "Informe o nome" };
+  await prisma.workspace.update({ where: { id: workspaceId }, data: { name: name.trim() } });
+  revalidatePath("/admin");
+  return { ok: "Nome alterado" };
+}
+
+/** Link para o dono definir uma nova senha e entrar (não envia e-mail, só devolve para copiar). */
+export async function adminLoginLinkAction(workspaceId: string): Promise<Result> {
+  await requireSuperAdmin();
+  const owner = await prisma.membership.findFirst({ where: { workspaceId }, orderBy: { role: "asc" }, include: { user: true } });
+  if (!owner) return { error: "Conta sem usuário" };
+  const link = await createPasswordLink(owner.userId, owner.user.lastLoginAt ? "RESET" : "INVITE");
+  return { ok: `Link para ${owner.user.email} (vale ${owner.user.lastLoginAt ? "2 horas" : "7 dias"}, uso único)`, link };
+}
+
+export async function adminQuickCreditsAction(workspaceId: string, amount: number, note: string): Promise<Result> {
+  const auth = await requireSuperAdmin();
+  amount = Math.trunc(amount);
+  if (!amount) return { error: "Informe a quantidade" };
+  await addCredits(workspaceId, amount, amount > 0 ? "TOPUP" : "ADJUST", note.trim() || (amount > 0 ? "Recarga" : "Ajuste"), { createdById: auth.user.id });
+  revalidatePath("/admin");
+  return { ok: `${amount > 0 ? "Adicionados" : "Removidos"} ${Math.abs(amount).toLocaleString("pt-BR")} créditos` };
+}
+
+export async function adminQuickPriceAction(workspaceId: string, price: number): Promise<Result> {
+  await requireSuperAdmin();
+  await prisma.workspace.update({ where: { id: workspaceId }, data: { creditsPerMessage: Math.max(0, Math.trunc(price) || 0) } });
+  revalidatePath("/admin");
+  return { ok: "Preço atualizado" };
 }

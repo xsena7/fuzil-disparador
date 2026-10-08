@@ -39,7 +39,7 @@ export async function destroySession() {
 
 export type AuthContext = {
   user: { id: string; name: string; email: string; isSuperAdmin: boolean };
-  workspace: { id: string; name: string; creditBalance: number; creditsPerMessage: number };
+  workspace: { id: string; name: string; creditBalance: number; creditsPerMessage: number; blocked: boolean };
   role: "OWNER" | "ADMIN" | "MEMBER";
   /** Admin da plataforma vendo a conta de um cliente (sem ser membro dela). */
   inspecting: boolean;
@@ -64,15 +64,23 @@ export async function getAuth(): Promise<AuthContext | null> {
   if (!ws) return null;
   return {
     user: { id: user.id, name: user.name, email: user.email, isSuperAdmin: user.isSuperAdmin },
-    workspace: { id: ws.id, name: ws.name, creditBalance: ws.creditBalance, creditsPerMessage: ws.creditsPerMessage },
+    workspace: { id: ws.id, name: ws.name, creditBalance: ws.creditBalance, creditsPerMessage: ws.creditsPerMessage, blocked: Boolean(ws.blockedAt) },
     role: membership?.role ?? "OWNER",
     inspecting: !membership,
   };
 }
 
+/** Para rotas de API: igual ao getAuth, mas recusa contas bloqueadas (exceto o admin da plataforma). */
+export async function getActiveAuth(): Promise<AuthContext | null> {
+  const auth = await getAuth();
+  return auth && (!auth.workspace.blocked || auth.user.isSuperAdmin) ? auth : null;
+}
+
 export async function requireAuth(): Promise<AuthContext> {
   const auth = await getAuth();
   if (!auth) redirect("/login");
+  // Conta bloqueada: só o admin da plataforma continua entrando (para inspecionar/desbloquear)
+  if (auth.workspace.blocked && !auth.user.isSuperAdmin) redirect("/bloqueado");
   return auth;
 }
 

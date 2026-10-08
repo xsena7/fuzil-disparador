@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import type { Prisma } from "@prisma/client";
-import { getAuth } from "@/lib/auth";
+import { getActiveAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { parseAudienceCsv } from "@/lib/audience";
 import { shortToken } from "@/lib/crypto";
@@ -9,7 +9,7 @@ export const maxDuration = 300;
 
 /** Recebe a planilha (CSV), valida e substitui a audiência da campanha. */
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const auth = await getAuth();
+  const auth = await getActiveAuth();
   if (!auth) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
   const { id } = await params;
   const campaign = await prisma.campaign.findFirst({ where: { id, workspaceId: auth.workspace.id } });
