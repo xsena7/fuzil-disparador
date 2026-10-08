@@ -1,4 +1,5 @@
 /** Envio para webhooks do Discord (mensagens com "embed" colorido). */
+import { env } from "./env";
 
 export const DISCORD_COLORS = { CRITICAL: 0xe11d48, WARNING: 0xf59e0b, INFO: 0x0ea5e9, SUCCESS: 0x10b981, ERROR: 0xb91c1c } as const;
 
@@ -18,6 +19,7 @@ export async function sendDiscord(
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         username: "Fuzil Disparador",
+        avatar_url: `${env.appUrl()}/brand/icon-512.png`,
         embeds: [
           {
             title: clip(embed.title, 250),
