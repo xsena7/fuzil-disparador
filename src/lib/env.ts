@@ -1,5 +1,12 @@
+import { cachedSetting } from "./settings-cache";
+
 function opt(name: string, fallback = ""): string {
-  return process.env[name] ?? fallback;
+  return process.env[name] || fallback;
+}
+
+/** Valor salvo pelo painel (Admin) tem prioridade sobre o .env. */
+function platform(name: string, fallback = ""): string {
+  return cachedSetting(name) || process.env[name] || fallback;
 }
 
 export const env = {
@@ -7,15 +14,15 @@ export const env = {
   redirectDomain: () => opt("REDIRECT_DOMAIN", "localhost:3000"),
   encryptionKey: () => opt("ENCRYPTION_KEY"),
   uploadDir: () => opt("UPLOAD_DIR", "./uploads"),
-  metaAppId: () => opt("META_APP_ID"),
-  metaAppSecret: () => opt("META_APP_SECRET"),
-  metaConfigId: () => opt("META_CONFIG_ID"),
-  metaSystemToken: () => opt("META_SYSTEM_USER_TOKEN"),
-  metaGraphVersion: () => opt("META_GRAPH_VERSION", "v23.0"),
+  metaAppId: () => platform("META_APP_ID"),
+  metaAppSecret: () => platform("META_APP_SECRET"),
+  metaConfigId: () => platform("META_CONFIG_ID"),
+  metaSystemToken: () => platform("META_SYSTEM_USER_TOKEN"),
+  metaGraphVersion: () => platform("META_GRAPH_VERSION", "v23.0"),
   metaGraphUrl: () => opt("META_GRAPH_URL", "https://graph.facebook.com").replace(/\/$/, ""),
   metaVerifyToken: () => opt("META_WEBHOOK_VERIFY_TOKEN"),
   metaRegisterPin: () => opt("META_REGISTER_PIN", "123456"),
-  telegramBotToken: () => opt("TELEGRAM_BOT_TOKEN"),
+  telegramBotToken: () => platform("TELEGRAM_BOT_TOKEN"),
 };
 
 export function metaConfigured() {

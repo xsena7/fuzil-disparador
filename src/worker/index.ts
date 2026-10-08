@@ -2,6 +2,7 @@ import { prisma } from "../lib/db";
 import { maybeComplete, recoverStuck, runCampaignTick, startDueCampaigns, TICK_MS } from "../lib/dispatcher";
 import { syncWaba } from "../lib/sync";
 import { deployBlueprints } from "../lib/blueprints";
+import { startSettingsRefresh } from "../lib/platform-settings";
 
 const SYNC_EVERY_MS = 10 * 60_000;
 const BLUEPRINT_EVERY_MS = 5 * 60_000;
@@ -59,6 +60,7 @@ async function housekeeping() {
 
 async function main() {
   console.log("[worker] Fuzil Disparador worker iniciado");
+  await startSettingsRefresh();
   process.on("SIGTERM", () => (stopping = true));
   process.on("SIGINT", () => (stopping = true));
   void every(SYNC_EVERY_MS, "sync", syncAll);

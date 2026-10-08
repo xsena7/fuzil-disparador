@@ -18,6 +18,7 @@ services:
 
   app:
     build: .
+    image: fuzil-disparador:latest
     restart: unless-stopped
     env_file: .env
     environment:
@@ -30,7 +31,8 @@ services:
         condition: service_healthy
 
   worker:
-    build: .
+    image: fuzil-disparador:latest
+    pull_policy: never
     restart: unless-stopped
     command: ["npx", "tsx", "src/worker/index.ts"]
     stop_grace_period: 60s

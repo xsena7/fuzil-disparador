@@ -33,6 +33,9 @@ export async function signupAction(_: FormState, form: FormData): Promise<FormSt
   const userCount = await prisma.user.count();
   // O primeiro usuário vira super admin. Depois disso, cadastro só se ALLOW_SIGNUP=true.
   if (userCount > 0 && process.env.ALLOW_SIGNUP !== "true") return { error: "Cadastro fechado. Peça um convite ao administrador." };
+  // Protege o primeiro cadastro (que vira admin) logo depois de subir o servidor
+  const adminEmail = process.env.ADMIN_EMAIL?.trim().toLowerCase();
+  if (userCount === 0 && adminEmail && email !== adminEmail) return { error: "O primeiro cadastro é reservado ao e-mail do administrador." };
   if (await prisma.user.findUnique({ where: { email } })) return { error: "Já existe uma conta com esse e-mail" };
 
   const user = await prisma.user.create({

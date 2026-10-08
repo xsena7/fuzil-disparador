@@ -85,3 +85,19 @@ export async function adminCreateWorkspaceAction(_: FormState, form: FormData): 
   revalidatePath("/admin");
   return { ok: "Conta criada" };
 }
+
+export async function adminSavePlatformAction(_: FormState, form: FormData): Promise<FormState> {
+  await requireSuperAdmin();
+  const { PLATFORM_KEYS, savePlatformSetting, refreshPlatformSettings } = await import("@/lib/platform-settings");
+  for (const { key, secret } of PLATFORM_KEYS) {
+    const raw = form.get(key);
+    if (raw === null) continue;
+    const value = String(raw).trim();
+    // Segredo em branco = manter o atual; marcar "limpar" apaga
+    if (secret && !value && form.get(`${key}__clear`) !== "on") continue;
+    await savePlatformSetting(key, value);
+  }
+  await refreshPlatformSettings();
+  revalidatePath("/", "layout");
+  return { ok: "Integração salva. Já está valendo (o worker atualiza em até 30s)." };
+}

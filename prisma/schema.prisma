@@ -440,3 +440,10 @@ model TemplateDeployment {
 
   @@unique([blueprintId, wabaId])
 }
+
+// Configurações da plataforma editáveis pelo painel (Admin). Segredos ficam criptografados.
+model PlatformSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}

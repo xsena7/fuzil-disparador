@@ -38,65 +38,71 @@ npm run mock:meta                 # Graph API falsa na porta 4010
 
 Testes: `npm test`.
 
-## Colocar no ar de graça (Oracle Cloud Always Free)
+## Colocar no ar de graça (sem terminal)
 
-O único custo é o domínio (~R$40/ano no registro.br). Painel, banco e disparos rodam numa VM gratuita.
+O único custo é o domínio. Painel, banco e disparos rodam numa VM gratuita da Oracle, e a instalação é automática.
 
-1. **Crie a conta** em <https://www.oracle.com/cloud/free/>. Eles pedem cartão só para verificar e não cobram nada no plano Always Free. Escolha a região **São Paulo** ou **Vinhedo**.
-2. **Crie a VM**: *Compute → Instances → Create instance*.
-   - Image: **Ubuntu 24.04**
-   - Shape: **Ampere (VM.Standard.A1.Flex)** com 2 a 4 OCPUs e 12 a 24 GB de RAM (tudo dentro do gratuito)
-   - Baixe a chave SSH que ele gera.
-   - Se aparecer "out of capacity", tente outra Availability Domain ou tente de novo mais tarde.
-3. **Libere as portas 80 e 443**: na VCN da instância, em *Security List → Add Ingress Rules*, adicione TCP 80 e TCP 443 a partir de `0.0.0.0/0`. Depois, dentro da VM:
-   ```bash
-   sudo iptables -I INPUT 6 -m state --state NEW -p tcp --dport 80 -j ACCEPT
-   sudo iptables -I INPUT 6 -m state --state NEW -p tcp --dport 443 -j ACCEPT
-   sudo netfilter-persistent save
-   ```
-4. **DNS** (registro.br → domínio → *DNS* → *Configurar zona DNS* / modo avançado, que é grátis): crie dois registros **A** apontando para o IP público da VM:
-   - `app.fuzildisparador.com.br` (o painel)
-   - `go.fuzildisparador.com.br` (os links dos botões)
-5. **Instale e suba**:
-   ```bash
-   curl -fsSL https://get.docker.com | sudo sh
-   sudo usermod -aG docker $USER && newgrp docker
-   git clone https://github.com/xsena7/fuzil-disparador.git && cd fuzil-disparador
-   cp .env.example .env && nano .env
-   docker compose up -d --build
-   ```
-   No `.env`, preencha:
-   - `APP_DOMAIN`, `LINK_DOMAIN`
-   - `APP_URL=https://app.fuzildisparador.com.br`
-   - `REDIRECT_DOMAIN=go.fuzildisparador.com.br`
-   - `POSTGRES_PASSWORD`, `ENCRYPTION_KEY` (gere com `openssl rand -hex 32`)
-   - `META_WEBHOOK_VERIFY_TOKEN` (qualquer texto)
-6. Acesse `https://app.fuzildisparador.com.br/cadastro` e crie sua conta (vira admin).
-7. **Backup diário**: `crontab -e` e adicione `0 4 * * * /home/ubuntu/fuzil-disparador/deploy/backup.sh`.
+### 1. Token do GitHub (para o servidor baixar o código)
+1. Abra <https://github.com/settings/personal-access-tokens/new>.
+2. Nome: `fuzil-servidor`. Validade: a maior disponível.
+3. **Repository access → Only select repositories →** `xsena7/fuzil-disparador`.
+4. **Permissions → Repository permissions → Contents → Read-only.**
+5. Clique em **Generate token** e copie o token (começa com `github_pat_`).
 
-Para atualizar depois: `git pull && docker compose up -d --build`.
+### 2. Conta na Oracle Cloud
+1. Acesse <https://www.oracle.com/cloud/free/> e clique em **Start for free**.
+2. Na região (*Home Region*), escolha **Brazil East (Sao Paulo)**. Ela não pode ser trocada depois.
+3. Eles pedem cartão só para verificar a identidade. O plano Always Free não cobra.
+
+### 3. Criar o servidor
+1. No menu ☰: **Compute → Instances → Create instance**. Nome: `fuzil`.
+2. **Image and shape → Edit**:
+   - *Change image*: **Canonical Ubuntu 24.04**
+   - *Change shape*: **Ampere → VM.Standard.A1.Flex**, com **4 OCPUs** e **24 GB** de memória
+3. **Networking**: deixe criar a rede nova e marque **Assign a public IPv4 address**.
+4. **Add SSH keys**: escolha *Generate a key pair for me* e clique em **Save private key**. Guarde o arquivo, ele serve para emergências.
+5. **Show advanced options → Management → Paste cloud-init script**: cole o conteúdo de [`deploy/install.sh`](deploy/install.sh), preenchendo antes as duas primeiras linhas (`GITHUB_TOKEN` e `ADMIN_EMAIL`).
+6. Clique em **Create**. Se aparecer *Out of capacity*, troque o *Availability domain* ou tente com 2 OCPUs e 12 GB.
+
+### 4. Liberar as portas 80 e 443
+Na página da instância: **Primary VNIC → clique na Subnet → Security Lists → Default Security List → Add Ingress Rules**:
+- Source CIDR: `0.0.0.0/0`
+- IP Protocol: `TCP`
+- Destination Port Range: `80,443`
+
+### 5. DNS no registro.br
+Copie o **Public IP address** da instância. No registro.br, abra o domínio e vá em **DNS → Editar zona** (se pedir, ative os servidores DNS do Registro.br). Crie duas entradas:
+
+| Tipo | Nome | Valor |
+|---|---|---|
+| A | `app` | IP da VM |
+| A | `go` | IP da VM |
+
+### 6. Pronto
+Depois de uns 15 minutos (instalação e propagação do DNS), abra <https://app.fuzildisparador.com.br/cadastro> e crie sua conta **com o mesmo e-mail colocado em `ADMIN_EMAIL`**. Ela vira a conta de administrador.
+
+O servidor se atualiza sozinho a cada 5 minutos quando sai versão nova do código, e faz backup do banco todo dia às 4h.
 
 ## Configurar a Meta (quando chegarem as credenciais do Tech Provider)
 
-No `.env`:
+No painel, em **Admin → Integração com a Meta** (não precisa mexer no servidor):
 
-| Variável | Onde pegar |
+| Campo | Onde pegar |
 |---|---|
-| `META_APP_ID` / `META_APP_SECRET` | App do Tech Provider → Configurações do app → Básico |
-| `META_CONFIG_ID` | Facebook Login for Business → Configurações → configuração do WhatsApp Embedded Signup |
-| `META_SYSTEM_USER_TOKEN` | Business Settings → Usuários do sistema → gerar token com `business_management`, `whatsapp_business_management`, `whatsapp_business_messaging` |
+| App ID / App Secret | App do Tech Provider → Configurações do app → Básico |
+| Config ID | Facebook Login for Business → Configurações → configuração do WhatsApp Embedded Signup |
+| Token do System User | Business Settings → Usuários do sistema → gerar token com `business_management`, `whatsapp_business_management`, `whatsapp_business_messaging` |
 
 No app da Meta:
 
-1. **Webhook** (WhatsApp → Configuração): URL de callback `https://app.fuzildisparador.com.br/api/webhook` com o mesmo `META_WEBHOOK_VERIFY_TOKEN`. Assine os campos: `messages`, `message_template_status_update`, `template_category_update`, `message_template_quality_update`, `phone_number_quality_update`, `phone_number_name_update`, `account_update`, `account_review_update`, `business_capability_update`.
+1. **Webhook** (WhatsApp → Configuração): use a URL de callback e o token de verificação que aparecem na tela Admin. Assine os campos: `messages`, `message_template_status_update`, `template_category_update`, `message_template_quality_update`, `phone_number_quality_update`, `phone_number_name_update`, `account_update`, `account_review_update`, `business_capability_update`.
 2. **Domínios permitidos** do Facebook Login for Business: adicione `app.fuzildisparador.com.br` (é por ele que roda o Embedded Signup).
-3. Reinicie: `docker compose up -d`.
 
 A tela **Configurações** do painel mostra o que já está configurado e o que falta.
 
 ## Alertas no Telegram
 
-1. Crie um bot com o [@BotFather](https://t.me/BotFather) e coloque o token em `TELEGRAM_BOT_TOKEN`.
+1. Crie um bot com o [@BotFather](https://t.me/BotFather) e cole o token em **Admin → Integração**.
 2. Mande uma mensagem pro bot, pegue seu Chat ID (ex.: com o @userinfobot) e salve em **Configurações** no painel.
 
 ## Observações

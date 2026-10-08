@@ -2,7 +2,10 @@ import { requireSuperAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { Card, Field, Input, PageHeader, Table, Td } from "@/components/ui";
 import { ActionForm } from "@/components/action-form";
-import { adminCreateWorkspaceAction, adminCreditsAction, adminPriceAction } from "@/app/actions/misc";
+import { adminCreateWorkspaceAction, adminCreditsAction, adminPriceAction, adminSavePlatformAction } from "@/app/actions/misc";
+import { PLATFORM_KEYS } from "@/lib/platform-settings";
+import { env } from "@/lib/env";
+import { cachedSetting } from "@/lib/settings-cache";
 
 export const dynamic = "force-dynamic";
 
@@ -39,6 +42,29 @@ export default async function AdminPage() {
           </tr>
         ))}
       </Table>
+      <Card className="p-5">
+        <div className="mb-1 font-semibold">Integração com a Meta (Tech Provider)</div>
+        <p className="mb-4 text-zinc-500">Cole aqui os dados do app do Tech Provider. Campos secretos em branco mantêm o valor atual.</p>
+        <div className="mb-4 space-y-1 rounded-lg bg-zinc-50 p-4 text-xs">
+          <div>URL de callback do webhook: <code className="font-semibold">{env.appUrl()}/api/webhook</code></div>
+          <div>Token de verificação: <code className="font-semibold">{env.metaVerifyToken() || "(defina META_WEBHOOK_VERIFY_TOKEN)"}</code></div>
+          <div>Domínio para o Facebook Login (Embedded Signup): <code className="font-semibold">{env.appUrl().replace(/^https?:\/\//, "")}</code></div>
+        </div>
+        <ActionForm action={adminSavePlatformAction} submit="Salvar integração">
+          <div className="grid gap-4 md:grid-cols-2">
+            {PLATFORM_KEYS.map(({ key, label, secret }) => {
+              const current = cachedSetting(key) ?? process.env[key] ?? "";
+              return (
+                <Field key={key} label={label} hint={secret ? (current ? "Configurado ✓ (deixe em branco para manter)" : "Não configurado") : undefined}>
+                  <Input name={key} type={secret ? "password" : "text"} defaultValue={secret ? "" : current} placeholder={key === "META_GRAPH_VERSION" ? "v23.0" : ""} autoComplete="off" />
+                  {secret && current && <label className="mt-1 flex items-center gap-1.5 text-xs text-zinc-500"><input type="checkbox" name={`${key}__clear`} /> limpar</label>}
+                </Field>
+              );
+            })}
+          </div>
+        </ActionForm>
+      </Card>
+
       <Card className="p-5">
         <div className="mb-4 font-semibold">Criar conta de cliente</div>
         <ActionForm action={adminCreateWorkspaceAction} submit="Criar conta">
