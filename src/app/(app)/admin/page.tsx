@@ -109,7 +109,7 @@ export default async function AdminPage() {
         <ActionForm action={adminSaveCompanyAction} submit="Salvar dados da empresa">
           <div className="grid gap-4 md:grid-cols-2">
             {COMPANY_KEYS.map(({ key, label, placeholder }) => (
-              <Field key={key} label={label} hint={key === "META_DOMAIN_VERIFICATION" ? "Na Meta: Configurações do negócio → Segurança da marca → Domínios → Adicionar → \"Meta-tag\". Cole o código (ou a tag inteira) aqui." : undefined}>
+              <Field key={key} label={label} hint={key === "META_DOMAIN_VERIFICATION" ? "Na Meta: Configurações do negócio → Segurança da marca → Domínios → Adicionar → \"Meta-tag\". Cole o código (ou a tag inteira). Mais de uma BM? Cole os códigos separados por vírgula." : undefined}>
                 <Input name={key} defaultValue={cachedSetting(key) ?? (key === "COMPANY_CNPJ" ? company().cnpj : "")} placeholder={placeholder} autoComplete="off" />
               </Field>
             ))}

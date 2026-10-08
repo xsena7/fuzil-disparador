@@ -323,7 +323,8 @@ export async function adminSaveCompanyAction(_: FormState, form: FormData): Prom
     if (raw === null) continue;
     let value = String(raw).trim();
     // Aceita colar a tag inteira da Meta: <meta name="facebook-domain-verification" content="abc" />
-    if (key === "META_DOMAIN_VERIFICATION") value = value.match(/content=["']([^"']+)["']/)?.[1] ?? value;
+    // (uma ou várias tags, uma por BM)
+    if (key === "META_DOMAIN_VERIFICATION" && value.includes("content=")) value = [...value.matchAll(/content=["']([^"']+)["']/g)].map((m) => m[1]).join(", ");
     await savePlatformSetting(key, value);
   }
   await refreshPlatformSettings();

@@ -13,7 +13,9 @@ export function middleware(req: NextRequest) {
   const host = (req.headers.get("host") ?? "").replace(/:\d+$/, "");
   const path = req.nextUrl.pathname;
 
-  if (host === siteHost || host === `www.${siteHost}`) {
+  // Endereços extras do site (ex.: site.fuzildisparador.com.br), separados por vírgula
+  const aliases = (process.env.SITE_ALIASES ?? `site.${siteHost}`).split(",").map((h) => hostOf(h.trim())).filter(Boolean);
+  if (host === siteHost || host === `www.${siteHost}` || aliases.includes(host)) {
     if (host.startsWith("www.")) {
       const url = req.nextUrl.clone();
       url.host = siteHost;

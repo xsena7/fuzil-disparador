@@ -11,7 +11,8 @@ export async function generateMetadata(): Promise<Metadata> {
     title: "Fuzil Disparador · Disparos pela API oficial do WhatsApp",
     description: "Plataforma para empresas enviarem mensagens em escala pela API oficial do WhatsApp Business (Cloud API), com gestão de várias contas, métricas e controle de qualidade.",
     metadataBase: new URL(c.siteUrl),
-    ...(c.domainVerification ? { other: { "facebook-domain-verification": c.domainVerification } } : {}),
+    // Um código por BM (dá para colar vários, separados por vírgula ou espaço)
+    ...(c.domainVerification ? { other: { "facebook-domain-verification": c.domainVerification.split(/[\s,;]+/).filter(Boolean) } } : {}),
   };
 }
 

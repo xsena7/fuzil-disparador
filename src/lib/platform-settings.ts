@@ -23,7 +23,7 @@ export const COMPANY_KEYS = [
   { key: "COMPANY_ADDRESS", label: "Endereço (igual ao cartão CNPJ)", placeholder: "Rua X, 123, Sala 4 - Bairro, Cidade - UF, CEP 00000-000" },
   { key: "COMPANY_EMAIL", label: "E-mail de contato (que recebe e-mails)", placeholder: "contato@fuzildisparador.com.br" },
   { key: "COMPANY_PHONE", label: "Telefone / WhatsApp de contato", placeholder: "+55 11 99999-9999" },
-  { key: "META_DOMAIN_VERIFICATION", label: "Código de verificação do domínio (Meta)", placeholder: "abc123xyz..." },
+  { key: "META_DOMAIN_VERIFICATION", label: "Código(s) de verificação do domínio (Meta)", placeholder: "código da BM 1, código da BM 2" },
 ] as const;
 
 export type CompanyKey = (typeof COMPANY_KEYS)[number]["key"];

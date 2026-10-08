@@ -2,6 +2,14 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "1.14",
+    date: "08/10/2026",
+    items: [
+      "Site também em site.fuzildisparador.com.br",
+      "Admin → Empresa e site: aceita códigos de verificação de domínio de mais de uma BM (separados por vírgula)",
+    ],
+  },
+  {
     version: "1.13",
     date: "08/10/2026",
     items: [

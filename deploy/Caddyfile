@@ -4,8 +4,8 @@
 	reverse_proxy app:3000
 }
 
-# Site público (vendas, privacidade, termos)
-{$SITE_DOMAIN:fuzildisparador.com.br} {
+# Site público (vendas, privacidade, termos), também em site.dominio
+{$SITE_DOMAIN:fuzildisparador.com.br}, site.{$SITE_DOMAIN:fuzildisparador.com.br} {
 	encode gzip
 	reverse_proxy app:3000
 }
