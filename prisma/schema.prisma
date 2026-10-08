@@ -17,6 +17,7 @@ model User {
   name         String
   passwordHash String
   isSuperAdmin Boolean      @default(false)
+  lastLoginAt  DateTime?
   createdAt    DateTime     @default(now())
   memberships  Membership[]
   sessions     Session[]

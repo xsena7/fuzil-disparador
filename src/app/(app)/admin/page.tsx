@@ -1,4 +1,7 @@
 import { requireSuperAdmin } from "@/lib/auth";
+import { UserActions } from "./user-actions";
+import { adminEnterWorkspaceAction } from "@/app/actions/misc";
+import { ConfirmButton } from "@/components/action-form";
 import { prisma } from "@/lib/db";
 import { Card, Field, Input, PageHeader, Table, Td } from "@/components/ui";
 import { ActionForm } from "@/components/action-form";
@@ -14,7 +17,11 @@ import { cachedSetting } from "@/lib/settings-cache";
 export const dynamic = "force-dynamic";
 
 export default async function AdminPage() {
-  await requireSuperAdmin();
+  const auth = await requireSuperAdmin();
+  const users = await prisma.user.findMany({
+    include: { memberships: { include: { workspace: { select: { name: true } } } } },
+    orderBy: { createdAt: "desc" },
+  });
   const workspaces = await prisma.workspace.findMany({
     include: { memberships: { include: { user: true }, where: { role: "OWNER" } }, _count: { select: { businesses: true, campaigns: true } } },
     orderBy: { createdAt: "asc" },
@@ -25,7 +32,10 @@ export default async function AdminPage() {
       <Table head={["Conta", "Dono", "BMs", "Campanhas", "Saldo", "Créditos/msg", "Recarga", "Preço"]}>
         {workspaces.map((w) => (
           <tr key={w.id}>
-            <Td className="font-medium">{w.name}</Td>
+            <Td className="font-medium">
+              {w.name}
+              <div className="mt-1"><ConfirmButton action={adminEnterWorkspaceAction.bind(null, w.id)} variant="secondary" className="px-2.5 py-1 text-xs">Entrar na conta</ConfirmButton></div>
+            </Td>
             <Td className="text-xs">{w.memberships[0]?.user.email}</Td>
             <Td>{w._count.businesses}</Td>
             <Td>{w._count.campaigns}</Td>
@@ -86,6 +96,34 @@ export default async function AdminPage() {
           Cole o webhook do canal de erros no campo &quot;Webhook do Discord para erros do sistema&quot; (em Integração, acima) e salve. Os avisos de campanhas, templates, qualidade e limites ficam em Configurações.
         </p>
         <ActionForm action={testErrorsDiscordAction} submit="Testar canal #erros" variant="secondary" />
+      </Card>
+
+      <Card className="p-5">
+        <div className="mb-1 font-semibold">Usuários ({users.length})</div>
+        <p className="mb-4 text-sm text-zinc-500">Todos os usuários da plataforma. &quot;Convite pendente&quot; = ainda não criou a senha; use Reenviar convite.</p>
+        <Table head={["Nome", "E-mail", "Conta / papel", "Status", ""]}>
+          {users.map((u) => (
+            <tr key={u.id}>
+              <Td className="font-medium">
+                {u.name}
+                {u.isSuperAdmin && <span className="ml-2"><Badge color="orange" dot={false}>Admin da plataforma</Badge></span>}
+              </Td>
+              <Td className="text-xs">{u.email}</Td>
+              <Td className="text-xs">
+                {u.memberships.map((m) => <div key={m.id}>{m.workspace.name} · <span className="text-zinc-500">{m.role === "OWNER" ? "dono" : m.role === "ADMIN" ? "admin" : "membro"}</span></div>)}
+                {u.memberships.length === 0 && <span className="text-zinc-400">sem conta</span>}
+              </Td>
+              <Td>
+                {u.lastLoginAt ? (
+                  <span className="text-xs text-zinc-500">Último acesso {u.lastLoginAt.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}</span>
+                ) : (
+                  <Badge color="yellow">Convite pendente</Badge>
+                )}
+              </Td>
+              <Td className="text-right"><UserActions id={u.id} email={u.email} isSelf={u.id === auth.user.id} /></Td>
+            </tr>
+          ))}
+        </Table>
       </Card>
 
       <Card className="p-5">

@@ -19,6 +19,7 @@ export async function createSession(userId: string, workspaceId: string) {
   const token = randomToken();
   const expiresAt = new Date(Date.now() + SESSION_DAYS * 86400_000);
   await prisma.session.create({ data: { id: sha256(token), userId, workspaceId, expiresAt } });
+  await prisma.user.update({ where: { id: userId }, data: { lastLoginAt: new Date() } });
   const jar = await cookies();
   jar.set(COOKIE, token, {
     httpOnly: true,
@@ -40,6 +41,8 @@ export type AuthContext = {
   user: { id: string; name: string; email: string; isSuperAdmin: boolean };
   workspace: { id: string; name: string; creditBalance: number; creditsPerMessage: number };
   role: "OWNER" | "ADMIN" | "MEMBER";
+  /** Admin da plataforma vendo a conta de um cliente (sem ser membro dela). */
+  inspecting: boolean;
 };
 
 export async function getAuth(): Promise<AuthContext | null> {
@@ -55,13 +58,15 @@ export async function getAuth(): Promise<AuthContext | null> {
     where: { userId_workspaceId: { userId: session.userId, workspaceId: session.workspaceId } },
     include: { workspace: true },
   });
-  if (!membership) return null;
   const { user } = session;
-  const ws = membership.workspace;
+  // Admin da plataforma pode abrir a conta de qualquer cliente
+  const ws = membership?.workspace ?? (user.isSuperAdmin ? await prisma.workspace.findUnique({ where: { id: session.workspaceId } }) : null);
+  if (!ws) return null;
   return {
     user: { id: user.id, name: user.name, email: user.email, isSuperAdmin: user.isSuperAdmin },
     workspace: { id: ws.id, name: ws.name, creditBalance: ws.creditBalance, creditsPerMessage: ws.creditsPerMessage },
-    role: membership.role,
+    role: membership?.role ?? "OWNER",
+    inspecting: !membership,
   };
 }
 
@@ -75,4 +80,12 @@ export async function requireSuperAdmin(): Promise<AuthContext> {
   const auth = await requireAuth();
   if (!auth.user.isSuperAdmin) redirect("/");
   return auth;
+}
+
+/** Troca a conta aberta na sessão atual (admin entrando na conta de um cliente, ou voltando). */
+export async function switchSessionWorkspace(workspaceId: string) {
+  const jar = await cookies();
+  const token = jar.get(COOKIE)?.value;
+  if (!token) return;
+  await prisma.session.update({ where: { id: sha256(token) }, data: { workspaceId } });
 }

@@ -1,7 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireAuth, requireSuperAdmin, hashPassword } from "@/lib/auth";
+import { requireAuth, requireSuperAdmin, hashPassword, switchSessionWorkspace } from "@/lib/auth";
+import { redirect } from "next/navigation";
 import { randomToken } from "@/lib/crypto";
 import { createPasswordLink } from "@/lib/password-tokens";
 import { sendInviteEmail, sendTestEmail } from "@/lib/email-templates";
@@ -78,7 +79,7 @@ export async function adminCreateWorkspaceAction(_: FormState, form: FormData): 
   const email = String(form.get("email") ?? "").trim().toLowerCase();
   const credits = Math.max(0, Math.trunc(Number(form.get("credits") ?? 0) || 0));
   if (!company || !name || !email) return { error: "Preencha nome da conta, nome do dono e e-mail" };
-  if (await prisma.user.findUnique({ where: { email } })) return { error: "E-mail já cadastrado" };
+  if (await prisma.user.findUnique({ where: { email } })) return { error: "Esse e-mail já tem usuário. Veja na lista de Usuários acima e use \"Reenviar convite\"." };
   const user = await prisma.user.create({
     data: {
       name,
@@ -171,4 +172,40 @@ export async function testErrorsDiscordAction(): Promise<FormState> {
     color: DISCORD_COLORS.SUCCESS,
   });
   return ok ? { ok: "Mensagem de teste enviada para #erros" } : { error: "O Discord recusou. Confira o link do webhook." };
+}
+
+// ---------------- Usuários (Admin) ----------------
+
+export async function adminResendInviteAction(userId: string): Promise<{ ok?: string; error?: string; link?: string }> {
+  await requireSuperAdmin();
+  const user = await prisma.user.findUnique({ where: { id: userId }, include: { memberships: { include: { workspace: true } } } });
+  if (!user) return { error: "Usuário não encontrado" };
+  const link = await createPasswordLink(user.id, user.lastLoginAt ? "RESET" : "INVITE");
+  const sent = await sendInviteEmail(user.email, user.name, user.memberships[0]?.workspace.name ?? "", link);
+  return sent ? { ok: `Convite reenviado para ${user.email}`, link } : { ok: "E-mail não configurado. Copie o link e envie para a pessoa.", link };
+}
+
+export async function adminDeleteUserAction(userId: string): Promise<{ ok?: string; error?: string }> {
+  const auth = await requireSuperAdmin();
+  if (userId === auth.user.id) return { error: "Você não pode excluir o seu próprio usuário." };
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) return { error: "Usuário não encontrado" };
+  await prisma.user.delete({ where: { id: userId } });
+  revalidatePath("/admin");
+  return { ok: `${user.email} excluído` };
+}
+
+export async function adminEnterWorkspaceAction(workspaceId: string) {
+  await requireSuperAdmin();
+  const ws = await prisma.workspace.findUnique({ where: { id: workspaceId } });
+  if (!ws) return;
+  await switchSessionWorkspace(ws.id);
+  redirect("/");
+}
+
+export async function backToMyWorkspaceAction() {
+  const auth = await requireAuth();
+  const own = await prisma.membership.findFirst({ where: { userId: auth.user.id }, orderBy: { role: "asc" } });
+  if (own) await switchSessionWorkspace(own.workspaceId);
+  redirect("/admin");
 }
