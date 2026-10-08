@@ -56,7 +56,7 @@ export function Sidebar({ workspace, user, unread, balance, isSuperAdmin }: { wo
         <Coins className="size-5 text-brand-400" />
       </Link>
 
-      <nav className="flex-1 space-y-5 overflow-y-auto">
+      <nav className="scrollbar-dark -mr-2 flex-1 space-y-5 overflow-y-auto pr-2">
         {all.map((section) => (
           <div key={section.title}>
             <div className="mb-1.5 px-3 text-[11px] font-medium uppercase tracking-wider text-zinc-600">{section.title}</div>

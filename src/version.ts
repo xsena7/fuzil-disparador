@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "1.16",
+    date: "08/10/2026",
+    items: ["Barras de rolagem finas na paleta do Fuzil: no menu lateral fica escura e discreta, laranja ao passar o mouse"],
+  },
+  {
     version: "1.15",
     date: "08/10/2026",
     items: ["Corrigido: HTTPS dos domínios (site, painel e links) depois da atualização anterior do servidor"],

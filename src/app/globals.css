@@ -28,3 +28,18 @@ input, select, textarea { font: inherit; }
 
 @keyframes fade-up { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
 .animate-fade-up { animation: fade-up 0.25s ease-out both; }
+
+/* Barras de rolagem finas, na paleta do Fuzil */
+* { scrollbar-width: thin; scrollbar-color: #d4d4d8 transparent; }
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #d4d4d8; border-radius: 999px; border: 2px solid transparent; background-clip: padding-box; }
+::-webkit-scrollbar-thumb:hover { background: #fb923c; background-clip: padding-box; }
+::-webkit-scrollbar-button { display: none; height: 0; width: 0; }
+
+/* Menu lateral escuro: trilho invisível, barra discreta que fica laranja ao passar o mouse */
+.scrollbar-dark { scrollbar-color: #2a2a33 transparent; }
+.scrollbar-dark:hover { scrollbar-color: #ff8a1f transparent; }
+.scrollbar-dark::-webkit-scrollbar { width: 6px; }
+.scrollbar-dark::-webkit-scrollbar-thumb { background: #2a2a33; border: 0; }
+.scrollbar-dark:hover::-webkit-scrollbar-thumb { background: linear-gradient(180deg, #ff8a1f, #ef2d56); }
