@@ -2,6 +2,15 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "1.18",
+    date: "08/10/2026",
+    items: [
+      "Chat com só duas abas: Disparando (recebeu e não reagiu) e Em andamento (respondeu ou clicou no botão do disparo)",
+      "Clique no link do disparo aparece dentro da conversa e leva o contato para Em andamento",
+      "Finalizadas ficam no ícone de caixa ao lado das abas",
+    ],
+  },
+  {
     version: "1.17",
     date: "08/10/2026",
     items: [

@@ -562,6 +562,7 @@ model Conversation {
   lastMessageText String?
   lastDirection  String? // IN | OUT
   lastInboundAt  DateTime? // abre a janela de 24h para mensagem livre
+  clickedAt      DateTime? // clicou no botão do disparo (vai para "Em andamento")
   assignedUserId String?
   closedAt       DateTime?
   createdAt      DateTime           @default(now())

@@ -367,3 +367,25 @@ export async function maybeAutoReply(conversationId: string, recipient: Campaign
     console.error("[auto-reply]", e instanceof Error ? e.message : e);
   }
 }
+
+/** Clique no botão do disparo: a conversa vai para "Em andamento" e ganha um aviso na linha do tempo. */
+export async function recordClick(recipient: Pick<CampaignRecipient, "senderId" | "phone">) {
+  if (!recipient.senderId) return;
+  const conv = await prisma.conversation.findUnique({ where: { phoneId_contactPhone: { phoneId: recipient.senderId, contactPhone: recipient.phone } } });
+  if (!conv || conv.clickedAt) return; // só o primeiro clique vira aviso
+  const now = new Date();
+  const claimed = await prisma.conversation.updateMany({
+    where: { id: conv.id, clickedAt: null },
+    data: {
+      clickedAt: now,
+      lastMessageAt: now,
+      lastMessageText: "🔗 Clicou no link do disparo",
+      lastDirection: "IN",
+      ...(conv.status === "CLOSED" ? { status: "OPEN", closedAt: null } : {}),
+    },
+  });
+  if (!claimed.count) return;
+  await prisma.chatMessage.create({
+    data: { conversationId: conv.id, workspaceId: conv.workspaceId, direction: "IN", kind: "click", text: "Clicou no link do disparo", source: "SYSTEM", createdAt: now },
+  });
+}

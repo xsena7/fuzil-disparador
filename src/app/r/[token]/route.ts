@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { env } from "@/lib/env";
+import { recordClick } from "@/lib/chat";
 
 const BOT_UA = /facebookexternalhit|facebot|whatsapp|bot\b|crawler|spider|preview|slurp|headless|curl|wget|python-requests/i;
 
@@ -26,6 +27,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ token: s
           where: { id: recipient.id },
           data: { clickCount: { increment: 1 }, firstClickAt: recipient.firstClickAt ?? new Date() },
         });
+        await recordClick(recipient);
       }
     } catch (err) {
       console.error("[redirect]", err);

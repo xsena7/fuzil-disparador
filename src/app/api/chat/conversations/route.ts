@@ -7,14 +7,15 @@ export const dynamic = "force-dynamic";
 
 /**
  * Lista de conversas do chat.
- * ?phone=<id>  ?group=<id>  ?tab=replied|unread|attending|closed|all  ?q=texto  ?before=<iso> (paginação)
+ * ?phone=<id>  ?group=<id>  ?tab=sending|active  ?closed=1  ?unread=1  ?q=texto  ?before=<iso> (paginação)
  */
 export async function GET(req: Request) {
   const auth = await getActiveAuth();
   if (!auth) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   const sp = new URL(req.url).searchParams;
   const ws = auth.workspace.id;
-  const tab = sp.get("tab") ?? "replied";
+  const tab = sp.get("tab") ?? "active";
+  const closed = sp.get("closed") === "1";
   const q = sp.get("q")?.trim();
   const before = sp.get("before");
   const phoneId = sp.get("phone");
@@ -33,11 +34,13 @@ export async function GET(req: Request) {
   const where: Prisma.ConversationWhereInput = {
     workspaceId: ws,
     ...(phoneIds ? { phoneId: { in: phoneIds } } : {}),
-    ...(tab === "replied" ? { hasInbound: true, status: { not: "CLOSED" } } : {}),
-    ...(tab === "unread" ? { unread: { gt: 0 } } : {}),
-    ...(tab === "attending" ? { status: "ATTENDING" } : {}),
-    ...(tab === "closed" ? { status: "CLOSED" } : {}),
-    ...(q ? { OR: [{ contactPhone: { contains: q.replace(/\D/g, "") || q } }, { contactName: { contains: q, mode: "insensitive" } }] } : {}),
+    // Disparando: só recebeu o disparo. Em andamento: respondeu OU clicou no botão.
+    // Finalizadas: todas, de qualquer aba
+    ...(closed ? { status: "CLOSED" as const } : { status: { not: "CLOSED" as const } }),
+    ...(!closed && tab === "sending" ? { hasInbound: false, clickedAt: null } : {}),
+    ...(!closed && tab === "active" ? { OR: [{ hasInbound: true }, { clickedAt: { not: null } }] } : {}),
+    ...(sp.get("unread") === "1" ? { unread: { gt: 0 } } : {}),
+    ...(q ? { AND: [{ OR: [{ contactPhone: { contains: q.replace(/\D/g, "") || q } }, { contactName: { contains: q, mode: "insensitive" } }] }] } : {}),
     ...(before ? { lastMessageAt: { lt: new Date(before) } } : {}),
   };
 
@@ -48,7 +51,7 @@ export async function GET(req: Request) {
       take: 40,
       select: {
         id: true, contactPhone: true, contactName: true, status: true, unread: true, hasInbound: true,
-        lastMessageAt: true, lastMessageText: true, lastDirection: true, lastInboundAt: true, phoneId: true,
+        lastMessageAt: true, lastMessageText: true, lastDirection: true, lastInboundAt: true, phoneId: true, clickedAt: true,
       },
     }),
     // Não lidas por número (para as "caixas")

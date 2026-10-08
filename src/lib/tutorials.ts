@@ -226,10 +226,10 @@ export const TUTORIALS: Tutorial[] = [
         kind: "steps",
         items: [
           "À esquerda, escolha um grupo ou um número para ver só as conversas dele (o número vermelho mostra quantas não lidas).",
-          "Abas: \"Respondidas\" mostra só quem falou com você; \"Todas\" inclui quem só recebeu o disparo.",
+          "Duas abas: \"Disparando\" mostra quem recebeu o disparo e ainda não reagiu; \"Em andamento\" mostra quem respondeu OU clicou no botão do disparo (o clique aparece na conversa). O ícone de caixa ao lado mostra as finalizadas.",
           "Abra a conversa e escreva embaixo. Enter envia, Shift+Enter quebra a linha. O clipe anexa imagem, vídeo, áudio ou PDF.",
           "Digite / para usar uma resposta rápida (cadastre as suas no raio ⚡ ao lado do campo).",
-          "\"Assumir\" marca que você está atendendo. \"Finalizar\" tira a conversa da lista; se o cliente falar de novo, ela volta sozinha.",
+          "\"Assumir\" marca que você está atendendo. \"Finalizar\" tira a conversa da lista; se o cliente falar ou clicar de novo, ela volta sozinha.",
         ],
       },
       { kind: "warn", text: "Janela de 24h (regra da Meta): você só pode mandar mensagem livre até 24h depois da última mensagem do cliente. O relógio verde no topo da conversa mostra quanto tempo falta. Depois disso, só dá para mandar template (botão \"Enviar template\")." },

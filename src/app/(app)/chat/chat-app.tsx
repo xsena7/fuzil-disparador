@@ -4,7 +4,9 @@ import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from
 import { useRouter } from "next/navigation";
 import clsx from "clsx";
 import {
+  Archive,
   ArrowLeft,
+  MessagesSquare,
   CheckCircle2,
   Clock,
   Copy,
@@ -43,6 +45,7 @@ type ConvRow = {
   lastDirection: string | null;
   lastInboundAt: string | null;
   phoneId: string;
+  clickedAt: string | null;
 };
 type ConvDetail = {
   id: string;
@@ -59,11 +62,8 @@ type Extra = {
 };
 
 const TABS = [
-  { key: "replied", label: "Respondidas" },
-  { key: "unread", label: "Não lidas" },
-  { key: "attending", label: "Em atendimento" },
-  { key: "closed", label: "Finalizadas" },
-  { key: "all", label: "Todas" },
+  { key: "sending", label: "Disparando", hint: "Quem recebeu o disparo e ainda não respondeu nem clicou" },
+  { key: "active", label: "Em andamento", hint: "Quem respondeu ou clicou no botão do disparo" },
 ] as const;
 
 const QUALITY_DOT: Record<string, string> = { GREEN: "bg-emerald-500", YELLOW: "bg-amber-400", RED: "bg-rose-500", UNKNOWN: "bg-zinc-400" };
@@ -117,7 +117,8 @@ export function ChatApp({
   const router = useRouter();
   const [group, setGroup] = useState("");
   const [phone, setPhone] = useState("");
-  const [tab, setTab] = useState<(typeof TABS)[number]["key"]>("replied");
+  const [tab, setTab] = useState<(typeof TABS)[number]["key"]>("active");
+  const [showClosed, setShowClosed] = useState(false);
   const [q, setQ] = useState("");
   const [convs, setConvs] = useState<ConvRow[] | null>(null);
   const [unreadByPhone, setUnreadByPhone] = useState<Record<string, number>>({});
@@ -144,6 +145,7 @@ export function ChatApp({
   // Lista de conversas (atualiza a cada 4s)
   const loadList = useCallback(async () => {
     const sp = new URLSearchParams({ tab });
+    if (showClosed) sp.set("closed", "1");
     if (phone) sp.set("phone", phone);
     else if (group) sp.set("group", group);
     if (q.trim()) sp.set("q", q.trim());
@@ -152,7 +154,7 @@ export function ChatApp({
       setConvs(data.conversations);
       setUnreadByPhone(data.unreadByPhone);
     }
-  }, [tab, phone, group, q]);
+  }, [tab, phone, group, q, showClosed]);
 
   useEffect(() => {
     setConvs(null);
@@ -285,24 +287,37 @@ export function ChatApp({
               <MessageSquarePlus className="size-4" />
             </button>
           </div>
-          <div className="scrollbar-thin -mx-1 flex gap-1 overflow-x-auto px-1 pb-0.5">
-            {TABS.map((t) => (
-              <button
-                key={t.key}
-                onClick={() => setTab(t.key)}
-                className={clsx("shrink-0 rounded-full px-3 py-1 text-xs font-medium transition", tab === t.key ? "bg-ink text-white" : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200")}
-              >
-                {t.label}
-              </button>
-            ))}
+          <div className="flex items-center gap-2">
+            <div className="grid flex-1 grid-cols-2 rounded-xl bg-zinc-100 p-1">
+              {TABS.map((t) => (
+                <button
+                  key={t.key}
+                  title={t.hint}
+                  onClick={() => { setTab(t.key); setShowClosed(false); }}
+                  className={clsx("rounded-lg py-1.5 text-xs font-semibold transition", tab === t.key && !showClosed ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-500 hover:text-zinc-800")}
+                >
+                  {t.key === "sending" ? <Megaphone className="mr-1 inline size-3.5 text-orange-500" /> : <MessagesSquare className="mr-1 inline size-3.5 text-emerald-600" />}
+                  {t.label}
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={() => setShowClosed(!showClosed)}
+              title={showClosed ? "Voltar para as abertas" : "Ver finalizadas"}
+              className={clsx("flex size-9 shrink-0 items-center justify-center rounded-xl transition", showClosed ? "bg-ink text-white" : "bg-zinc-100 text-zinc-500 hover:text-zinc-800")}
+              aria-label="Finalizadas"
+            >
+              <Archive className="size-4" />
+            </button>
           </div>
+          {showClosed && <div className="text-xs text-zinc-500">Mostrando as finalizadas · <button onClick={() => setShowClosed(false)} className="font-medium text-brand-600 hover:underline">voltar</button></div>}
         </div>
         <div className="scrollbar-thin flex-1 overflow-y-auto">
           {convs === null && <div className="flex justify-center p-8"><Loader2 className="size-5 animate-spin text-zinc-300" /></div>}
           {convs?.length === 0 && (
             <div className="px-6 py-14 text-center text-sm text-zinc-400">
               <Inbox className="mx-auto mb-3 size-8 text-zinc-300" />
-              {tab === "replied" ? "Nenhum cliente respondeu ainda. As respostas dos disparos aparecem aqui na hora." : "Nada por aqui."}
+              {showClosed ? "Nenhuma conversa finalizada." : tab === "active" ? "Ninguém respondeu nem clicou ainda. Quando um cliente responder ou clicar no botão do disparo, a conversa aparece aqui na hora." : "Nenhum disparo aguardando resposta."}
             </div>
           )}
           {convs?.map((c) => {
@@ -332,7 +347,7 @@ export function ChatApp({
                     {!phone && p && <span className="truncate">{p.display}</span>}
                     {c.status === "ATTENDING" && <span className="rounded bg-sky-50 px-1.5 text-sky-700">em atendimento</span>}
                     {c.status === "CLOSED" && <span className="rounded bg-zinc-100 px-1.5 text-zinc-500">finalizada</span>}
-                    {!c.hasInbound && <span className="rounded bg-orange-50 px-1.5 text-orange-600">só disparo</span>}
+                    {c.clickedAt && <span className="flex items-center gap-0.5 rounded bg-sky-50 px-1.5 text-sky-700"><MousePointerClick className="size-3" /> clicou</span>}
                   </span>
                 </span>
               </button>
@@ -475,7 +490,7 @@ export function ChatApp({
           templates={templates}
           defaultPhone={phone}
           onClose={() => setNewConv(false)}
-          onCreated={(id) => { setNewConv(false); setTab("all"); void loadList(); void openConversation(id); }}
+          onCreated={(id) => { setNewConv(false); setTab("active"); void loadList(); void openConversation(id); }}
         />
       )}
     </div>

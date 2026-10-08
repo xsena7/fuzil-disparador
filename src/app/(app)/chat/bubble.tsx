@@ -2,7 +2,7 @@
 
 import { Fragment, type ReactNode } from "react";
 import clsx from "clsx";
-import { AlertCircle, Check, CheckCheck, Clock, FileText, MapPin, Megaphone, Zap } from "lucide-react";
+import { AlertCircle, Check, CheckCheck, Clock, FileText, MapPin, Megaphone, MousePointerClick, Zap } from "lucide-react";
 
 export type ChatMsg = {
   id: string;
@@ -15,7 +15,7 @@ export type ChatMsg = {
   mediaName: string | null;
   status: string | null;
   error: string | null;
-  source: "CAMPAIGN" | "AUTO_REPLY" | "AGENT" | "CUSTOMER";
+  source: "CAMPAIGN" | "AUTO_REPLY" | "AGENT" | "CUSTOMER" | "SYSTEM";
   campaignId: string | null;
   createdAt: string;
 };
@@ -140,7 +140,15 @@ export function MessageList({ messages, campaignNames }: { messages: ChatMsg[]; 
         return (
           <Fragment key={m.id}>
             {newDay && <DaySeparator iso={m.createdAt} />}
-            <div className="py-1"><Bubble m={m} campaignName={m.campaignId ? campaignNames[m.campaignId] : undefined} /></div>
+            {m.kind === "click" ? (
+              <div className="my-2 flex justify-center">
+                <span className="flex items-center gap-1.5 rounded-full bg-sky-50 px-3 py-1 text-xs font-medium text-sky-700 ring-1 ring-sky-200">
+                  <MousePointerClick className="size-3.5" /> {m.text} · {time(m.createdAt)}
+                </span>
+              </div>
+            ) : (
+              <div className="py-1"><Bubble m={m} campaignName={m.campaignId ? campaignNames[m.campaignId] : undefined} /></div>
+            )}
           </Fragment>
         );
       })}
