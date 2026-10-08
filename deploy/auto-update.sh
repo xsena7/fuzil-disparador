@@ -10,7 +10,7 @@ if [ "$(git rev-parse HEAD)" != "$(git rev-parse "origin/$BRANCH")" ]; then
   git rev-parse --short HEAD > VERSION
   chmod +x deploy/*.sh
   docker compose up -d --build
-  # Recarrega o Caddy (pega mudanças no Caddyfile, ex.: domínio novo)
-  docker compose exec -T caddy caddy reload --config /etc/caddy/conf/Caddyfile --adapter caddyfile >/dev/null 2>&1 || docker compose restart caddy
+  # Reinicia o Caddy para reler o Caddyfile da pasta deploy (ex.: domínio novo)
+  docker compose restart caddy
   docker image prune -f >/dev/null
 fi

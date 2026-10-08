@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "1.15",
+    date: "08/10/2026",
+    items: ["Corrigido: HTTPS dos domínios (site, painel e links) depois da atualização anterior do servidor"],
+  },
+  {
     version: "1.14",
     date: "08/10/2026",
     items: [
