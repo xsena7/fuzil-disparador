@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, type ReactNode } from "react";
+import { useActionState, useEffect, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
 import type { FormState } from "@/app/actions/auth";
 import { Button } from "./ui";
 
@@ -19,6 +20,11 @@ export function ActionForm({
   variant?: "primary" | "secondary" | "danger";
 }) {
   const [state, formAction, pending] = useActionState(action, undefined);
+  const router = useRouter();
+  // Atualiza os dados da tela depois de salvar (sem prender o botão em "Aguarde...")
+  useEffect(() => {
+    if (state?.ok) router.refresh();
+  }, [state, router]);
   return (
     <form action={formAction} className={className}>
       {children}

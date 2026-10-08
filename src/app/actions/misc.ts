@@ -124,7 +124,6 @@ export async function adminCreateWorkspaceAction(_: FormState, form: FormData): 
   if (credits > 0) await addCredits(user.memberships[0].workspaceId, credits, "TOPUP", "Crédito inicial", { createdById: auth.user.id });
   const link = await createPasswordLink(user.id, "INVITE");
   const sent = await sendInviteEmail(email, name, company, link);
-  revalidatePath("/admin");
   return sent
     ? { ok: `Conta criada e convite enviado para ${email}.` }
     : { ok: `Conta criada. E-mail não configurado — envie este link para o cliente: ${link}` };
@@ -149,7 +148,6 @@ export async function adminSavePlatformAction(_: FormState, form: FormData): Pro
     await savePlatformSetting(key, value);
   }
   await refreshPlatformSettings();
-  revalidatePath("/", "layout");
   return { ok: "Integração salva. Já está valendo (o worker atualiza em até 30s)." };
 }
 
@@ -169,7 +167,6 @@ export async function saveDiscordAction(_: FormState, form: FormData): Promise<F
   }
   await savePlatformSetting("DISCORD_CHANNELS", JSON.stringify(hooks));
   await refreshPlatformSettings();
-  revalidatePath("/admin");
   return { ok: "Canais do Discord salvos" };
 }
 
@@ -330,6 +327,5 @@ export async function adminSaveCompanyAction(_: FormState, form: FormData): Prom
     await savePlatformSetting(key, value);
   }
   await refreshPlatformSettings();
-  revalidatePath("/", "layout");
   return { ok: "Dados da empresa salvos. O site já mostra as informações novas." };
 }
