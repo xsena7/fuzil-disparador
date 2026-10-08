@@ -1,0 +1,62 @@
+# Sobe tudo numa VM só: banco, painel, worker de disparo e HTTPS automático.
+#   cp .env.example .env   (preencha)
+#   docker compose up -d --build
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: fuzil
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-fuzil}
+      POSTGRES_DB: fuzil
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fuzil"]
+      interval: 5s
+      retries: 10
+
+  app:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://fuzil:${POSTGRES_PASSWORD:-fuzil}@db:5432/fuzil
+      UPLOAD_DIR: /data/uploads
+    volumes:
+      - uploads:/data/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+
+  worker:
+    build: .
+    restart: unless-stopped
+    command: ["npx", "tsx", "src/worker/index.ts"]
+    stop_grace_period: 60s
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://fuzil:${POSTGRES_PASSWORD:-fuzil}@db:5432/fuzil
+      UPLOAD_DIR: /data/uploads
+    volumes:
+      - uploads:/data/uploads
+    depends_on:
+      - app
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    env_file: .env
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+    depends_on:
+      - app
+
+volumes:
+  pgdata:
+  uploads:
+  caddy_data:

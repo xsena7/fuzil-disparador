@@ -21,6 +21,7 @@ export type Sender = {
   display: string;
   businessId: string;
   businessName: string;
+  wabaId: string; // id interno da WABA
   token: string;
   template: { name: string; language: string; components: TComponent[] };
 };
@@ -104,6 +105,7 @@ export async function planSenders(
           display,
           businessId: business.id,
           businessName: business.name,
+          wabaId: waba.id,
           token,
           template: { name: tpl.name, language: tpl.language, components: tpl.components as unknown as TComponent[] },
         });
@@ -215,6 +217,14 @@ async function sendOne(sender: Sender, campaign: Campaign, r: CampaignRecipient)
   }
 }
 
+async function templateStillUtility(sender: Sender): Promise<boolean> {
+  const tpl = await prisma.template.findUnique({
+    where: { wabaId_name_language: { wabaId: sender.wabaId, name: sender.template.name, language: sender.template.language } },
+    select: { category: true, status: true },
+  });
+  return tpl?.category === "UTILITY" && tpl.status === "APPROVED";
+}
+
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 /** Executa um "tick" de uma campanha em andamento. */
@@ -299,6 +309,12 @@ export async function runCampaignTick(campaignId: string) {
       for (let offset = 0; offset < items.length; offset += rate) {
         const chunk = items.slice(offset, offset + rate);
         const t0 = Date.now();
+        // Trava de segurança: reconfere a categoria a cada leva (a recategorização pode chegar no meio do lote)
+        if (!(await templateStillUtility(sender))) {
+          await releaseRecipients(items.slice(offset).map((r) => r.id));
+          refund += (items.length - offset) * price;
+          break;
+        }
         await Promise.all(
           chunk.map(async (r) => {
             if (templateFatal || fatalSenders.has(sender.phoneId)) {

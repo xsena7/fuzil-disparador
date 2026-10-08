@@ -52,21 +52,23 @@ async function housekeeping() {
   // Campanhas "RUNNING" sem pendentes (ex.: todos descadastrados) são finalizadas
   const runningCampaigns = await prisma.campaign.findMany({ where: { status: "RUNNING" }, select: { id: true } });
   for (const c of runningCampaigns) if (!running.has(c.id)) await maybeComplete(c.id);
-  // Sessões vencidas
+  // Sessões vencidas e eventos de webhook antigos (já processados)
   await prisma.session.deleteMany({ where: { expiresAt: { lt: new Date() } } });
+  await prisma.webhookEvent.deleteMany({ where: { createdAt: { lt: new Date(Date.now() - 3 * 86400_000) } } });
 }
 
 async function main() {
   console.log("[worker] Fuzil Disparador worker iniciado");
   process.on("SIGTERM", () => (stopping = true));
   process.on("SIGINT", () => (stopping = true));
-  await Promise.all([
-    dispatchLoop(),
-    every(SYNC_EVERY_MS, "sync", syncAll),
-    every(BLUEPRINT_EVERY_MS, "blueprints", () => deployBlueprints()),
-    every(60_000, "housekeeping", housekeeping),
-  ]);
+  void every(SYNC_EVERY_MS, "sync", syncAll);
+  void every(BLUEPRINT_EVERY_MS, "blueprints", () => deployBlueprints());
+  void every(60_000, "housekeeping", housekeeping);
+  await dispatchLoop();
+  // Desligamento: espera os envios em andamento terminarem
+  while (running.size) await new Promise((r) => setTimeout(r, 200));
   await prisma.$disconnect();
+  process.exit(0);
 }
 
 main();

@@ -48,6 +48,7 @@ export function TimelineChart({ data }: { data: Point[] }) {
             return (
               <g key={s.key}>
                 <polyline points={pts} fill="none" stroke={s.color} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
+                {data.length <= 3 && data.map((d, i) => <circle key={i} cx={x(i)} cy={y(d[s.key])} r={4} fill={s.color} stroke="#fff" strokeWidth={2} />)}
                 {hover !== null && <circle cx={x(hover)} cy={y(data[hover][s.key])} r={4} fill={s.color} stroke="#fff" strokeWidth={2} />}
                 <text x={x(data.length - 1) + 6} y={y(last[s.key]) + 3} fontSize={10} fill="#52525b">{s.label}</text>
               </g>

@@ -12,7 +12,7 @@
     "db:dev": "prisma migrate dev",
     "typecheck": "tsc --noEmit",
     "test": "tsx --test src/lib/*.test.ts",
-    "admin:create": "tsx scripts/create-admin.ts"
+    "mock:meta": "tsx scripts/mock-meta.ts"
   },
   "dependencies": {
     "@prisma/client": "6.19.3",

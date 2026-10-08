@@ -18,7 +18,7 @@ export async function connectManualAction(_: FormState, form: FormData): Promise
   const auth = await requireAuth();
   const wabaId = String(form.get("wabaId") ?? "").trim();
   const token = String(form.get("token") ?? "").trim();
-  if (!/^\d{5,}$/.test(wabaId)) return { error: "Informe o ID da WABA (só números)" };
+  if (!/^\d+$/.test(wabaId)) return { error: "Informe o ID da WABA (só números)" };
   if (!token && !env.metaSystemToken()) return { error: "Informe um token de acesso (ou configure o token do Tech Provider)" };
   try {
     await connectWaba({ workspaceId: auth.workspace.id, wabaId, accessTokenEnc: token ? encrypt(token) : null, connectionType: "MANUAL" });

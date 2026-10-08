@@ -1,0 +1,5 @@
+# HTTPS automático (Let's Encrypt) para o painel e para o domínio dos links.
+{$APP_DOMAIN}, {$LINK_DOMAIN} {
+	encode gzip
+	reverse_proxy app:3000
+}
