@@ -1,0 +1,13 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-50: #fff4ed;
+  --color-brand-100: #ffe6d4;
+  --color-brand-500: #f05a1a;
+  --color-brand-600: #d9480f;
+  --color-brand-700: #b43a0c;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+}
+
+html, body { background: #fafafa; color: #18181b; }
+input, select, textarea { font: inherit; }

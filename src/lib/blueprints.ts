@@ -64,17 +64,22 @@ export async function deployBlueprints(workspaceId?: string) {
     for (const waba of wabas) {
       const dep = bp.deployments.find((d) => d.wabaId === waba.id);
       // Não insiste em WABAs onde já foi recategorizado/rejeitado; erros tentam até 3x
-      if (dep && (dep.status !== "ERROR" || dep.attempts >= 3)) continue;
+      if (dep && (dep.status === "RECATEGORIZED_DELETED" || (dep.status === "ERROR" && dep.attempts >= 3))) continue;
 
       const existing = await prisma.template.findUnique({
         where: { wabaId_name_language: { wabaId: waba.id, name: bp.name, language: bp.language } },
       });
+      // Já enviado: só acompanha o status (não cria de novo enquanto a sincronização não trouxer)
+      if (dep && dep.status !== "ERROR" && !existing) continue;
       if (existing) {
-        await prisma.templateDeployment.upsert({
-          where: { blueprintId_wabaId: { blueprintId: bp.id, wabaId: waba.id } },
-          create: { blueprintId: bp.id, wabaId: waba.id, status: deploymentStatusFor(existing.status, existing.category) },
-          update: { status: deploymentStatusFor(existing.status, existing.category), error: null },
-        });
+        const status = deploymentStatusFor(existing.status, existing.category);
+        if (dep?.status !== status) {
+          await prisma.templateDeployment.upsert({
+            where: { blueprintId_wabaId: { blueprintId: bp.id, wabaId: waba.id } },
+            create: { blueprintId: bp.id, wabaId: waba.id, status },
+            update: { status, error: existing.rejectedReason },
+          });
+        }
         if (existing.category !== "UTILITY") await handleRecategorized(bp.workspaceId, waba.id, bp.name, bp.language, existing.category);
         continue;
       }

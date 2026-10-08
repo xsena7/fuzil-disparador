@@ -21,3 +21,14 @@ export const env = {
 export function metaConfigured() {
   return Boolean(env.metaAppId() && env.metaAppSecret());
 }
+
+/**
+ * Base da URL rastreada dos botões (sem https://).
+ * Com domínio próprio para links: "fzl.ink" → https://fzl.ink/{{1}}
+ * Usando o mesmo domínio do painel: "painel.com/r" → https://painel.com/r/{{1}}
+ */
+export function trackedUrlBase(): string {
+  const dom = env.redirectDomain().replace(/^https?:\/\//, "").replace(/\/$/, "");
+  const appHost = env.appUrl().replace(/^https?:\/\//, "");
+  return dom === appHost ? `${dom}/r` : dom;
+}

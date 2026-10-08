@@ -44,7 +44,7 @@ export type TemplateShape = {
 
 export function isTrackedUrl(url: string, redirectDomain: string) {
   const base = url.replace(/^https?:\/\//, "").replace(/\{\{\s*1\s*\}\}$/, "").replace(/\/$/, "");
-  const dom = redirectDomain.replace(/^https?:\/\//, "").replace(/\/$/, "");
+  const dom = redirectDomain.replace(/^https?:\/\//, "").replace(/\/$/, "").replace(/\/r$/, "");
   return url.includes("{{1}}") && (base === dom || base === `${dom}/r`);
 }
 
