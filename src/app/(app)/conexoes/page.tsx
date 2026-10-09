@@ -67,7 +67,7 @@ export default async function ConnectionsPage() {
                     {!waba.webhookSubscribed && <Badge color="yellow">Webhook não inscrito</Badge>}
                     {waba.lastSyncError && <Badge color="red">Erro: {waba.lastSyncError.slice(0, 80)}</Badge>}
                     <span className="ml-auto text-xs text-zinc-400">
-                      {waba.lastSyncedAt ? `Sincronizado ${waba.lastSyncedAt.toLocaleString("pt-BR")}` : "Nunca sincronizado"}
+                      {waba.lastSyncedAt ? `Sincronizado ${waba.lastSyncedAt.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}` : "Nunca sincronizado"}
                     </span>
                     <ConfirmButton action={syncWabaAction.bind(null, waba.id)} variant="ghost" className="px-2 py-1"><RefreshCw className="size-4" /></ConfirmButton>
                     <ConfirmButton action={deleteWabaAction.bind(null, waba.id)} variant="ghost" className="px-2 py-1 text-red-600" confirm={`Remover a WABA ${waba.name} do painel? (Nada é apagado na Meta)`}><Trash2 className="size-4" /></ConfirmButton>
@@ -112,9 +112,9 @@ export default async function ConnectionsPage() {
         </p>
         <ActionForm action={connectManualAction} submit="Conectar WABA">
           <div className="grid gap-4 md:grid-cols-2">
-            <Field label="ID da WABA"><Input name="wabaId" placeholder="1673861331112475" required /></Field>
+            <Field label="ID da WABA"><Input name="wabaId" placeholder="1673861331112475" required autoComplete="off" inputMode="numeric" /></Field>
             <Field label="Token de acesso (opcional)" hint="System User token com whatsapp_business_management e whatsapp_business_messaging">
-              <PasswordInput name="token" placeholder="EAAG..." />
+              <PasswordInput name="token" placeholder="EAAG..." autoComplete="new-password" data-lpignore="true" data-1p-ignore="true" />
             </Field>
           </div>
         </ActionForm>

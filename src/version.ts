@@ -2,6 +2,15 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "1.19",
+    date: "09/10/2026",
+    items: [
+      "Corrigido: horário de \"Sincronizado\" em Conexões e do gráfico das campanhas agora no horário de Brasília",
+      "Corrigido: \"limite cheio\" aparecia quando a BM não tinha nenhum envio (agora diz que o limite inteiro está disponível)",
+      "Configuração manual em Conexões: o navegador não preenche mais e-mail e senha nos campos de WABA e token",
+    ],
+  },
+  {
     version: "1.18",
     date: "08/10/2026",
     items: [

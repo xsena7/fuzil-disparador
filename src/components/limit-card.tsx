@@ -39,7 +39,7 @@ export function LimitWindow({ w, compact = false }: { w: BmWindow; compact?: boo
           )}
         </div>
       ) : (
-        <div className="mt-3 text-xs text-zinc-500">Nenhum envio nas últimas 24h — limite cheio.</div>
+        <div className="mt-3 text-xs text-zinc-500">Nenhum envio nas últimas 24h: o limite inteiro está disponível.</div>
       )}
       {!compact && w.releases.length > 1 && (
         <div className="mt-3 flex flex-wrap gap-1.5">

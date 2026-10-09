@@ -19,7 +19,7 @@ export function TimelineChart({ data }: { data: Point[] }) {
   const x = (i: number) => L + (data.length === 1 ? (W - L - R) / 2 : (i * (W - L - R)) / (data.length - 1));
   const y = (v: number) => T + (H - T - B) * (1 - v / max);
   const ticks = [0, max / 2, max].map((v) => Math.round(v));
-  const fmtHour = (s: string) => new Date(s).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit" }) + "h";
+  const fmtHour = (s: string) => new Date(s).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", hour: "2-digit" }) + "h";
   const step = Math.max(1, Math.ceil(data.length / 8));
   const h = hover !== null ? data[hover] : null;
 
