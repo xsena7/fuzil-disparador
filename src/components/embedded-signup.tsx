@@ -66,8 +66,9 @@ export function EmbeddedSignup({ appId, configId, graphVersion }: { appId: strin
           setMsg({ error: "Login com a Meta não foi concluído" });
           return;
         }
-        // O evento com waba_id pode chegar logo depois do callback
-        setTimeout(async () => {
+        // O evento com waba_id pode chegar logo depois do callback: espera até 6s por ele
+        void (async () => {
+          for (let i = 0; i < 12 && !session.current.waba_id; i++) await new Promise((r) => setTimeout(r, 500));
           const res = await fetch("/api/meta/embedded-signup", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -80,7 +81,7 @@ export function EmbeddedSignup({ appId, configId, graphVersion }: { appId: strin
             setMsg({ ok: "Conectado! Números e templates sincronizados." });
             router.refresh();
           }
-        }, 1500);
+        })();
       },
       {
         config_id: configId,
@@ -89,6 +90,7 @@ export function EmbeddedSignup({ appId, configId, graphVersion }: { appId: strin
         extras: {
           setup: {},
           sessionInfoVersion: "3",
+          version: "v4",
           ...(type === "COEXISTENCE" ? { featureType: "whatsapp_business_app_onboarding" } : {}),
         },
       },

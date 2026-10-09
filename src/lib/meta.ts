@@ -262,6 +262,17 @@ export const meta = {
   // Embedded Signup
   // -------------------------------------------------------------------------
 
+  /** WABAs liberadas para um token (usado quando o evento do cadastro não trouxe o waba_id). */
+  async wabaIdsFromToken(token: string): Promise<string[]> {
+    const url = new URL(`${env.metaGraphUrl()}/${env.metaGraphVersion()}/debug_token`);
+    url.searchParams.set("input_token", token);
+    url.searchParams.set("access_token", `${env.metaAppId()}|${env.metaAppSecret()}`);
+    const res = await fetch(url, { signal: AbortSignal.timeout(20_000) });
+    const json: any = await res.json().catch(() => ({}));
+    const scopes: Array<{ scope: string; target_ids?: string[] }> = json?.data?.granular_scopes ?? [];
+    return [...new Set(scopes.filter((s) => s.scope === "whatsapp_business_management").flatMap((s) => s.target_ids ?? []))];
+  },
+
   async exchangeCode(code: string): Promise<string> {
     const url = new URL(`${env.metaGraphUrl()}/${env.metaGraphVersion()}/oauth/access_token`);
     url.searchParams.set("client_id", env.metaAppId());

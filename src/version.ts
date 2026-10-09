@@ -2,6 +2,14 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "1.20",
+    date: "09/10/2026",
+    items: [
+      "Conectar Cloud API / Coexistência: compatível com a versão nova (v4) do cadastro da Meta",
+      "Se a Meta demorar a informar a conta escolhida, o Fuzil espera e, se preciso, descobre a conta pelo próprio token",
+    ],
+  },
+  {
     version: "1.19",
     date: "09/10/2026",
     items: [
