@@ -2,6 +2,14 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "1.21",
+    date: "17/10/2026",
+    items: [
+      "Templates: agora aparecem em gavetas, uma por conta. Clique na conta para ver os templates dela",
+      "Excluir template apaga direto na Meta e avisa o motivo se a Meta recusar",
+    ],
+  },
+  {
     version: "1.20",
     date: "09/10/2026",
     items: [

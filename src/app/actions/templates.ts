@@ -136,13 +136,24 @@ export async function createTemplateAction(_: FormState, form: FormData): Promis
   return ok === results.length ? { ok: parts.join(" ") } : { error: parts.join(" ") };
 }
 
-export async function deleteTemplateAction(templateId: string) {
+/** Apaga o template direto na Meta e, se deu certo (ou ele já não existia lá), tira da plataforma. */
+export async function deleteTemplateAction(templateId: string): Promise<{ ok?: boolean; error?: string }> {
   const auth = await requireAuth();
   const tpl = await prisma.template.findFirst({ where: { id: templateId, workspaceId: auth.workspace.id }, include: { waba: true } });
-  if (!tpl) return;
-  await meta.deleteTemplate(wabaToken(tpl.waba), tpl.waba.wabaId, tpl.name).catch((e) => console.error(e));
+  if (!tpl) return { ok: true };
+  const token = wabaToken(tpl.waba);
+  try {
+    await meta.deleteTemplate(token, tpl.waba.wabaId, tpl.name, tpl.metaTemplateId ?? undefined);
+  } catch (e) {
+    // Se a Meta não tem mais esse template, só limpa aqui; senão mostra o motivo
+    const still = await meta
+      .listTemplates(token, tpl.waba.wabaId)
+      .then((list) => list.some((t) => t.name === tpl.name && t.language === tpl.language))
+      .catch(() => true);
+    if (still) return { error: `A Meta não deixou excluir "${tpl.name}": ${e instanceof Error ? e.message : String(e)}` };
+  }
   await prisma.template.delete({ where: { id: tpl.id } });
-  revalidatePath("/templates");
+  return { ok: true };
 }
 
 export async function toggleBlueprintAction(id: string) {

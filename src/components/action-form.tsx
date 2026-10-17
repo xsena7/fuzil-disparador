@@ -37,12 +37,15 @@ export function ActionForm({
   );
 }
 
-/** Botão que chama uma server action simples, com confirmação opcional. */
+/** Botão que chama uma server action simples, com confirmação opcional. Se a ação devolver `{ error }`, avisa. */
 export function ConfirmButton({ action, children, confirm, variant = "secondary", className }: { action: () => Promise<unknown>; children: ReactNode; confirm?: string; variant?: "primary" | "secondary" | "danger" | "ghost"; className?: string }) {
+  const router = useRouter();
   return (
     <form
       action={async () => {
-        await action();
+        const r = await action();
+        if (r && typeof r === "object" && "error" in r && r.error) window.alert(String(r.error));
+        else if (r && typeof r === "object" && "ok" in r) router.refresh();
       }}
       onSubmit={(e) => {
         if (confirm && !window.confirm(confirm)) e.preventDefault();

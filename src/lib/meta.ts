@@ -174,8 +174,9 @@ export const meta = {
     return graph<{ id: string; status: string; category: string }>(token, "POST", `${wabaId}/message_templates`, { body });
   },
 
-  deleteTemplate(token: string, wabaId: string, name: string) {
-    return graph<{ success: boolean }>(token, "DELETE", `${wabaId}/message_templates`, { query: { name } });
+  /** Com `hsmId` apaga só aquele idioma; sem ele, a Meta apaga todos os idiomas com esse nome. */
+  deleteTemplate(token: string, wabaId: string, name: string, hsmId?: string) {
+    return graph<{ success: boolean }>(token, "DELETE", `${wabaId}/message_templates`, { query: { name, hsm_id: hsmId } });
   },
 
   /** Upload resumável: retorna o "handle" usado como exemplo de mídia no template. */
