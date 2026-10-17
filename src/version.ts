@@ -7,6 +7,7 @@ export const CHANGELOG: Array<{ version: string; date: string; items: string[] }
     items: [
       "Templates: agora aparecem em gavetas, uma por conta. Clique na conta para ver os templates dela",
       "Excluir template apaga direto na Meta e avisa o motivo se a Meta recusar",
+      "Templates de exemplo da Meta (hello_world, jaspers_market...) aparecem marcados e sem o botão Excluir, porque a Meta não deixa apagar",
     ],
   },
   {

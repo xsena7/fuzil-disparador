@@ -11,6 +11,9 @@ import { ago, templateUsage } from "@/lib/limit-windows";
 
 export const dynamic = "force-dynamic";
 
+/** Templates de exemplo que a própria Meta coloca nas contas: não dá para apagar. */
+const isMetaSample = (name: string) => name === "hello_world" || /^(jaspers_market_|sample_)/.test(name);
+
 export default async function TemplatesPage({ searchParams }: { searchParams: Promise<{ q?: string; cat?: string }> }) {
   const auth = await requireAuth();
   const { q, cat } = await searchParams;
@@ -125,6 +128,11 @@ export default async function TemplatesPage({ searchParams }: { searchParams: Pr
                           {u ? <> · {u.day.toLocaleString("pt-BR")} nas últimas 24h · {u.total.toLocaleString("pt-BR")} no total</> : null}
                         </p>
                       </div>
+                      {isMetaSample(t.name) ? (
+                        <span className="rounded-full bg-zinc-100 px-2.5 py-1 text-xs text-zinc-500" title="A Meta coloca esse template em toda conta nova e não deixa apagar. Ele não atrapalha os disparos.">
+                          Exemplo da Meta
+                        </span>
+                      ) : (
                       <ConfirmButton
                         action={deleteTemplateAction.bind(null, t.id)}
                         variant="ghost"
@@ -133,6 +141,7 @@ export default async function TemplatesPage({ searchParams }: { searchParams: Pr
                       >
                         <Trash2 className="size-4" /> Excluir
                       </ConfirmButton>
+                      )}
                     </div>
                   );
                 })}
