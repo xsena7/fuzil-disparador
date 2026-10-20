@@ -1,7 +1,8 @@
 import { Plus, RefreshCw, Trash2 } from "lucide-react";
+import { Drawer, MetaItem } from "@/components/drawer";
 import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { Badge, Card, Empty, LinkButton, PageHeader, type BadgeColor } from "@/components/ui";
+import { Badge, Empty, LinkButton, PageHeader, type BadgeColor } from "@/components/ui";
 import { ConfirmButton } from "@/components/action-form";
 import { deleteBlueprintAction, deployNowAction, toggleBlueprintAction } from "@/app/actions/templates";
 import type { TComponent } from "@/lib/template-utils";
@@ -34,7 +35,7 @@ export default async function BlueprintsPage() {
     <div className="mx-auto max-w-6xl">
       <PageHeader
         title="Templates padrão"
-        description="Templates que sobem sozinhos em todas as BMs da conta (ou de um grupo). Verificação automática a cada 5 minutos."
+        description="Sobem sozinhos em todas as BMs (ou num grupo) e são conferidos a cada 5 minutos."
         actions={
           <>
             <ConfirmButton action={deployNowAction}><RefreshCw className="size-4" /> Aplicar agora</ConfirmButton>
@@ -43,17 +44,29 @@ export default async function BlueprintsPage() {
         }
       />
       {blueprints.length === 0 && <Empty>Nenhum template padrão. Crie um e ele será replicado em todas as BMs.</Empty>}
-      <div className="space-y-4">
+      <div className="space-y-3">
         {blueprints.map((bp) => {
           const scope = wabas.filter((w) => !bp.groupId || w.business.groups.some((g) => g.groupId === bp.groupId));
           const body = (bp.components as unknown as TComponent[]).find((c) => c.type === "BODY")?.text ?? "";
+          const deps = scope.map((w) => bp.deployments.find((d) => d.wabaId === w.id));
+          const approved = deps.filter((d) => d?.status === "APPROVED").length;
+          const bad = deps.filter((d) => d && ["REJECTED", "ERROR", "MARKETING_ON_CREATE"].includes(d.status)).length;
           return (
-            <Card key={bp.id} className="p-5">
-              <div className="mb-2 flex flex-wrap items-center gap-2">
-                <span className="text-base font-semibold">{bp.name}</span>
-                <span className="text-xs text-zinc-500">{bp.language}</span>
-                <Badge color={bp.active ? "green" : "gray"}>{bp.active ? "Ativo" : "Desativado"}</Badge>
-                <Badge dot={false}>{bp.group ? `Grupo: ${bp.group.name}` : "Todas as BMs"}</Badge>
+            <Drawer
+              key={bp.id}
+              title={<>{bp.name} <span className="text-xs font-normal text-zinc-400">{bp.language}</span></>}
+              subtitle={body}
+              tone={!bp.active ? "gray" : bad > 0 ? "red" : approved === scope.length ? "green" : "amber"}
+              toneTitle={!bp.active ? "Desativado" : bad > 0 ? "Tem BM com problema" : approved === scope.length ? "Aprovado em todas as BMs" : "Em análise em alguma BM"}
+              meta={
+                <>
+                  <MetaItem value={`${approved}/${scope.length}`} label="BMs aprovadas" />
+                  {!bp.active && <Badge color="gray">Desativado</Badge>}
+                  <span>{bp.group ? `Grupo: ${bp.group.name}` : "Todas as BMs"}</span>
+                </>
+              }
+            >
+              <div className="mb-3 flex flex-wrap items-center gap-2">
                 <div className="ml-auto flex gap-2">
                   <ConfirmButton action={toggleBlueprintAction.bind(null, bp.id)}>{bp.active ? "Desativar" : "Ativar"}</ConfirmButton>
                   <ConfirmButton action={deleteBlueprintAction.bind(null, bp.id)} variant="ghost" className="text-red-600" confirm="Remover este template padrão? (as cópias já criadas na Meta continuam lá)"><Trash2 className="size-4" /></ConfirmButton>
@@ -76,7 +89,7 @@ export default async function BlueprintsPage() {
                 })}
                 {scope.length === 0 && <div className="px-3 py-2 text-zinc-500">Nenhuma WABA no escopo.</div>}
               </div>
-            </Card>
+            </Drawer>
           );
         })}
       </div>

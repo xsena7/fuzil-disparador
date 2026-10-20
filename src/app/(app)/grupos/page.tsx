@@ -1,11 +1,12 @@
-import { Trash2 } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { formatLimit, tierLabel } from "@/lib/limits";
 import { statsForBusinesses } from "@/lib/group-stats";
 import { bmWindows } from "@/lib/limit-windows";
-import { LimitWindow } from "@/components/limit-card";
-import { Badge, Card, Empty, Field, Input, PageHeader, Stat } from "@/components/ui";
+import { LimitRow } from "@/components/limit-card";
+import { Drawer, MetaItem } from "@/components/drawer";
+import { Badge, Empty, Field, Input, PageHeader } from "@/components/ui";
 import { ActionForm, ConfirmButton } from "@/components/action-form";
 import { deleteGroupAction, saveGroupAction } from "@/app/actions/groups";
 
@@ -38,37 +39,40 @@ export default async function GroupsPage() {
       <PageHeader title="Grupos de BM" description="Cada campanha dispara por um grupo, distribuindo os envios entre todos os números das BMs do grupo." />
 
       {groups.length === 0 && <Empty>Nenhum grupo criado.</Empty>}
-      <div className="space-y-4">
+      <div className="space-y-3">
         {groups.map((g, i) => {
           const s = stats[i];
+          const tone = s.activePhones === 0 ? "red" : s.available === 0 ? "amber" : "green";
           return (
-            <Card key={g.id} className="p-5">
-              <div className="mb-4 flex items-center gap-3">
-                <div className="text-base font-semibold">{g.name}</div>
-                {g.description && <span className="text-zinc-500">{g.description}</span>}
-                <div className="ml-auto">
-                  <ConfirmButton action={deleteGroupAction.bind(null, g.id)} variant="ghost" className="text-red-600" confirm="Excluir este grupo?"><Trash2 className="size-4" /></ConfirmButton>
-                </div>
+            <Drawer
+              key={g.id}
+              title={g.name}
+              subtitle={g.description || g.members.map((m) => m.business.name).join(" · ") || "Sem BMs"}
+              tone={tone}
+              toneTitle={tone === "red" ? "Nenhum número ativo" : tone === "amber" ? "Limite esgotado agora" : "Pronto para disparar"}
+              meta={
+                <>
+                  <MetaItem value={g.members.length} label="BMs" />
+                  <MetaItem value={`${s.activePhones}/${s.phones}`} label="números ativos" />
+                  <MetaItem value={formatLimit(s.available)} label={`de ${formatLimit(s.totalLimit)} disponíveis`} />
+                </>
+              }
+            >
+              <div className="mb-4 flex flex-wrap items-center gap-2 text-sm text-zinc-600">
+                Qualidade dos números:
+                <Badge color="green">{s.quality.GREEN} alta</Badge>
+                <Badge color="yellow">{s.quality.YELLOW} média</Badge>
+                <Badge color="red">{s.quality.RED} baixa</Badge>
+                <span className="ml-auto text-xs text-zinc-500">{s.usedToday.toLocaleString("pt-BR")} envios nas últimas 24h</span>
               </div>
-              <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                <Stat label="Limite total (24h)" value={formatLimit(s.totalLimit)} sub={`${g.members.length} BMs`} />
-                <Stat label="Disponível agora" value={formatLimit(s.available)} sub={`${s.usedToday.toLocaleString("pt-BR")} usados nas últimas 24h`} tone="green" />
-                <Stat label="Números ativos" value={`${s.activePhones}/${s.phones}`} />
-                <Stat label="Qualidade" value={<span className="flex gap-2 text-base"><Badge color="green">{s.quality.GREEN}</Badge><Badge color="yellow">{s.quality.YELLOW}</Badge><Badge color="red">{s.quality.RED}</Badge></span>} />
-              </div>
-              <div className="mb-4 grid gap-3 md:grid-cols-2">
+              <div className="mb-5 divide-y divide-zinc-100 rounded-xl border border-zinc-100">
                 {g.members.map((m) => {
                   const w = windows.get(m.businessId);
-                  return w ? (
-                    <div key={m.businessId}>
-                      <div className="mb-1.5 text-sm font-medium">{m.business.name}</div>
-                      <LimitWindow w={w} compact />
-                    </div>
-                  ) : null;
+                  return w ? <LimitRow key={m.businessId} name={m.business.name} w={w} /> : null;
                 })}
               </div>
-              <details>
-                <summary className="cursor-pointer text-zinc-600">Editar grupo</summary>
+              <details className="group/edit">
+                <summary className="cursor-pointer list-none text-sm font-medium text-zinc-600 hover:text-zinc-900 [&::-webkit-details-marker]:hidden">Editar grupo</summary>
                 <ActionForm action={saveGroupAction} submit="Salvar" className="mt-4">
                   <input type="hidden" name="id" value={g.id} />
                   <div className="mb-4 grid gap-4 md:grid-cols-2">
@@ -77,22 +81,24 @@ export default async function GroupsPage() {
                   </div>
                   {bmCheckboxes(g.members.map((m) => m.businessId))}
                 </ActionForm>
+                <div className="mt-4 border-t border-zinc-100 pt-4">
+                  <ConfirmButton action={deleteGroupAction.bind(null, g.id)} variant="ghost" className="px-0 text-red-600" confirm="Excluir este grupo?"><Trash2 className="size-4" /> Excluir grupo</ConfirmButton>
+                </div>
               </details>
-            </Card>
+            </Drawer>
           );
         })}
-      </div>
 
-      <Card className="mt-8 p-5">
-        <div className="mb-4 font-semibold">Novo grupo</div>
-        <ActionForm action={saveGroupAction} submit="Criar grupo">
-          <div className="mb-4 grid gap-4 md:grid-cols-2">
-            <Field label="Nome"><Input name="name" placeholder="Ex.: Disparos principais" required /></Field>
-            <Field label="Descrição"><Input name="description" /></Field>
-          </div>
-          {bmCheckboxes([])}
-        </ActionForm>
-      </Card>
+        <Drawer title={<span className="flex items-center gap-2"><Plus className="size-4" /> Novo grupo</span>} open={groups.length === 0}>
+          <ActionForm action={saveGroupAction} submit="Criar grupo">
+            <div className="mb-4 grid gap-4 md:grid-cols-2">
+              <Field label="Nome"><Input name="name" placeholder="Ex.: Disparos principais" required /></Field>
+              <Field label="Descrição"><Input name="description" /></Field>
+            </div>
+            {bmCheckboxes([])}
+          </ActionForm>
+        </Drawer>
+      </div>
     </div>
   );
 }

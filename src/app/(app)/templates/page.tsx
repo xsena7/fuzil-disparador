@@ -95,7 +95,7 @@ export default async function TemplatesPage({ searchParams }: { searchParams: Pr
           const mkt = list.filter((t) => t.category === "MARKETING").length;
           const lastSent = list.reduce<Date | null>((a, t) => (t.submittedAt && (!a || t.submittedAt > a) ? t.submittedAt : a), null);
           return (
-            <details key={w.id} open={filtering} className="group overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm">
+            <details key={w.id} open={filtering} className="group overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm">
               <summary className="flex cursor-pointer list-none flex-wrap items-center gap-3 px-4 py-3 hover:bg-zinc-50 [&::-webkit-details-marker]:hidden">
                 <ChevronRight className="size-4 shrink-0 text-zinc-400 transition-transform group-open:rotate-90" />
                 <span className="min-w-0 flex-1">

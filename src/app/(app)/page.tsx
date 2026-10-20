@@ -5,7 +5,7 @@ import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { statsForBusinesses } from "@/lib/group-stats";
 import { bmWindows } from "@/lib/limit-windows";
-import { LimitWindow } from "@/components/limit-card";
+import { LimitRow } from "@/components/limit-card";
 import { formatLimit } from "@/lib/limits";
 import { pct } from "@/lib/campaign-metrics";
 import { Card, LinkButton, PageHeader, Stat } from "@/components/ui";
@@ -20,7 +20,7 @@ export default async function HomePage() {
   const [businesses, active, recentAlerts, marketing, today] = await Promise.all([
     prisma.businessManager.findMany({ where: { workspaceId: wsId }, select: { id: true, name: true }, orderBy: { name: "asc" } }),
     prisma.campaign.findMany({ where: { workspaceId: wsId, status: { in: ["RUNNING", "SCHEDULED", "PAUSED"] } }, orderBy: { updatedAt: "desc" }, take: 6 }),
-    prisma.alert.findMany({ where: { workspaceId: wsId }, orderBy: { createdAt: "desc" }, take: 6 }),
+    prisma.alert.findMany({ where: { workspaceId: wsId }, orderBy: { createdAt: "desc" }, take: 4 }),
     prisma.template.count({ where: { workspaceId: wsId, category: "MARKETING" } }),
     prisma.$queryRaw<Array<{ sent: bigint; delivered: bigint; read: bigint; clicked: bigint; failed: bigint }>>`
       SELECT COUNT(*) FILTER (WHERE r."sentAt" > ${since}) AS sent,
@@ -64,7 +64,7 @@ export default async function HomePage() {
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Stat label="BMs conectadas" value={businesses.length} sub={`${stats.activePhones}/${stats.phones} números ativos`} icon={<Building2 className="size-4" />} />
-        <Stat label="Disponível hoje" value={formatLimit(stats.available)} sub={`de ${formatLimit(stats.totalLimit)} de limite somado`} tone="brand" icon={<Gauge className="size-4" />} />
+        <Stat label="Disponível hoje" value={formatLimit(stats.available)} sub={`de ${formatLimit(stats.totalLimit)} · ${usedPct.toLocaleString("pt-BR")}% usado`} tone="brand" icon={<Gauge className="size-4" />} />
         <Stat label="Enviadas (24h)" value={n(t.sent)} sub={`${pct(Number(t.delivered), Number(t.sent))} entregues · ${pct(Number(t.read), Number(t.delivered))} lidas`} icon={<Send className="size-4" />} />
         <Stat label="Cliques (24h)" value={n(t.clicked)} sub={`${n(t.failed)} falhas no período`} icon={<MousePointerClick className="size-4" />} />
       </div>
@@ -107,16 +107,6 @@ export default async function HomePage() {
 
         <div className="space-y-4">
           <Card className="p-6">
-            <h2 className="mb-4 font-semibold">Uso do limite (24h)</h2>
-            <div className="mb-2 flex items-end justify-between">
-              <span className="text-3xl font-semibold tabular-nums tracking-tight">{usedPct.toLocaleString("pt-BR")}%</span>
-              <span className="text-xs text-zinc-500">{n(stats.usedToday)} / {formatLimit(stats.totalLimit)}</span>
-            </div>
-            <div className="h-2 overflow-hidden rounded-full bg-zinc-100">
-              <div className={clsx("h-full rounded-full", usedPct > 85 ? "bg-rose-500" : "bg-brand-gradient")} style={{ width: `${usedPct}%` }} />
-            </div>
-          </Card>
-          <Card className="p-6">
             <h2 className="mb-4 font-semibold">Qualidade dos números</h2>
             <div className="mb-3 flex h-2 gap-0.5 overflow-hidden rounded-full bg-zinc-100">
               {q.GREEN > 0 && <div className="bg-emerald-500" style={{ width: `${(q.GREEN / qTotal) * 100}%` }} />}
@@ -138,18 +128,13 @@ export default async function HomePage() {
       {businesses.length > 0 && (
         <Card className="p-6">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="font-semibold">Limite de cada BM (janela de 24h)</h2>
+            <h2 className="font-semibold">Limite de cada BM (24h)</h2>
             <Link href="/conexoes" className="text-sm text-zinc-500 hover:text-brand-600">Ver conexões</Link>
           </div>
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="-mx-2 divide-y divide-zinc-100">
             {businesses.map((b) => {
               const w = windows.get(b.id);
-              return w ? (
-                <div key={b.id}>
-                  <div className="mb-1.5 text-sm font-medium">{b.name}</div>
-                  <LimitWindow w={w} compact />
-                </div>
-              ) : null;
+              return w ? <LimitRow key={b.id} name={b.name} w={w} /> : null;
             })}
           </div>
         </Card>
@@ -165,14 +150,9 @@ export default async function HomePage() {
           {recentAlerts.map((a) => {
             const Icon = a.severity === "CRITICAL" ? Siren : a.severity === "WARNING" ? AlertTriangle : Info;
             return (
-              <div key={a.id} className="flex items-start gap-3 py-3">
-                <div className={clsx("mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-xl", a.severity === "CRITICAL" ? "bg-rose-50 text-rose-600" : a.severity === "WARNING" ? "bg-amber-50 text-amber-600" : "bg-sky-50 text-sky-600")}>
-                  <Icon className="size-4" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="font-medium">{a.title}</div>
-                  <div className="truncate text-sm text-zinc-500">{a.message}</div>
-                </div>
+              <div key={a.id} className="flex items-center gap-3 py-2.5">
+                <Icon className={clsx("size-4 shrink-0", a.severity === "CRITICAL" ? "text-rose-600" : a.severity === "WARNING" ? "text-amber-600" : "text-sky-600")} />
+                <div className="min-w-0 flex-1 truncate text-sm font-medium">{a.title}</div>
                 <span className="shrink-0 text-xs text-zinc-400">{a.createdAt.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}</span>
               </div>
             );

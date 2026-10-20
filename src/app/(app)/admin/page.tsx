@@ -3,7 +3,8 @@ import { UserActions } from "./user-actions";
 import { AccountsPanel } from "./accounts-panel";
 import { listAccounts } from "@/lib/admin-accounts";
 import { prisma } from "@/lib/db";
-import { Card, Field, Input, PageHeader, Table, Td } from "@/components/ui";
+import { Field, Input, PageHeader, Table, Td } from "@/components/ui";
+import { Drawer } from "@/components/drawer";
 import { ActionForm, ConfirmButton } from "@/components/action-form";
 import { PixelBug } from "@/components/pixel-bug";
 import { deleteBugAction, resendBugDiscordAction, setBugStatusAction } from "@/app/actions/bugs";
@@ -32,17 +33,23 @@ export default async function AdminPage() {
   const bugs = await prisma.bugReport.findMany({ orderBy: [{ status: "asc" }, { createdAt: "desc" }], take: 50 });
   const openBugs = bugs.filter((b) => b.status === "OPEN").length;
   const discordHooks = (hooks ?? {}) as Record<string, string>;
+  const hookCount = Object.values(discordHooks).filter(Boolean).length;
+  const setting = (k: string) => cachedSetting(k) ?? process.env[k] ?? "";
+  const metaOk = Boolean(setting("META_APP_ID") && setting("META_APP_SECRET") && setting("META_SYSTEM_USER_TOKEN"));
+  const errorsHook = Boolean(setting("DISCORD_ERRORS_WEBHOOK"));
+  const companyOk = Boolean(company().legalName && company().address);
   return (
-    <div className="mx-auto max-w-6xl space-y-6">
+    <div className="mx-auto max-w-6xl space-y-3">
       <PageHeader title="Admin da plataforma" description="Contas de clientes, integrações e logs." actions={<LinkButton href="/admin/logs" variant="secondary"><ScrollText className="size-4" /> Logs do sistema</LinkButton>} />
       <AccountsPanel accounts={accounts} selfId={auth.user.id} />
 
-      <Card className="p-5" id="bugs">
-        <div className="mb-1 flex items-center gap-3 font-semibold">
-          <PixelBug className="size-6" /> Bugs reportados
-          {openBugs > 0 ? <Badge color="red">{openBugs} em aberto</Badge> : <Badge color="green">Nada em aberto</Badge>}
-        </div>
-        <p className="mb-4 text-sm text-zinc-500">O que os clientes mandam pelo botão do bichinho no canto da tela. Também chega no Discord #bugs.</p>
+      <Drawer
+        className="scroll-mt-4"
+        title={<span className="flex items-center gap-2" id="bugs"><PixelBug className="size-5" /> Bugs reportados</span>}
+        tone={openBugs > 0 ? "red" : "green"}
+        meta={<span>{openBugs > 0 ? `${openBugs} em aberto` : "Nada em aberto"} · {bugs.length} no total</span>}
+        open={openBugs > 0}
+      >
         {bugs.length === 0 && <p className="text-sm text-zinc-400">Nenhum bug reportado ainda.</p>}
         <div className="space-y-2">
           {bugs.map((b) => (
@@ -69,12 +76,10 @@ export default async function AdminPage() {
             </div>
           ))}
         </div>
-      </Card>
+      </Drawer>
 
-      <Card className="p-5">
-        <div className="mb-4 font-semibold">Criar conta de cliente</div>
+      <Drawer title="Criar conta de cliente" meta={<span>O cliente recebe um convite por e-mail</span>}>
         <ActionForm action={adminCreateWorkspaceAction} submit="Criar conta e enviar convite">
-          <p className="mb-4 text-sm text-zinc-500">O cliente recebe um e-mail com o layout do Fuzil e um botão para criar a senha.</p>
           <div className="grid gap-4 md:grid-cols-4">
             <Field label="Nome da conta"><Input name="company" required /></Field>
             <Field label="Nome do dono"><Input name="name" required /></Field>
@@ -82,12 +87,10 @@ export default async function AdminPage() {
             <Field label="Créditos iniciais"><Input name="credits" type="number" min={0} defaultValue={0} /></Field>
           </div>
         </ActionForm>
-      </Card>
+      </Drawer>
 
       {orphans.length > 0 && (
-        <Card className="p-5">
-          <div className="mb-1 font-semibold">Usuários sem conta ({orphans.length})</div>
-          <p className="mb-4 text-sm text-zinc-500">Usuários que não estão em nenhuma conta. Pode excluir.</p>
+        <Drawer title="Usuários sem conta" tone="amber" meta={<span>{orphans.length} usuário(s) fora de qualquer conta, pode excluir</span>}>
           <Table head={["Nome", "E-mail", ""]}>
             {orphans.map((u) => (
               <tr key={u.id}>
@@ -97,11 +100,10 @@ export default async function AdminPage() {
               </tr>
             ))}
           </Table>
-        </Card>
+        </Drawer>
       )}
 
-      <Card className="p-5">
-        <div className="mb-1 font-semibold">Empresa e site</div>
+      <Drawer title="Empresa e site" tone={companyOk ? "green" : "amber"} meta={<span>{companyOk ? `${company().legalName} · CNPJ ${company().cnpj}` : "Falta razão social ou endereço"}</span>}>
         <p className="mb-4 text-sm text-zinc-500">
           Aparece no site público <a href={company().siteUrl} target="_blank" rel="noreferrer" className="font-medium text-brand-600 hover:underline">{company().siteUrl.replace("https://", "")}</a> (rodapé, Política de Privacidade, Termos e Exclusão de dados).
           A Meta confere esses dados na verificação da empresa: use a razão social e o endereço <b>exatamente</b> como estão no cartão CNPJ.
@@ -115,11 +117,10 @@ export default async function AdminPage() {
             ))}
           </div>
         </ActionForm>
-      </Card>
+      </Drawer>
 
-      <Card className="p-5">
-        <div className="mb-1 font-semibold">Integração com a Meta (Tech Provider)</div>
-        <p className="mb-4 text-zinc-500">Cole aqui os dados do app do Tech Provider. Campos secretos em branco mantêm o valor atual.</p>
+      <Drawer title="Integração com a Meta" tone={metaOk ? "green" : "red"} meta={<span>{metaOk ? "App, segredo e token configurados" : "Falta App ID, App Secret ou token"}</span>}>
+        <p className="mb-4 text-sm text-zinc-500">Campos secretos em branco mantêm o valor atual.</p>
         <div className="mb-4 space-y-1 rounded-lg bg-zinc-50 p-4 text-xs">
           <div>URL de callback do webhook: <code className="font-semibold">{env.appUrl()}/api/webhook</code></div>
           <div>Token de verificação: <code className="font-semibold">{env.metaVerifyToken() || "(defina META_WEBHOOK_VERIFY_TOKEN)"}</code></div>
@@ -138,21 +139,16 @@ export default async function AdminPage() {
             })}
           </div>
         </ActionForm>
-      </Card>
+      </Drawer>
 
-      <Card className="p-5">
-        <div className="mb-1 flex items-center gap-3 font-semibold">
-          E-mails da plataforma
-          <Badge color={emailConfigured() ? "green" : "yellow"}>{emailConfigured() ? "Configurado" : "Pendente"}</Badge>
-        </div>
+      <Drawer title="E-mails da plataforma" tone={emailConfigured() ? "green" : "amber"} meta={<span>{emailConfigured() ? "Configurado" : "Pendente: falta a chave do Resend"}</span>}>
         <p className="mb-2 text-sm text-zinc-500">
           Convites, recuperação de senha e alertas críticos. Usa o Resend (grátis até 3.000 e-mails/mês): cole a chave no campo &quot;Chave do Resend&quot; acima.
         </p>
         <ActionForm action={adminTestEmailAction} submit="Enviar e-mail de teste para mim" variant="secondary" />
-      </Card>
+      </Drawer>
 
-      <Card className="p-5">
-        <div className="mb-1 font-semibold">Avisos no Discord (todas as contas)</div>
+      <Drawer title="Avisos no Discord" tone={hookCount > 0 ? "green" : "red"} meta={<span>{hookCount > 0 ? `${hookCount} de ${DISCORD_CHANNELS.length} canais configurados` : "Nenhum canal: nada está indo pro Discord"}</span>}>
         <p className="mb-4 text-sm text-zinc-500">
           Os avisos de todas as contas chegam nesses canais, com o nome da conta e explicados: o que significa, o que fazer e se é urgente.
           Os clientes não veem isso. No Discord: abra o canal → ⚙️ Editar canal → Integrações → Webhooks → Novo webhook → Copiar URL do webhook, e cole abaixo.
@@ -173,15 +169,14 @@ export default async function AdminPage() {
           </div>
         </ActionForm>
         <ActionForm action={testDiscordAction} submit="Enviar mensagem de teste nos canais" variant="secondary" />
-      </Card>
+      </Drawer>
 
-      <Card className="p-5">
-        <div className="mb-1 font-semibold">Discord #erros</div>
+      <Drawer title="Discord #erros" tone={errorsHook ? "green" : "amber"} meta={<span>{errorsHook ? "Configurado" : "Não configurado"}</span>}>
         <p className="mb-2 text-sm text-zinc-500">
           Cole o webhook do canal de erros no campo &quot;Webhook do Discord para erros do sistema&quot; (em Integração, acima) e salve. Os avisos de campanhas, templates, qualidade e limites ficam no card acima.
         </p>
         <ActionForm action={testErrorsDiscordAction} submit="Testar canal #erros" variant="secondary" />
-      </Card>
+      </Drawer>
 
 
     </div>

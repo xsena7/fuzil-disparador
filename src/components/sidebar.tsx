@@ -63,7 +63,7 @@ export function Sidebar({ workspace, user, unread, chatUnread = 0, balance, isSu
             <div className="mb-1.5 px-3 text-[11px] font-medium uppercase tracking-wider text-zinc-600">{section.title}</div>
             <div className="space-y-0.5">
               {section.items.map(({ href, label, icon: Icon }) => {
-                const active = href === "/" ? path === "/" : path.startsWith(href);
+                const active = href === "/" ? path === "/" : path === href || path.startsWith(`${href}/`);
                 return (
                   <Link
                     key={href}
