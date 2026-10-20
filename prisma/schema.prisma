@@ -238,6 +238,7 @@ model Template {
   rejectedReason   String?
   qualityScore     String?
   components       Json
+  submittedAt      DateTime? // quando o Fuzil mandou esse template para a Meta
   lastSyncedAt     DateTime        @default(now())
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
@@ -474,6 +475,7 @@ model TemplateDeployment {
   status      DeploymentStatus
   error       String?
   attempts    Int               @default(1)
+  submittedAt DateTime?
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt
   blueprint   TemplateBlueprint @relation(fields: [blueprintId], references: [id], onDelete: Cascade)

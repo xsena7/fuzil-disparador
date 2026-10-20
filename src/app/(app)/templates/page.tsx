@@ -11,6 +11,8 @@ import { ago, templateUsage } from "@/lib/limit-windows";
 
 export const dynamic = "force-dynamic";
 
+const sentAt = (d: Date) => d.toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo" });
+
 /** Templates de exemplo que a própria Meta coloca nas contas: não dá para apagar. */
 const isMetaSample = (name: string) => name === "hello_world" || /^(jaspers_market_|sample_)/.test(name);
 
@@ -124,7 +126,8 @@ export default async function TemplatesPage({ searchParams }: { searchParams: Pr
                         {body && <p className="mt-1 line-clamp-2 whitespace-pre-wrap text-sm text-zinc-600">{body}</p>}
                         {t.rejectedReason && t.rejectedReason !== "NONE" && <p className="mt-1 text-xs text-red-600">{t.rejectedReason}</p>}
                         <p className="mt-1 text-xs text-zinc-500">
-                          Último envio: <b className="font-medium text-zinc-700">{ago(u?.last)}</b>
+                          {t.submittedAt && <>Enviado para a Meta em <b className="font-medium text-zinc-700">{sentAt(t.submittedAt)}</b> · </>}
+                          Último disparo: <b className="font-medium text-zinc-700">{ago(u?.last)}</b>
                           {u ? <> · {u.day.toLocaleString("pt-BR")} nas últimas 24h · {u.total.toLocaleString("pt-BR")} no total</> : null}
                         </p>
                       </div>

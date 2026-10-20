@@ -7,7 +7,7 @@ import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { trackedUrlBase } from "@/lib/env";
 import { createUtilityTemplate, deployBlueprints } from "@/lib/blueprints";
-import { syncWaba, wabaToken } from "@/lib/sync";
+import { wabaToken } from "@/lib/sync";
 import { meta, type TemplateComponent } from "@/lib/meta";
 import { extractVars } from "@/lib/template-utils";
 import { saveUpload } from "@/lib/uploads";
@@ -122,7 +122,6 @@ export async function createTemplateAction(_: FormState, form: FormData): Promis
   const results = await Promise.all(
     wabas.map(async (w) => {
       const r = await createUtilityTemplate(w, { name: data.name, language: data.language, components, headerSample: sample });
-      if (r.ok) await syncWaba(w.id).catch(() => undefined);
       return { label: w.business.name, r };
     }),
   );

@@ -7,6 +7,7 @@ export const CHANGELOG: Array<{ version: string; date: string; items: string[] }
     items: [
       "Conexão manual com app próprio da BM: templates com imagem/vídeo/PDF no cabeçalho agora são criados sem erro",
       "Templates padrão: o botão \"Aplicar agora\" tenta de novo nas contas que deram erro",
+      "Templates e Templates padrão mostram a data e o horário em que o template foi enviado para a Meta em cada BM",
     ],
   },
   {

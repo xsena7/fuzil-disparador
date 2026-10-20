@@ -8,6 +8,8 @@ import type { TComponent } from "@/lib/template-utils";
 
 export const dynamic = "force-dynamic";
 
+const sentAt = (d: Date) => d.toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo" });
+
 const DEP: Record<string, [BadgeColor, string]> = {
   SUBMITTED: ["yellow", "Em análise"],
   APPROVED: ["green", "Aprovado"],
@@ -64,6 +66,7 @@ export default async function BlueprintsPage() {
                   return (
                     <div key={w.id} className="flex flex-wrap items-center gap-2 px-3 py-2">
                       <span className="flex-1">{w.business.name} <span className="text-zinc-400">/ {w.name}</span></span>
+                      {dep?.submittedAt && <span className="text-xs text-zinc-500">Enviado em {sentAt(dep.submittedAt)}</span>}
                       <Badge color={color}>{label}</Badge>
                       {dep?.error && <span className="text-xs text-red-600">{dep.error}</span>}
                     </div>

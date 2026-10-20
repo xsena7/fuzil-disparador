@@ -38,6 +38,9 @@ export async function createUtilityTemplate(
       await meta.deleteTemplate(token, waba.wabaId, input.name).catch(() => undefined);
       return { ok: false, recategorized: true, category: res.category };
     }
+    // Traz o template para o Fuzil e guarda a hora do envio
+    await syncWaba(waba.id).catch(() => undefined);
+    await prisma.template.updateMany({ where: { wabaId: waba.id, name: input.name, language: input.language }, data: { submittedAt: new Date() } });
     return { ok: true, status: res.status, category: res.category ?? "UTILITY" };
   } catch (err) {
     return { ok: false, recategorized: false, error: err instanceof MetaError ? `${err.message}${err.details ? ` (${err.details})` : ""}` : String(err) };
@@ -94,10 +97,9 @@ export async function deployBlueprints(workspaceId?: string) {
       if (result.ok) {
         await prisma.templateDeployment.upsert({
           where,
-          create: { blueprintId: bp.id, wabaId: waba.id, status: deploymentStatusFor(result.status, result.category) },
-          update: { status: deploymentStatusFor(result.status, result.category), error: null, attempts: { increment: 1 } },
+          create: { blueprintId: bp.id, wabaId: waba.id, status: deploymentStatusFor(result.status, result.category), submittedAt: new Date() },
+          update: { status: deploymentStatusFor(result.status, result.category), error: null, attempts: { increment: 1 }, submittedAt: new Date() },
         });
-        await syncWaba(waba.id).catch(() => undefined);
       } else if (result.recategorized) {
         await prisma.templateDeployment.upsert({
           where,
