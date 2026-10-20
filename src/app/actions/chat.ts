@@ -1,5 +1,7 @@
 "use server";
 
+import { friendlyError } from "@/lib/meta-errors";
+
 import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { saveUpload } from "@/lib/uploads";
@@ -15,7 +17,7 @@ async function ownConversation(conversationId: string) {
   return { auth, conv };
 }
 
-const errMsg = (e: unknown) => (e instanceof Error ? e.message : String(e));
+const errMsg = friendlyError;
 
 /** Envia texto e/ou anexo numa conversa (dentro da janela de 24h). */
 export async function sendChatAction(form: FormData): Promise<Result> {

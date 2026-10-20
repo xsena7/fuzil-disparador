@@ -1,5 +1,7 @@
 "use server";
 
+import { friendlyError } from "@/lib/meta-errors";
+
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import type { Prisma } from "@prisma/client";
@@ -84,7 +86,7 @@ export async function createTemplateAction(_: FormState, form: FormData): Promis
       const saved = await saveUpload(file);
       sample = { path: saved.path, mime: saved.mime };
     } catch (err) {
-      return { error: err instanceof Error ? err.message : String(err) };
+      return { error: friendlyError(err) };
     }
   }
 
@@ -151,7 +153,7 @@ export async function deleteTemplateAction(templateId: string): Promise<{ ok?: b
       .listTemplates(token, tpl.waba.wabaId)
       .then((list) => list.some((t) => t.name === tpl.name && t.language === tpl.language))
       .catch(() => true);
-    if (still) return { error: `A Meta não deixou excluir "${tpl.name}": ${e instanceof Error ? e.message : String(e)}` };
+    if (still) return { error: `A Meta não deixou excluir "${tpl.name}": ${friendlyError(e)}` };
   }
   await prisma.template.delete({ where: { id: tpl.id } });
   return { ok: true };

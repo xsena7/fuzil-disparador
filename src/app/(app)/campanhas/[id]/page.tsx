@@ -60,8 +60,8 @@ export default async function CampaignPage({ params, searchParams }: { params: P
           {campaign.status !== "RUNNING" && <ConfirmButton action={deleteCampaignAction.bind(null, id)} variant="ghost" className="text-red-600" confirm="Excluir a campanha e todo o relatório?"><Trash2 className="size-4" /></ConfirmButton>}
         </div>
       </div>
-      <div className="flex">
-        <nav className="w-52 shrink-0 space-y-1 border-r border-zinc-200/70 p-4">
+      <div className="flex flex-col md:flex-row">
+        <nav className="flex shrink-0 gap-1 overflow-x-auto border-b border-zinc-200/70 p-2 md:block md:w-52 md:space-y-1 md:border-b-0 md:border-r md:p-4">
           {STEPS.map((s, i) => (
             <Link
               key={s.key}

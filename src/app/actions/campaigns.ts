@@ -1,5 +1,7 @@
 "use server";
 
+import { friendlyError } from "@/lib/meta-errors";
+
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import type { Prisma } from "@prisma/client";
@@ -94,7 +96,7 @@ export async function saveContentStepAction(id: string, _: FormState, form: Form
       data.headerMediaType = mediaKind(saved.mime);
       data.headerMediaName = saved.name;
     } catch (err) {
-      return { error: err instanceof Error ? err.message : String(err) };
+      return { error: friendlyError(err) };
     }
   } else if (form.get("requiresMedia") === "1" && !c.headerMediaUrl) {
     return { error: "Envie a mídia do cabeçalho" };
@@ -268,7 +270,7 @@ export async function saveAutoReplyAction(campaignId: string, _: FormState, form
       const saved = await saveUpload(file);
       Object.assign(data, { autoReplyMediaUrl: saved.url, autoReplyMediaType: mediaKind(saved.mime), autoReplyMediaName: saved.name });
     } catch (err) {
-      return { error: err instanceof Error ? err.message : String(err) };
+      return { error: friendlyError(err) };
     }
   }
   const hasMedia = data.autoReplyMediaUrl !== undefined ? Boolean(data.autoReplyMediaUrl) : Boolean(c.autoReplyMediaUrl);

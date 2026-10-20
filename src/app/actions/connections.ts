@@ -1,5 +1,7 @@
 "use server";
 
+import { friendlyError } from "@/lib/meta-errors";
+
 import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
@@ -10,9 +12,7 @@ import { meta } from "@/lib/meta";
 import { env } from "@/lib/env";
 import type { FormState } from "./auth";
 
-function errMsg(err: unknown) {
-  return err instanceof Error ? err.message : String(err);
-}
+const errMsg = friendlyError;
 
 export async function connectManualAction(_: FormState, form: FormData): Promise<FormState> {
   const auth = await requireAuth();

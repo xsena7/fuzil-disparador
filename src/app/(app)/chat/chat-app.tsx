@@ -159,7 +159,7 @@ export function ChatApp({
   useEffect(() => {
     setConvs(null);
     const t = setTimeout(loadList, q ? 300 : 0);
-    const i = setInterval(loadList, 4000);
+    const i = setInterval(() => { if (!document.hidden) loadList(); }, 4000);
     return () => { clearTimeout(t); clearInterval(i); };
   }, [loadList, q]);
 
@@ -198,7 +198,7 @@ export function ChatApp({
 
   useEffect(() => {
     if (!activeId) return;
-    const i = setInterval(refreshActive, 3000);
+    const i = setInterval(() => { if (!document.hidden) refreshActive(); }, 3000);
     return () => clearInterval(i);
   }, [activeId, refreshActive]);
 

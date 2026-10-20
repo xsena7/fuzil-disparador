@@ -45,7 +45,7 @@ export function AlertToaster() {
 
   if (!items.length) return null;
   return (
-    <div className="fixed bottom-16 right-5 z-50 flex w-96 flex-col gap-2">
+    <div className="fixed bottom-16 right-5 z-50 flex w-[calc(100vw-2.5rem)] flex-col gap-2 sm:w-96">
       {items.map((a) => {
         const Icon = a.severity === "CRITICAL" ? Siren : a.severity === "WARNING" ? AlertTriangle : Info;
         return (

@@ -3,7 +3,8 @@
 import clsx from "clsx";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bell, Building2, GraduationCap, MessagesSquare, Coins, FileText, Home, Layers, LogOut, Megaphone, Settings, Shield, Sparkles } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Bell, Building2, GraduationCap, MessagesSquare, Coins, FileText, Home, Layers, LogOut, Megaphone, Menu, X, Settings, Shield, Sparkles } from "lucide-react";
 import { logoutAction } from "@/app/actions/auth";
 import { Mark } from "./brand";
 import { APP_VERSION } from "@/version";
@@ -42,12 +43,39 @@ const sections = [
 
 export function Sidebar({ workspace, user, unread, chatUnread = 0, balance, isSuperAdmin }: { workspace: string; user: string; unread: number; chatUnread?: number; balance: number; isSuperAdmin: boolean }) {
   const path = usePathname();
+  // No celular o menu fica escondido e abre pelo botão ☰; fecha sozinho ao trocar de página
+  const [open, setOpen] = useState(false);
+  useEffect(() => setOpen(false), [path]);
   const all = isSuperAdmin ? [...sections, { title: "Plataforma", items: [{ href: "/admin", label: "Admin", icon: Shield }] }] : sections;
   return (
-    <aside className="sticky top-0 flex h-screen w-64 shrink-0 flex-col bg-ink px-3 py-5 text-zinc-300">
-      <Link href="/" className="mb-6 block px-3 pt-1" aria-label="Início">
-        <Mark className="h-10 w-auto" />
-      </Link>
+    <>
+    <div className="fixed inset-x-0 top-0 z-40 flex h-14 items-center gap-3 bg-ink px-4 md:hidden">
+      <button onClick={() => setOpen(true)} aria-label="Abrir menu" className="-ml-1 rounded-lg p-1.5 text-zinc-300 hover:bg-white/10">
+        <Menu className="size-6" />
+      </button>
+      <Link href="/" aria-label="Início"><Mark className="h-7 w-auto" /></Link>
+      {(unread > 0 || chatUnread > 0) && (
+        <span className="ml-auto flex gap-1.5">
+          {chatUnread > 0 && <span className="rounded-full bg-emerald-500 px-1.5 text-[11px] font-semibold text-white">{chatUnread}</span>}
+          {unread > 0 && <span className="rounded-full bg-brand-gradient px-1.5 text-[11px] font-semibold text-white">{unread}</span>}
+        </span>
+      )}
+    </div>
+    {open && <div className="fixed inset-0 z-40 bg-black/50 md:hidden" onClick={() => setOpen(false)} />}
+    <aside
+      className={clsx(
+        "fixed inset-y-0 left-0 z-50 flex h-screen w-64 shrink-0 flex-col bg-ink px-3 py-5 text-zinc-300 transition-transform md:sticky md:top-0 md:translate-x-0",
+        open ? "translate-x-0" : "-translate-x-full",
+      )}
+    >
+      <div className="mb-6 flex items-center px-3 pt-1">
+        <Link href="/" aria-label="Início">
+          <Mark className="h-10 w-auto" />
+        </Link>
+        <button onClick={() => setOpen(false)} aria-label="Fechar menu" className="ml-auto rounded-lg p-1 text-zinc-400 hover:bg-white/10 md:hidden">
+          <X className="size-5" />
+        </button>
+      </div>
 
       <Link href="/saldo" className="mx-1 mb-5 flex items-center justify-between rounded-xl bg-white/5 px-3.5 py-3 ring-1 ring-white/10 transition hover:bg-white/10">
         <div>
@@ -105,5 +133,6 @@ export function Sidebar({ workspace, user, unread, chatUnread = 0, balance, isSu
         </Link>
       </div>
     </aside>
+    </>
   );
 }

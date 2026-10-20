@@ -1,3 +1,6 @@
+import { Prisma } from "@prisma/client";
+import { MetaError } from "./meta";
+
 /** Tradução dos códigos de erro mais comuns da Cloud API. */
 const ERRORS: Record<number, string> = {
   0: "Falha de autenticação",
@@ -51,3 +54,25 @@ export const SENDER_FATAL_CODES = new Set([0, 10, 190, 200, 368, 131031, 131042,
 export const TEMPLATE_FATAL_CODES = new Set([132000, 132001, 132012, 132015, 132016]);
 /** Erros temporários: o destinatário volta pra fila. */
 export const RETRYABLE_CODES = new Set([4, 130429, 131000, 131016, 131056]);
+
+/**
+ * Mensagem de erro para mostrar ao cliente: erros da Meta viram a explicação em português (com o código),
+ * erros internos (banco, disco) viram uma frase simples. O erro original vai para o log.
+ */
+export function friendlyError(err: unknown): string {
+  if (err instanceof MetaError) {
+    const label = err.code !== null && ERRORS[err.code] ? ERRORS[err.code] : null;
+    return label ? `${label} (código ${err.code} da Meta)` : `A Meta recusou: ${err.message}`;
+  }
+  const internal =
+    err instanceof Prisma.PrismaClientKnownRequestError ||
+    err instanceof Prisma.PrismaClientUnknownRequestError ||
+    err instanceof Prisma.PrismaClientValidationError ||
+    err instanceof Prisma.PrismaClientInitializationError ||
+    /ECONN|ENOENT|EACCES|ENOSPC/.test(String((err as Error)?.message));
+  if (internal) {
+    console.error("[erro interno]", err);
+    return "Não foi possível concluir agora. Tente de novo em instantes ou reporte pelo 🐞 no canto da tela.";
+  }
+  return err instanceof Error ? err.message : String(err);
+}

@@ -28,17 +28,22 @@ export default async function HomePage() {
         COUNT(*) FILTER (WHERE r."readAt" > ${since}) AS read,
         COUNT(*) FILTER (WHERE r."firstClickAt" > ${since}) AS clicked,
         COUNT(*) FILTER (WHERE r."failedAt" > ${since}) AS failed
-      FROM "CampaignRecipient" r JOIN "Campaign" c ON c.id = r."campaignId" WHERE c."workspaceId" = ${wsId}`,
+      FROM "CampaignRecipient" r JOIN "Campaign" c ON c.id = r."campaignId"
+      -- Só quem foi enviado nos últimos dias (usa o índice de sentAt em vez de varrer o histórico inteiro)
+      WHERE c."workspaceId" = ${wsId} AND r."sentAt" > ${since} - INTERVAL '3 days'`,
   ]);
   const ids = active.map((c) => c.id);
-  const progress = ids.length
-    ? await prisma.$queryRaw<Array<{ id: string; total: bigint; done: bigint }>>`
-        SELECT "campaignId" AS id, COUNT(*) AS total, COUNT(*) FILTER (WHERE status NOT IN ('PENDING','SENDING')) AS done
-        FROM "CampaignRecipient" WHERE "campaignId" = ANY(${ids}) GROUP BY "campaignId"`
-    : [];
+  const bmIds = businesses.map((b) => b.id);
+  const [progress, stats, windows] = await Promise.all([
+    ids.length
+      ? prisma.$queryRaw<Array<{ id: string; total: bigint; done: bigint }>>`
+          SELECT "campaignId" AS id, COUNT(*) AS total, COUNT(*) FILTER (WHERE status NOT IN ('PENDING','SENDING')) AS done
+          FROM "CampaignRecipient" WHERE "campaignId" = ANY(${ids}) GROUP BY "campaignId"`
+      : Promise.resolve([]),
+    statsForBusinesses(bmIds),
+    bmWindows(bmIds),
+  ]);
   const progressById = new Map(progress.map((p) => [p.id, p]));
-  const stats = await statsForBusinesses(businesses.map((b) => b.id));
-  const windows = await bmWindows(businesses.map((b) => b.id));
   const t = today[0];
   const n = (v: bigint | number) => Number(v).toLocaleString("pt-BR");
   const q = stats.quality;

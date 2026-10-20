@@ -1,6 +1,8 @@
 "use client";
 
-import { useActionState, useEffect, type ReactNode } from "react";
+import { useActionState, useEffect, useTransition, type ReactNode } from "react";
+import clsx from "clsx";
+import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type { FormState } from "@/app/actions/auth";
 import { Button } from "./ui";
@@ -37,21 +39,27 @@ export function ActionForm({
   );
 }
 
-/** Botão que chama uma server action simples, com confirmação opcional. Se a ação devolver `{ error }`, avisa. */
+/** Botão que chama uma server action simples, com confirmação opcional. Trava enquanto roda (sem clique duplo) e avisa se der erro. */
 export function ConfirmButton({ action, children, confirm, variant = "secondary", className }: { action: () => Promise<unknown>; children: ReactNode; confirm?: string; variant?: "primary" | "secondary" | "danger" | "ghost"; className?: string }) {
   const router = useRouter();
+  const [pending, start] = useTransition();
   return (
     <form
-      action={async () => {
-        const r = await action();
-        if (r && typeof r === "object" && "error" in r && r.error) window.alert(String(r.error));
-        else if (r && typeof r === "object" && "ok" in r) router.refresh();
-      }}
+      action={() =>
+        start(async () => {
+          const r = await action();
+          if (r && typeof r === "object" && "error" in r && r.error) window.alert(String(r.error));
+          else if (r && typeof r === "object" && "ok" in r) router.refresh();
+        })
+      }
       onSubmit={(e) => {
-        if (confirm && !window.confirm(confirm)) e.preventDefault();
+        if (pending || (confirm && !window.confirm(confirm))) e.preventDefault();
       }}
     >
-      <Button variant={variant} className={className}>{children}</Button>
+      <Button variant={variant} className={clsx(className, pending && "opacity-60")} disabled={pending} aria-busy={pending}>
+        {pending ? <Loader2 className="size-4 animate-spin" /> : null}
+        {children}
+      </Button>
     </form>
   );
 }

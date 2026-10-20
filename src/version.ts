@@ -19,6 +19,10 @@ export const CHANGELOG: Array<{ version: string; date: string; items: string[] }
       "Respostas e SAIR de celulares do Brasil que a Meta manda sem o 9 agora são reconhecidos",
       "\"Reenviar falhas\" inclui as falhas por tempo esgotado/rede",
       "Chat: mensagens recebidas não somem mais da conversa aberta",
+      "Celular: menu lateral vira um menu ☰ que abre e fecha, e as telas cabem na largura do telefone",
+      "Botões de ação (pausar, duplicar, excluir...) travam enquanto rodam: sem clique duplo, com indicador de carregando",
+      "Erros da Meta aparecem explicados em português, com o código",
+      "Tela inicial, Chat e métricas da campanha pesam menos no servidor (aba escondida não fica atualizando)",
     ],
   },
   {
