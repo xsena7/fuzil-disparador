@@ -2,6 +2,14 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "1.27",
+    date: "20/10/2026",
+    items: [
+      "Audiência aceita Excel (.xlsx), CSV, TXT e TSV",
+      "Arraste a planilha direto para a área da audiência (ou clique para escolher)",
+    ],
+  },
+  {
     version: "1.26",
     date: "20/10/2026",
     items: [

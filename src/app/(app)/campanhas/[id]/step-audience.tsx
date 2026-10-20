@@ -2,7 +2,8 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { FileSpreadsheet, CheckCircle2 } from "lucide-react";
+import clsx from "clsx";
+import { CheckCircle2, FileSpreadsheet, Loader2, UploadCloud } from "lucide-react";
 import { LinkButton, Stat } from "@/components/ui";
 
 export type AudienceStats = {
@@ -15,8 +16,13 @@ export function StepAudience({ campaignId, fileName, stats, locked }: { campaign
   const input = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [over, setOver] = useState(false);
 
   async function upload(file: File) {
+    if (!/\.(csv|txt|tsv|xlsx|xlsm|xls|ods)$/i.test(file.name)) {
+      setError("Envie a planilha em Excel (.xlsx) ou CSV.");
+      return;
+    }
     setBusy(true);
     setError(null);
     const form = new FormData();
@@ -33,20 +39,51 @@ export function StepAudience({ campaignId, fileName, stats, locked }: { campaign
   return (
     <div className="space-y-5">
       <h2 className="text-lg font-semibold">Audiência</h2>
-      <button
-        type="button"
-        disabled={busy || locked}
-        onClick={() => input.current?.click()}
-        className="flex w-full max-w-xl items-center gap-3 rounded-xl border border-dashed border-zinc-300 bg-white p-4 text-left hover:bg-zinc-50 disabled:opacity-60"
+      {/* Clique ou arraste a planilha para cá */}
+      <div
+        role="button"
+        tabIndex={0}
+        aria-disabled={busy || locked}
+        onClick={() => !busy && !locked && input.current?.click()}
+        onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && !busy && !locked && input.current?.click()}
+        onDragOver={(e) => {
+          if (busy || locked) return;
+          e.preventDefault();
+          setOver(true);
+        }}
+        onDragLeave={() => setOver(false)}
+        onDrop={(e) => {
+          e.preventDefault();
+          setOver(false);
+          const f = e.dataTransfer.files?.[0];
+          if (f && !busy && !locked) upload(f);
+        }}
+        className={clsx(
+          "flex w-full max-w-xl cursor-pointer flex-col items-center gap-2 rounded-2xl border-2 border-dashed px-6 py-8 text-center transition",
+          over ? "border-brand-500 bg-orange-50" : "border-zinc-300 bg-white hover:border-zinc-400 hover:bg-zinc-50",
+          (busy || locked) && "pointer-events-none opacity-60",
+        )}
       >
-        <FileSpreadsheet className="size-8 text-emerald-600" />
-        <div className="flex-1">
-          <div className="font-medium">{busy ? "Processando planilha..." : fileName ?? "Selecionar planilha (CSV)"}</div>
-          <div className="text-xs text-zinc-500">{fileName ? "Clique para substituir esta planilha e recalcular a audiência." : "Colunas reconhecidas: nome, telefone/celular/whatsapp, DDI, e-mail. Outras colunas viram variáveis."}</div>
+        {busy ? <Loader2 className="size-9 animate-spin text-brand-500" /> : fileName ? <CheckCircle2 className="size-9 text-emerald-600" /> : <UploadCloud className="size-9 text-zinc-400" />}
+        <div className="font-medium">
+          {busy ? "Processando planilha..." : over ? "Solte o arquivo aqui" : fileName ? fileName : "Arraste a planilha para cá ou clique para escolher"}
         </div>
-        {fileName && <CheckCircle2 className="size-5 text-emerald-600" />}
-      </button>
-      <input ref={input} type="file" accept=".csv,text/csv" className="hidden" onChange={(e) => e.target.files?.[0] && upload(e.target.files[0])} />
+        <div className="text-xs text-zinc-500">
+          {fileName ? "Arraste ou clique para trocar a planilha e recalcular a audiência." : "Excel (.xlsx) ou CSV · colunas reconhecidas: nome, telefone/celular/whatsapp, DDI, e-mail. Outras colunas viram variáveis."}
+        </div>
+        <span className="mt-1 inline-flex items-center gap-1.5 text-xs text-emerald-700"><FileSpreadsheet className="size-3.5" /> Excel ou CSV, até 50 MB</span>
+      </div>
+      <input
+        ref={input}
+        type="file"
+        accept=".csv,.txt,.tsv,.xlsx,.xlsm,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        className="hidden"
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          e.target.value = "";
+          if (f) upload(f);
+        }}
+      />
       {error && <p className="text-red-600">{error}</p>}
 
       {stats && (

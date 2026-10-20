@@ -3,11 +3,12 @@ import type { Prisma } from "@prisma/client";
 import { getActiveAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { parseAudienceCsv } from "@/lib/audience";
+import { audienceFileToCsv } from "@/lib/audience-file";
 import { shortToken } from "@/lib/crypto";
 
 export const maxDuration = 300;
 
-/** Recebe a planilha (CSV), valida e substitui a audiência da campanha. */
+/** Recebe a planilha (Excel ou CSV), valida e substitui a audiência da campanha. */
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const auth = await getActiveAuth();
   if (!auth) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
@@ -23,13 +24,16 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
   const form = await req.formData();
   const file = form.get("file");
-  if (!(file instanceof File) || !file.size) return NextResponse.json({ error: "Envie um arquivo CSV" }, { status: 400 });
+  if (!(file instanceof File) || !file.size) return NextResponse.json({ error: "Envie a planilha (Excel ou CSV)" }, { status: 400 });
   if (file.size > 50 * 1024 * 1024) return NextResponse.json({ error: "Arquivo muito grande (máx. 50 MB)" }, { status: 400 });
 
   const buf = Buffer.from(await file.arrayBuffer());
-  // Planilhas exportadas do Excel BR costumam vir em latin1
-  let text = buf.toString("utf8");
-  if (text.includes("�")) text = buf.toString("latin1");
+  let text: string;
+  try {
+    text = await audienceFileToCsv(file.name, buf);
+  } catch (e) {
+    return NextResponse.json({ error: e instanceof Error && !/zip|corrupt|end of data/i.test(e.message) ? e.message : "Não consegui ler esse arquivo. Envie em Excel (.xlsx) ou CSV." }, { status: 400 });
+  }
   const parsed = parseAudienceCsv(text);
   if (!parsed.columns.phone) return NextResponse.json({ error: "Não encontrei a coluna de telefone na planilha" }, { status: 400 });
 
