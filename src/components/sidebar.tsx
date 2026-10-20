@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Bell, Building2, GraduationCap, MessagesSquare, Coins, FileText, Home, Layers, LogOut, Megaphone, Settings, Shield, Sparkles } from "lucide-react";
 import { logoutAction } from "@/app/actions/auth";
-import { Logo } from "./brand";
+import { Mark } from "./brand";
 import { APP_VERSION } from "@/version";
 
 const sections = [
@@ -45,8 +45,8 @@ export function Sidebar({ workspace, user, unread, chatUnread = 0, balance, isSu
   const all = isSuperAdmin ? [...sections, { title: "Plataforma", items: [{ href: "/admin", label: "Admin", icon: Shield }] }] : sections;
   return (
     <aside className="sticky top-0 flex h-screen w-64 shrink-0 flex-col bg-ink px-3 py-5 text-zinc-300">
-      <Link href="/" className="mb-5 block px-3">
-        <Logo className="w-full" />
+      <Link href="/" className="mb-6 block px-3 pt-1" aria-label="Início">
+        <Mark className="h-10 w-auto" />
       </Link>
 
       <Link href="/saldo" className="mx-1 mb-5 flex items-center justify-between rounded-xl bg-white/5 px-3.5 py-3 ring-1 ring-white/10 transition hover:bg-white/10">

@@ -62,7 +62,7 @@ export function emailLayout(opts: {
   <tr><td align="center">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;">
       <tr><td style="background:#0b0b0f;background-image:radial-gradient(circle at 0% 0%,rgba(249,115,22,.35),transparent 55%),radial-gradient(circle at 100% 100%,rgba(225,29,72,.30),transparent 55%);border-radius:20px 20px 0 0;padding:28px 32px;" align="center">
-        <a href="${app}" style="text-decoration:none;"><img src="${app}/brand/logo-email.png" width="240" alt="FUZIL DISPARADOR" style="display:block;width:240px;max-width:100%;height:auto;border:0;"></a>
+        <a href="${app}" style="text-decoration:none;"><img src="${app}/brand/logo-email.png" width="220" alt="FUZIL DISPARADOR" style="display:block;width:220px;max-width:100%;height:auto;border:0;"></a>
       </td></tr>
       <tr><td style="height:4px;background:${accent};background-image:linear-gradient(90deg,#ff8a1f,#ef2d56);"></td></tr>
       <tr><td style="background:#ffffff;padding:36px 32px 32px;border-radius:0 0 20px 20px;">
