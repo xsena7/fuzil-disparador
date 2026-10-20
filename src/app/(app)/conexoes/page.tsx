@@ -1,4 +1,4 @@
-import { AlertTriangle, CheckCircle2, RefreshCw, Phone, Trash2 } from "lucide-react";
+import { AlertTriangle, CheckCircle2, ChevronRight, RefreshCw, Phone, Trash2 } from "lucide-react";
 import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { env } from "@/lib/env";
@@ -52,15 +52,31 @@ export default async function ConnectionsPage() {
       {businesses.length === 0 && <Empty>Nenhuma BM conectada ainda. Use uma das opções abaixo.</Empty>}
 
       <div className="space-y-4">
-        {businesses.map((bm) => (
-          <Card key={bm.id} className="p-5">
-            <div className="mb-4 flex flex-wrap items-center gap-3">
-              <div className="text-base font-semibold">{bm.name}</div>
-              <Badge color="blue">Limite: {tierLabel(bm.messagingLimitTier)}</Badge>
+        {businesses.map((bm) => {
+          // Cor da gaveta: vermelho se alguma conta não consegue disparar, amarelo se tem aviso, verde se está tudo certo
+          const issues = bm.wabas.flatMap((w) => wabaReadiness({ ...w, usableTemplates: w.templates.length }));
+          const tone = !bm.wabas.length || issues.some((i) => i.block) ? "red" : issues.length ? "amber" : "green";
+          const w = windows.get(bm.id);
+          const phones = bm.wabas.reduce((a, x) => a + x.phones.filter((p) => !p.invalidReason).length, 0);
+          return (
+          <details key={bm.id} className="group overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm">
+            <summary className="flex cursor-pointer list-none flex-wrap items-center gap-3 px-5 py-4 hover:bg-zinc-50 [&::-webkit-details-marker]:hidden">
+              <ChevronRight className="size-4 shrink-0 text-zinc-400 transition-transform group-open:rotate-90" />
+              <span
+                className={`size-2.5 shrink-0 rounded-full ${tone === "red" ? "bg-red-500" : tone === "amber" ? "bg-amber-400" : "bg-emerald-500"}`}
+                title={tone === "red" ? "Falta algo para disparar" : tone === "amber" ? "Tem aviso" : "Pronta para disparar"}
+              />
+              <span className="text-base font-semibold">{bm.name}</span>
               {bm.groups.map((g) => <Badge key={g.groupId} color="orange" dot={false}>{g.group.name}</Badge>)}
-              {bm.metaBusinessId && <span className="text-xs text-zinc-400">BM ID: {bm.metaBusinessId}</span>}
-            </div>
-            {windows.get(bm.id) && <div className="mb-4"><LimitWindow w={windows.get(bm.id)!} /></div>}
+              <span className="ml-auto flex flex-wrap items-center gap-3 text-xs text-zinc-500">
+                <span>{bm.wabas.length} conta(s) · {phones} número(s)</span>
+                <Badge color="blue">Limite: {tierLabel(bm.messagingLimitTier)}</Badge>
+                {w && w.limit !== Infinity && <span className="font-medium text-zinc-700">{w.available.toLocaleString("pt-BR")} disponíveis</span>}
+              </span>
+            </summary>
+            <div className="border-t border-zinc-100 p-5">
+            {bm.metaBusinessId && <div className="mb-3 text-xs text-zinc-400">BM ID: {bm.metaBusinessId}</div>}
+            {w && <div className="mb-4"><LimitWindow w={w} /></div>}
             <div className="space-y-3">
               {bm.wabas.map((waba) => (
                 <div key={waba.id} className="overflow-hidden rounded-xl border border-zinc-200/80">
@@ -128,8 +144,10 @@ export default async function ConnectionsPage() {
                 </div>
               ))}
             </div>
-          </Card>
-        ))}
+            </div>
+          </details>
+          );
+        })}
       </div>
 
       <h2 className="mt-10 mb-4 text-base font-semibold">Nova conexão</h2>

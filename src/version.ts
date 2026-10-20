@@ -8,6 +8,7 @@ export const CHANGELOG: Array<{ version: string; date: string; items: string[] }
       "Números de teste da Meta e números não registrados nunca entram no rodízio",
       "Conexões: cada conta mostra o que falta para disparar (número registrado, cartão, template aprovado e avisos da Meta) ou \"Pronta para disparar\"",
       "Disparos pulam contas sem forma de pagamento",
+      "Conexões em gavetas: uma por BM, com bolinha verde (pronta), amarela (aviso) ou vermelha (falta algo)",
     ],
   },
   {
