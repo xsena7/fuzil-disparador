@@ -7,6 +7,8 @@ export const CHANGELOG: Array<{ version: string; date: string; items: string[] }
     items: [
       "Audiência aceita Excel (.xlsx), CSV, TXT e TSV",
       "Arraste a planilha direto para a área da audiência (ou clique para escolher)",
+      "Grupo automático \"⚠️ BMs com problema\": BM banida, restrita, sem pagamento, sem acesso ou com qualidade vermelha sai dos grupos de disparo e vai para lá, com o motivo e como resolver (só depois do primeiro disparo dela)",
+      "Botão \"Resolvido\" devolve a BM para os grupos em que ela estava",
     ],
   },
   {

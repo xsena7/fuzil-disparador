@@ -11,6 +11,7 @@ import { metaErrorLabel, RETRYABLE_CODES, SENDER_FATAL_CODES, TEMPLATE_FATAL_COD
 import { formatPhone } from "./phone";
 import { recordCampaignSends, renderCampaignText } from "./chat";
 import { templateFamily } from "./blueprints";
+import { flagBusinessProblem, problemFix } from "./bm-problems";
 
 export const TICK_MS = 2000;
 const DEFAULT_RATE = 20; // msgs/s por número
@@ -329,6 +330,8 @@ export async function runCampaignTick(campaignId: string) {
   const started = Date.now();
   const fatalSenders = new Map<string, string>();
   const fatalWabas = new Map<string, string>();
+  const fatalCodes = new Map<string, number | null>();
+  const firstSent = new Set<string>();
   let refund = 0;
   // Pausou ou cancelou no meio do lote: para de enviar e devolve o resto
   let stopped = false;
@@ -373,6 +376,10 @@ export async function runCampaignTick(campaignId: string) {
                       await prisma.campaignRecipient.update({ where: { id: r.id }, data });
                     });
                     sentNow.push({ phone: r.phone, name: r.name, wamid: out.wamid, text: renderCampaignText(sender.template.components, campaign, r) });
+                    if (!firstSent.has(sender.businessId)) {
+                      firstSent.add(sender.businessId);
+                      await prisma.businessManager.updateMany({ where: { id: sender.businessId, firstSentAt: null }, data: { firstSentAt: new Date() } });
+                    }
                     break;
                   }
                   case "retry":
@@ -390,6 +397,7 @@ export async function runCampaignTick(campaignId: string) {
                     break;
                   case "sender_fatal":
                     refund += price;
+                    if (!fatalSenders.has(sender.phoneId)) fatalCodes.set(sender.phoneId, out.code);
                     fatalSenders.set(sender.phoneId, out.title);
                     await releaseRecipients([r.id]);
                     break;
@@ -438,6 +446,9 @@ export async function runCampaignTick(campaignId: string) {
   }
   for (const [phoneId, reason] of fatalSenders) {
     const sender = plan.senders.find((s) => s.phoneId === phoneId)!;
+    // Problema na BM (pagamento, bloqueio, acesso...): ela vai para "BMs com problema"
+    if (fatalCodes.has(phoneId))
+      await flagBusinessProblem(sender.businessId, `${sender.display}: ${reason}`, problemFix(fatalCodes.get(phoneId))).catch((e) => console.error("[dispatcher] problema da BM", e));
     await prisma.campaign.update({ where: { id: campaign.id }, data: { excludedSenders: { push: phoneId } } });
     await createAlert({
       workspaceId: campaign.workspaceId,

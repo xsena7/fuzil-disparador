@@ -136,6 +136,15 @@ model BusinessManager {
   notes              String?
   // Quando a BM bateu o limite de 24h (para avisar uma vez e avisar quando voltar)
   limitFullSince     DateTime?
+  // Primeiro disparo da BM: só depois dele ela pode ir sozinha para o grupo "BMs com problema"
+  firstSentAt        DateTime?
+  problemReason      String?
+  problemFix         String?
+  problemAt          DateTime?
+  // Grupos em que ela estava antes de ir para "BMs com problema" (para devolver)
+  problemPrevGroups  String[]          @default([])
+  // Problema que o cliente marcou como resolvido: não move de novo pelo mesmo motivo até ele sumir
+  problemIgnored     String?
   createdAt          DateTime          @default(now())
   updatedAt          DateTime          @updatedAt
   workspace          Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
@@ -209,6 +218,8 @@ model BmGroup {
   workspaceId String
   name        String
   description String?
+  // "PROBLEMS" = grupo automático das BMs com problema (não entra em campanha)
+  system      String?
   createdAt   DateTime        @default(now())
   workspace   Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   members     BmGroupMember[]

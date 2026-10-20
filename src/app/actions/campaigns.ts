@@ -25,7 +25,7 @@ export async function createCampaignAction(_: FormState, form: FormData): Promis
   const auth = await requireAuth();
   const name = String(form.get("name") ?? "").trim();
   if (!name) return { error: "Dê um nome à campanha" };
-  const lastGroup = await prisma.campaign.findFirst({ where: { workspaceId: auth.workspace.id, groupId: { not: null } }, orderBy: { createdAt: "desc" } });
+  const lastGroup = await prisma.campaign.findFirst({ where: { workspaceId: auth.workspace.id, groupId: { not: null }, group: { system: null } }, orderBy: { createdAt: "desc" } });
   const c = await prisma.campaign.create({ data: { workspaceId: auth.workspace.id, name, groupId: lastGroup?.groupId } });
   redirect(`/campanhas/${c.id}?etapa=template`);
 }
@@ -57,7 +57,7 @@ export async function saveTemplateStepAction(id: string, _: FormState, form: For
   const groupId = String(form.get("groupId") ?? "");
   const [name, language] = String(form.get("template") ?? "").split("|");
   if (!groupId) return { error: "Escolha um grupo de BM" };
-  if (!(await prisma.bmGroup.findFirst({ where: { id: groupId, workspaceId: c.workspaceId }, select: { id: true } }))) return { error: "Grupo não encontrado" };
+  if (!(await prisma.bmGroup.findFirst({ where: { id: groupId, workspaceId: c.workspaceId, system: null }, select: { id: true } }))) return { error: "Grupo não encontrado" };
   if (!name || !language) return { error: "Escolha um template" };
   const changed = name !== c.templateName || language !== c.templateLanguage;
   await prisma.campaign.update({

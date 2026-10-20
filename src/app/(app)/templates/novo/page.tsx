@@ -7,7 +7,7 @@ import { TemplateBuilder } from "../builder";
 export default async function NewTemplatePage() {
   const auth = await requireAuth();
   const [groups, wabas] = await Promise.all([
-    prisma.bmGroup.findMany({ where: { workspaceId: auth.workspace.id }, select: { id: true, name: true } }),
+    prisma.bmGroup.findMany({ where: { workspaceId: auth.workspace.id, system: null }, select: { id: true, name: true } }),
     prisma.whatsAppAccount.findMany({ where: { workspaceId: auth.workspace.id }, include: { business: true } }),
   ]);
   return (

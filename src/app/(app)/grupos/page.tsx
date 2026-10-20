@@ -1,4 +1,4 @@
-import { Plus, Trash2 } from "lucide-react";
+import { CheckCircle2, Plus, Trash2 } from "lucide-react";
 import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { formatLimit, tierLabel } from "@/lib/limits";
@@ -8,7 +8,8 @@ import { LimitWindow } from "@/components/limit-card";
 import { Drawer, MetaItem } from "@/components/drawer";
 import { Badge, Empty, Field, Input, PageHeader, Stat } from "@/components/ui";
 import { ActionForm, ConfirmButton } from "@/components/action-form";
-import { deleteGroupAction, saveGroupAction } from "@/app/actions/groups";
+import { deleteGroupAction, restoreBusinessAction, saveGroupAction } from "@/app/actions/groups";
+import { PROBLEMS_GROUP } from "@/lib/bm-problems";
 
 export const dynamic = "force-dynamic";
 
@@ -18,7 +19,10 @@ export default async function GroupsPage() {
     prisma.bmGroup.findMany({ where: { workspaceId: auth.workspace.id }, include: { members: { include: { business: true } } }, orderBy: { createdAt: "asc" } }),
     prisma.businessManager.findMany({ where: { workspaceId: auth.workspace.id }, orderBy: { name: "asc" } }),
   ]);
-  const stats = await Promise.all(groups.map((g) => statsForBusinesses(g.members.map((m) => m.businessId))));
+  // O grupo automático "BMs com problema" aparece separado, no topo
+  const problems = groups.find((g) => g.system === PROBLEMS_GROUP);
+  const regular = groups.filter((g) => !g.system);
+  const stats = await Promise.all(regular.map((g) => statsForBusinesses(g.members.map((m) => m.businessId))));
   const windows = await bmWindows(businesses.map((b) => b.id));
 
   const bmCheckboxes = (selected: string[]) => (
@@ -38,9 +42,38 @@ export default async function GroupsPage() {
     <div className="mx-auto max-w-6xl">
       <PageHeader title="Grupos de BM" description="Cada campanha dispara por um grupo, distribuindo os envios entre todos os números das BMs do grupo." />
 
-      {groups.length === 0 && <Empty>Nenhum grupo criado.</Empty>}
+      {problems && problems.members.length > 0 && (
+        <Drawer
+          className="mb-3 border-red-200"
+          title={problems.name}
+          subtitle="Saíram sozinhas dos grupos de disparo depois de dar problema. Resolva e clique em Resolvido."
+          tone="red"
+          meta={<span className="font-semibold text-red-700">{problems.members.length} BM(s)</span>}
+          open
+          bodyClassName="divide-y divide-red-100"
+        >
+          {problems.members.map(({ business: b }) => (
+            <div key={b.id} className="flex flex-wrap items-start gap-4 px-5 py-4">
+              <div className="min-w-0 flex-1">
+                <div className="font-semibold">{b.name}</div>
+                <div className="mt-0.5 text-sm text-red-700">{b.problemReason ?? "Problema detectado"}</div>
+                {b.problemFix && <div className="mt-1 text-sm text-zinc-600"><b className="text-zinc-800">Como resolver:</b> {b.problemFix}</div>}
+                <div className="mt-1 text-xs text-zinc-400">
+                  {b.problemAt ? `Desde ${b.problemAt.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}` : ""}
+                  {b.problemPrevGroups.length > 0 && ` · volta para: ${groups.filter((g) => b.problemPrevGroups.includes(g.id)).map((g) => g.name).join(", ") || "—"}`}
+                </div>
+              </div>
+              <ConfirmButton action={restoreBusinessAction.bind(null, b.id)} confirm={`Já resolveu o problema da BM ${b.name}? Ela volta para os grupos de disparo.`}>
+                <CheckCircle2 className="size-4" /> Resolvido
+              </ConfirmButton>
+            </div>
+          ))}
+        </Drawer>
+      )}
+
+      {regular.length === 0 && <Empty>Nenhum grupo criado.</Empty>}
       <div className="space-y-3">
-        {groups.map((g, i) => {
+        {regular.map((g, i) => {
           const s = stats[i];
           const tone = s.activePhones === 0 ? "red" : s.available === 0 ? "amber" : "green";
           return (
@@ -96,7 +129,7 @@ export default async function GroupsPage() {
           );
         })}
 
-        <Drawer title={<span className="flex items-center gap-2"><Plus className="size-4" /> Novo grupo</span>} open={groups.length === 0}>
+        <Drawer title={<span className="flex items-center gap-2"><Plus className="size-4" /> Novo grupo</span>} open={regular.length === 0}>
           <ActionForm action={saveGroupAction} submit="Criar grupo">
             <div className="mb-4 grid gap-4 md:grid-cols-2">
               <Field label="Nome"><Input name="name" placeholder="Ex.: Disparos principais" required /></Field>

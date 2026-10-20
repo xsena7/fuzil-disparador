@@ -4,6 +4,7 @@ import { decrypt } from "./crypto";
 import { env } from "./env";
 import { meta, type MetaPhone, type MetaTemplate } from "./meta";
 import { createAlert } from "./alerts";
+import { checkBusinessAfterSync } from "./bm-problems";
 import { tierLabel, tierToLimit } from "./limits";
 import { formatPhone } from "./phone";
 
@@ -84,9 +85,11 @@ export async function syncWaba(wabaRecordId: string) {
     if (gone.length) await prisma.template.deleteMany({ where: { id: { in: gone } } });
 
     await prisma.whatsAppAccount.update({ where: { id: waba.id }, data: { lastSyncedAt: new Date(), lastSyncError: null } });
+    await checkBusinessAfterSync(waba.id).catch((e) => console.error("[sync] problema da BM", e));
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     await prisma.whatsAppAccount.update({ where: { id: waba.id }, data: { lastSyncError: message, lastSyncedAt: new Date() } });
+    await checkBusinessAfterSync(waba.id).catch(() => undefined);
     if (waba.lastSyncError !== message) {
       await createAlert({
         workspaceId: waba.workspaceId,

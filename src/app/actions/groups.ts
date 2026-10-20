@@ -17,6 +17,7 @@ export async function saveGroupAction(_: FormState, form: FormData): Promise<For
   if (id) {
     const group = await prisma.bmGroup.findFirst({ where: { id, workspaceId: auth.workspace.id } });
     if (!group) return { error: "Grupo não encontrado" };
+    if (group.system) return { error: "Esse grupo é automático. Use \"Resolvido\" em cada BM para devolver aos grupos." };
     await prisma.$transaction([
       prisma.bmGroup.update({ where: { id }, data: { name, description } }),
       prisma.bmGroupMember.deleteMany({ where: { groupId: id } }),
@@ -33,6 +34,15 @@ export async function saveGroupAction(_: FormState, form: FormData): Promise<For
 
 export async function deleteGroupAction(id: string) {
   const auth = await requireAuth();
-  await prisma.bmGroup.deleteMany({ where: { id, workspaceId: auth.workspace.id } });
+  await prisma.bmGroup.deleteMany({ where: { id, workspaceId: auth.workspace.id, system: null } });
   revalidatePath("/grupos");
+}
+
+/** BM com problema resolvido: volta para os grupos em que estava. */
+export async function restoreBusinessAction(businessId: string) {
+  const auth = await requireAuth();
+  const { restoreBusiness } = await import("@/lib/bm-problems");
+  await restoreBusiness(businessId, auth.workspace.id);
+  revalidatePath("/grupos");
+  return { ok: true };
 }

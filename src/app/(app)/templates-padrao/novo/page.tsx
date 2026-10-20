@@ -6,7 +6,7 @@ import { TemplateBuilder } from "../../templates/builder";
 
 export default async function NewBlueprintPage() {
   const auth = await requireAuth();
-  const groups = await prisma.bmGroup.findMany({ where: { workspaceId: auth.workspace.id }, select: { id: true, name: true } });
+  const groups = await prisma.bmGroup.findMany({ where: { workspaceId: auth.workspace.id, system: null }, select: { id: true, name: true } });
   return (
     <div className="mx-auto max-w-6xl">
       <PageHeader title="Novo template padrão" description="Ele será criado em todas as BMs do escopo escolhido, inclusive nas conectadas no futuro." />

@@ -56,7 +56,7 @@ export default async function ConnectionsPage() {
         {businesses.map((bm) => {
           // Cor da gaveta: vermelho se alguma conta não consegue disparar, amarelo se tem aviso, verde se está tudo certo
           const issues = bm.wabas.flatMap((w) => wabaReadiness({ ...w, usableTemplates: w.templates.length }));
-          const tone = !bm.wabas.length || issues.some((i) => i.block) ? "red" : issues.length ? "amber" : "green";
+          const tone = bm.problemAt || !bm.wabas.length || issues.some((i) => i.block) ? "red" : issues.length ? "amber" : "green";
           const w = windows.get(bm.id);
           const phones = bm.wabas.reduce((a, x) => a + x.phones.filter((p) => !p.invalidReason).length, 0);
           return (
@@ -68,7 +68,7 @@ export default async function ConnectionsPage() {
                 title={tone === "red" ? "Falta algo para disparar" : tone === "amber" ? "Tem aviso" : "Pronta para disparar"}
               />
               <span className="text-base font-semibold">{bm.name}</span>
-              {bm.groups.map((g) => <Badge key={g.groupId} color="orange" dot={false}>{g.group.name}</Badge>)}
+              {bm.groups.map((g) => <Badge key={g.groupId} color={g.group.system ? "red" : "orange"} dot={false}>{g.group.name}</Badge>)}
               <span className="ml-auto flex flex-wrap items-center gap-3 text-xs text-zinc-500">
                 <span>{bm.wabas.length} conta(s) · {phones} número(s)</span>
                 <Badge color="blue">Limite: {tierLabel(bm.messagingLimitTier)}</Badge>

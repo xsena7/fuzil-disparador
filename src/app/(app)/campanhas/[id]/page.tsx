@@ -100,7 +100,7 @@ export default async function CampaignPage({ params, searchParams }: { params: P
 
 async function TemplateStep({ campaignId, workspaceId, locked }: { campaignId: string; workspaceId: string; locked: boolean }) {
   const campaign = await prisma.campaign.findUniqueOrThrow({ where: { id: campaignId } });
-  const groups = await prisma.bmGroup.findMany({ where: { workspaceId }, include: { members: true }, orderBy: { name: "asc" } });
+  const groups = await prisma.bmGroup.findMany({ where: { workspaceId, system: null }, include: { members: true }, orderBy: { name: "asc" } });
   const templates = await prisma.template.findMany({ where: { workspaceId }, include: { waba: true } });
   // Versões numeradas de um template padrão (fzl_disp2...) entram como o template original
   const aliases = await templateAliases(workspaceId);
