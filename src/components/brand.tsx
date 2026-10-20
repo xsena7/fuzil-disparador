@@ -15,21 +15,22 @@ function MarkGradient({ id }: { id: string }) {
   );
 }
 
-/** Logo horizontal: o "F" + FUZIL. tone="dark" para fundos escuros (letras claras). */
+/** Logo horizontal: o "F" da marca + UZIL. tone="dark" para fundos escuros (letras claras). */
 export function Logo({ className, tone = "dark", subtitle = true }: { className?: string; tone?: "dark" | "light"; subtitle?: boolean }) {
   const id = useId().replace(/:/g, "");
   const ink = tone === "dark" ? "#ffffff" : "#18181b";
+  const font = "Inter, 'Segoe UI', Roboto, Arial, sans-serif";
   return (
-    <svg viewBox="0 0 430 110" className={className} role="img" aria-label="Fuzil Disparador">
+    <svg viewBox={subtitle ? "0 0 284 92" : "0 0 284 66"} className={className} role="img" aria-label="Fuzil Disparador">
       <defs>
         <MarkGradient id={`g${id}`} />
       </defs>
-      <path d={MARK_PATH} fill={`url(#g${id})`} transform="translate(0 4) scale(0.19) translate(-140 -290)" />
-      <text x="166" y={subtitle ? 66 : 78} fontFamily="Inter, 'Segoe UI', Roboto, Arial, sans-serif" fontWeight={900} fontStyle="italic" fontSize={subtitle ? 70 : 82} letterSpacing={2} fill={ink}>
-        FUZIL
+      <path d={MARK_PATH} fill={`url(#g${id})`} transform="scale(0.12) translate(-140 -292)" />
+      <text x="84" y="59" fontFamily={font} fontWeight={900} fontStyle="italic" fontSize={80} letterSpacing={1} fill={ink}>
+        UZIL
       </text>
       {subtitle && (
-        <text x="170" y="96" fontFamily="Inter, 'Segoe UI', Roboto, Arial, sans-serif" fontWeight={700} fontSize={17} letterSpacing={9.4} fill={ink} fillOpacity={0.6}>
+        <text x="6" y="87" fontFamily={font} fontWeight={700} fontSize={16} letterSpacing={12.6} fill={ink} fillOpacity={0.6}>
           DISPARADOR
         </text>
       )}

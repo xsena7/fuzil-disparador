@@ -16,7 +16,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         <div className="pointer-events-none absolute -bottom-48 -right-32 size-[520px] rounded-full bg-rose-600/20 blur-3xl" />
         <div />
         <div className="relative">
-          <Logo className="w-full max-w-lg" />
+          <Logo className="w-full max-w-sm" />
           <ul className="mt-10 space-y-3">
             {points.map((p) => (
               <li key={p} className="flex items-center gap-3 text-zinc-300">
