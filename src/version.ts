@@ -2,6 +2,15 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "1.23",
+    date: "20/10/2026",
+    items: [
+      "Números de teste da Meta e números não registrados nunca entram no rodízio",
+      "Conexões: cada conta mostra o que falta para disparar (número registrado, cartão, template aprovado e avisos da Meta) ou \"Pronta para disparar\"",
+      "Disparos pulam contas sem forma de pagamento",
+    ],
+  },
+  {
     version: "1.22",
     date: "20/10/2026",
     items: [

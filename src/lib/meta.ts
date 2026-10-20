@@ -77,7 +77,10 @@ export type MetaWaba = {
   timezone_id?: string;
   account_review_status?: string;
   owner_business_info?: { id: string; name: string };
-  health_status?: { can_send_message?: string };
+  health_status?: {
+    can_send_message?: string;
+    entities?: Array<{ entity_type?: string; id?: string; can_send_message?: string; errors?: Array<{ error_code?: number; error_description?: string; possible_solution?: string }> }>;
+  };
 };
 
 export type MetaPhone = {
@@ -92,6 +95,7 @@ export type MetaPhone = {
   throughput?: { level?: string };
   platform_type?: string;
   is_on_biz_app?: boolean;
+  account_mode?: string; // SANDBOX = número de teste da Meta
 };
 
 export type MetaTemplate = {
@@ -125,18 +129,26 @@ export const meta = {
     });
   },
 
+  /** Se a WABA tem forma de pagamento. null quando a Meta não informa. */
+  async wabaHasPayment(token: string, wabaId: string): Promise<boolean | null> {
+    return graph<{ primary_funding_id?: string }>(token, "GET", wabaId, { query: { fields: "primary_funding_id" } })
+      .then((r) => Boolean(r.primary_funding_id))
+      .catch(() => null);
+  },
+
   getBusiness(token: string, businessId: string) {
     return graph<{ id: string; name: string; verification_status?: string }>(token, "GET", businessId, {
       query: { fields: "id,name,verification_status" },
     });
   },
 
-  listPhones(token: string, wabaId: string) {
-    return paginate<MetaPhone>(token, `${wabaId}/phone_numbers`, {
-      fields:
-        "id,display_phone_number,verified_name,quality_rating,messaging_limit_tier,whatsapp_business_manager_messaging_limit,status,name_status,throughput,platform_type,is_on_biz_app",
-      limit: 100,
-    });
+  async listPhones(token: string, wabaId: string) {
+    const base =
+      "id,display_phone_number,verified_name,quality_rating,messaging_limit_tier,whatsapp_business_manager_messaging_limit,status,name_status,throughput,platform_type,is_on_biz_app";
+    // account_mode diz se é número de teste; se a Meta recusar o campo, busca sem ele
+    return paginate<MetaPhone>(token, `${wabaId}/phone_numbers`, { fields: `${base},account_mode`, limit: 100 }).catch(() =>
+      paginate<MetaPhone>(token, `${wabaId}/phone_numbers`, { fields: base, limit: 100 }),
+    );
   },
 
   /**

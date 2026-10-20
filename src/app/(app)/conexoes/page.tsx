@@ -1,4 +1,4 @@
-import { RefreshCw, Phone, Trash2 } from "lucide-react";
+import { AlertTriangle, CheckCircle2, RefreshCw, Phone, Trash2 } from "lucide-react";
 import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { env } from "@/lib/env";
@@ -10,6 +10,7 @@ import { ActionForm, ConfirmButton } from "@/components/action-form";
 import { EmbeddedSignup } from "@/components/embedded-signup";
 import { LimitWindow } from "@/components/limit-card";
 import { bmWindows } from "@/lib/limit-windows";
+import { wabaReadiness } from "@/lib/readiness";
 import { PasswordInput } from "@/components/password-input";
 import {
   connectManualAction,
@@ -29,7 +30,11 @@ export default async function ConnectionsPage() {
   const businesses = await prisma.businessManager.findMany({
     where: { workspaceId: auth.workspace.id },
     include: {
-      wabas: { include: { phones: { orderBy: { createdAt: "asc" } }, _count: { select: { templates: true } } } },
+      wabas: { include: { phones: { orderBy: { createdAt: "asc" } },
+          templates: { where: { status: "APPROVED", category: "UTILITY" }, select: { id: true } },
+          _count: { select: { templates: true } },
+        },
+      },
       groups: { include: { group: true } },
     },
     orderBy: { name: "asc" },
@@ -72,6 +77,31 @@ export default async function ConnectionsPage() {
                     <ConfirmButton action={syncWabaAction.bind(null, waba.id)} variant="ghost" className="px-2 py-1"><RefreshCw className="size-4" /></ConfirmButton>
                     <ConfirmButton action={deleteWabaAction.bind(null, waba.id)} variant="ghost" className="px-2 py-1 text-red-600" confirm={`Remover a WABA ${waba.name} do painel? (Nada é apagado na Meta)`}><Trash2 className="size-4" /></ConfirmButton>
                   </div>
+                  {(() => {
+                    const issues = wabaReadiness({ ...waba, usableTemplates: waba.templates.length });
+                    if (!issues.length)
+                      return (
+                        <div className="flex items-center gap-2 border-b border-zinc-100 bg-emerald-50/60 px-4 py-2 text-sm text-emerald-700">
+                          <CheckCircle2 className="size-4" /> Pronta para disparar
+                        </div>
+                      );
+                    const blocked = issues.some((i) => i.block);
+                    return (
+                      <div className={`border-b px-4 py-2.5 text-sm ${blocked ? "border-red-100 bg-red-50/70 text-red-800" : "border-amber-100 bg-amber-50/70 text-amber-800"}`}>
+                        <div className="mb-1 flex items-center gap-2 font-semibold">
+                          <AlertTriangle className="size-4" /> {blocked ? "Falta isso para essa conta disparar:" : "Atenção nessa conta:"}
+                        </div>
+                        <ul className="space-y-1 pl-6">
+                          {issues.map((i) => (
+                            <li key={i.text} className="list-disc">
+                              <b className="font-medium">{i.text}</b>
+                              {i.fix && <span className="opacity-80"> {i.fix}</span>}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    );
+                  })()}
                   <div className="divide-y divide-zinc-100">
                     {waba.phones.length === 0 && <div className="px-4 py-3 text-zinc-500">Nenhum número nesta WABA.</div>}
                     {waba.phones.map((p) => (
@@ -85,12 +115,12 @@ export default async function ConnectionsPage() {
                         <PhoneStatusBadge s={p.status} />
                         <Badge color="blue" dot={false}>{tierLabel(p.messagingLimitTier)}</Badge>
                         {p.isCoexistence && <Badge dot={false}>Coexistência</Badge>}
-                        {!p.enabled && <Badge color="yellow">Fora do rodízio</Badge>}
+                        {p.invalidReason ? <Badge color="red">{p.invalidReason}: não entra no rodízio</Badge> : !p.enabled && <Badge color="yellow">Fora do rodízio</Badge>}
                         <div className="ml-auto flex gap-2">
                           {p.status && p.status !== "CONNECTED" && !p.isCoexistence && (
                             <ActionForm action={async () => { "use server"; return registerPhoneAction(p.id); }} submit="Registrar número" variant="secondary" />
                           )}
-                          <ConfirmButton action={togglePhoneAction.bind(null, p.id)}>{p.enabled ? "Tirar do rodízio" : "Colocar no rodízio"}</ConfirmButton>
+                          {!p.invalidReason && <ConfirmButton action={togglePhoneAction.bind(null, p.id)}>{p.enabled ? "Tirar do rodízio" : "Colocar no rodízio"}</ConfirmButton>}
                         </div>
                       </div>
                     ))}

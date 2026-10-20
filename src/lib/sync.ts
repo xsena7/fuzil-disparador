@@ -28,6 +28,10 @@ export async function syncWaba(wabaRecordId: string) {
   if (!waba.webhookSubscribed && waba.lastSyncedAt) await ensureWebhook(waba.id).catch(() => undefined);
   try {
     const info = await meta.getWaba(token, waba.wabaId);
+    const hasPaymentMethod = await meta.wabaHasPayment(token, waba.wabaId);
+    const healthIssues = (info.health_status?.entities ?? []).flatMap((e) =>
+      (e.errors ?? []).map((er) => ({ entity: e.entity_type ?? "", id: e.id ?? "", code: er.error_code ?? null, text: er.error_description ?? "", fix: er.possible_solution ?? "" })),
+    );
     await prisma.whatsAppAccount.update({
       where: { id: waba.id },
       data: {
@@ -36,6 +40,8 @@ export async function syncWaba(wabaRecordId: string) {
         timezoneId: info.timezone_id,
         reviewStatus: info.account_review_status,
         status: info.health_status?.can_send_message ?? waba.status,
+        ...(hasPaymentMethod !== null ? { hasPaymentMethod } : {}),
+        healthIssues,
       },
     });
 
@@ -114,6 +120,14 @@ async function refreshBusinessTier(wabaRecordId: string) {
   }
 }
 
+/** Números que nunca entram no rodízio: os de teste da Meta e os que não estão registrados na Cloud API. */
+export function phoneInvalidReason(p: MetaPhone): string | null {
+  const digits = p.display_phone_number.replace(/\D/g, "");
+  if (p.account_mode === "SANDBOX" || p.verified_name === "Test Number" || /^1555\d{7}$/.test(digits)) return "Número de teste da Meta";
+  if (p.platform_type === "NOT_APPLICABLE") return "Número não registrado na API";
+  return null;
+}
+
 export async function upsertPhone(workspaceId: string, wabaRecordId: string, p: MetaPhone) {
   const tier = p.whatsapp_business_manager_messaging_limit ?? p.messaging_limit_tier ?? null;
   const existing = await prisma.phoneNumber.findUnique({ where: { phoneNumberId: p.id } });
@@ -127,6 +141,7 @@ export async function upsertPhone(workspaceId: string, wabaRecordId: string, p: 
     nameStatus: p.name_status,
     throughputLevel: p.throughput?.level,
     isCoexistence: Boolean(p.is_on_biz_app),
+    invalidReason: phoneInvalidReason(p),
     lastSyncedAt: new Date(),
   };
   if (!existing) {

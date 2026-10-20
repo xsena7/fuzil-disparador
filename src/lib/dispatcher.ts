@@ -86,6 +86,8 @@ export async function planSenders(
       for (const phone of waba.phones) {
         const display = formatPhone(phone.displayPhoneNumber.replace(/\D/g, ""));
         const skip = (reason: string) => plan.skipped.push({ display, reason });
+        if (phone.invalidReason) { skip(phone.invalidReason); continue; }
+        if (waba.hasPaymentMethod === false) { skip("Conta sem forma de pagamento (cartão)"); continue; }
         if (!phone.enabled) { skip("Número desativado no rodízio"); continue; }
         if (campaign.excludedSenders.includes(phone.id)) { skip("Retirado desta campanha por erro"); continue; }
         if (phone.status && BAD_PHONE_STATUS.has(phone.status)) { skip(`Status ${phone.status}`); continue; }

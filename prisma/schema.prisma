@@ -163,6 +163,8 @@ model WhatsAppAccount {
   currency             String?
   timezoneId           String?
   reviewStatus         String?
+  hasPaymentMethod     Boolean? // null = não deu para saber
+  healthIssues         Json? // problemas que a Meta aponta e impedem/limitam o envio
   status               String? // ex.: ACTIVE, DISABLED, BANNED
   webhookSubscribed    Boolean         @default(false)
   lastSyncedAt         DateTime?
@@ -191,6 +193,8 @@ model PhoneNumber {
   isCoexistence      Boolean         @default(false)
   // Permite tirar o número do rodízio sem desconectar
   enabled            Boolean         @default(true)
+  // Preenchido quando o número não serve para disparo (número de teste da Meta, não registrado...)
+  invalidReason      String?
   isDefault          Boolean         @default(false)
   lastSyncedAt       DateTime?
   createdAt          DateTime        @default(now())

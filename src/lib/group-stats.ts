@@ -35,7 +35,7 @@ export async function statsForBusinesses(businessIds: string[]): Promise<GroupSt
     for (const w of bm.wabas)
       for (const p of w.phones) {
         stats.phones++;
-        if (p.enabled && p.status === "CONNECTED") stats.activePhones++;
+        if (p.enabled && !p.invalidReason && p.status === "CONNECTED") stats.activePhones++;
         const q = (p.qualityRating ?? "UNKNOWN") as keyof GroupStats["quality"];
         stats.quality[q in stats.quality ? q : "UNKNOWN"]++;
       }
