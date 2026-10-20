@@ -10,6 +10,7 @@ export const CHANGELOG: Array<{ version: string; date: string; items: string[] }
       "Arraste a planilha direto para a área da audiência (ou clique para escolher)",
       "Grupo automático \"⚠️ BMs com problema\": BM banida, restrita, sem pagamento, sem acesso ou com qualidade vermelha sai dos grupos de disparo e vai para lá, com o motivo e como resolver (só depois do primeiro disparo dela)",
       "Botão \"Resolvido\" devolve a BM para os grupos em que ela estava",
+      "Servidor mais leve: o worker usa 3x menos memória (271 MB → 85 MB) e o painel ~120 MB a menos, com teto de memória para nunca derrubar o banco",
     ],
   },
   {

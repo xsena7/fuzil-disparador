@@ -4,7 +4,9 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 COPY . .
-RUN npm run build
+# Painel + worker já empacotado em JavaScript (o worker não precisa mais do tsx traduzindo o código na hora)
+RUN npm run build && npm run build:worker
 ENV NODE_ENV=production
 EXPOSE 3000
-CMD ["sh", "-c", "npx prisma migrate deploy && npx next start -p 3000"]
+# Sem npx: ele deixa um processo do npm parado na memória o tempo todo
+CMD ["sh", "-c", "node node_modules/prisma/build/index.js migrate deploy && exec node node_modules/next/dist/bin/next start -p 3000"]

@@ -97,7 +97,9 @@ export async function checkBusinessAfterSync(wabaRecordId: string) {
   let reason: string | null = null;
   let fix = "";
   const health = (Array.isArray(waba.healthIssues) ? waba.healthIssues : []) as Array<{ text?: string; fix?: string }>;
-  if (waba.lastSyncError) {
+  // Só erro de acesso de verdade (token/permissão); queda de rede ou instabilidade da Meta não conta
+  const accessLost = waba.lastSyncError && /token|permiss|oauth|access|acesso|session|expired|expirad/i.test(waba.lastSyncError) && !/fetch failed|ECONN|ETIMEDOUT|timeout|socket|network|indispon|temporar/i.test(waba.lastSyncError);
+  if (accessLost) {
     reason = `O Fuzil não consegue acessar a WABA ${waba.name}`;
     fix = problemFix(null, "ACCESS");
   } else if (waba.status === "BLOCKED") {
@@ -118,5 +120,5 @@ export async function checkBusinessAfterSync(wabaRecordId: string) {
     }
   }
   if (reason) await flagBusinessProblem(waba.businessId, reason, fix);
-  else await clearIgnoredProblem(waba.businessId);
+  else if (!waba.lastSyncError) await clearIgnoredProblem(waba.businessId);
 }

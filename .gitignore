@@ -1,8 +1,9 @@
-node_modules
-.next
+*.tsbuildinfo
 .env
 .env.local
-uploads
-*.tsbuildinfo
-next-env.d.ts
+.next
 VERSION
+dist
+next-env.d.ts
+node_modules
+uploads
