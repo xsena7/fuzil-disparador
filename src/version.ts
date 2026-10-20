@@ -20,7 +20,6 @@ export const CHANGELOG: Array<{ version: string; date: string; items: string[] }
       "\"Reenviar falhas\" inclui as falhas por tempo esgotado/rede",
       "Chat: mensagens recebidas não somem mais da conversa aberta",
     ],
-    ],
   },
   {
     version: "1.25",
