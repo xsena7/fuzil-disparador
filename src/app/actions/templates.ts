@@ -173,6 +173,8 @@ export async function deleteBlueprintAction(id: string) {
 
 export async function deployNowAction() {
   const auth = await requireAuth();
+  // "Aplicar agora" é uma nova tentativa manual: zera as contas que deram erro
+  await prisma.templateDeployment.updateMany({ where: { status: "ERROR", blueprint: { workspaceId: auth.workspace.id } }, data: { attempts: 0 } });
   await deployBlueprints(auth.workspace.id);
   revalidatePath("/templates-padrao");
 }
