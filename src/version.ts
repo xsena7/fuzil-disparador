@@ -2,6 +2,13 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "1.25",
+    date: "20/10/2026",
+    items: [
+      "Logo nova do Fuzil em todo o sistema: painel, login, site, e-mails, ícone da aba e avatar do Discord",
+    ],
+  },
+  {
     version: "1.24",
     date: "20/10/2026",
     items: [

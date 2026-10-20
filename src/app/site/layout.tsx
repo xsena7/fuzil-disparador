@@ -22,7 +22,7 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
     <div className="min-h-screen bg-white text-[15px] text-zinc-700">
       <header className="sticky top-0 z-30 border-b border-white/10 bg-ink/95 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center gap-6 px-5 py-3">
-          <Link href="/" className="w-36 shrink-0"><Logo className="w-full" /></Link>
+          <Link href="/" className="w-32 shrink-0"><Logo className="w-full" subtitle={false} /></Link>
           <nav className="ml-auto hidden items-center gap-6 text-sm text-zinc-300 md:flex">
             <a href="/#recursos" className="hover:text-white">Recursos</a>
             <a href="/#como-funciona" className="hover:text-white">Como funciona</a>
