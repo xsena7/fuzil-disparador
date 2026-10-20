@@ -54,7 +54,7 @@ export async function flagBusinessProblem(businessId: string, reason: string, fi
     workspaceId: bm.workspaceId,
     type: "BM_PROBLEM",
     severity: "CRITICAL",
-    title: `BM ${bm.name} foi para "BMs com problema"`,
+    title: `${bm.name} foi para "BMs com problema"`,
     message: `${reason}. Ela saiu dos grupos de disparo. Como resolver: ${fix}`,
   });
 }

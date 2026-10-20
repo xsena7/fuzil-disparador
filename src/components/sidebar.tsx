@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Bell, Building2, GraduationCap, MessagesSquare, Coins, FileText, Home, Layers, LogOut, Megaphone, Menu, X, Settings, Shield, Sparkles } from "lucide-react";
 import { logoutAction } from "@/app/actions/auth";
-import { Mark } from "./brand";
+import { Logo } from "./brand";
 import { APP_VERSION } from "@/version";
 
 const sections = [
@@ -53,7 +53,7 @@ export function Sidebar({ workspace, user, unread, chatUnread = 0, balance, isSu
       <button onClick={() => setOpen(true)} aria-label="Abrir menu" className="-ml-1 rounded-lg p-1.5 text-zinc-300 hover:bg-white/10">
         <Menu className="size-6" />
       </button>
-      <Link href="/" aria-label="Início"><Mark className="h-7 w-auto" /></Link>
+      <Link href="/" aria-label="Início"><Logo className="h-6 w-auto" /></Link>
       {(unread > 0 || chatUnread > 0) && (
         <span className="ml-auto flex gap-1.5">
           {chatUnread > 0 && <span className="rounded-full bg-emerald-500 px-1.5 text-[11px] font-semibold text-white">{chatUnread}</span>}
@@ -70,7 +70,7 @@ export function Sidebar({ workspace, user, unread, chatUnread = 0, balance, isSu
     >
       <div className="mb-6 flex items-center px-3 pt-1">
         <Link href="/" aria-label="Início">
-          <Mark className="h-10 w-auto" />
+          <Logo className="h-9 w-auto" />
         </Link>
         <button onClick={() => setOpen(false)} aria-label="Fechar menu" className="ml-auto rounded-lg p-1 text-zinc-400 hover:bg-white/10 md:hidden">
           <X className="size-5" />

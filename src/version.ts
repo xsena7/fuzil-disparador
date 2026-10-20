@@ -5,6 +5,7 @@ export const CHANGELOG: Array<{ version: string; date: string; items: string[] }
     version: "1.27",
     date: "20/10/2026",
     items: [
+      "Logo nova (FUZIL em degradê) em todo o sistema: plataforma, login e cadastro, site, e-mails e ícone",
       "Audiência aceita Excel (.xlsx), CSV, TXT e TSV",
       "Arraste a planilha direto para a área da audiência (ou clique para escolher)",
       "Grupo automático \"⚠️ BMs com problema\": BM banida, restrita, sem pagamento, sem acesso ou com qualidade vermelha sai dos grupos de disparo e vai para lá, com o motivo e como resolver (só depois do primeiro disparo dela)",
