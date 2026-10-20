@@ -64,6 +64,7 @@ export async function syncWaba(wabaRecordId: string) {
 
     const phones = await meta.listPhones(token, waba.wabaId);
     for (const p of phones) await upsertPhone(waba.workspaceId, waba.id, p);
+    await removeGonePhones(waba.id, phones.map((p) => p.id));
     await refreshBusinessTier(waba.id);
 
     const templates = await meta.listTemplates(token, waba.wabaId);
@@ -118,6 +119,20 @@ async function refreshBusinessTier(wabaRecordId: string) {
     }
     await prisma.businessManager.update({ where: { id: waba.businessId }, data: { messagingLimitTier: best } });
   }
+}
+
+export const PHONE_REMOVED = "Número removido da Meta";
+
+/** Números apagados na Meta saem do Fuzil. Se tiverem conversas no Chat, ficam escondidos só para guardar o histórico. */
+async function removeGonePhones(wabaRecordId: string, metaIds: string[]) {
+  const gone = await prisma.phoneNumber.findMany({
+    where: { wabaId: wabaRecordId, phoneNumberId: { notIn: metaIds } },
+    select: { id: true, _count: { select: { conversations: true } } },
+  });
+  const keep = gone.filter((p) => p._count.conversations > 0).map((p) => p.id);
+  const drop = gone.filter((p) => p._count.conversations === 0).map((p) => p.id);
+  if (keep.length) await prisma.phoneNumber.updateMany({ where: { id: { in: keep } }, data: { invalidReason: PHONE_REMOVED, enabled: false } });
+  if (drop.length) await prisma.phoneNumber.deleteMany({ where: { id: { in: drop } } });
 }
 
 /** Números que nunca entram no rodízio: os de teste da Meta e os que não estão registrados na Cloud API. */

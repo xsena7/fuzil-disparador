@@ -34,6 +34,7 @@ export async function statsForBusinesses(businessIds: string[]): Promise<GroupSt
     stats.available += Math.max(0, limit - u);
     for (const w of bm.wabas)
       for (const p of w.phones) {
+        if (p.invalidReason === "Número removido da Meta") continue;
         stats.phones++;
         if (p.enabled && !p.invalidReason && p.status === "CONNECTED") stats.activePhones++;
         const q = (p.qualityRating ?? "UNKNOWN") as keyof GroupStats["quality"];

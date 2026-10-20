@@ -11,6 +11,7 @@ import { EmbeddedSignup } from "@/components/embedded-signup";
 import { LimitWindow } from "@/components/limit-card";
 import { bmWindows } from "@/lib/limit-windows";
 import { wabaReadiness } from "@/lib/readiness";
+import { PHONE_REMOVED } from "@/lib/sync";
 import { PasswordInput } from "@/components/password-input";
 import {
   connectManualAction,
@@ -30,7 +31,7 @@ export default async function ConnectionsPage() {
   const businesses = await prisma.businessManager.findMany({
     where: { workspaceId: auth.workspace.id },
     include: {
-      wabas: { include: { phones: { orderBy: { createdAt: "asc" } },
+      wabas: { include: { phones: { where: { OR: [{ invalidReason: null }, { invalidReason: { not: PHONE_REMOVED } }] }, orderBy: { createdAt: "asc" } },
           templates: { where: { status: "APPROVED", category: "UTILITY" }, select: { id: true } },
           _count: { select: { templates: true } },
         },
