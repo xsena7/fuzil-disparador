@@ -47,6 +47,38 @@ export async function createUtilityTemplate(
   }
 }
 
+/** Quantas vezes o Fuzil tenta um nome novo numa WABA depois de reclassificações. */
+const MAX_VERSIONS = 10;
+
+/** fzl_disp1 → fzl_disp2; aviso → aviso2 */
+export function nextTemplateName(name: string) {
+  const m = name.match(/^(.*?)(\d+)$/);
+  return m ? `${m[1]}${Number(m[2]) + 1}` : `${name}2`;
+}
+
+/** O template padrão de onde veio esse nome (o nome original ou uma das versões numeradas). */
+async function blueprintForName(workspaceId: string, name: string, language: string) {
+  return prisma.templateBlueprint.findFirst({
+    where: { workspaceId, language, OR: [{ name }, { deployments: { some: { currentName: name } } }] },
+    include: { deployments: { select: { currentName: true, wabaId: true } } },
+  });
+}
+
+/** Todos os nomes que valem como "o mesmo template": o original e as versões numeradas de cada WABA. */
+export async function templateFamily(workspaceId: string, name: string, language: string): Promise<string[]> {
+  const bp = await blueprintForName(workspaceId, name, language);
+  if (!bp) return [name];
+  return [...new Set([name, bp.name, ...bp.deployments.map((d) => d.currentName).filter((n): n is string => Boolean(n))])];
+}
+
+/** Nome versionado → nome do template padrão, para a campanha mostrar uma opção só. */
+export async function templateAliases(workspaceId: string): Promise<Map<string, string>> {
+  const bps = await prisma.templateBlueprint.findMany({ where: { workspaceId }, include: { deployments: { select: { currentName: true } } } });
+  const out = new Map<string, string>();
+  for (const bp of bps) for (const d of bp.deployments) if (d.currentName && d.currentName !== bp.name) out.set(`${d.currentName}|${bp.language}`, bp.name);
+  return out;
+}
+
 async function wabasInScope(workspaceId: string, groupId: string | null) {
   return prisma.whatsAppAccount.findMany({
     where: groupId
@@ -66,52 +98,65 @@ export async function deployBlueprints(workspaceId?: string) {
     const wabas = await wabasInScope(bp.workspaceId, bp.groupId);
     for (const waba of wabas) {
       const dep = bp.deployments.find((d) => d.wabaId === waba.id);
-      // Não insiste em WABAs onde já foi recategorizado/rejeitado; erros tentam até 3x
-      if (dep && (dep.status === "RECATEGORIZED_DELETED" || (dep.status === "ERROR" && dep.attempts >= 3))) continue;
+      // Erros tentam até 3x
+      if ((dep?.status === "ERROR" && dep.attempts >= 3) || dep?.status === "MARKETING_ON_CREATE") continue;
 
-      const existing = await prisma.template.findUnique({
-        where: { wabaId_name_language: { wabaId: waba.id, name: bp.name, language: bp.language } },
-      });
+      let name = dep?.currentName ?? bp.name;
+      let version = dep?.version ?? 1;
+      const burned = dep?.status === "RECATEGORIZED_DELETED";
+      if (burned) {
+        // O nome queimou nessa WABA: tenta o próximo número (pulando nomes que já existem nela)
+        if (version >= MAX_VERSIONS) continue;
+        do {
+          name = nextTemplateName(name);
+          version++;
+        } while (version < MAX_VERSIONS && (await prisma.template.findUnique({ where: { wabaId_name_language: { wabaId: waba.id, name, language: bp.language } } })));
+      }
+
+      const existing = burned
+        ? null
+        : await prisma.template.findUnique({ where: { wabaId_name_language: { wabaId: waba.id, name, language: bp.language } } });
       // Já enviado: só acompanha o status (não cria de novo enquanto a sincronização não trouxer)
-      if (dep && dep.status !== "ERROR" && !existing) continue;
+      if (dep && !burned && dep.status !== "ERROR" && !existing) continue;
       if (existing) {
         const status = deploymentStatusFor(existing.status, existing.category);
         if (dep?.status !== status) {
           await prisma.templateDeployment.upsert({
             where: { blueprintId_wabaId: { blueprintId: bp.id, wabaId: waba.id } },
-            create: { blueprintId: bp.id, wabaId: waba.id, status },
+            create: { blueprintId: bp.id, wabaId: waba.id, status, currentName: name },
             update: { status, error: existing.rejectedReason },
           });
         }
-        if (existing.category !== "UTILITY") await handleRecategorized(bp.workspaceId, waba.id, bp.name, bp.language, existing.category);
+        if (existing.category !== "UTILITY") await handleRecategorized(bp.workspaceId, waba.id, name, bp.language, existing.category);
         continue;
       }
 
       const result = await createUtilityTemplate(waba, {
-        name: bp.name,
+        name,
         language: bp.language,
         components: bp.components as unknown as TemplateComponent[],
         headerSample: bp.headerSamplePath ? { path: bp.headerSamplePath, mime: bp.headerSampleMime ?? "image/jpeg" } : null,
       });
       const where = { blueprintId_wabaId: { blueprintId: bp.id, wabaId: waba.id } };
+      const naming = { currentName: name, version };
       if (result.ok) {
         await prisma.templateDeployment.upsert({
           where,
-          create: { blueprintId: bp.id, wabaId: waba.id, status: deploymentStatusFor(result.status, result.category), submittedAt: new Date() },
-          update: { status: deploymentStatusFor(result.status, result.category), error: null, attempts: { increment: 1 }, submittedAt: new Date() },
+          create: { blueprintId: bp.id, wabaId: waba.id, status: deploymentStatusFor(result.status, result.category), submittedAt: new Date(), ...naming },
+          update: { status: deploymentStatusFor(result.status, result.category), error: null, attempts: burned ? 1 : { increment: 1 }, submittedAt: new Date(), ...naming },
         });
       } else if (result.recategorized) {
         await prisma.templateDeployment.upsert({
           where,
-          create: { blueprintId: bp.id, wabaId: waba.id, status: "RECATEGORIZED_DELETED", error: `Meta classificou como ${result.category}` },
-          update: { status: "RECATEGORIZED_DELETED", error: `Meta classificou como ${result.category}` },
+          create: { blueprintId: bp.id, wabaId: waba.id, status: "MARKETING_ON_CREATE", error: `Meta classificou ${name} como ${result.category}`, ...naming },
+          update: { status: "MARKETING_ON_CREATE", error: `Meta classificou ${name} como ${result.category}`, ...naming },
         });
-        await alertRecategorized(bp.workspaceId, `${waba.business.name} / ${waba.name}`, bp.name, result.category);
+        await alertRecategorized(bp.workspaceId, `${waba.business.name} / ${waba.name}`, name, result.category, false);
       } else {
         await prisma.templateDeployment.upsert({
           where,
-          create: { blueprintId: bp.id, wabaId: waba.id, status: "ERROR", error: result.error },
-          update: { status: "ERROR", error: result.error, attempts: { increment: 1 } },
+          create: { blueprintId: bp.id, wabaId: waba.id, status: "ERROR", error: result.error, ...naming },
+          update: { status: "ERROR", error: result.error, attempts: burned ? 1 : { increment: 1 }, ...naming },
         });
         if ((dep?.attempts ?? 0) + 1 >= 3) {
           await createAlert({
@@ -134,13 +179,15 @@ function deploymentStatusFor(status: string, category: string): Prisma.TemplateD
   return "SUBMITTED";
 }
 
-async function alertRecategorized(workspaceId: string, wabaLabel: string, name: string, category: string) {
+async function alertRecategorized(workspaceId: string, wabaLabel: string, name: string, category: string, retry: boolean) {
   await createAlert({
     workspaceId,
     type: "BLUEPRINT_RECATEGORIZED",
     severity: "CRITICAL",
     title: `Template padrão "${name}" virou ${category} e foi EXCLUÍDO`,
-    message: `WABA ${wabaLabel}. A cópia foi apagada para nunca ser disparada como marketing. Crie uma nova versão do template padrão (com outro nome) se quiser tentar de novo.`,
+    message: retry
+      ? `WABA ${wabaLabel}. A cópia foi apagada para nunca ser disparada como marketing. O Fuzil vai criar sozinho a próxima versão (${nextTemplateName(name)}) nessa WABA, e as campanhas usam ela no lugar.`
+      : `WABA ${wabaLabel}. A cópia foi apagada para nunca ser disparada como marketing. A Meta entende esse texto como marketing: trocar só o nome não resolve, mude o texto do template padrão.`,
   });
 }
 
@@ -150,7 +197,7 @@ async function alertRecategorized(workspaceId: string, wabaLabel: string, name: 
  */
 export async function handleRecategorized(workspaceId: string, wabaRecordId: string, name: string, language: string, to: string) {
   if (to === "UTILITY") return;
-  const bp = await prisma.templateBlueprint.findUnique({ where: { workspaceId_name_language: { workspaceId, name, language } } });
+  const bp = await blueprintForName(workspaceId, name, language);
   const ws = await prisma.workspace.findUnique({ where: { id: workspaceId }, select: { autoDeleteMarketing: true } });
   if (!bp && !ws?.autoDeleteMarketing) return;
 
@@ -170,12 +217,12 @@ export async function handleRecategorized(workspaceId: string, wabaRecordId: str
   }
   await prisma.template.deleteMany({ where: { wabaId: wabaRecordId, name, language } });
   if (bp) {
-    await prisma.templateDeployment.upsert({
+    const dep = await prisma.templateDeployment.upsert({
       where: { blueprintId_wabaId: { blueprintId: bp.id, wabaId: wabaRecordId } },
-      create: { blueprintId: bp.id, wabaId: wabaRecordId, status: "RECATEGORIZED_DELETED", error: `Recategorizado para ${to}` },
-      update: { status: "RECATEGORIZED_DELETED", error: `Recategorizado para ${to}` },
+      create: { blueprintId: bp.id, wabaId: wabaRecordId, status: "RECATEGORIZED_DELETED", error: `${name} recategorizado para ${to}`, currentName: name },
+      update: { status: "RECATEGORIZED_DELETED", error: `${name} recategorizado para ${to}`, currentName: name },
     });
-    await alertRecategorized(workspaceId, `${waba.business.name} / ${waba.name}`, name, to);
+    await alertRecategorized(workspaceId, `${waba.business.name} / ${waba.name}`, name, to, dep.version < MAX_VERSIONS);
   } else {
     await createAlert({
       workspaceId,

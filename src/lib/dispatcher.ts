@@ -10,6 +10,7 @@ import { buildSendComponents, type TComponent, type VariableMapping } from "./te
 import { metaErrorLabel, RETRYABLE_CODES, SENDER_FATAL_CODES, TEMPLATE_FATAL_CODES } from "./meta-errors";
 import { formatPhone } from "./phone";
 import { recordCampaignSends, renderCampaignText } from "./chat";
+import { templateFamily } from "./blueprints";
 
 export const TICK_MS = 2000;
 const DEFAULT_RATE = 20; // msgs/s por número
@@ -59,6 +60,8 @@ export async function planSenders(
   const plan: SenderPlan = { senders: [], capacity: new Map(), skipped: [] };
   if (!campaign.groupId || !campaign.templateName || !campaign.templateLanguage) return plan;
 
+  // O mesmo template pode ter versões numeradas em algumas WABAs (fzl_disp1, fzl_disp2...)
+  const family = await templateFamily(campaign.workspaceId, campaign.templateName, campaign.templateLanguage);
   const members = await prisma.bmGroupMember.findMany({
     where: { groupId: campaign.groupId },
     include: {
@@ -67,7 +70,7 @@ export async function planSenders(
           wabas: {
             include: {
               phones: true,
-              templates: { where: { name: campaign.templateName, language: campaign.templateLanguage } },
+              templates: { where: { name: { in: family }, language: campaign.templateLanguage } },
             },
           },
         },
@@ -82,7 +85,7 @@ export async function planSenders(
     plan.capacity.set(business.id, Math.max(0, limit - (used.get(business.id) ?? 0)));
 
     for (const waba of business.wabas) {
-      const tpl = waba.templates[0];
+      const tpl = waba.templates.find((t) => t.status === "APPROVED" && t.category === "UTILITY") ?? waba.templates[0];
       for (const phone of waba.phones) {
         const display = formatPhone(phone.displayPhoneNumber.replace(/\D/g, ""));
         const skip = (reason: string) => plan.skipped.push({ display, reason });

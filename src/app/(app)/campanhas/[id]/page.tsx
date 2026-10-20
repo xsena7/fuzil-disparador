@@ -23,6 +23,7 @@ import { StepAudience, type AudienceStats } from "./step-audience";
 import { StepSendForm } from "./step-send";
 import { Metrics } from "./metrics";
 import { AutoRefresh } from "./auto-refresh";
+import { templateAliases, templateFamily } from "@/lib/blueprints";
 
 export const dynamic = "force-dynamic";
 
@@ -101,14 +102,17 @@ async function TemplateStep({ campaignId, workspaceId, locked }: { campaignId: s
   const campaign = await prisma.campaign.findUniqueOrThrow({ where: { id: campaignId } });
   const groups = await prisma.bmGroup.findMany({ where: { workspaceId }, include: { members: true }, orderBy: { name: "asc" } });
   const templates = await prisma.template.findMany({ where: { workspaceId }, include: { waba: true } });
+  // Versões numeradas de um template padrão (fzl_disp2...) entram como o template original
+  const aliases = await templateAliases(workspaceId);
   const optionsByGroup: Record<string, TemplateOption[]> = {};
   for (const g of groups) {
     const bms = new Set(g.members.map((m) => m.businessId));
     const inGroup = templates.filter((t) => bms.has(t.waba.businessId));
     const map = new Map<string, TemplateOption>();
     for (const t of inGroup) {
-      const key = `${t.name}|${t.language}`;
-      const opt = map.get(key) ?? { key, name: t.name, language: t.language, usable: 0, total: 0, body: (t.components as unknown as TComponent[]).find((c) => c.type === "BODY")?.text ?? "" };
+      const name = aliases.get(`${t.name}|${t.language}`) ?? t.name;
+      const key = `${name}|${t.language}`;
+      const opt = map.get(key) ?? { key, name, language: t.language, usable: 0, total: 0, body: (t.components as unknown as TComponent[]).find((c) => c.type === "BODY")?.text ?? "" };
       opt.total++;
       if (t.status === "APPROVED" && t.category === "UTILITY") opt.usable++;
       map.set(key, opt);
@@ -131,8 +135,9 @@ async function TemplateStep({ campaignId, workspaceId, locked }: { campaignId: s
 async function ContentStep({ campaignId, locked }: { campaignId: string; locked: boolean }) {
   const campaign = await prisma.campaign.findUniqueOrThrow({ where: { id: campaignId } });
   if (!campaign.templateName) return <p className="text-zinc-500">Escolha o template primeiro.</p>;
+  const family = await templateFamily(campaign.workspaceId, campaign.templateName, campaign.templateLanguage!);
   const tpl = await prisma.template.findFirst({
-    where: { workspaceId: campaign.workspaceId, name: campaign.templateName, language: campaign.templateLanguage!, status: "APPROVED", category: "UTILITY" },
+    where: { workspaceId: campaign.workspaceId, name: { in: family }, language: campaign.templateLanguage!, status: "APPROVED", category: "UTILITY" },
   });
   if (!tpl) return <p className="text-red-600">Nenhuma cópia aprovada de utilidade desse template foi encontrada.</p>;
   const sample = await prisma.campaignRecipient.findFirst({ where: { campaignId }, orderBy: { createdAt: "asc" } });

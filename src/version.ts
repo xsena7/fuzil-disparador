@@ -2,6 +2,14 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "1.24",
+    date: "20/10/2026",
+    items: [
+      "Templates padrão com contagem: se a Meta reclassificar o template como marketing numa BM, o Fuzil cria sozinho a próxima versão (fzl_disp1 → fzl_disp2 → fzl_disp3...) só nessa BM",
+      "Campanhas tratam todas as versões como o mesmo template e usam em cada BM a versão aprovada",
+    ],
+  },
+  {
     version: "1.23",
     date: "20/10/2026",
     items: [

@@ -469,6 +469,8 @@ enum DeploymentStatus {
   APPROVED
   REJECTED
   RECATEGORIZED_DELETED
+  // A Meta já criou como marketing: o texto é que é marketing, trocar o nome não resolve
+  MARKETING_ON_CREATE
   ERROR
 }
 
@@ -479,6 +481,9 @@ model TemplateDeployment {
   status      DeploymentStatus
   error       String?
   attempts    Int               @default(1)
+  // Nome usado nessa WABA. Quando a Meta reclassifica, o nome queima e vira fzl_disp2, fzl_disp3...
+  currentName String?
+  version     Int               @default(1)
   submittedAt DateTime?
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt

@@ -14,7 +14,8 @@ const DEP: Record<string, [BadgeColor, string]> = {
   SUBMITTED: ["yellow", "Em análise"],
   APPROVED: ["green", "Aprovado"],
   REJECTED: ["red", "Rejeitado"],
-  RECATEGORIZED_DELETED: ["red", "Virou marketing — excluído"],
+  RECATEGORIZED_DELETED: ["red", "Virou marketing: criando próxima versão"],
+  MARKETING_ON_CREATE: ["red", "Meta criou como marketing: mude o texto"],
   ERROR: ["red", "Erro"],
 };
 
@@ -66,6 +67,7 @@ export default async function BlueprintsPage() {
                   return (
                     <div key={w.id} className="flex flex-wrap items-center gap-2 px-3 py-2">
                       <span className="flex-1">{w.business.name} <span className="text-zinc-400">/ {w.name}</span></span>
+                      {dep?.currentName && dep.currentName !== bp.name && <span className="rounded-full bg-orange-50 px-2 py-0.5 text-xs font-medium text-orange-700" title="O nome anterior foi reclassificado pela Meta nessa conta, então o Fuzil criou a próxima versão">usando {dep.currentName}</span>}
                       {dep?.submittedAt && <span className="text-xs text-zinc-500">Enviado em {sentAt(dep.submittedAt)}</span>}
                       <Badge color={color}>{label}</Badge>
                       {dep?.error && <span className="text-xs text-red-600">{dep.error}</span>}
