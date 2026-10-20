@@ -5,7 +5,7 @@ export const CHANGELOG: Array<{ version: string; date: string; items: string[] }
     version: "1.27",
     date: "20/10/2026",
     items: [
-      "Conexões: \"Nova conexão\" fica em cima e as BMs/WABAs conectadas embaixo",
+      "Conexões: \"Nova conexão\" fica em cima e as BMs/WABAs conectadas embaixo, a última conectada sempre no topo",
       "Logo nova (FUZIL em degradê) em todo o sistema: plataforma, login e cadastro, site, e-mails e ícone",
       "Audiência aceita Excel (.xlsx), CSV, TXT e TSV",
       "Arraste a planilha direto para a área da audiência (ou clique para escolher)",

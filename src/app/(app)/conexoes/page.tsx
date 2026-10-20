@@ -38,8 +38,12 @@ export default async function ConnectionsPage() {
       },
       groups: { include: { group: true } },
     },
-    orderBy: { name: "asc" },
+    orderBy: { createdAt: "desc" },
   });
+  // Ordem de conexão: a BM que recebeu a última WABA conectada fica em cima
+  const lastConnected = (b: (typeof businesses)[number]) => Math.max(b.createdAt.getTime(), ...b.wabas.map((w) => w.createdAt.getTime()));
+  businesses.sort((a, b) => lastConnected(b) - lastConnected(a));
+  for (const b of businesses) b.wabas.sort((x, y) => y.createdAt.getTime() - x.createdAt.getTime());
   const windows = await bmWindows(businesses.map((b) => b.id));
 
   return (
