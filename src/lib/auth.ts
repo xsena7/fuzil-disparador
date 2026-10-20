@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import bcrypt from "bcryptjs";
@@ -45,7 +46,8 @@ export type AuthContext = {
   inspecting: boolean;
 };
 
-export async function getAuth(): Promise<AuthContext | null> {
+/** Memorizado por requisição: layout, página e componentes compartilham a mesma consulta. */
+export const getAuth = cache(async function getAuth(): Promise<AuthContext | null> {
   const jar = await cookies();
   const token = jar.get(COOKIE)?.value;
   if (!token) return null;
@@ -68,7 +70,7 @@ export async function getAuth(): Promise<AuthContext | null> {
     role: membership?.role ?? "OWNER",
     inspecting: !membership,
   };
-}
+});
 
 /** Para rotas de API: igual ao getAuth, mas recusa contas bloqueadas (exceto o admin da plataforma). */
 export async function getActiveAuth(): Promise<AuthContext | null> {

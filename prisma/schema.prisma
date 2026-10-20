@@ -276,6 +276,7 @@ model Alert {
   workspace   Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@index([workspaceId, createdAt])
+  @@index([workspaceId, readAt])
 }
 
 // ---------------------------------------------------------------------------
@@ -395,6 +396,8 @@ model CampaignRecipient {
   @@unique([campaignId, phone])
   @@index([campaignId, status])
   @@index([phone, sentAt])
+  @@index([sentAt])
+  @@index([status, queuedAt])
 }
 
 model LinkClick {
@@ -409,6 +412,7 @@ model LinkClick {
   recipient   CampaignRecipient @relation(fields: [recipientId], references: [id], onDelete: Cascade)
 
   @@index([campaignId, createdAt])
+  @@index([recipientId])
 }
 
 model InboundMessage {
@@ -427,6 +431,7 @@ model InboundMessage {
   phone       PhoneNumber? @relation(fields: [phoneId], references: [id], onDelete: SetNull)
 
   @@index([workspaceId, receivedAt])
+  @@index([recipientId])
 }
 
 model WebhookEvent {

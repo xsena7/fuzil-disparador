@@ -4,9 +4,9 @@ import { prisma } from "@/lib/db";
 import { formatLimit, tierLabel } from "@/lib/limits";
 import { statsForBusinesses } from "@/lib/group-stats";
 import { bmWindows } from "@/lib/limit-windows";
-import { LimitRow } from "@/components/limit-card";
+import { LimitWindow } from "@/components/limit-card";
 import { Drawer, MetaItem } from "@/components/drawer";
-import { Badge, Empty, Field, Input, PageHeader } from "@/components/ui";
+import { Badge, Empty, Field, Input, PageHeader, Stat } from "@/components/ui";
 import { ActionForm, ConfirmButton } from "@/components/action-form";
 import { deleteGroupAction, saveGroupAction } from "@/app/actions/groups";
 
@@ -54,21 +54,28 @@ export default async function GroupsPage() {
                 <>
                   <MetaItem value={g.members.length} label="BMs" />
                   <MetaItem value={`${s.activePhones}/${s.phones}`} label="números ativos" />
-                  <MetaItem value={formatLimit(s.available)} label={`de ${formatLimit(s.totalLimit)} disponíveis`} />
+                  <span className="text-right leading-tight">
+                    <b className="text-lg font-semibold tabular-nums text-zinc-900">{formatLimit(s.available)}</b>
+                    <span className="block text-[11px]">de {formatLimit(s.totalLimit)} disponíveis</span>
+                  </span>
                 </>
               }
             >
-              <div className="mb-4 flex flex-wrap items-center gap-2 text-sm text-zinc-600">
-                Qualidade dos números:
-                <Badge color="green">{s.quality.GREEN} alta</Badge>
-                <Badge color="yellow">{s.quality.YELLOW} média</Badge>
-                <Badge color="red">{s.quality.RED} baixa</Badge>
-                <span className="ml-auto text-xs text-zinc-500">{s.usedToday.toLocaleString("pt-BR")} envios nas últimas 24h</span>
+              <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <Stat label="Limite total (24h)" value={formatLimit(s.totalLimit)} sub={`${g.members.length} BMs somadas`} />
+                <Stat label="Disponível agora" value={formatLimit(s.available)} sub={`${s.usedToday.toLocaleString("pt-BR")} usados nas últimas 24h`} tone="green" />
+                <Stat label="Números ativos" value={`${s.activePhones}/${s.phones}`} />
+                <Stat label="Qualidade" value={<span className="flex gap-2 text-base"><Badge color="green">{s.quality.GREEN}</Badge><Badge color="yellow">{s.quality.YELLOW}</Badge><Badge color="red">{s.quality.RED}</Badge></span>} />
               </div>
-              <div className="mb-5 divide-y divide-zinc-100 rounded-xl border border-zinc-100">
+              <div className="mb-5 grid gap-3 md:grid-cols-2">
                 {g.members.map((m) => {
                   const w = windows.get(m.businessId);
-                  return w ? <LimitRow key={m.businessId} name={m.business.name} w={w} /> : null;
+                  return w ? (
+                    <div key={m.businessId}>
+                      <div className="mb-1.5 truncate text-sm font-medium">{m.business.name}</div>
+                      <LimitWindow w={w} compact />
+                    </div>
+                  ) : null;
                 })}
               </div>
               <details className="group/edit">
