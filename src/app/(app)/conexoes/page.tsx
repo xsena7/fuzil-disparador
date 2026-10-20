@@ -157,12 +157,12 @@ export default async function ConnectionsPage() {
       <Card className="mt-4 p-5">
         <div className="font-semibold">Configuração manual</div>
         <p className="mt-1 mb-4 text-zinc-500">
-          Conecte uma WABA pelo ID. Se deixar o token em branco, usa o token do Tech Provider configurado no servidor.
+          Conecte uma WABA pelo ID com o token do usuário do sistema da sua BM (whatsapp_business_management e whatsapp_business_messaging).
         </p>
         <ActionForm action={connectManualAction} submit="Conectar WABA">
           <div className="grid gap-4 md:grid-cols-2">
             <Field label="ID da WABA"><Input name="wabaId" placeholder="1673861331112475" required autoComplete="off" inputMode="numeric" /></Field>
-            <Field label="Token de acesso (opcional)" hint="System User token com whatsapp_business_management e whatsapp_business_messaging">
+            <Field label="Token de acesso" hint="System User token com whatsapp_business_management e whatsapp_business_messaging">
               <PasswordInput name="token" placeholder="EAAG..." autoComplete="new-password" data-lpignore="true" data-1p-ignore="true" />
             </Field>
           </div>

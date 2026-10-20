@@ -351,7 +351,8 @@ export function fillAutoReply(text: string, r: Pick<CampaignRecipient, "name" | 
  */
 export async function maybeAutoReply(conversationId: string, recipient: CampaignRecipient | null) {
   if (!recipient || recipient.autoReplySentAt) return;
-  const campaign = await prisma.campaign.findUnique({ where: { id: recipient.campaignId } });
+  const campaign = await prisma.campaign.findUnique({ where: { id: recipient.campaignId }, include: { workspace: { select: { blockedAt: true } } } });
+  if (campaign?.workspace.blockedAt) return; // conta bloqueada não envia nada
   if (!campaign?.autoReplyEnabled || (!campaign.autoReplyText?.trim() && !campaign.autoReplyMediaUrl)) return;
   const claimed = await prisma.campaignRecipient.updateMany({ where: { id: recipient.id, autoReplySentAt: null }, data: { autoReplySentAt: new Date() } });
   if (!claimed.count) return;

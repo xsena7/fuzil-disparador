@@ -32,7 +32,7 @@ export async function POST(req: Request) {
       }
     }
     if (body.phoneNumberId) {
-      await prisma.phoneNumber.updateMany({ where: { phoneNumberId: body.phoneNumberId }, data: { isCoexistence: type === "COEXISTENCE" } });
+      await prisma.phoneNumber.updateMany({ where: { phoneNumberId: body.phoneNumberId, waba: { workspaceId: auth.workspace.id } }, data: { isCoexistence: type === "COEXISTENCE" } });
     }
     deployBlueprints(auth.workspace.id).catch(() => undefined);
     return NextResponse.json({ ok: true, wabaId: waba?.id });

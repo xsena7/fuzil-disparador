@@ -21,11 +21,19 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
 
   const dir = path.join(path.resolve(env.uploadDir()), "chat");
   const file = path.join(dir, m.id.replace(/\W/g, ""));
-  const headers = (mime: string) => ({
-    "Content-Type": mime,
-    "Cache-Control": "private, max-age=31536000, immutable",
-    ...(m.mediaName ? { "Content-Disposition": `inline; filename="${m.mediaName.replace(/"/g, "")}"` } : {}),
-  });
+  // Só imagem, áudio, vídeo e PDF abrem no navegador; o resto (ex.: um .html mandado pelo cliente) é baixado
+  const SAFE = /^(image\/(jpeg|png|webp|gif)|audio\/[\w.+-]+|video\/(mp4|3gpp)|application\/pdf)(;.*)?$/i;
+  const headers = (mime: string) => {
+    const inline = SAFE.test(mime);
+    const name = (m.mediaName ?? "arquivo").replace(/["\r\n]/g, "");
+    return {
+      "Content-Type": inline ? mime : "application/octet-stream",
+      "Content-Disposition": `${inline ? "inline" : "attachment"}; filename="${name}"`,
+      "X-Content-Type-Options": "nosniff",
+      "Content-Security-Policy": "sandbox; default-src 'none'; img-src 'self'; media-src 'self'",
+      "Cache-Control": "private, max-age=31536000, immutable",
+    };
+  };
   try {
     const data = await readFile(file);
     return new Response(new Uint8Array(data), { headers: headers(m.mediaMime ?? "application/octet-stream") });

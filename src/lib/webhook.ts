@@ -9,7 +9,8 @@ import { applyChatStatus, ingestInbound, maybeAutoReply } from "./chat";
 
 export function verifySignature(raw: string, header: string | null): boolean {
   const secret = env.metaAppSecret();
-  if (!secret) return true; // sem segredo configurado (desenvolvimento)
+  // Sem o App Secret não dá para saber se o evento veio da Meta: em produção, recusa tudo
+  if (!secret) return process.env.NODE_ENV !== "production";
   if (!header?.startsWith("sha256=")) return false;
   const expected = createHmac("sha256", secret).update(raw).digest("hex");
   const a = Buffer.from(header.slice(7), "hex");

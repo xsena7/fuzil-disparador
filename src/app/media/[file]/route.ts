@@ -16,7 +16,12 @@ export async function GET(_: Request, { params }: { params: Promise<{ file: stri
   try {
     const data = await readFile(path.join(path.resolve(env.uploadDir()), file));
     return new Response(new Uint8Array(data), {
-      headers: { "Content-Type": TYPES[file.split(".").pop()!], "Cache-Control": "public, max-age=31536000, immutable" },
+      headers: {
+        "Content-Type": TYPES[file.split(".").pop()!],
+        "Cache-Control": "public, max-age=31536000, immutable",
+        "X-Content-Type-Options": "nosniff",
+        "Content-Security-Policy": "sandbox; default-src 'none'",
+      },
     });
   } catch {
     return new Response("Not found", { status: 404 });

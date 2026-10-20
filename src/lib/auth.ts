@@ -99,3 +99,9 @@ export async function switchSessionWorkspace(workspaceId: string) {
   if (!token) return;
   await prisma.session.update({ where: { id: sha256(token) }, data: { workspaceId } });
 }
+
+/** Encerra as outras sessões do usuário (depois de trocar senha ou e-mail). Mantém a atual. */
+export async function revokeOtherSessions(userId: string) {
+  const token = (await cookies()).get(COOKIE)?.value;
+  await prisma.session.deleteMany({ where: { userId, ...(token ? { id: { not: sha256(token) } } : {}) } });
+}

@@ -63,7 +63,8 @@ export async function planSenders(
   // O mesmo template pode ter versões numeradas em algumas WABAs (fzl_disp1, fzl_disp2...)
   const family = await templateFamily(campaign.workspaceId, campaign.templateName, campaign.templateLanguage);
   const members = await prisma.bmGroupMember.findMany({
-    where: { groupId: campaign.groupId },
+    // Só BMs da própria conta, mesmo que o grupo tenha sido trocado por um de outra conta
+    where: { groupId: campaign.groupId, business: { workspaceId: campaign.workspaceId } },
     include: {
       business: {
         include: {

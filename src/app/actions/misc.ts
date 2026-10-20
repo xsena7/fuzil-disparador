@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireAuth, requireSuperAdmin, hashPassword, verifyPassword, switchSessionWorkspace } from "@/lib/auth";
+import { requireAuth, requireSuperAdmin, hashPassword, verifyPassword, switchSessionWorkspace, revokeOtherSessions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { randomToken } from "@/lib/crypto";
 import { createPasswordLink } from "@/lib/password-tokens";
@@ -44,6 +44,7 @@ export async function saveProfileAction(_: FormState, form: FormData): Promise<F
     if (await prisma.user.findUnique({ where: { email } })) return { error: "Esse e-mail já está em uso por outro usuário." };
   }
   await prisma.user.update({ where: { id: user.id }, data: { name, email } });
+  if (email !== user.email) await revokeOtherSessions(user.id);
   revalidatePath("/", "layout");
   return { ok: email !== user.email ? `Dados salvos. Agora você entra com ${email}.` : "Dados salvos" };
 }
@@ -58,7 +59,8 @@ export async function changePasswordAction(_: FormState, form: FormData): Promis
   const user = await prisma.user.findUniqueOrThrow({ where: { id: auth.user.id } });
   if (!(await verifyPassword(current, user.passwordHash))) return { error: "Senha atual incorreta" };
   await prisma.user.update({ where: { id: user.id }, data: { passwordHash: await hashPassword(next) } });
-  return { ok: "Senha alterada" };
+  await revokeOtherSessions(user.id);
+  return { ok: "Senha alterada. Os outros aparelhos conectados foram desconectados." };
 }
 
 export async function addMemberAction(_: FormState, form: FormData): Promise<FormState> {
@@ -68,6 +70,7 @@ export async function addMemberAction(_: FormState, form: FormData): Promise<For
   const name = String(form.get("name") ?? "").trim();
   if (!email || !name) return { error: "Preencha nome e e-mail" };
   let user = await prisma.user.findUnique({ where: { email } });
+  if (user?.isSuperAdmin) return { error: "Esse e-mail não pode ser adicionado." };
   const isNew = !user;
   if (!user) user = await prisma.user.create({ data: { email, name, passwordHash: await hashPassword(randomToken()) } });
   await prisma.membership.upsert({
@@ -245,7 +248,7 @@ type Result = { ok?: string; error?: string; link?: string };
 
 export async function adminBlockWorkspaceAction(workspaceId: string, reason: string): Promise<Result> {
   const auth = await requireSuperAdmin();
-  if (await prisma.membership.findFirst({ where: { workspaceId, userId: auth.user.id } })) return { error: "Você não pode bloquear a sua própria conta." };
+  if (await prisma.membership.findFirst({ where: { workspaceId, userId: auth.user.id, role: "OWNER" } })) return { error: "Você não pode bloquear a sua própria conta." };
   const ws = await prisma.workspace.update({ where: { id: workspaceId }, data: { blockedAt: new Date(), blockedReason: reason.trim() || null } });
   // Para tudo que estava rodando ou agendado; ao desbloquear, o cliente retoma pela tela da campanha
   const paused = await prisma.campaign.updateMany({
@@ -267,7 +270,7 @@ export async function adminDeleteWorkspaceAction(workspaceId: string, confirmNam
   const auth = await requireSuperAdmin();
   const ws = await prisma.workspace.findUnique({ where: { id: workspaceId }, include: { memberships: { include: { user: { include: { _count: { select: { memberships: true } } } } } } } });
   if (!ws) return { error: "Conta não encontrada" };
-  if (ws.memberships.some((m) => m.userId === auth.user.id)) return { error: "Você não pode excluir a sua própria conta." };
+  if (ws.memberships.some((m) => m.userId === auth.user.id && m.role === "OWNER")) return { error: "Você não pode excluir a sua própria conta." };
   if (confirmName.trim() !== ws.name) return { error: "O nome digitado não confere. Nada foi excluído." };
   // Usuários que só tinham essa conta saem junto (o admin da plataforma nunca)
   const orphanUsers = ws.memberships.filter((m) => m.user._count.memberships === 1 && !m.user.isSuperAdmin).map((m) => m.userId);

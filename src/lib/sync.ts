@@ -151,7 +151,9 @@ export function phoneInvalidReason(p: MetaPhone): string | null {
 
 export async function upsertPhone(workspaceId: string, wabaRecordId: string, p: MetaPhone) {
   const tier = p.whatsapp_business_manager_messaging_limit ?? p.messaging_limit_tier ?? null;
-  const existing = await prisma.phoneNumber.findUnique({ where: { phoneNumberId: p.id } });
+  const existing = await prisma.phoneNumber.findUnique({ where: { phoneNumberId: p.id }, include: { waba: { select: { workspaceId: true } } } });
+  // Nunca move um número que já é de outra conta do Fuzil
+  if (existing && existing.waba.workspaceId !== workspaceId) return existing;
   const data = {
     wabaId: wabaRecordId,
     displayPhoneNumber: p.display_phone_number,
@@ -292,6 +294,16 @@ export async function connectWaba(input: {
   accessTokenEnc: string | null;
   connectionType: "CLOUD_API" | "COEXISTENCE" | "MANUAL";
 }) {
+  // Uma WABA pertence a uma conta do Fuzil só: impede que outra conta "puxe" os números de alguém
+  const elsewhere = await prisma.whatsAppAccount.findFirst({ where: { wabaId: input.wabaId, workspaceId: { not: input.workspaceId } }, select: { id: true } });
+  if (elsewhere) throw new Error("Essa WABA já está conectada em outra conta do Fuzil. Fale com o suporte se ela for sua.");
+  // Confere na Meta, com o token que vai ser usado, que esse acesso existe antes de gravar qualquer coisa
+  const token = input.accessTokenEnc ? decrypt(input.accessTokenEnc) : env.metaSystemToken();
+  if (!token) throw new Error("Nenhum token de acesso para essa WABA");
+  await meta.getWaba(token, input.wabaId).catch(() => {
+    throw new Error("A Meta não deu acesso a essa WABA com esse token. Confira o ID da WABA e se o token tem acesso a ela.");
+  });
+
   let waba = await prisma.whatsAppAccount.findUnique({
     where: { workspaceId_wabaId: { workspaceId: input.workspaceId, wabaId: input.wabaId } },
   });

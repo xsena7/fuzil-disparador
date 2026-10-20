@@ -89,6 +89,8 @@ export async function createTemplateAction(_: FormState, form: FormData): Promis
   }
 
   if (data.asBlueprint) {
+    if (data.target === "GROUP" && data.groupId && !(await prisma.bmGroup.findFirst({ where: { id: data.groupId, workspaceId: auth.workspace.id }, select: { id: true } })))
+      return { error: "Grupo não encontrado" };
     const exists = await prisma.templateBlueprint.findUnique({
       where: { workspaceId_name_language: { workspaceId: auth.workspace.id, name: data.name, language: data.language } },
     });

@@ -55,6 +55,7 @@ export async function saveTemplateStepAction(id: string, _: FormState, form: For
   const groupId = String(form.get("groupId") ?? "");
   const [name, language] = String(form.get("template") ?? "").split("|");
   if (!groupId) return { error: "Escolha um grupo de BM" };
+  if (!(await prisma.bmGroup.findFirst({ where: { id: groupId, workspaceId: c.workspaceId }, select: { id: true } }))) return { error: "Grupo não encontrado" };
   if (!name || !language) return { error: "Escolha um template" };
   const changed = name !== c.templateName || language !== c.templateLanguage;
   await prisma.campaign.update({

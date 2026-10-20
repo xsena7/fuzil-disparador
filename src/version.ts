@@ -2,6 +2,18 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "1.26",
+    date: "20/10/2026",
+    items: [
+      "Segurança: uma WABA só pode estar em uma conta do Fuzil, e o acesso é conferido na Meta antes de conectar",
+      "Segurança: conexão manual exige o token da própria BM e só dono/admin da conta pode conectar",
+      "Segurança: arquivos recebidos no Chat que não são imagem, áudio, vídeo ou PDF são baixados, nunca abertos no navegador",
+      "Segurança: limite de tentativas no login e no \"esqueci minha senha\"; trocar senha ou e-mail desconecta os outros aparelhos",
+      "Segurança: webhooks sem assinatura da Meta são recusados; conta bloqueada não manda resposta automática",
+      "Mais rápido: índices novos no banco para limites, alertas, cliques e respostas",
+    ],
+  },
+  {
     version: "1.25",
     date: "20/10/2026",
     items: [

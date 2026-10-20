@@ -16,9 +16,12 @@ function errMsg(err: unknown) {
 
 export async function connectManualAction(_: FormState, form: FormData): Promise<FormState> {
   const auth = await requireAuth();
+  if (auth.role === "MEMBER" && !auth.user.isSuperAdmin) return { error: "Só o dono ou um admin da conta pode conectar BMs." };
   const wabaId = String(form.get("wabaId") ?? "").trim();
   const token = String(form.get("token") ?? "").trim();
   if (!/^\d+$/.test(wabaId)) return { error: "Informe o ID da WABA (só números)" };
+  // O token do Tech Provider tem acesso às WABAs de todos os clientes: só o admin da plataforma pode usar sem token
+  if (!token && !auth.user.isSuperAdmin) return { error: "Cole o token de acesso da WABA (token do usuário do sistema da sua BM)." };
   if (!token && !env.metaSystemToken()) return { error: "Informe um token de acesso (ou configure o token do Tech Provider)" };
   try {
     await connectWaba({ workspaceId: auth.workspace.id, wabaId, accessTokenEnc: token ? encrypt(token) : null, connectionType: "MANUAL" });
