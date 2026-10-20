@@ -40,6 +40,13 @@ export default async function TemplatesPage({ searchParams }: { searchParams: Pr
     // A última conectada fica em cima, a primeira lá embaixo
     orderBy: { createdAt: "desc" },
   });
+  // Horário de envio: o do template, ou o da cópia do template padrão (para os enviados antes de o Fuzil guardar a hora)
+  const deps = await prisma.templateDeployment.findMany({
+    where: { submittedAt: { not: null }, blueprint: { workspaceId: auth.workspace.id } },
+    select: { wabaId: true, currentName: true, submittedAt: true, blueprint: { select: { name: true, language: true } } },
+  });
+  const depSent = new Map(deps.map((d) => [`${d.wabaId}|${d.currentName ?? d.blueprint.name}|${d.blueprint.language}`, d.submittedAt!]));
+  for (const t of templates) t.submittedAt ??= depSent.get(`${t.wabaId}|${t.name}|${t.language}`) ?? null;
   const byWaba = new Map<string, typeof templates>();
   for (const t of templates) byWaba.set(t.wabaId, [...(byWaba.get(t.wabaId) ?? []), t]);
   const filtering = Boolean(q || cat);
