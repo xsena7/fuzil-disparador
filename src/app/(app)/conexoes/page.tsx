@@ -50,7 +50,26 @@ export default async function ConnectionsPage() {
         actions={<ConfirmButton action={syncAllAction}><RefreshCw className="size-4" /> Sincronizar tudo</ConfirmButton>}
       />
 
-      {businesses.length === 0 && <Empty>Nenhuma BM conectada ainda. Use uma das opções abaixo.</Empty>}
+      <h2 className="mb-4 text-base font-semibold">Nova conexão</h2>
+      <EmbeddedSignup appId={env.metaAppId()} configId={env.metaConfigId()} graphVersion={env.metaGraphVersion()} />
+
+      <Card className="mt-4 p-5">
+        <div className="font-semibold">Configuração manual</div>
+        <p className="mt-1 mb-4 text-zinc-500">
+          Conecte uma WABA pelo ID com o token do usuário do sistema da sua BM (whatsapp_business_management e whatsapp_business_messaging).
+        </p>
+        <ActionForm action={connectManualAction} submit="Conectar WABA">
+          <div className="grid gap-4 md:grid-cols-2">
+            <Field label="ID da WABA"><Input name="wabaId" placeholder="1673861331112475" required autoComplete="off" inputMode="numeric" /></Field>
+            <Field label="Token de acesso" hint="System User token com whatsapp_business_management e whatsapp_business_messaging">
+              <PasswordInput name="token" placeholder="EAAG..." autoComplete="new-password" data-lpignore="true" data-1p-ignore="true" />
+            </Field>
+          </div>
+        </ActionForm>
+      </Card>
+
+      <h2 className="mt-10 mb-4 text-base font-semibold">Suas conexões</h2>
+      {businesses.length === 0 && <Empty>Nenhuma BM conectada ainda. Use uma das opções acima.</Empty>}
 
       <div className="space-y-4">
         {businesses.map((bm) => {
@@ -150,24 +169,6 @@ export default async function ConnectionsPage() {
           );
         })}
       </div>
-
-      <h2 className="mt-10 mb-4 text-base font-semibold">Nova conexão</h2>
-      <EmbeddedSignup appId={env.metaAppId()} configId={env.metaConfigId()} graphVersion={env.metaGraphVersion()} />
-
-      <Card className="mt-4 p-5">
-        <div className="font-semibold">Configuração manual</div>
-        <p className="mt-1 mb-4 text-zinc-500">
-          Conecte uma WABA pelo ID com o token do usuário do sistema da sua BM (whatsapp_business_management e whatsapp_business_messaging).
-        </p>
-        <ActionForm action={connectManualAction} submit="Conectar WABA">
-          <div className="grid gap-4 md:grid-cols-2">
-            <Field label="ID da WABA"><Input name="wabaId" placeholder="1673861331112475" required autoComplete="off" inputMode="numeric" /></Field>
-            <Field label="Token de acesso" hint="System User token com whatsapp_business_management e whatsapp_business_messaging">
-              <PasswordInput name="token" placeholder="EAAG..." autoComplete="new-password" data-lpignore="true" data-1p-ignore="true" />
-            </Field>
-          </div>
-        </ActionForm>
-      </Card>
     </div>
   );
 }
