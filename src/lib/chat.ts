@@ -159,8 +159,11 @@ export async function ingestInbound(workspaceId: string, phone: PhoneNumber, msg
       mediaName: p.mediaName,
       wamid: msg.id,
       source: "CUSTOMER",
-      createdAt: at,
+      // Hora de chegada (não a da Meta): o Chat busca as novas pela hora de gravação
     },
+  }).catch((e) => {
+    if ((e as { code?: string }).code === "P2002") return null; // o mesmo webhook chegou duas vezes ao mesmo tempo
+    throw e;
   });
   return conv;
 }

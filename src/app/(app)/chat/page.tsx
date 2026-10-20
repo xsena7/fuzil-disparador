@@ -1,5 +1,6 @@
 import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { PHONE_REMOVED } from "@/lib/sync";
 import { formatPhone } from "@/lib/phone";
 import { getComponent, type TComponent } from "@/lib/template-utils";
 import { ChatApp, type ChatPhone, type ChatTemplate } from "./chat-app";
@@ -11,7 +12,8 @@ export default async function ChatPage() {
   const ws = auth.workspace.id;
   const [phones, groups, templates, quickReplies, campaigns] = await Promise.all([
     prisma.phoneNumber.findMany({
-      where: { waba: { workspaceId: ws } },
+      // Número apagado na Meta só aparece se tiver conversa (para ver o histórico)
+      where: { waba: { workspaceId: ws }, OR: [{ invalidReason: null }, { invalidReason: { not: PHONE_REMOVED } }, { conversations: { some: {} } }] },
       include: { waba: { include: { business: { select: { id: true, name: true } } } } },
       orderBy: [{ waba: { business: { name: "asc" } } }, { displayPhoneNumber: "asc" }],
     }),

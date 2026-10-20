@@ -5,6 +5,7 @@ import { env } from "./env";
 import { createAlert } from "./alerts";
 import { onCategoryChanged, onStatusChanged, syncWaba } from "./sync";
 import { metaErrorLabel } from "./meta-errors";
+import { canonicalWaId } from "./phone";
 import { applyChatStatus, ingestInbound, maybeAutoReply } from "./chat";
 
 export function verifySignature(raw: string, header: string | null): boolean {
@@ -106,11 +107,13 @@ async function handleMessages(value: any, workspaceIds: string[]) {
   }
 
   for (const msg of value.messages ?? []) {
-    const from: string = msg.from;
+    const waId: string = msg.from;
+    const from = canonicalWaId(waId);
+    msg.from = from;
     const text: string | null =
       msg.text?.body ?? msg.button?.text ?? msg.interactive?.button_reply?.title ?? msg.interactive?.list_reply?.title ?? null;
     const phone = phoneNumberId ? await prisma.phoneNumber.findUnique({ where: { phoneNumberId }, include: { waba: true } }) : null;
-    const contactName: string | null = value.contacts?.find((c: any) => c.wa_id === from)?.profile?.name ?? null;
+    const contactName: string | null = value.contacts?.find((c: any) => c.wa_id === waId || canonicalWaId(c.wa_id) === from)?.profile?.name ?? null;
 
     // Liga a resposta à última campanha enviada pra esse contato
     const recipient = await prisma.campaignRecipient.findFirst({

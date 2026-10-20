@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { normalizePhone } from "./phone";
+import { canonicalWaId, normalizePhone } from "./phone";
 
 test("adiciona DDI 55 em números brasileiros", () => {
   assert.equal(normalizePhone("21983557616"), "5521983557616");
@@ -19,4 +19,11 @@ test("rejeita inválidos", () => {
   assert.equal(normalizePhone("123"), null);
   assert.equal(normalizePhone("5501987654321"), null);
   assert.equal(normalizePhone("5521883557616"), null);
+});
+
+test("coloca o 9 nos celulares que a Meta manda sem ele", () => {
+  assert.equal(canonicalWaId("551188887777"), "5511988887777");
+  assert.equal(canonicalWaId("5511988887777"), "5511988887777");
+  assert.equal(canonicalWaId("551133334444"), "551133334444"); // fixo continua igual
+  assert.equal(canonicalWaId("14155550000"), "14155550000");
 });

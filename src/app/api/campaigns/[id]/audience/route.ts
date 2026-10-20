@@ -15,6 +15,11 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const campaign = await prisma.campaign.findFirst({ where: { id, workspaceId: auth.workspace.id } });
   if (!campaign) return NextResponse.json({ error: "Campanha não encontrada" }, { status: 404 });
   if (!["DRAFT", "SCHEDULED"].includes(campaign.status)) return NextResponse.json({ error: "Campanha já iniciada" }, { status: 400 });
+  // Agendada: volta para rascunho durante a troca, senão o agendamento podia começar com a lista pela metade
+  if (campaign.status === "SCHEDULED") {
+    const back = await prisma.campaign.updateMany({ where: { id, status: "SCHEDULED" }, data: { status: "DRAFT" } });
+    if (!back.count) return NextResponse.json({ error: "A campanha acabou de começar. Atualize a página." }, { status: 400 });
+  }
 
   const form = await req.formData();
   const file = form.get("file");

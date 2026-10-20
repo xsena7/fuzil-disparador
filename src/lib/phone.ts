@@ -39,3 +39,13 @@ export function formatPhone(digits: string): string {
   }
   return `+${digits}`;
 }
+
+/**
+ * A Meta costuma mandar celulares do Brasil sem o 9 (55 11 8888-7777). Os destinatários são gravados com o 9,
+ * então o número que chega no webhook é colocado no mesmo formato (senão SAIR, respostas e Chat não batem).
+ */
+export function canonicalWaId(waId: string): string {
+  const d = String(waId ?? "").replace(/\D/g, "");
+  if (/^55\d{10}$/.test(d) && /[6-9]/.test(d[4])) return `${d.slice(0, 4)}9${d.slice(4)}`;
+  return d;
+}

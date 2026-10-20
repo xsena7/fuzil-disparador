@@ -383,6 +383,8 @@ model CampaignRecipient {
   creditsCharged Int            @default(0)
   autoReplySentAt DateTime?
   attempts      Int             @default(0)
+  // Não tenta de novo antes disso (limite de velocidade da Meta)
+  retryAt       DateTime?
   queuedAt      DateTime?
   sentAt        DateTime?
   deliveredAt   DateTime?

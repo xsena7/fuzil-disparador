@@ -91,7 +91,7 @@ createServer(async (req, res) => {
       return json(res, 400, { error: { message: "Message undeliverable", code: 131026, error_data: { details: "Número não está no WhatsApp" } } });
     }
     sent.push({ phone: id, to: body.to, body });
-    return json(res, 200, { messaging_product: "whatsapp", contacts: [{ input: body.to, wa_id: body.to }], messages: [{ id: `wamid.MOCK${++msgSeq}` }] });
+    return json(res, 200, { messaging_product: "whatsapp", contacts: [{ input: body.to, wa_id: body.to }], messages: [{ id: `wamid.MOCK${Date.now().toString(36)}${++msgSeq}` }] });
   }
   if (phone && edge === "register") return json(res, 200, { success: true });
 

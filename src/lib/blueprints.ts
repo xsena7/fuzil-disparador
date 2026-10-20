@@ -111,6 +111,8 @@ export async function deployBlueprints(workspaceId?: string) {
           name = nextTemplateName(name);
           version++;
         } while (version < MAX_VERSIONS && (await prisma.template.findUnique({ where: { wabaId_name_language: { wabaId: waba.id, name, language: bp.language } } })));
+        // Acabaram as tentativas e o nome ainda existe nessa WABA: para aqui
+        if (await prisma.template.findUnique({ where: { wabaId_name_language: { wabaId: waba.id, name, language: bp.language } } })) continue;
       }
 
       const existing = burned
@@ -206,11 +208,14 @@ export async function handleRecategorized(workspaceId: string, wabaRecordId: str
   try {
     await meta.deleteTemplate(wabaToken(waba), waba.wabaId, name);
   } catch (err) {
+    // Tenta de novo a cada 5 min: avisa no máximo uma vez por dia
+    const title = `Não consegui excluir o template "${name}" (${to})`;
+    if (await prisma.alert.findFirst({ where: { workspaceId, title, createdAt: { gte: new Date(Date.now() - 86400_000) } }, select: { id: true } })) return;
     await createAlert({
       workspaceId,
       type: "TEMPLATE_DELETE_FAILED",
       severity: "CRITICAL",
-      title: `Não consegui excluir o template "${name}" (${to})`,
+      title,
       message: `WABA ${waba.business.name} / ${waba.name}: ${err instanceof Error ? err.message : err}. Ele continua bloqueado para disparos.`,
     });
     return;

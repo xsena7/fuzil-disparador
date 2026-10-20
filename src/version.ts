@@ -11,6 +11,15 @@ export const CHANGELOG: Array<{ version: string; date: string; items: string[] }
       "Segurança: limite de tentativas no login e no \"esqueci minha senha\"; trocar senha ou e-mail desconecta os outros aparelhos",
       "Segurança: webhooks sem assinatura da Meta são recusados; conta bloqueada não manda resposta automática",
       "Mais rápido: índices novos no banco para limites, alertas, cliques e respostas",
+      "Disparo: erro no meio do envio não perde mais o estorno nem manda a mesma mensagem duas vezes",
+      "Disparo: com pouco saldo, envia o que o saldo cobre (antes travava sem enviar nada)",
+      "Disparo: limite de velocidade da Meta espera antes de tentar de novo, em vez de marcar falha em segundos",
+      "Disparo: problema de template numa WABA tira só essa WABA, as outras continuam",
+      "Disparo: pausar ou cancelar para o envio na hora; campanha cancelada não vira mais \"concluída\"",
+      "Respostas e SAIR de celulares do Brasil que a Meta manda sem o 9 agora são reconhecidos",
+      "\"Reenviar falhas\" inclui as falhas por tempo esgotado/rede",
+      "Chat: mensagens recebidas não somem mais da conversa aberta",
+    ],
     ],
   },
   {
@@ -40,7 +49,6 @@ export const CHANGELOG: Array<{ version: string; date: string; items: string[] }
     items: [
       "Números de teste da Meta e números não registrados nunca entram no rodízio",
       "Conexões: cada conta mostra o que falta para disparar (número registrado, cartão, template aprovado e avisos da Meta) ou \"Pronta para disparar\"",
-      "Disparos pulam contas sem forma de pagamento",
       "Conexões em gavetas: uma por BM, com bolinha verde (pronta), amarela (aviso) ou vermelha (falta algo)",
     ],
   },

@@ -176,17 +176,12 @@ export async function deleteCampaignAction(id: string) {
 export async function retryFailedAction(id: string) {
   const { c } = await ownCampaign(id);
   if (!["COMPLETED", "PAUSED"].includes(c.status)) return;
-  const failed = await prisma.campaignRecipient.findMany({
-    where: { campaignId: id, status: "FAILED", errorCode: { notIn: [131026, 131050, 131049] } },
-    select: { id: true },
+  // Erros sem código (timeout, rede) também são temporários: o NOT IN do SQL deixaria eles de fora
+  const failed = await prisma.campaignRecipient.updateMany({
+    where: { campaignId: id, status: "FAILED", OR: [{ errorCode: null }, { errorCode: { notIn: [131026, 131050, 131049] } }] },
+    data: { status: "PENDING", attempts: 0, errorCode: null, errorTitle: null, errorDetail: null, failedAt: null, wamid: null, retryAt: null },
   });
-  for (const f of failed) {
-    await prisma.campaignRecipient.update({
-      where: { id: f.id },
-      data: { status: "PENDING", attempts: 0, errorCode: null, errorTitle: null, errorDetail: null, failedAt: null, wamid: null },
-    });
-  }
-  if (failed.length) await prisma.campaign.update({ where: { id }, data: { status: "RUNNING", pausedReason: null, completedAt: null } });
+  if (failed.count) await prisma.campaign.update({ where: { id }, data: { status: "RUNNING", pausedReason: null, completedAt: null } });
   revalidatePath(`/campanhas/${id}`);
 }
 

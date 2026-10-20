@@ -129,16 +129,14 @@ async function refreshBusinessTier(wabaRecordId: string) {
 export const PHONE_REMOVED = "Número removido da Meta";
 const TEST_NUMBER = "Número de teste da Meta";
 
-/** Números apagados na Meta saem do Fuzil. Se tiverem conversas no Chat, ficam escondidos só para guardar o histórico. */
+/** Números apagados na Meta somem do Fuzil (ficam escondidos, guardando histórico e a contagem do limite). */
 async function removeGonePhones(wabaRecordId: string, metaIds: string[]) {
   const gone = await prisma.phoneNumber.findMany({
     where: { wabaId: wabaRecordId, phoneNumberId: { notIn: metaIds } },
-    select: { id: true, _count: { select: { conversations: true } } },
+    select: { id: true },
   });
-  const keep = gone.filter((p) => p._count.conversations > 0).map((p) => p.id);
-  const drop = gone.filter((p) => p._count.conversations === 0).map((p) => p.id);
-  if (keep.length) await prisma.phoneNumber.updateMany({ where: { id: { in: keep } }, data: { invalidReason: PHONE_REMOVED, enabled: false } });
-  if (drop.length) await prisma.phoneNumber.deleteMany({ where: { id: { in: drop } } });
+  // Fica escondido (não apaga): os envios das últimas 24h dele continuam contando no limite da BM
+  if (gone.length) await prisma.phoneNumber.updateMany({ where: { id: { in: gone.map((p) => p.id) } }, data: { invalidReason: PHONE_REMOVED, enabled: false } });
 }
 
 /** Números que nunca entram no rodízio: os de teste da Meta e os que não estão registrados na Cloud API. */
