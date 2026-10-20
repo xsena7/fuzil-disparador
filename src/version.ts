@@ -2,6 +2,13 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "1.22",
+    date: "20/10/2026",
+    items: [
+      "Conexão manual com app próprio da BM: templates com imagem/vídeo/PDF no cabeçalho agora são criados sem erro",
+    ],
+  },
+  {
     version: "1.21",
     date: "17/10/2026",
     items: [

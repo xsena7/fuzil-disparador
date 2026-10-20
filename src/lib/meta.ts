@@ -181,7 +181,8 @@ export const meta = {
 
   /** Upload resumável: retorna o "handle" usado como exemplo de mídia no template. */
   async uploadSampleMedia(token: string, file: Buffer, fileName: string, mimeType: string): Promise<string> {
-    const appId = env.metaAppId();
+    // O upload tem que ir para o app DONO do token (conexões manuais usam o app da própria BM)
+    const appId = (await graph<{ id: string }>(token, "GET", "app", { query: { fields: "id" } }).then((a) => a.id).catch(() => null)) || env.metaAppId();
     if (!appId) throw new MetaError("META_APP_ID não configurado", null, null, 0);
     const session = await graph<{ id: string }>(token, "POST", `${appId}/uploads`, {
       query: { file_name: fileName, file_length: file.length, file_type: mimeType },
