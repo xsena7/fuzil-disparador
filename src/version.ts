@@ -8,6 +8,7 @@ export const CHANGELOG: Array<{ version: string; date: string; items: string[] }
       "Templates padrão com contagem: se a Meta reclassificar o template como marketing numa BM, o Fuzil cria sozinho a próxima versão (fzl_disp1 → fzl_disp2 → fzl_disp3...) só nessa BM",
       "Campanhas tratam todas as versões como o mesmo template e usam em cada BM a versão aprovada",
       "Números apagados na Meta somem do Fuzil na sincronização (se tiverem conversas no Chat, o histórico fica guardado)",
+      "Templates: contas da última conectada (em cima) até a primeira (embaixo), com a hora do último template enviado já na gaveta fechada",
     ],
   },
   {

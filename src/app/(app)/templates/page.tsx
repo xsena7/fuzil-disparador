@@ -37,7 +37,8 @@ export default async function TemplatesPage({ searchParams }: { searchParams: Pr
   const wabas = await prisma.whatsAppAccount.findMany({
     where: { workspaceId: auth.workspace.id },
     include: { business: true },
-    orderBy: [{ business: { name: "asc" } }, { name: "asc" }],
+    // A última conectada fica em cima, a primeira lá embaixo
+    orderBy: { createdAt: "desc" },
   });
   const byWaba = new Map<string, typeof templates>();
   for (const t of templates) byWaba.set(t.wabaId, [...(byWaba.get(t.wabaId) ?? []), t]);
@@ -92,6 +93,7 @@ export default async function TemplatesPage({ searchParams }: { searchParams: Pr
           const usable = list.filter((t) => t.status === "APPROVED" && t.category === "UTILITY").length;
           const pending = list.filter((t) => t.status === "PENDING").length;
           const mkt = list.filter((t) => t.category === "MARKETING").length;
+          const lastSent = list.reduce<Date | null>((a, t) => (t.submittedAt && (!a || t.submittedAt > a) ? t.submittedAt : a), null);
           return (
             <details key={w.id} open={filtering} className="group overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm">
               <summary className="flex cursor-pointer list-none flex-wrap items-center gap-3 px-4 py-3 hover:bg-zinc-50 [&::-webkit-details-marker]:hidden">
@@ -101,6 +103,7 @@ export default async function TemplatesPage({ searchParams }: { searchParams: Pr
                   <span className="block truncate text-xs text-zinc-500">{w.name} · WABA {w.wabaId}</span>
                 </span>
                 <span className="flex flex-wrap items-center gap-2 text-xs">
+                  <span className="text-zinc-500">{lastSent ? <>Último template enviado: <b className="font-medium text-zinc-700">{sentAt(lastSent)}</b></> : "Nenhum template enviado pelo Fuzil"}</span>
                   <span className="rounded-full bg-zinc-100 px-2 py-0.5 font-medium text-zinc-700">{list.length} template(s)</span>
                   <span className="rounded-full bg-emerald-50 px-2 py-0.5 font-medium text-emerald-700">{usable} aptos</span>
                   {pending > 0 && <span className="rounded-full bg-amber-50 px-2 py-0.5 font-medium text-amber-700">{pending} em análise</span>}
