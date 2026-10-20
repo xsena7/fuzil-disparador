@@ -63,8 +63,13 @@ export async function syncWaba(wabaRecordId: string) {
     }
 
     const phones = await meta.listPhones(token, waba.wabaId);
-    for (const p of phones) await upsertPhone(waba.workspaceId, waba.id, p);
-    await removeGonePhones(waba.id, phones.map((p) => p.id));
+    // Números de teste da Meta nem entram no Fuzil (e os que já estavam saem)
+    const real = phones.filter((p) => phoneInvalidReason(p) !== TEST_NUMBER);
+    for (const p of real) await upsertPhone(waba.workspaceId, waba.id, p);
+    await removeGonePhones(waba.id, real.map((p) => p.id));
+    // Conversas de número de teste são só teste: some tudo
+    const test = phones.filter((p) => phoneInvalidReason(p) === TEST_NUMBER).map((p) => p.id);
+    if (test.length) await prisma.phoneNumber.deleteMany({ where: { wabaId: waba.id, phoneNumberId: { in: test } } });
     await refreshBusinessTier(waba.id);
 
     const templates = await meta.listTemplates(token, waba.wabaId);
@@ -122,6 +127,7 @@ async function refreshBusinessTier(wabaRecordId: string) {
 }
 
 export const PHONE_REMOVED = "Número removido da Meta";
+const TEST_NUMBER = "Número de teste da Meta";
 
 /** Números apagados na Meta saem do Fuzil. Se tiverem conversas no Chat, ficam escondidos só para guardar o histórico. */
 async function removeGonePhones(wabaRecordId: string, metaIds: string[]) {
@@ -138,7 +144,7 @@ async function removeGonePhones(wabaRecordId: string, metaIds: string[]) {
 /** Números que nunca entram no rodízio: os de teste da Meta e os que não estão registrados na Cloud API. */
 export function phoneInvalidReason(p: MetaPhone): string | null {
   const digits = p.display_phone_number.replace(/\D/g, "");
-  if (p.account_mode === "SANDBOX" || p.verified_name === "Test Number" || /^1555\d{7}$/.test(digits)) return "Número de teste da Meta";
+  if (p.account_mode === "SANDBOX" || p.verified_name === "Test Number" || /^1555\d{7}$/.test(digits)) return TEST_NUMBER;
   if (p.platform_type === "NOT_APPLICABLE") return "Número não registrado na API";
   return null;
 }
