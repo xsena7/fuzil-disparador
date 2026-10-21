@@ -1,7 +1,7 @@
 "use server";
 
 import { requireAuth } from "@/lib/auth";
-import { hygienePhones, type HygieneResult } from "@/lib/hygiene";
+import { formatCheck, hygienePhones, type HygieneResult } from "@/lib/hygiene";
 import { audienceFileToCsv } from "@/lib/audience-file";
 import { tooMany } from "@/lib/rate-limit";
 
@@ -30,6 +30,11 @@ export async function hygieneAction(_: HygieneState, form: FormData): Promise<Hy
     .filter(Boolean);
   if (!raw.length) return { error: "Nenhum número encontrado. Cole um número por linha ou envie uma planilha." };
 
+  // Modo formato: não fala com a Meta e não tem limite de quantidade
+  if (form.get("mode") === "format") {
+    if (raw.length > 200_000) return { error: "Máximo de 200.000 linhas por vez." };
+    return formatCheck(raw);
+  }
   const res = await hygienePhones(auth.workspace.id, raw);
   if ("error" in res) return { error: res.error };
   return res;

@@ -5,6 +5,7 @@ export const CHANGELOG: Array<{ version: string; date: string; items: string[] }
     version: "1.49",
     date: "21/10/2026",
     items: [
+      "Higienização: nova opção \"Só o formato\", sem a Meta e sem limite, que separa os números que não têm cara de celular do WhatsApp",
       "Higienização: quando a Meta recusa a checagem, a tela mostra o motivo exato",
       "Correção: a higienização volta a compilar sem erro (o limite por vez ficou em um arquivo que roda dos dois lados)",
       "Higienização: arraste a planilha para a área pontilhada (ou clique para escolher), igual à audiência da campanha",

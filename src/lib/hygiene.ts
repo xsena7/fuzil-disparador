@@ -69,3 +69,38 @@ export async function hygienePhones(workspaceId: string, raw: string[]): Promise
   }
   return { valid, invalid, notChecked: [...notChecked, ...beyond], beyondLimit: beyond.length, malformed, total: raw.filter((r) => r.trim()).length, sender: sender.display, metaError };
 }
+
+/**
+ * Checagem de formato (sem a Meta, sem limite): diz se o número tem a cara de um celular do WhatsApp.
+ * No Brasil: 55 + DDD (11 a 99) + 9 + 8 dígitos. Fora do Brasil: 8 a 15 dígitos.
+ * Não confirma que o número existe no WhatsApp, só separa o que não pode existir.
+ */
+export function formatCheck(raw: string[]): HygieneResult {
+  const valid: string[] = [];
+  const invalid: string[] = [];
+  const seen = new Set<string>();
+  let malformed = 0;
+  for (const r of raw) {
+    const d = r.replace(/\D/g, "");
+    if (!d) continue;
+    let ok = false;
+    let p = d;
+    if (/^55/.test(d) || d.length === 11 || d.length === 10) {
+      // Brasil: aceita sem o 55 também (DDD + número)
+      const national = d.startsWith("55") && d.length >= 12 ? d.slice(2) : d;
+      const ddd = Number(national.slice(0, 2));
+      ok = national.length === 11 && ddd >= 11 && national[2] === "9";
+      p = `55${national}`;
+    } else {
+      ok = d.length >= 8 && d.length <= 15;
+    }
+    if (!ok) {
+      malformed++;
+      continue;
+    }
+    if (seen.has(p)) continue;
+    seen.add(p);
+    (ok ? valid : invalid).push(p);
+  }
+  return { valid, invalid: [], notChecked: [], beyondLimit: 0, malformed, total: raw.filter((r) => r.trim()).length, sender: "formato (sem a Meta)" };
+}

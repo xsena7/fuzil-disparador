@@ -88,6 +88,10 @@ export function Hygiene() {
               }
             }}
           />
+          <div className="flex flex-wrap gap-4 text-sm">
+            <label className="flex items-center gap-2"><input type="radio" name="mode" value="meta" defaultChecked /> Confirmar com a Meta (exato, até 3.000 por vez)</label>
+            <label className="flex items-center gap-2"><input type="radio" name="mode" value="format" /> Só o formato (rápido, sem limite, sem a Meta)</label>
+          </div>
           <div className="flex items-center gap-3">
             <Button disabled={pending}>
               {pending && <Loader2 className="size-4 animate-spin" />} Checar lista
@@ -106,7 +110,7 @@ export function Hygiene() {
             <Stat label="Mal formados" value={ok.malformed} tone="gray" />
             <Stat label="Não checados" value={ok.notChecked.length} tone="gray" />
           </div>
-          <p className="mt-3 text-xs text-zinc-500">Checado pelo número {ok.sender}. Total de linhas com número: {ok.total.toLocaleString("pt-BR")}.</p>
+          <p className="mt-3 text-xs text-zinc-500">{ok.sender === "formato (sem a Meta)" ? "Checagem só de formato: 'válidos' são os que têm cara de celular do WhatsApp. Não confirma que o número existe." : `Checado pelo número ${ok.sender}.`} Total de linhas com número: {ok.total.toLocaleString("pt-BR")}.</p>
           {ok.metaError && (
             <p className="mt-2 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
               A Meta recusou a checagem: <b>{ok.metaError}</b>
