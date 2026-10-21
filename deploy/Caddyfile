@@ -29,3 +29,8 @@ https:// {
 	encode gzip
 	reverse_proxy app:3000
 }
+
+# Quem digitar o domínio da landing sem https cai no https
+http:// {
+	redir https://{host}{uri} permanent
+}
