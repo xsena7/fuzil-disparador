@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "1.68",
+    date: "21/10/2026",
+    items: ["Campanhas: novo relatório de envio interativo, com a logo do Fuzil, taxa de entrega, funil (público → enviadas → entregues → lidas → cliques → respostas), resultado de cada mensagem, desempenho por número e motivos de falha. Botão para salvar em PDF"],
+  },
+  {
     version: "1.67",
     date: "21/10/2026",
     items: ["Templates: a busca agora procura pelo nome da BM"],
