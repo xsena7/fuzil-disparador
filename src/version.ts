@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "1.43",
+    date: "21/10/2026",
+    items: ["Grupos de BM: nome completo da BM na lista de seleção (a etiqueta de grupo fica embaixo)"],
+  },
+  {
     version: "1.42",
     date: "21/10/2026",
     items: ["Grupos de BM: em cada BM da gaveta, \"Mandar para o grupo…\" move a BM para o grupo escolhido na hora. Uma BM fica em um grupo só"],

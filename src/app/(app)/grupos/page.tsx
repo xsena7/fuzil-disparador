@@ -52,16 +52,20 @@ export default async function GroupsPage() {
       {businesses.map((b) => {
         const others = b.groups.filter((m) => !m.group.system && m.group.id !== currentGroupId).map((m) => m.group.name);
         return (
-          <label key={b.id} className="flex flex-wrap items-center gap-2 rounded-lg border border-zinc-200 px-3 py-2">
-            <input type="checkbox" name="businessIds" value={b.id} defaultChecked={selected.includes(b.id)} />
-            {aptDot(b.id)}
-            <span className="min-w-0 flex-1 truncate">{b.name}</span>
+          <label key={b.id} className="flex items-start gap-2 rounded-lg border border-zinc-200 px-3 py-2">
+            <input type="checkbox" name="businessIds" value={b.id} defaultChecked={selected.includes(b.id)} className="mt-1" />
+            <span className="mt-1.5 shrink-0">{aptDot(b.id)}</span>
+            <span className="min-w-0 flex-1">
+              <span className="block break-words font-medium leading-snug">{b.name}</span>
+              <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-zinc-500">
+                <span>{tierLabel(b.messagingLimitTier)}</span>
             {others.length > 0 && (
               <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-800 ring-1 ring-amber-600/20" title="Uma BM só pode estar em um grupo de disparo">
                 está em {others.join(", ")} · sai de lá ao salvar
               </span>
             )}
-            <span className="text-xs text-zinc-500">{tierLabel(b.messagingLimitTier)}</span>
+              </span>
+            </span>
           </label>
         );
       })}
