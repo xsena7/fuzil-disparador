@@ -8,7 +8,7 @@ import type { Job } from "@/lib/funnel-types";
 import { track } from "./pixel";
 
 const input = "w-full rounded-none border-0 border-b border-black/25 bg-transparent px-0 py-3 text-base outline-none transition placeholder:text-black/35 focus:border-[var(--c)]";
-const button = "flex w-full items-center justify-center gap-2 bg-[#111] px-4 py-4 text-base font-medium text-white transition hover:bg-[var(--c)] disabled:opacity-50";
+const button = "flex w-full items-center justify-center gap-2 rounded-full bg-[#111] px-4 py-4 text-base font-medium text-white transition hover:bg-[var(--c)] disabled:opacity-50";
 
 /** (11) 99999-8888 enquanto digita */
 function maskPhone(v: string) {

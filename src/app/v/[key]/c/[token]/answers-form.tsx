@@ -49,7 +49,7 @@ export function AnswersForm({ token, fields }: { token: string; fields: FormFiel
       {state?.error && <p className="bg-red-50 px-3 py-2 text-sm font-medium text-red-600">{state.error}</p>}
       <button
         disabled={pending}
-        className="flex w-full items-center justify-center gap-2 bg-[#111] px-4 py-4 text-base font-medium text-white transition hover:bg-[var(--c)] disabled:opacity-50"
+        className="flex w-full items-center justify-center gap-2 rounded-full bg-[#111] px-4 py-4 text-base font-medium text-white transition hover:bg-[var(--c)] disabled:opacity-50"
       >
         {pending ? <Loader2 className="size-5 animate-spin" /> : "Enviar cadastro"}
       </button>
