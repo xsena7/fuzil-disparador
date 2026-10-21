@@ -18,6 +18,7 @@ import {
 import { ActionForm } from "@/components/action-form";
 import { Zap } from "lucide-react";
 import { StepTemplate, type TemplateOption } from "./step-template";
+import { Logo } from "@/components/brand";
 import { StepContent } from "./step-content";
 import { StepAudience, type AudienceStats } from "./step-audience";
 import { StepSendForm } from "./step-send";
@@ -46,7 +47,14 @@ export default async function CampaignPage({ params, searchParams }: { params: P
   const step = (await searchParams).etapa ?? (started ? "metricas" : "template");
 
   return (
-    <div className="-mx-10 -my-9 min-h-screen">
+    <div className="relative -mx-10 -my-9 min-h-screen overflow-hidden">
+      {/* Fundo: logo bem clara e brilho laranja, só enfeite */}
+      <div aria-hidden className="pointer-events-none absolute inset-0 -z-0">
+        <div className="absolute -left-24 top-24 size-[460px] rounded-full bg-orange-400/15 blur-[110px]" />
+        <div className="absolute -right-20 bottom-10 size-[380px] rounded-full bg-rose-500/10 blur-[110px]" />
+        <Logo className="absolute bottom-16 right-10 w-[min(620px,80%)] opacity-[.05]" />
+      </div>
+      <div className="relative">
       <div className="sticky top-0 z-10 flex flex-wrap items-center gap-3 border-b border-zinc-200/70 bg-white/85 px-6 py-3 backdrop-blur">
         <Link href="/campanhas" className="rounded-full border border-zinc-200 p-1.5 hover:bg-zinc-50"><ArrowLeft className="size-4" /></Link>
         <div className="font-semibold">{campaign.name}</div>
@@ -68,9 +76,12 @@ export default async function CampaignPage({ params, searchParams }: { params: P
             <Link
               key={s.key}
               href={`/campanhas/${id}?etapa=${s.key}`}
-              className={clsx("flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition", step === s.key ? "bg-white font-medium text-zinc-900 shadow-soft ring-1 ring-zinc-200/70" : "text-zinc-500 hover:bg-white/60 hover:text-zinc-800")}
+              className={clsx(
+                "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition",
+                step === s.key ? "bg-white font-semibold text-zinc-900 shadow-lift ring-2 ring-orange-300/70" : "bg-white/70 font-medium text-zinc-700 shadow-sm ring-1 ring-zinc-200 hover:bg-white hover:text-zinc-900",
+              )}
             >
-              <span className={clsx("flex size-6 items-center justify-center rounded-full text-xs font-semibold", step === s.key ? "bg-brand-gradient text-white" : "bg-zinc-200/70 text-zinc-600")}>{i + 1}</span>
+              <span className={clsx("flex size-7 items-center justify-center rounded-full text-xs font-bold", step === s.key ? "bg-brand-gradient text-white shadow-md shadow-orange-500/30" : "bg-zinc-800 text-white")}>{i + 1}</span>
               {s.label.replace(/^\d+\. /, "")}
             </Link>
           ))}
@@ -96,6 +107,7 @@ export default async function CampaignPage({ params, searchParams }: { params: P
           )}
         </div>
       </div>
+      </div>
     </div>
   );
 }
@@ -104,6 +116,8 @@ async function TemplateStep({ campaignId, workspaceId, locked }: { campaignId: s
   const campaign = await prisma.campaign.findUniqueOrThrow({ where: { id: campaignId } });
   const groups = await prisma.bmGroup.findMany({ where: { workspaceId, system: null }, include: { members: true }, orderBy: { name: "asc" } });
   const templates = await prisma.template.findMany({ where: { workspaceId }, include: { waba: true } });
+  const wabas = await prisma.whatsAppAccount.findMany({ where: { workspaceId }, include: { business: true } });
+  const wabaLabel = (w: { name: string; business: { name: string } }) => `${w.business.name} / ${w.name}`;
   // Versões numeradas de um template padrão (fzl_disp2...) entram como o template original
   const aliases = await templateAliases(workspaceId);
   const optionsByGroup: Record<string, TemplateOption[]> = {};
@@ -111,13 +125,27 @@ async function TemplateStep({ campaignId, workspaceId, locked }: { campaignId: s
     const bms = new Set(g.members.map((m) => m.businessId));
     const inGroup = templates.filter((t) => bms.has(t.waba.businessId));
     const map = new Map<string, TemplateOption>();
+    // Quais WABAs do grupo estão aptas para cada template (aprovado e de utilidade)
+    const usable = new Map<string, Set<string>>();
+    for (const t of inGroup) {
+      if (t.status !== "APPROVED" || t.category !== "UTILITY") continue;
+      const name = aliases.get(`${t.name}|${t.language}`) ?? t.name;
+      const set = usable.get(`${name}|${t.language}`) ?? new Set<string>();
+      set.add(t.wabaId);
+      usable.set(`${name}|${t.language}`, set);
+    }
+    const groupWabas = wabas.filter((w) => bms.has(w.businessId));
     for (const t of inGroup) {
       const name = aliases.get(`${t.name}|${t.language}`) ?? t.name;
       const key = `${name}|${t.language}`;
-      const opt = map.get(key) ?? { key, name, language: t.language, usable: 0, total: 0, body: (t.components as unknown as TComponent[]).find((c) => c.type === "BODY")?.text ?? "" };
+      const opt = map.get(key) ?? { key, name, language: t.language, usable: 0, total: 0, notApt: [], body: (t.components as unknown as TComponent[]).find((c) => c.type === "BODY")?.text ?? "" };
       opt.total++;
       if (t.status === "APPROVED" && t.category === "UTILITY") opt.usable++;
       map.set(key, opt);
+    }
+    for (const o of map.values()) {
+      const ok = usable.get(o.key) ?? new Set<string>();
+      o.notApt = groupWabas.filter((w) => !ok.has(w.id)).map(wabaLabel);
     }
     optionsByGroup[g.id] = [...map.values()].filter((o) => o.usable > 0).sort((a, b) => a.name.localeCompare(b.name));
   }

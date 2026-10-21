@@ -4,7 +4,7 @@ import { useActionState, useState } from "react";
 import { Button, Card, Field, Input, Select } from "@/components/ui";
 import type { FormState } from "@/app/actions/auth";
 
-export type TemplateOption = { key: string; name: string; language: string; usable: number; total: number; body: string };
+export type TemplateOption = { key: string; name: string; language: string; usable: number; total: number; body: string; notApt: string[] };
 
 export function StepTemplate({
   action,
@@ -31,7 +31,7 @@ export function StepTemplate({
 
   return (
     <form action={formAction} className="max-w-2xl space-y-5">
-      <h2 className="text-lg font-semibold">Template</h2>
+      <h2 className="text-xl font-semibold drop-shadow-[0_0_14px_rgba(255,149,0,0.35)]">Template</h2>
       <Field label="Nome da campanha"><Input name="name" defaultValue={name} disabled={locked} /></Field>
       <Field label="Grupo de BM" hint="Os envios serão distribuídos entre todos os números aptos das BMs desse grupo.">
         <Select name="groupId" value={group} onChange={(e) => { setGroup(e.target.value); setTpl(""); }} disabled={locked}>
@@ -51,8 +51,13 @@ export function StepTemplate({
         <Card className="p-4">
           <div className="mb-1 text-xs text-zinc-500">Corpo</div>
           <p className="whitespace-pre-wrap">{selected.body}</p>
-          {selected.usable < selected.total && (
-            <p className="mt-3 text-xs text-amber-700">Atenção: esse template não está apto em {selected.total - selected.usable} WABA(s) do grupo. Os números dessas WABAs ficam de fora da campanha.</p>
+          {selected.notApt.length > 0 && (
+            <div className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
+              <p className="font-medium">Não apto em {selected.notApt.length} WABA(s) do grupo. Os números dessas contas ficam de fora da campanha:</p>
+              <ul className="mt-1 list-disc pl-5">
+                {selected.notApt.map((n) => <li key={n}>{n}</li>)}
+              </ul>
+            </div>
           )}
         </Card>
       )}
