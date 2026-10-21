@@ -2,21 +2,45 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import type { Prisma, RecipientStatus } from "@prisma/client";
 import { prisma } from "./db";
 import { env } from "./env";
+import { decrypt } from "./crypto";
 import { createAlert } from "./alerts";
 import { onCategoryChanged, onStatusChanged, syncWaba } from "./sync";
 import { metaErrorLabel } from "./meta-errors";
 import { canonicalWaId } from "./phone";
 import { applyChatStatus, ingestInbound, maybeAutoReply } from "./chat";
 
-export function verifySignature(raw: string, header: string | null): boolean {
-  const secret = env.metaAppSecret();
-  // Sem o App Secret não dá para saber se o evento veio da Meta: em produção, recusa tudo
-  if (!secret) return process.env.NODE_ENV !== "production";
-  if (!header?.startsWith("sha256=")) return false;
+function signedWith(raw: string, header: string, secret: string) {
   const expected = createHmac("sha256", secret).update(raw).digest("hex");
   const a = Buffer.from(header.slice(7), "hex");
   const b = Buffer.from(expected, "hex");
   return a.length === b.length && timingSafeEqual(a, b);
+}
+
+/** App Secrets dos apps das BMs (conexão manual). Cache de 1 min para não ir ao banco a cada evento. */
+let bmSecrets: { at: number; list: string[] } = { at: 0, list: [] };
+async function bmAppSecrets(): Promise<string[]> {
+  if (Date.now() - bmSecrets.at < 60_000) return bmSecrets.list;
+  const rows = await prisma.whatsAppAccount.findMany({ where: { appSecretEnc: { not: null } }, select: { appSecretEnc: true } });
+  const list = [...new Set(rows.flatMap((r) => {
+    try {
+      return [decrypt(r.appSecretEnc!)];
+    } catch {
+      return [];
+    }
+  }))];
+  bmSecrets = { at: Date.now(), list };
+  return list;
+}
+export const resetBmSecrets = () => (bmSecrets = { at: 0, list: [] });
+
+/** Confere se o evento veio da Meta: assinado pelo app do Fuzil ou pelo app de alguma BM conectada manualmente. */
+export async function verifySignature(raw: string, header: string | null): Promise<boolean> {
+  const secret = env.metaAppSecret();
+  const others = await bmAppSecrets();
+  // Sem nenhum App Secret não dá para saber se o evento veio da Meta: em produção, recusa tudo
+  if (!secret && !others.length) return process.env.NODE_ENV !== "production";
+  if (!header?.startsWith("sha256=")) return false;
+  return [secret, ...others].some((s) => s && signedWith(raw, header, s));
 }
 
 const OPT_OUT_WORDS = ["sair", "parar", "pare", "stop", "cancelar", "descadastrar", "remover", "nao quero", "não quero", "bloquear"];

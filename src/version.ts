@@ -2,6 +2,13 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "1.35",
+    date: "21/10/2026",
+    items: [
+      "Conexões manuais (app da própria BM): campo \"Chave secreta do app\". Com ela, as respostas dos contatos e os status (entregue, lido) dessas BMs aparecem no Chat",
+    ],
+  },
+  {
     version: "1.34",
     date: "21/10/2026",
     items: ["Aquecimento: escolha a foto do perfil que aparece no celular de exemplo do site"],

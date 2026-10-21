@@ -170,6 +170,8 @@ model WhatsAppAccount {
   connectionType       ConnectionType  @default(MANUAL)
   // Token criptografado (AES-256-GCM). Se nulo, usa META_SYSTEM_USER_TOKEN
   accessTokenEnc       String?
+  // App Secret do app da própria BM (conexão manual): valida os webhooks que esse app manda (respostas, status)
+  appSecretEnc         String?
   currency             String?
   timezoneId           String?
   reviewStatus         String?

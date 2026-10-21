@@ -13,11 +13,13 @@ import { bmWindows } from "@/lib/limit-windows";
 import { wabaReadiness } from "@/lib/readiness";
 import { PHONE_REMOVED } from "@/lib/sync";
 import { PasswordInput } from "@/components/password-input";
+import { StatusDot } from "@/components/drawer";
 import {
   connectManualAction,
   deleteWabaAction,
   registerPhoneAction,
   syncAllAction,
+  setAppSecretAction,
   syncWabaAction,
   togglePhoneAction,
 } from "@/app/actions/connections";
@@ -67,6 +69,9 @@ export default async function ConnectionsPage() {
             <Field label="ID da WABA"><Input name="wabaId" placeholder="1673861331112475" required autoComplete="off" inputMode="numeric" /></Field>
             <Field label="Token de acesso" hint="System User token com whatsapp_business_management e whatsapp_business_messaging">
               <PasswordInput name="token" placeholder="EAAG..." autoComplete="new-password" data-lpignore="true" data-1p-ignore="true" />
+            </Field>
+            <Field label="Chave secreta do app (opcional)" hint="Configurações do app → Básico. Sem ela, as respostas dessa BM não aparecem no Chat">
+              <PasswordInput name="appSecret" autoComplete="new-password" data-lpignore="true" data-1p-ignore="true" />
             </Field>
           </div>
         </ActionForm>
@@ -142,6 +147,31 @@ export default async function ConnectionsPage() {
                       </div>
                     );
                   })()}
+                  {waba.connectionType === "MANUAL" && (
+                    <details className="group border-b border-zinc-100" open={!waba.appSecretEnc}>
+                      <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-2.5 text-sm [&::-webkit-details-marker]:hidden">
+                        <StatusDot tone={waba.appSecretEnc ? "green" : "amber"} />
+                        <span className="font-medium">Receber respostas no Chat</span>
+                        <span className="text-xs text-zinc-500">
+                          {waba.appSecretEnc ? "chave do app cadastrada ✅" : "falta a chave secreta do app dessa BM"}
+                        </span>
+                      </summary>
+                      <div className="space-y-3 px-4 pb-4 text-sm text-zinc-600">
+                        <p>
+                          Essa conta foi conectada com o app da própria BM. As respostas e os status (entregue, lido) chegam assinados por esse app, e o Fuzil só aceita com a chave dele.
+                        </p>
+                        <ol className="list-decimal space-y-1 pl-5">
+                          <li>Abra developers.facebook.com → Meus apps → o app dessa BM.</li>
+                          <li>Vá em <b>Configurações do app → Básico</b>.</li>
+                          <li>Em <b>Chave secreta do aplicativo</b>, clique em Mostrar, copie e cole abaixo (não mande em chat nem print).</li>
+                        </ol>
+                        <ActionForm action={setAppSecretAction} submit={waba.appSecretEnc ? "Trocar chave" : "Salvar chave"} variant="secondary">
+                          <input type="hidden" name="id" value={waba.id} />
+                          <PasswordInput name="appSecret" placeholder={waba.appSecretEnc ? "••••••••••••••••" : "Chave secreta do app (32 caracteres)"} autoComplete="new-password" data-lpignore="true" data-1p-ignore="true" />
+                        </ActionForm>
+                      </div>
+                    </details>
+                  )}
                   <div className="divide-y divide-zinc-100">
                     {waba.phones.length === 0 && <div className="px-4 py-3 text-zinc-500">Nenhum número nesta WABA.</div>}
                     {waba.phones.map((p) => (

@@ -16,7 +16,7 @@ export async function GET(req: Request) {
 /** Eventos da Meta: status de mensagens, respostas, templates, qualidade, conta. */
 export async function POST(req: Request) {
   const raw = await req.text();
-  if (!verifySignature(raw, req.headers.get("x-hub-signature-256"))) return new Response("Invalid signature", { status: 401 });
+  if (!(await verifySignature(raw, req.headers.get("x-hub-signature-256")))) return new Response("Invalid signature", { status: 401 });
   let payload: unknown;
   try {
     payload = JSON.parse(raw);
