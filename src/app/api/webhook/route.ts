@@ -13,10 +13,24 @@ export async function GET(req: Request) {
   return new Response("Forbidden", { status: 403 });
 }
 
+const lastMark = new Map<string, number>();
+async function markWebhook(raw: string, ok: boolean) {
+  const ids = [...raw.matchAll(/"entry"\s*:\s*\[\s*\{\s*"id"\s*:\s*"(\d+)"/g)].map((m) => m[1]);
+  for (const wabaId of ids) {
+    const key = `${wabaId}:${ok}`;
+    if (Date.now() - (lastMark.get(key) ?? 0) < 60_000) continue;
+    lastMark.set(key, Date.now());
+    await prisma.whatsAppAccount.updateMany({ where: { wabaId }, data: ok ? { webhookLastAt: new Date() } : { webhookRejectedAt: new Date() } });
+  }
+}
+
 /** Eventos da Meta: status de mensagens, respostas, templates, qualidade, conta. */
 export async function POST(req: Request) {
   const raw = await req.text();
-  if (!(await verifySignature(raw, req.headers.get("x-hub-signature-256")))) return new Response("Invalid signature", { status: 401 });
+  const ok = await verifySignature(raw, req.headers.get("x-hub-signature-256"));
+  // Marca na WABA se os eventos estão chegando (e se estão sendo recusados): aparece em Conexões
+  void markWebhook(raw, ok).catch(() => undefined);
+  if (!ok) return new Response("Invalid signature", { status: 401 });
   let payload: unknown;
   try {
     payload = JSON.parse(raw);

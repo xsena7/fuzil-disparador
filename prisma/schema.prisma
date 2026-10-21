@@ -172,6 +172,9 @@ model WhatsAppAccount {
   accessTokenEnc       String?
   // App Secret do app da própria BM (conexão manual): valida os webhooks que esse app manda (respostas, status)
   appSecretEnc         String?
+  // Diagnóstico do webhook: último evento aceito e último recusado (assinatura não confere)
+  webhookLastAt        DateTime?
+  webhookRejectedAt    DateTime?
   currency             String?
   timezoneId           String?
   reviewStatus         String?

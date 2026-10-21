@@ -147,31 +147,53 @@ export default async function ConnectionsPage() {
                       </div>
                     );
                   })()}
-                  {waba.connectionType === "MANUAL" && (
-                    <details className="group border-b border-zinc-100" open={!waba.appSecretEnc}>
-                      <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-2.5 text-sm [&::-webkit-details-marker]:hidden">
-                        <StatusDot tone={waba.appSecretEnc ? "green" : "amber"} />
-                        <span className="font-medium">Receber respostas no Chat</span>
-                        <span className="text-xs text-zinc-500">
-                          {waba.appSecretEnc ? "chave do app cadastrada ✅" : "falta a chave secreta do app dessa BM"}
-                        </span>
-                      </summary>
-                      <div className="space-y-3 px-4 pb-4 text-sm text-zinc-600">
-                        <p>
-                          Essa conta foi conectada com o app da própria BM. As respostas e os status (entregue, lido) chegam assinados por esse app, e o Fuzil só aceita com a chave dele.
-                        </p>
-                        <ol className="list-decimal space-y-1 pl-5">
-                          <li>Abra developers.facebook.com → Meus apps → o app dessa BM.</li>
-                          <li>Vá em <b>Configurações do app → Básico</b>.</li>
-                          <li>Em <b>Chave secreta do aplicativo</b>, clique em Mostrar, copie e cole abaixo (não mande em chat nem print).</li>
-                        </ol>
-                        <ActionForm action={setAppSecretAction} submit={waba.appSecretEnc ? "Trocar chave" : "Salvar chave"} variant="secondary">
-                          <input type="hidden" name="id" value={waba.id} />
-                          <PasswordInput name="appSecret" placeholder={waba.appSecretEnc ? "••••••••••••••••" : "Chave secreta do app (32 caracteres)"} autoComplete="new-password" data-lpignore="true" data-1p-ignore="true" />
-                        </ActionForm>
-                      </div>
-                    </details>
-                  )}
+                  {waba.connectionType === "MANUAL" && (() => {
+                    const last = waba.webhookLastAt;
+                    const rejected = waba.webhookRejectedAt && (!last || waba.webhookRejectedAt > last) ? waba.webhookRejectedAt : null;
+                    const ok = Boolean(waba.appSecretEnc && last && !rejected);
+                    const when = (d: Date) => d.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+                    return (
+                      <details className="group border-b border-zinc-100" open={!ok}>
+                        <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-2.5 text-sm [&::-webkit-details-marker]:hidden">
+                          <StatusDot tone={ok ? "green" : rejected ? "red" : "amber"} />
+                          <span className="font-medium">Receber respostas no Chat</span>
+                          <span className="text-xs text-zinc-500">
+                            {ok ? `funcionando · último evento ${when(last!)}` : rejected ? "a Meta está mandando, mas a chave não confere" : !waba.appSecretEnc ? "falta a chave secreta do app dessa BM" : "nenhum evento dessa conta chegou ainda"}
+                          </span>
+                        </summary>
+                        <div className="space-y-4 px-4 pb-4 text-sm text-zinc-600">
+                          {rejected && (
+                            <p className="rounded-lg bg-red-50 px-3 py-2 text-red-700">
+                              Última recusa {when(rejected)}: a chave cadastrada não é a do app que está mandando os eventos. Confira se copiou a chave do app certo (o mesmo do token).
+                            </p>
+                          )}
+                          <div>
+                            <b className="text-zinc-800">1. Chave secreta do app</b> {waba.appSecretEnc && <span className="text-emerald-700">cadastrada ✅</span>}
+                            <p className="mt-1">developers.facebook.com → Meus apps → app dessa BM → <b>Configurações do app → Básico</b> → Chave secreta do aplicativo → Mostrar. Cole abaixo (não mande em chat nem print).</p>
+                            <ActionForm action={setAppSecretAction} submit={waba.appSecretEnc ? "Trocar chave" : "Salvar chave"} variant="secondary">
+                              <input type="hidden" name="id" value={waba.id} />
+                              <PasswordInput name="appSecret" placeholder={waba.appSecretEnc ? "••••••••••••••••" : "Chave secreta do app (32 caracteres)"} autoComplete="new-password" data-lpignore="true" data-1p-ignore="true" />
+                            </ActionForm>
+                          </div>
+                          <div>
+                            <b className="text-zinc-800">2. Webhook no app da BM</b> {last && <span className="text-emerald-700">chegando ✅</span>}
+                            <ol className="mt-1 list-decimal space-y-1 pl-5">
+                              <li>No mesmo app, menu da esquerda: <b>WhatsApp → Configuração</b>.</li>
+                              <li>
+                                Em Webhook, clique em <b>Editar</b>. URL de callback: <code className="rounded bg-zinc-100 px-1">{env.appUrl()}/api/webhook</code> · Token de verificação:{" "}
+                                <code className="rounded bg-zinc-100 px-1">{env.metaVerifyToken() || "(peça ao admin)"}</code> → <b>Verificar e salvar</b>.
+                              </li>
+                              <li>
+                                Logo abaixo, em <b>Campos do webhook</b>, clique em <b>Assinar</b> na linha <b>messages</b>.
+                              </li>
+                              <li>No topo do app, se estiver &quot;Em desenvolvimento&quot;, mude para <b>Publicado</b> (pede um link de privacidade: use o do seu site).</li>
+                              <li>Volte aqui, clique em ↻ (sincronizar) e responda uma mensagem para testar.</li>
+                            </ol>
+                          </div>
+                        </div>
+                      </details>
+                    );
+                  })()}
                   <div className="divide-y divide-zinc-100">
                     {waba.phones.length === 0 && <div className="px-4 py-3 text-zinc-500">Nenhum número nesta WABA.</div>}
                     {waba.phones.map((p) => (
