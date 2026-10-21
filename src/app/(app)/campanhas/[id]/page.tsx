@@ -106,7 +106,8 @@ export default async function CampaignPage({ params, searchParams }: { params: P
           )}
           {step === "metricas" && (
             <>
-              {["RUNNING", "SCHEDULED"].includes(campaign.status) && <AutoRefresh />}
+              {/* Entregas, leituras, cliques e respostas continuam chegando depois do envio: atualiza sempre */}
+              <AutoRefresh every={campaign.status === "RUNNING" ? 3000 : 8000} live />
               <Metrics campaignId={id} />
               <AutoReplyCard campaignId={id} />
             </>
