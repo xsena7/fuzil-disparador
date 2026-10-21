@@ -180,7 +180,9 @@ async function SendStep({ campaignId }: { campaignId: string }) {
   const campaign = await prisma.campaign.findUniqueOrThrow({ where: { id: campaignId } });
   const pending = await prisma.campaignRecipient.count({ where: { campaignId, status: "PENDING" } });
   const plan = await planSenders(campaign);
-  const capacity = [...plan.capacity.values()].reduce((a, b) => a + b, 0);
+  // Só as BMs que têm número apto contam (igual ao disparador)
+  const senderBms = new Set(plan.senders.map((x) => x.businessId));
+  const capacity = [...plan.capacity.entries()].filter(([id]) => senderBms.has(id)).reduce((a, [, v]) => a + v, 0);
   const cost = pending * auth.workspace.creditsPerMessage;
   const insufficient = auth.workspace.creditBalance < cost;
   const editable = ["DRAFT", "SCHEDULED"].includes(campaign.status);
@@ -216,7 +218,15 @@ async function SendStep({ campaignId }: { campaignId: string }) {
         missing.length ? (
           <p className="text-amber-700">Falta definir: {missing.join(", ")}.</p>
         ) : (
-          <StepSendForm action={startCampaignAction.bind(null, campaignId)} defaultRate={campaign.ratePerSecond} skipRed={campaign.skipRedQuality} insufficient={insufficient} />
+          <StepSendForm
+            action={startCampaignAction.bind(null, campaignId)}
+            defaultTotal={campaign.totalRatePerSecond}
+            skipRed={campaign.skipRedQuality}
+            insufficient={insufficient}
+            pending={pending}
+            senders={plan.senders.length}
+            capacity={Number.isFinite(capacity) ? capacity : null}
+          />
         )
       ) : (
         <p className="text-zinc-500">Campanha já iniciada. Acompanhe em <Link href={`/campanhas/${campaignId}?etapa=metricas`} className="underline">Métricas</Link>.</p>

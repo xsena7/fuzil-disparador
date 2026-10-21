@@ -112,7 +112,7 @@ export async function startCampaignAction(id: string, _: FormState, form: FormDa
   const total = await prisma.campaignRecipient.count({ where: { campaignId: id, status: "PENDING" } });
   if (!total) return { error: "Suba a audiência primeiro" };
 
-  const rate = Math.max(0, Math.min(80, Number(form.get("rate") ?? 0) || 0));
+  const totalRate = Math.max(1, Math.min(300, Math.round(Number(form.get("totalRate") ?? 30)) || 30));
   const skipRed = form.get("skipRed") === "on";
   const plan = await planSenders({ ...c, skipRedQuality: skipRed });
   if (!plan.senders.length) return { error: "Nenhum número apto para enviar com esse template neste grupo" };
@@ -130,7 +130,8 @@ export async function startCampaignAction(id: string, _: FormState, form: FormDa
   await prisma.campaign.update({
     where: { id },
     data: {
-      ratePerSecond: rate,
+      ratePerSecond: 0,
+      totalRatePerSecond: totalRate,
       skipRedQuality: skipRed,
       status: future ? "SCHEDULED" : "RUNNING",
       scheduledAt: future ? scheduledAt : null,

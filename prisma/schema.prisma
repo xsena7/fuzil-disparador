@@ -342,6 +342,8 @@ model Campaign {
   buttonUrl        String?
   // Mensagens por segundo por número (0 = automático)
   ratePerSecond    Int                 @default(0)
+  // Velocidade TOTAL da campanha (mensagens por segundo somando todos os números). Nulo = jeito antigo (por número)
+  totalRatePerSecond Int?
   // Não usar números com qualidade vermelha
   skipRedQuality   Boolean             @default(true)
   // Números retirados desta campanha por erro grave (ids de PhoneNumber)

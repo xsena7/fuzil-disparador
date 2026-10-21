@@ -274,7 +274,12 @@ export async function runCampaignTick(campaignId: string) {
   // Só conta a capacidade das BMs que têm algum número apto (senão pega, cobra e devolve em loop)
   const senderBms = new Set(plan.senders.map((x) => x.businessId));
   const totalCapacity = [...plan.capacity.entries()].filter(([id]) => senderBms.has(id)).reduce((a, [, v]) => a + v, 0);
-  const rate = campaign.ratePerSecond > 0 ? campaign.ratePerSecond : DEFAULT_RATE;
+  // Velocidade total dividida entre os números aptos (ex.: 30/s com 6 números = 5/s por número)
+  const rate = campaign.totalRatePerSecond
+    ? Math.max(1, Math.ceil(campaign.totalRatePerSecond / plan.senders.length))
+    : campaign.ratePerSecond > 0
+      ? campaign.ratePerSecond
+      : DEFAULT_RATE;
   const perSender = Math.max(1, Math.floor((rate * TICK_MS) / 1000));
   const wanted = Math.min(perSender * plan.senders.length, totalCapacity === Infinity ? Number.MAX_SAFE_INTEGER : totalCapacity);
 

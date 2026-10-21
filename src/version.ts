@@ -2,6 +2,14 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "1.46",
+    date: "21/10/2026",
+    items: [
+      "Campanhas: a velocidade agora é total (mensagens por segundo somando todos os números), com Devagar 10/s, Normal 30/s e Rápido 60/s",
+      "Campanhas: a tela mostra o número de números aptos, o total de mensagens e o tempo exato até concluir, com os dias de espera entre lotes quando o limite das BMs não cabe no disparo",
+    ],
+  },
+  {
     version: "1.45",
     date: "21/10/2026",
     items: [
