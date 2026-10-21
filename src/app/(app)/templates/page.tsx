@@ -126,7 +126,30 @@ export default async function TemplatesPage({ searchParams }: { searchParams: Pr
                     <div key={t.id} className="flex flex-wrap items-start gap-3 px-4 py-3">
                       <div className="min-w-56 flex-1">
                         <div className="flex flex-wrap items-center gap-2">
-                          <span className="font-medium">{t.name}</span>
+                          <span className="group/tip relative font-medium">
+                            <span className="cursor-help border-b border-dotted border-zinc-400">{t.name}</span>
+                            <span className="pointer-events-none invisible absolute left-0 top-full z-30 mt-2 w-80 rounded-xl border border-zinc-200 bg-white p-3 text-left text-sm font-normal text-zinc-700 opacity-0 shadow-lg transition group-hover/tip:visible group-hover/tip:opacity-100">
+                              <span className="mb-2 block text-xs font-semibold uppercase tracking-wide text-zinc-400">Mensagem exata · {t.language}</span>
+                              {(t.components as unknown as TComponent[]).map((c, i) => {
+                                if (c.type === "BUTTONS") {
+                                  return (
+                                    <span key={i} className="mt-2 flex flex-col gap-1">
+                                      {(c.buttons ?? []).map((b, j) => (
+                                        <span key={j} className="rounded-md bg-sky-50 py-1 text-center text-sky-700">{b.text}</span>
+                                      ))}
+                                    </span>
+                                  );
+                                }
+                                const text = c.type === "HEADER" && c.format === "TEXT" ? c.text : c.type === "HEADER" ? `[${c.format}]` : c.text;
+                                if (!text) return null;
+                                return (
+                                  <span key={i} className={c.type === "FOOTER" ? "mt-2 block text-xs text-zinc-400" : c.type === "HEADER" ? "mb-1 block font-semibold" : "block whitespace-pre-wrap"}>
+                                    {text}
+                                  </span>
+                                );
+                              })}
+                            </span>
+                          </span>
                           <span className="text-xs text-zinc-500">{t.language}</span>
                           <TemplateStatusBadge s={t.status} />
                           <CategoryBadge c={t.category} />
