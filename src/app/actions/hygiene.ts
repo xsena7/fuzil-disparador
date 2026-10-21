@@ -1,7 +1,7 @@
 "use server";
 
 import { requireAuth } from "@/lib/auth";
-import { hygienePhones, HYGIENE_MAX, type HygieneResult } from "@/lib/hygiene";
+import { hygienePhones, type HygieneResult } from "@/lib/hygiene";
 import { audienceFileToCsv } from "@/lib/audience-file";
 import { tooMany } from "@/lib/rate-limit";
 
@@ -29,7 +29,6 @@ export async function hygieneAction(_: HygieneState, form: FormData): Promise<Hy
     .map((line) => line.split(/[;,\t]/).find((c) => (c.match(/\d/g) ?? []).length >= 8) ?? "")
     .filter(Boolean);
   if (!raw.length) return { error: "Nenhum número encontrado. Cole um número por linha ou envie uma planilha." };
-  if (raw.length > HYGIENE_MAX) return { error: `Máximo de ${HYGIENE_MAX.toLocaleString("pt-BR")} números por vez. Divida a lista.` };
 
   const res = await hygienePhones(auth.workspace.id, raw);
   if ("error" in res) return { error: res.error };

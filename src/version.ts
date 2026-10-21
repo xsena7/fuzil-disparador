@@ -2,6 +2,14 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "1.49",
+    date: "21/10/2026",
+    items: [
+      "Higienização: arraste a planilha para a área pontilhada (ou clique para escolher), igual à audiência da campanha",
+      "Higienização: planilha com mais de 3.000 números checa os 3.000 primeiros e gera o arquivo com os que ficaram para checar",
+    ],
+  },
+  {
     version: "1.48",
     date: "21/10/2026",
     items: ["Correção: o motor de disparo também aplica as atualizações do banco ao subir, então o erro de coluna nova não aparece mais na virada de versão"],

@@ -5,7 +5,17 @@ import { normalizePhone } from "./phone";
 
 export const HYGIENE_MAX = 3000;
 
-export type HygieneResult = { valid: string[]; invalid: string[]; notChecked: string[]; malformed: number; total: number; sender: string };
+export type HygieneResult = {
+  valid: string[];
+  invalid: string[];
+  /** Não checados: passaram do limite por vez ou a Meta não respondeu. Dá para subir de novo. */
+  notChecked: string[];
+  /** Quantos ficaram de fora só por causa do limite por vez */
+  beyondLimit: number;
+  malformed: number;
+  total: number;
+  sender: string;
+};
 
 /** Escolhe um número conectado da conta para fazer a checagem (qualquer número ativo serve). */
 async function pickSender(workspaceId: string) {
@@ -31,7 +41,9 @@ export async function hygienePhones(workspaceId: string, raw: string[]): Promise
     if (p) unique.add(p);
     else if (r.trim()) malformed++;
   }
-  const list = [...unique].slice(0, HYGIENE_MAX);
+  const all = [...unique];
+  const list = all.slice(0, HYGIENE_MAX);
+  const beyond = all.slice(HYGIENE_MAX);
   const valid: string[] = [];
   const invalid: string[] = [];
   const notChecked: string[] = [];
@@ -51,5 +63,5 @@ export async function hygienePhones(workspaceId: string, raw: string[]): Promise
       notChecked.push(...chunk);
     }
   }
-  return { valid, invalid, notChecked, malformed, total: raw.filter((r) => r.trim()).length, sender: sender.display };
+  return { valid, invalid, notChecked: [...notChecked, ...beyond], beyondLimit: beyond.length, malformed, total: raw.filter((r) => r.trim()).length, sender: sender.display };
 }
