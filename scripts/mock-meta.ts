@@ -97,6 +97,9 @@ createServer(async (req, res) => {
   }
 
   const phone = Object.values(wabas).flatMap((w) => w.phones).find((p) => p.id === id);
+  if (phone && edge === "messages" && id === "5002" && process.env.MOCK_PAYDUE === "1") {
+    return json(res, 400, { error: { message: "Payment method issue", code: 131042, error_data: { details: "Problema de pagamento" } } });
+  }
   if (phone && edge === "messages") {
     if (String(body.to).endsWith("00")) {
       return json(res, 400, { error: { message: "Message undeliverable", code: 131026, error_data: { details: "Número não está no WhatsApp" } } });
