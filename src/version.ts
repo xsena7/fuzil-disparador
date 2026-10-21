@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "1.62",
+    date: "21/10/2026",
+    items: ["Campanhas, métricas: botão \"Reenviar falhas\" também aparece ao lado da tabela de resultados", "Campanhas, métricas: tabela \"O que aconteceu com cada número\" mostra cada destinatário, pelo número que enviou, com o resultado e o motivo da falha"],
+  },
+  {
     version: "1.61",
     date: "21/10/2026",
     items: ["Teste de envio: quando a Meta recusa, mostra também se o mesmo token enxerga o template nessa conta", "Teste de envio: botão para copiar a resposta da Meta"],

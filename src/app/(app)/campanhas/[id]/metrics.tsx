@@ -1,11 +1,33 @@
-import { Download } from "lucide-react";
+import { Download, RotateCcw } from "lucide-react";
+import { ConfirmButton } from "@/components/action-form";
+import { retryFailedAction } from "@/app/actions/campaigns";
 import { campaignMetrics, duration, pct } from "@/lib/campaign-metrics";
+import { prisma } from "@/lib/db";
+import { formatPhone } from "@/lib/phone";
 import { Card, Stat, Table, Td } from "@/components/ui";
 import { QualityBadge } from "@/components/status";
 import { TimelineChart } from "@/components/timeline-chart";
 
+const RESULT: Record<string, { label: string; cls: string }> = {
+  READ: { label: "Lida", cls: "text-emerald-700" },
+  DELIVERED: { label: "Entregue", cls: "text-emerald-700" },
+  SENT: { label: "Enviada (aguardando entrega)", cls: "text-sky-700" },
+  FAILED: { label: "Falhou", cls: "text-red-700" },
+  SKIPPED: { label: "Não enviada", cls: "text-zinc-500" },
+  PENDING: { label: "Na fila", cls: "text-zinc-500" },
+  SENDING: { label: "Enviando", cls: "text-zinc-500" },
+};
+
 export async function Metrics({ campaignId }: { campaignId: string }) {
   const m = await campaignMetrics(campaignId);
+  const campaignRow = await prisma.campaign.findUnique({ where: { id: campaignId }, select: { status: true } });
+  const canRetry = ["COMPLETED", "PAUSED"].includes(campaignRow?.status ?? "") && Number(m.totals.failed) > 0;
+  const recipients = await prisma.campaignRecipient.findMany({
+    where: { campaignId },
+    select: { phone: true, status: true, errorTitle: true, sentAt: true, sender: { select: { displayPhoneNumber: true } } },
+    orderBy: [{ status: "asc" }, { phone: "asc" }],
+    take: 300,
+  });
   const t = m.totals;
   const progress = t.total ? Math.round(((t.total - t.pending) / t.total) * 100) : 0;
   const n = (v: number) => v.toLocaleString("pt-BR");
@@ -37,6 +59,30 @@ export async function Metrics({ campaignId }: { campaignId: string }) {
         <Stat label="Tempo mediano até entregar" value={duration(m.timing.deliver)} />
         <Stat label="Tempo mediano até ler" value={duration(m.timing.read)} />
         <Stat label="Tempo mediano até clicar" value={duration(m.timing.click)} />
+      </div>
+
+      <div>
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+          <div className="font-semibold">O que aconteceu com cada número</div>
+          <span className="flex flex-wrap items-center gap-3 text-xs text-zinc-500">
+            {recipients.length < t.total ? `Mostrando ${recipients.length} de ${n(t.total)} · ` : ""}baixe o CSV para a lista completa
+            {canRetry && (
+              <ConfirmButton action={retryFailedAction.bind(null, campaignId)} confirm="Reenviar para quem falhou por erro temporário? (erros permanentes, como número sem WhatsApp, não são reenviados)">
+                <RotateCcw className="size-4" /> Reenviar falhas
+              </ConfirmButton>
+            )}
+          </span>
+        </div>
+        <Table head={["Número", "Enviado pelo número", "Resultado", "Motivo"]}>
+          {recipients.map((r, i) => (
+            <tr key={i}>
+              <Td className="whitespace-nowrap font-medium">{formatPhone(r.phone)}</Td>
+              <Td className="whitespace-nowrap">{r.sender?.displayPhoneNumber ?? "—"}</Td>
+              <Td className={`whitespace-nowrap font-medium ${RESULT[r.status]?.cls ?? ""}`}>{RESULT[r.status]?.label ?? r.status}</Td>
+              <Td className="text-xs text-zinc-600">{r.errorTitle ?? ""}</Td>
+            </tr>
+          ))}
+        </Table>
       </div>
 
       <Card className="p-5">
