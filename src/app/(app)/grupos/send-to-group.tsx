@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { Loader2, Send } from "lucide-react";
 import { addBusinessToGroupAction } from "@/app/actions/groups";
 
-/** Manda a BM para outro grupo (sem tirar do grupo atual). */
+/** Move a BM para outro grupo (ela sai do grupo em que estava: uma BM só fica em um grupo de disparo). */
 export function SendToGroup({ businessId, groups }: { businessId: string; groups: Array<{ id: string; name: string }> }) {
   const [target, setTarget] = useState("");
   const [msg, setMsg] = useState<{ ok?: boolean; text: string } | null>(null);

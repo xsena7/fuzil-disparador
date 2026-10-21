@@ -57,8 +57,8 @@ export default async function GroupsPage() {
             {aptDot(b.id)}
             <span className="min-w-0 flex-1 truncate">{b.name}</span>
             {others.length > 0 && (
-              <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-800 ring-1 ring-amber-600/20" title="Uma BM pode estar em mais de um grupo">
-                já está em: {others.join(", ")}
+              <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-800 ring-1 ring-amber-600/20" title="Uma BM só pode estar em um grupo de disparo">
+                está em {others.join(", ")} · sai de lá ao salvar
               </span>
             )}
             <span className="text-xs text-zinc-500">{tierLabel(b.messagingLimitTier)}</span>

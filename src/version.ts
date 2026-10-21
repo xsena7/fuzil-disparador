@@ -4,7 +4,7 @@ export const CHANGELOG: Array<{ version: string; date: string; items: string[] }
   {
     version: "1.42",
     date: "21/10/2026",
-    items: ["Grupos de BM: em cada BM da gaveta, \"Mandar para o grupo…\" coloca a BM também no grupo escolhido na hora (ela continua no grupo atual)"],
+    items: ["Grupos de BM: em cada BM da gaveta, \"Mandar para o grupo…\" move a BM para o grupo escolhido na hora. Uma BM fica em um grupo só"],
   },
   {
     version: "1.41",

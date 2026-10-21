@@ -21,12 +21,17 @@ export async function saveGroupAction(_: FormState, form: FormData): Promise<For
     await prisma.$transaction([
       prisma.bmGroup.update({ where: { id }, data: { name, description } }),
       prisma.bmGroupMember.deleteMany({ where: { groupId: id } }),
+      // Uma BM só pode estar em um grupo de disparo: sai dos outros ao entrar aqui
+      prisma.bmGroupMember.deleteMany({ where: { businessId: { in: owned.map((b) => b.id) }, group: { system: null, workspaceId: auth.workspace.id, id: { not: id } } } }),
       prisma.bmGroupMember.createMany({ data: owned.map((b) => ({ groupId: id, businessId: b.id })) }),
     ]);
   } else {
-    await prisma.bmGroup.create({
-      data: { workspaceId: auth.workspace.id, name, description, members: { create: owned.map((b) => ({ businessId: b.id })) } },
-    });
+    await prisma.$transaction([
+      prisma.bmGroupMember.deleteMany({ where: { businessId: { in: owned.map((b) => b.id) }, group: { system: null, workspaceId: auth.workspace.id } } }),
+      prisma.bmGroup.create({
+        data: { workspaceId: auth.workspace.id, name, description, members: { create: owned.map((b) => ({ businessId: b.id })) } },
+      }),
+    ]);
   }
   revalidatePath("/grupos");
   return { ok: "Grupo salvo" };
@@ -55,11 +60,15 @@ export async function addBusinessToGroupAction(businessId: string, groupId: stri
     prisma.bmGroup.findFirst({ where: { id: groupId, workspaceId: auth.workspace.id, system: null }, select: { id: true, name: true } }),
   ]);
   if (!bm || !group) return { error: "BM ou grupo não encontrado" };
-  await prisma.bmGroupMember.upsert({
-    where: { groupId_businessId: { groupId: group.id, businessId: bm.id } },
-    create: { groupId: group.id, businessId: bm.id },
-    update: {},
-  });
+  // Move: a BM sai dos outros grupos de disparo e fica só no escolhido
+  await prisma.$transaction([
+    prisma.bmGroupMember.deleteMany({ where: { businessId: bm.id, groupId: { not: group.id }, group: { system: null, workspaceId: auth.workspace.id } } }),
+    prisma.bmGroupMember.upsert({
+      where: { groupId_businessId: { groupId: group.id, businessId: bm.id } },
+      create: { groupId: group.id, businessId: bm.id },
+      update: {},
+    }),
+  ]);
   revalidatePath("/grupos");
   return { ok: true };
 }
