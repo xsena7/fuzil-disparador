@@ -4,7 +4,7 @@ export const CHANGELOG: Array<{ version: string; date: string; items: string[] }
   {
     version: "1.40",
     date: "21/10/2026",
-    items: ["Templates: passe o mouse no nome do template e aparece a mensagem exata (cabeçalho, corpo, rodapé e botões)"],
+    items: ["Templates: passe o mouse no nome do template e aparece um preview de como a pessoa vai receber no WhatsApp"],
   },
   {
     version: "1.39",
