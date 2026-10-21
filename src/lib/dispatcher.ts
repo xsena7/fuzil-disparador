@@ -6,7 +6,16 @@ import { wabaToken } from "./sync";
 import { tierToLimit } from "./limits";
 import { createAlert } from "./alerts";
 import { addCredits, tryDebit } from "./credits";
-import { buildSendComponents, type TComponent, type VariableMapping } from "./template-utils";
+import { buildSendComponents, getComponent, type TComponent, type VariableMapping } from "./template-utils";
+
+/** Texto do corpo e botões (sem exemplos): dois templates com a mesma assinatura são o mesmo conteúdo. */
+const signature = (components: unknown) => {
+  const c = (components ?? []) as TComponent[];
+  const body = getComponent(c, "BODY")?.text ?? "";
+  const buttons = (getComponent(c, "BUTTONS")?.buttons ?? []).map((b) => ({ type: b.type, text: b.text, url: b.url ?? "" }));
+  const header = getComponent(c, "HEADER");
+  return JSON.stringify({ body, buttons, header: header ? { format: header.format ?? null, text: header.text ?? null } : null });
+};
 import { metaErrorLabel, RETRYABLE_CODES, SENDER_FATAL_CODES, TEMPLATE_FATAL_CODES } from "./meta-errors";
 import { formatPhone } from "./phone";
 import { recordCampaignSends, renderCampaignText } from "./chat";
@@ -73,13 +82,18 @@ export async function planSenders(
           wabas: {
             include: {
               phones: true,
-              templates: { where: { name: { in: family }, language: campaign.templateLanguage } },
+              // Todos os templates do idioma: o do nome escolhido e os de mesmo conteúdo com outro nome
+              templates: { where: { language: campaign.templateLanguage } },
             },
           },
         },
       },
     },
   });
+
+  // Conteúdo de referência: o template com o nome escolhido, em qualquer conta do grupo
+  const refTpl = members.flatMap((m) => m.business.wabas.flatMap((w) => w.templates)).find((t) => family.includes(t.name));
+  const reference = refTpl ? signature(refTpl.components) : null;
 
   const used = await usedLast24h(members.map((m) => m.businessId));
 
@@ -88,7 +102,10 @@ export async function planSenders(
     plan.capacity.set(business.id, Math.max(0, limit - (used.get(business.id) ?? 0)));
 
     for (const waba of business.wabas) {
-      const tpl = waba.templates.find((t) => t.status === "APPROVED" && t.category === category) ?? waba.templates[0];
+      // Prefere o template do nome escolhido; se a conta não tem esse nome, usa o aprovado com o mesmo conteúdo
+      const byName = waba.templates.find((t) => family.includes(t.name) && t.status === "APPROVED" && t.category === category);
+      const sameContent = !byName && reference ? waba.templates.find((t) => t.status === "APPROVED" && t.category === category && signature(t.components) === reference) : undefined;
+      const tpl = byName ?? sameContent ?? waba.templates.find((t) => family.includes(t.name)) ?? waba.templates[0];
       for (const phone of waba.phones) {
         const display = formatPhone(phone.displayPhoneNumber.replace(/\D/g, ""));
         const skip = (reason: string) => plan.skipped.push({ display, reason });
