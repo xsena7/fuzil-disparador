@@ -54,10 +54,21 @@ export async function duplicateCampaignAction(id: string) {
 export async function saveTemplateStepAction(id: string, _: FormState, form: FormData): Promise<FormState> {
   const { c } = await ownCampaign(id);
   if (!EDITABLE.includes(c.status)) return { error: "Campanha já iniciada" };
-  const groupId = String(form.get("groupId") ?? "");
+  let groupId = String(form.get("groupId") ?? "");
   const [name, language] = String(form.get("template") ?? "").split("|");
   if (!groupId) return { error: "Escolha um grupo de BM" };
-  if (!(await prisma.bmGroup.findFirst({ where: { id: groupId, workspaceId: c.workspaceId, system: null }, select: { id: true } }))) return { error: "Grupo não encontrado" };
+  if (groupId.startsWith("bm:")) {
+    // Só uma BM: usa um grupo oculto com essa BM (o disparo é igual ao de um grupo)
+    const bm = await prisma.businessManager.findFirst({ where: { id: groupId.slice(3), workspaceId: c.workspaceId }, select: { id: true, name: true } });
+    if (!bm) return { error: "BM não encontrada" };
+    const system = `BM:${bm.id}`;
+    const hidden = await prisma.bmGroup.findFirst({ where: { workspaceId: c.workspaceId, system } });
+    if (hidden) groupId = hidden.id;
+    else {
+      const created = await prisma.bmGroup.create({ data: { workspaceId: c.workspaceId, name: `Só a BM: ${bm.name}`, system, members: { create: { businessId: bm.id } } } });
+      groupId = created.id;
+    }
+  } else if (!(await prisma.bmGroup.findFirst({ where: { id: groupId, workspaceId: c.workspaceId, system: null }, select: { id: true } }))) return { error: "Grupo não encontrado" };
   if (!name || !language) return { error: "Escolha um template" };
   const changed = name !== c.templateName || language !== c.templateLanguage;
   await prisma.campaign.update({
