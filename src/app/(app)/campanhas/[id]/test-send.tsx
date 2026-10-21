@@ -1,13 +1,20 @@
 "use client";
 
-import { useActionState } from "react";
-import { Loader2 } from "lucide-react";
+import { useActionState, useState } from "react";
+import { Check, Copy, Loader2 } from "lucide-react";
 import { testCampaignSendAction } from "@/app/actions/campaigns";
 import { Button, Input } from "@/components/ui";
 
 /** Teste de envio: UMA mensagem para um número seu, com a resposta completa da Meta. */
 export function TestSend({ campaignId }: { campaignId: string }) {
   const [state, action, pending] = useActionState(testCampaignSendAction.bind(null, campaignId), undefined);
+  const [copied, setCopied] = useState(false);
+  const copy = async () => {
+    if (!state?.raw) return;
+    await navigator.clipboard.writeText(state.raw);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
   return (
     <form action={action} className="mt-8 max-w-xl rounded-xl border border-dashed border-zinc-300 p-4">
       <div className="mb-2 font-medium">Teste de envio (1 mensagem)</div>
@@ -20,7 +27,14 @@ export function TestSend({ campaignId }: { campaignId: string }) {
       </div>
       {state?.ok && <p className="mt-3 text-sm text-emerald-700">{state.ok}</p>}
       {state?.error && <p className="mt-3 text-sm text-red-600">{state.error}</p>}
-      {state?.raw && <pre className="mt-2 overflow-x-auto rounded-lg bg-zinc-900 p-3 text-xs text-zinc-100">{state.raw}</pre>}
+      {state?.raw && (
+        <div className="relative mt-2">
+          <button type="button" onClick={copy} className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-md bg-zinc-700 px-2 py-1 text-xs text-white hover:bg-zinc-600">
+            {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />} {copied ? "Copiado" : "Copiar"}
+          </button>
+          <pre className="overflow-x-auto rounded-lg bg-zinc-900 p-3 pt-9 text-xs text-zinc-100">{state.raw}</pre>
+        </div>
+      )}
     </form>
   );
 }

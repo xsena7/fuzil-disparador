@@ -4,7 +4,7 @@ export const CHANGELOG: Array<{ version: string; date: string; items: string[] }
   {
     version: "1.61",
     date: "21/10/2026",
-    items: ["Teste de envio: quando a Meta recusa, mostra também se o mesmo token enxerga o template nessa conta"],
+    items: ["Teste de envio: quando a Meta recusa, mostra também se o mesmo token enxerga o template nessa conta", "Teste de envio: botão para copiar a resposta da Meta"],
   },
   {
     version: "1.60",
