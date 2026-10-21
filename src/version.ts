@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "1.29",
+    date: "21/10/2026",
+    items: ["Aquecimento: botão \"Verificar agora\" no domínio. Mostra se o domínio e o www já apontam para o servidor e se o cadeado (HTTPS) já está funcionando"],
+  },
+  {
     version: "1.28",
     date: "21/10/2026",
     items: [

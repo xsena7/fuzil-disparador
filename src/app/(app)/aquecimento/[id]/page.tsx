@@ -1,9 +1,7 @@
-import { resolve4 } from "node:dns/promises";
 import { notFound } from "next/navigation";
 import { Download, ExternalLink, Pause, Play, Trash2 } from "lucide-react";
 import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { env } from "@/lib/env";
 import { planSenders } from "@/lib/dispatcher";
 import { tierLabel } from "@/lib/limits";
 import { formatPhone } from "@/lib/phone";
@@ -15,19 +13,13 @@ import { ActionForm, ConfirmButton } from "@/components/action-form";
 import { deleteFunnelAction, savePageAction, saveSettingsAction, toggleFunnelAction } from "@/app/actions/funnels";
 import { FlowEditor, type BlueprintOption } from "./flow-editor";
 import { FieldsEditor } from "./fields-editor";
+import { DomainChecker } from "./domain-check";
+import { checkDomain } from "@/lib/domain-check";
 import { JobsEditor } from "./jobs-editor";
 
 export const dynamic = "force-dynamic";
 
 const STATUS = { CODE_SENT: { label: "Falta o código", color: "yellow" }, VERIFIED: { label: "Confirmado", color: "blue" }, COMPLETED: { label: "Cadastro completo", color: "green" } } as const;
-
-async function ips(host: string): Promise<string[]> {
-  try {
-    return await Promise.race([resolve4(host), new Promise<string[]>((r) => setTimeout(() => r([]), 2500))]);
-  } catch {
-    return [];
-  }
-}
 
 export default async function FunnelPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ s?: string }> }) {
   const auth = await requireAuth();
@@ -82,9 +74,9 @@ export default async function FunnelPage({ params, searchParams }: { params: Pro
   const byId = new Map(options.map((o) => [o.id, o]));
   const page = funnelPage(funnel);
   const url = funnelUrl(funnel);
-  const appHost = env.appUrl().replace(/^https?:\/\//, "").replace(/[:/].*$/, "");
-  const [serverIps, domainIps] = await Promise.all([ips(appHost), funnel.domain ? ips(funnel.domain) : Promise.resolve([])]);
-  const domainOk = Boolean(funnel.domain && domainIps.length && serverIps.length && domainIps.some((x) => serverIps.includes(x)));
+  const dns = funnel.domain ? await checkDomain(funnel.domain) : null;
+  const serverIps = dns?.serverIps ?? [];
+  const domainOk = Boolean(dns?.rootOk);
   const n = (v: bigint | number) => Number(v).toLocaleString("pt-BR");
 
   return (
@@ -297,16 +289,7 @@ export default async function FunnelPage({ params, searchParams }: { params: Pro
             </li>
             <li>Cole o domínio acima e salve. Quando o DNS propagar (de minutos a algumas horas), a bolinha fica verde e a página abre no domínio com cadeado (HTTPS).</li>
           </ol>
-          {funnel.domain && (
-            <p className="mt-3">
-              Situação agora:{" "}
-              {domainOk ? (
-                <b className="text-emerald-700">apontado ✅</b>
-              ) : (
-                <b className="text-amber-700">{domainIps.length ? `aponta para ${domainIps.join(", ")} (precisa ser ${serverIps[0] ?? "o IP do servidor"})` : "ainda não aponta para o servidor"}</b>
-              )}
-            </p>
-          )}
+          {funnel.domain && dns && <DomainChecker funnelId={funnel.id} domain={funnel.domain} initial={dns} />}
         </div>
         <div className="mt-6 flex justify-end">
           <ConfirmButton action={deleteFunnelAction.bind(null, funnel.id)} variant="danger" confirm="Excluir o funil e todos os leads dele? Não dá para desfazer.">

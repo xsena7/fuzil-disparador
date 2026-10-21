@@ -198,3 +198,13 @@ export async function saveJobsAction(id: string, jobs: Job[]): Promise<{ ok?: tr
   revalidatePath(`/aquecimento/${funnel.id}`);
   return { ok: true };
 }
+
+export async function checkDomainAction(id: string): Promise<{ error?: string; result?: import("@/lib/domain-check").DomainCheck }> {
+  const { funnel } = await ownFunnel(id);
+  if (!funnel) return { error: "Funil não encontrado" };
+  if (!funnel.domain) return { error: "Salve o domínio primeiro" };
+  const { checkDomain } = await import("@/lib/domain-check");
+  const result = await checkDomain(funnel.domain, true);
+  revalidatePath(`/aquecimento/${funnel.id}`);
+  return { result };
+}
