@@ -25,7 +25,6 @@ export default async function TemplatesPage({ searchParams }: { searchParams: Pr
     prisma.template.findMany({
       where: {
         workspaceId: auth.workspace.id,
-        ...(q ? { name: { contains: q, mode: "insensitive" } } : {}),
         ...inGroup,
       },
       include: { waba: { include: { business: true } } },
@@ -38,7 +37,14 @@ export default async function TemplatesPage({ searchParams }: { searchParams: Pr
 
   // Uma gaveta por conta (WABA): primeiro as contas, ao abrir aparecem os templates dela
   const wabas = await prisma.whatsAppAccount.findMany({
-    where: { workspaceId: auth.workspace.id, ...(group ? { business: { groups: { some: { groupId: group } } } } : {}) },
+    where: {
+      workspaceId: auth.workspace.id,
+      ...(group ? { business: { groups: { some: { groupId: group } } } } : {}),
+      // Busca pelo nome da BM (ou da conta / número da WABA)
+      ...(q
+        ? { OR: [{ business: { name: { contains: q, mode: "insensitive" as const } } }, { name: { contains: q, mode: "insensitive" as const } }, { wabaId: { contains: q } }] }
+        : {}),
+    },
     include: { business: true },
     // A última conectada fica em cima, a primeira lá embaixo
     orderBy: { createdAt: "desc" },
@@ -53,7 +59,7 @@ export default async function TemplatesPage({ searchParams }: { searchParams: Pr
   const byWaba = new Map<string, typeof templates>();
   for (const t of templates) byWaba.set(t.wabaId, [...(byWaba.get(t.wabaId) ?? []), t]);
   const filtering = Boolean(q || group);
-  const shown = q ? wabas.filter((w) => byWaba.has(w.id)) : wabas;
+  const shown = wabas;
   const marketingCount = templates.filter((t) => t.category === "MARKETING").length;
 
   return (
@@ -86,7 +92,7 @@ export default async function TemplatesPage({ searchParams }: { searchParams: Pr
         </form>
       </Card>
 
-      {shown.length === 0 && <Empty>{filtering ? "Nenhum template encontrado com esse filtro." : "Nenhuma conta conectada. Conecte uma BM ou crie um template."}</Empty>}
+      {shown.length === 0 && <Empty>{filtering ? "Nenhuma BM encontrada com esse filtro." : "Nenhuma conta conectada. Conecte uma BM ou crie um template."}</Empty>}
 
       <div className="space-y-3">
         {shown.map((w) => {
@@ -96,7 +102,7 @@ export default async function TemplatesPage({ searchParams }: { searchParams: Pr
           const mkt = list.filter((t) => t.category === "MARKETING").length;
           const lastSent = list.reduce<Date | null>((a, t) => (t.submittedAt && (!a || t.submittedAt > a) ? t.submittedAt : a), null);
           return (
-            <details key={w.id} open={filtering} className="group overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm">
+            <details key={w.id} open={Boolean(q) && shown.length <= 3} className="group overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm">
               <summary className="flex cursor-pointer list-none flex-wrap items-center gap-3 px-4 py-3 hover:bg-zinc-50 [&::-webkit-details-marker]:hidden">
                 <ChevronRight className="size-4 shrink-0 text-zinc-400 transition-transform group-open:rotate-90" />
                 <span className="min-w-0 flex-1">

@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "1.67",
+    date: "21/10/2026",
+    items: ["Templates: a busca agora procura pelo nome da BM"],
+  },
+  {
     version: "1.66",
     date: "21/10/2026",
     items: ["Campanhas, métricas: atualizam ao vivo, sem F5 (a cada 3s enquanto envia e a cada 8s depois, para entregas, leituras, cliques e respostas)"],
