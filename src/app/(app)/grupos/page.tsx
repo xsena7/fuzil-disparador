@@ -10,6 +10,8 @@ import { Badge, Empty, Field, Input, PageHeader, Stat } from "@/components/ui";
 import { ActionForm, ConfirmButton } from "@/components/action-form";
 import { deleteGroupAction, restoreBusinessAction, saveGroupAction } from "@/app/actions/groups";
 import { PROBLEMS_GROUP } from "@/lib/bm-problems";
+import { bmAptidao } from "@/lib/readiness";
+import { StatusDot } from "@/components/drawer";
 
 export const dynamic = "force-dynamic";
 
@@ -17,23 +19,51 @@ export default async function GroupsPage() {
   const auth = await requireAuth();
   const [groups, businesses] = await Promise.all([
     prisma.bmGroup.findMany({ where: { workspaceId: auth.workspace.id }, include: { members: { include: { business: true } } }, orderBy: { createdAt: "asc" } }),
-    prisma.businessManager.findMany({ where: { workspaceId: auth.workspace.id }, orderBy: { name: "asc" } }),
+    prisma.businessManager.findMany({
+      where: { workspaceId: auth.workspace.id },
+      orderBy: { name: "asc" },
+      include: {
+        groups: { include: { group: { select: { id: true, name: true, system: true } } } },
+        wabas: {
+          include: {
+            phones: { select: { enabled: true, invalidReason: true, status: true } },
+            templates: { select: { category: true, status: true } },
+          },
+        },
+      },
+    }),
   ]);
+  // Aptidão de cada BM (mesmos critérios das conexões): cartão, número ativo e template de utilidade aprovado
+  const apt = new Map(businesses.map((b) => [b.id, bmAptidao(b.wabas)]));
+  const aptDot = (id: string) => {
+    const a = apt.get(id);
+    return a?.apta ? <StatusDot tone="green" title="Apta para disparar" /> : <StatusDot tone="red" title={`Falta: ${a?.falta.join(", ") || "conta"}`} />;
+  };
   // O grupo automático "BMs com problema" aparece separado, no topo
   const problems = groups.find((g) => g.system === PROBLEMS_GROUP);
   const regular = groups.filter((g) => !g.system);
   const stats = await Promise.all(regular.map((g) => statsForBusinesses(g.members.map((m) => m.businessId))));
   const windows = await bmWindows(businesses.map((b) => b.id));
 
-  const bmCheckboxes = (selected: string[]) => (
+  // currentGroupId: no grupo que está sendo editado, não conta como "já está em outro grupo"
+  const bmCheckboxes = (selected: string[], currentGroupId?: string) => (
     <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-      {businesses.map((b) => (
-        <label key={b.id} className="flex items-center gap-2 rounded-lg border border-zinc-200 px-3 py-2">
-          <input type="checkbox" name="businessIds" value={b.id} defaultChecked={selected.includes(b.id)} />
-          <span className="flex-1 truncate">{b.name}</span>
-          <span className="text-xs text-zinc-500">{tierLabel(b.messagingLimitTier)}</span>
-        </label>
-      ))}
+      {businesses.map((b) => {
+        const others = b.groups.filter((m) => !m.group.system && m.group.id !== currentGroupId).map((m) => m.group.name);
+        return (
+          <label key={b.id} className="flex flex-wrap items-center gap-2 rounded-lg border border-zinc-200 px-3 py-2">
+            <input type="checkbox" name="businessIds" value={b.id} defaultChecked={selected.includes(b.id)} />
+            {aptDot(b.id)}
+            <span className="min-w-0 flex-1 truncate">{b.name}</span>
+            {others.length > 0 && (
+              <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-800 ring-1 ring-amber-600/20" title="Uma BM pode estar em mais de um grupo">
+                já está em: {others.join(", ")}
+              </span>
+            )}
+            <span className="text-xs text-zinc-500">{tierLabel(b.messagingLimitTier)}</span>
+          </label>
+        );
+      })}
       {businesses.length === 0 && <span className="text-zinc-500">Conecte BMs primeiro.</span>}
     </div>
   );
@@ -86,6 +116,10 @@ export default async function GroupsPage() {
               meta={
                 <>
                   <MetaItem value={g.members.length} label="BMs" />
+                  <span className="flex items-center gap-1.5" title="Quantas BMs estão aptas para disparar">
+                    <StatusDot tone={g.members.every((m) => apt.get(m.businessId)?.apta) ? "green" : "red"} />
+                    <b className="font-semibold text-zinc-800">{g.members.filter((m) => apt.get(m.businessId)?.apta).length}</b> aptas
+                  </span>
                   <MetaItem value={`${s.activePhones}/${s.phones}`} label="números ativos" />
                   <span className="text-right leading-tight">
                     <b className="text-lg font-semibold tabular-nums text-zinc-900">{formatLimit(s.available)}</b>
@@ -105,7 +139,10 @@ export default async function GroupsPage() {
                   const w = windows.get(m.businessId);
                   return w ? (
                     <div key={m.businessId}>
-                      <div className="mb-1.5 truncate text-sm font-medium">{m.business.name}</div>
+                      <div className="mb-1.5 flex items-center gap-2 truncate text-sm font-medium">
+                        {aptDot(m.businessId)}
+                        <span className="truncate">{m.business.name}</span>
+                      </div>
                       <LimitWindow w={w} compact />
                     </div>
                   ) : null;
@@ -119,7 +156,7 @@ export default async function GroupsPage() {
                     <Field label="Nome"><Input name="name" defaultValue={g.name} required /></Field>
                     <Field label="Descrição"><Input name="description" defaultValue={g.description ?? ""} /></Field>
                   </div>
-                  {bmCheckboxes(g.members.map((m) => m.businessId))}
+                  {bmCheckboxes(g.members.map((m) => m.businessId), g.id)}
                 </ActionForm>
                 <div className="mt-4 border-t border-zinc-100 pt-4">
                   <ConfirmButton action={deleteGroupAction.bind(null, g.id)} variant="ghost" className="px-0 text-red-600" confirm="Excluir este grupo?"><Trash2 className="size-4" /> Excluir grupo</ConfirmButton>

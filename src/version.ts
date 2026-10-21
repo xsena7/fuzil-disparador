@@ -2,6 +2,14 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "1.39",
+    date: "21/10/2026",
+    items: [
+      "Grupos de BM: quando a BM já está em outro grupo, aparece a tag \"já está em: …\" ao escolher",
+      "Grupos de BM: bolinha de cor por BM (verde = apta para disparar: cartão, número ativo e template de utilidade aprovado; vermelha = mostra o que falta)",
+    ],
+  },
+  {
     version: "1.38",
     date: "21/10/2026",
     items: [

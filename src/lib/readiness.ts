@@ -39,3 +39,27 @@ export function wabaReadiness(waba: {
   if (waba.status === "BLOCKED" && !out.some((i) => i.text.startsWith("Meta:"))) out.push({ block: true, text: "A Meta informou que essa conta não pode enviar mensagens agora." });
   return out;
 }
+
+/**
+ * BM apta para disparar: pelo menos uma WABA dela tem, ao mesmo tempo, cartão, número ativo
+ * e um template de utilidade aprovado (o disparo usa o template da mesma WABA do número).
+ */
+export function bmAptidao(
+  wabas: Array<{
+    hasPaymentMethod: boolean | null;
+    phones: Array<{ enabled: boolean; invalidReason: string | null; status: string | null }>;
+    templates: Array<{ category: string; status: string }>;
+  }>,
+): { apta: boolean; falta: string[] } {
+  if (!wabas.length) return { apta: false, falta: ["conectar uma conta"] };
+  let best: string[] | null = null;
+  for (const w of wabas) {
+    const falta: string[] = [];
+    if (w.hasPaymentMethod === false) falta.push("cartão");
+    if (!w.phones.some((p) => !p.invalidReason && p.enabled && p.status === "CONNECTED")) falta.push("número registrado e ativo");
+    if (!w.templates.some((t) => t.category === "UTILITY" && t.status === "APPROVED")) falta.push("template de utilidade aprovado");
+    if (!falta.length) return { apta: true, falta: [] };
+    if (!best || falta.length < best.length) best = falta;
+  }
+  return { apta: false, falta: best ?? [] };
+}
