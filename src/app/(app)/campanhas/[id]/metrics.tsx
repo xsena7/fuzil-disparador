@@ -6,7 +6,6 @@ import { prisma } from "@/lib/db";
 import { formatPhone } from "@/lib/phone";
 import { Card, Stat, Table, Td } from "@/components/ui";
 import { QualityBadge } from "@/components/status";
-import { TimelineChart } from "@/components/timeline-chart";
 
 const RESULT: Record<string, { label: string; cls: string }> = {
   READ: { label: "Lida", cls: "text-emerald-700" },
@@ -85,10 +84,6 @@ export async function Metrics({ campaignId }: { campaignId: string }) {
         </Table>
       </div>
 
-      <Card className="p-5">
-        <div className="mb-3 font-semibold">Evolução por hora</div>
-        <TimelineChart data={m.timeline.map((p) => ({ ...p, bucket: p.bucket.toISOString() }))} />
-      </Card>
 
       <div>
         <div className="mb-2 flex items-center justify-between">

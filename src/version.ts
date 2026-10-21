@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "1.64",
+    date: "21/10/2026",
+    items: ["Campanhas, métricas: saiu o gráfico \"Evolução por hora\""],
+  },
+  {
     version: "1.63",
     date: "21/10/2026",
     items: [
