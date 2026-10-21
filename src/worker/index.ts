@@ -5,6 +5,7 @@ import { deployBlueprints } from "../lib/blueprints";
 import { startSettingsRefresh } from "../lib/platform-settings";
 import { checkLimitAlerts } from "../lib/limit-alerts";
 import { reportError } from "../lib/report";
+import { runFunnels } from "../lib/funnels";
 
 const SYNC_EVERY_MS = 10 * 60_000;
 const BLUEPRINT_EVERY_MS = 5 * 60_000;
@@ -73,6 +74,7 @@ async function main() {
   void every(BLUEPRINT_EVERY_MS, "blueprints", () => deployBlueprints());
   void every(60_000, "housekeeping", housekeeping);
   void every(60_000, "limites", checkLimitAlerts);
+  void every(10_000, "funis", runFunnels);
   await dispatchLoop();
   // Desligamento: espera os envios em andamento terminarem
   while (running.size) await new Promise((r) => setTimeout(r, 200));

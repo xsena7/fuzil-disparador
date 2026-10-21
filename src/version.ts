@@ -2,6 +2,19 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "1.28",
+    date: "21/10/2026",
+    items: [
+      "Aquecimento (novo): página de vagas num domínio seu, sem a marca do Fuzil, com as vagas em lista e inscrição em 1 minuto",
+      "A pessoa recebe um código no WhatsApp disparado pelo rodízio de um grupo de BM e confirma no site",
+      "Funil com blocos (gatilho, mensagem, timer e condicional) no estilo n8n: inscrição confirmada, link do cadastro, lembrete e cadastro recebido",
+      "Vagas cadastradas dentro do Fuzil, e as mensagens já citam a vaga que a pessoa escolheu",
+      "Leads com todas as respostas, filtro por situação e planilha para usar em campanhas",
+      "Tabela de aquecimento por BM: enviadas, entregues, lidas e respostas dos últimos 7 dias",
+      "Mensagens do funil só saem no horário que você escolher; o código sai na hora",
+    ],
+  },
+  {
     version: "1.27",
     date: "20/10/2026",
     items: [

@@ -77,6 +77,7 @@ model Workspace {
   campaignFolders   CampaignFolder[]
   conversations     Conversation[]
   quickReplies      QuickReply[]
+  funnels           Funnel[]
 }
 
 model Membership {
@@ -353,15 +354,23 @@ model Campaign {
   autoReplyMediaUrl  String?
   autoReplyMediaType String? // IMAGE, VIDEO, AUDIO, DOCUMENT
   autoReplyMediaName String?
+  // Campanha interna de um funil de aquecimento (não aparece na lista e nunca é concluída)
+  funnelId         String?
+  // Qual passo do funil essa campanha envia ("code", "done" ou o id do passo)
+  funnelStep       String?
+  // Categoria exigida do template: UTILITY (padrão) ou AUTHENTICATION (código de confirmação)
+  templateCategory String              @default("UTILITY")
   createdAt        DateTime            @default(now())
   updatedAt        DateTime            @updatedAt
   workspace        Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   group            BmGroup?            @relation(fields: [groupId], references: [id], onDelete: SetNull)
   folder           CampaignFolder?     @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  funnel           Funnel?             @relation(fields: [funnelId], references: [id], onDelete: Cascade)
   recipients       CampaignRecipient[]
   clicks           LinkClick[]
 
   @@index([workspaceId, status])
+  @@unique([funnelId, funnelStep])
 }
 
 enum RecipientStatus {
@@ -468,6 +477,8 @@ model TemplateBlueprint {
   groupId          String?
   name             String
   language         String
+  // UTILITY (padrão) ou AUTHENTICATION (código de confirmação do aquecimento)
+  category         String               @default("UTILITY")
   components       Json
   // Arquivo de exemplo da mídia do cabeçalho (obrigatório pela Meta em headers de mídia)
   headerSamplePath String?
@@ -637,4 +648,82 @@ model QuickReply {
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@unique([workspaceId, shortcut])
+}
+
+// ---------------------------------------------------------------------------
+// Aquecimento: landing page + código no WhatsApp + funil com timers
+// ---------------------------------------------------------------------------
+
+enum FunnelStatus {
+  ACTIVE
+  PAUSED
+}
+
+model Funnel {
+  id          String       @id @default(cuid())
+  workspaceId String
+  name        String
+  // Endereço público: /v/<slug> (ou o domínio próprio)
+  slug        String       @unique
+  domain      String?      @unique
+  status      FunnelStatus @default(ACTIVE)
+  // Grupo de BM que dispara as mensagens do funil
+  groupId     String?
+  // Textos da landing page: { company, jobTitle, headline, subtitle, about, benefits[], requirements[], cta, color }
+  page        Json
+  pixelId     String?
+  // Perguntas do cadastro final: [{ key, label, type: text|textarea|select, options[], required }]
+  formFields  Json
+  // Passos depois que a pessoa confirma o número: [{ id, type: wait|send, amount, unit, blueprintId, mapping, onlyIfPending }]
+  steps       Json
+  // Templates padrão do código e da mensagem de cadastro recebido
+  codeBlueprintId String?
+  doneBlueprintId String?
+  // Janela de envio dos passos (hora de Brasília)
+  sendFrom    Int          @default(8)
+  sendTo      Int          @default(21)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  workspace   Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  leads       Lead[]
+  campaigns   Campaign[]
+}
+
+enum LeadStatus {
+  CODE_SENT // preencheu o formulário, falta confirmar o código
+  VERIFIED // confirmou o WhatsApp, está no funil
+  COMPLETED // respondeu o cadastro final
+}
+
+model Lead {
+  id            String     @id @default(cuid())
+  funnelId      String
+  workspaceId   String
+  name          String
+  phone         String
+  email         String?
+  // Vaga que a pessoa escolheu na página
+  job           String?
+  status        LeadStatus @default(CODE_SENT)
+  codeHash      String?
+  codeExpiresAt DateTime?
+  codeAttempts  Int        @default(0)
+  codeSends     Int        @default(0)
+  lastCodeAt    DateTime?
+  verifiedAt    DateTime?
+  // Link do cadastro final
+  formToken     String     @unique
+  answers       Json?
+  answeredAt    DateTime?
+  // Próximo passo do funil e quando ele roda
+  stepIndex     Int        @default(0)
+  nextStepAt    DateTime?
+  utm           Json?
+  ip            String?
+  createdAt     DateTime   @default(now())
+  funnel        Funnel     @relation(fields: [funnelId], references: [id], onDelete: Cascade)
+
+  @@unique([funnelId, phone])
+  @@index([nextStepAt])
+  @@index([funnelId, createdAt])
 }

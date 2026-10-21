@@ -19,7 +19,7 @@ export default async function HomePage() {
   const since = new Date(Date.now() - 86400_000);
   const [businesses, active, recentAlerts, marketing, today] = await Promise.all([
     prisma.businessManager.findMany({ where: { workspaceId: wsId }, select: { id: true, name: true }, orderBy: { name: "asc" } }),
-    prisma.campaign.findMany({ where: { workspaceId: wsId, status: { in: ["RUNNING", "SCHEDULED", "PAUSED"] } }, orderBy: { updatedAt: "desc" }, take: 6 }),
+    prisma.campaign.findMany({ where: { workspaceId: wsId, funnelId: null, status: { in: ["RUNNING", "SCHEDULED", "PAUSED"] } }, orderBy: { updatedAt: "desc" }, take: 6 }),
     prisma.alert.findMany({ where: { workspaceId: wsId }, orderBy: { createdAt: "desc" }, take: 4 }),
     prisma.template.count({ where: { workspaceId: wsId, category: "MARKETING" } }),
     prisma.$queryRaw<Array<{ sent: bigint; delivered: bigint; read: bigint; clicked: bigint; failed: bigint }>>`

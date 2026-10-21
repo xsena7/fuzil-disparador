@@ -56,8 +56,9 @@ async function usedLast24h(businessIds: string[]): Promise<Map<string, number>> 
  * Regra de ouro: só entra número cuja WABA tem a cópia do template APROVADA e na categoria UTILITY.
  */
 export async function planSenders(
-  campaign: Pick<Campaign, "workspaceId" | "groupId" | "templateName" | "templateLanguage" | "skipRedQuality" | "excludedSenders">,
+  campaign: Pick<Campaign, "workspaceId" | "groupId" | "templateName" | "templateLanguage" | "skipRedQuality" | "excludedSenders"> & { templateCategory?: string },
 ): Promise<SenderPlan> {
+  const category = campaign.templateCategory ?? "UTILITY";
   const plan: SenderPlan = { senders: [], capacity: new Map(), skipped: [] };
   if (!campaign.groupId || !campaign.templateName || !campaign.templateLanguage) return plan;
 
@@ -87,7 +88,7 @@ export async function planSenders(
     plan.capacity.set(business.id, Math.max(0, limit - (used.get(business.id) ?? 0)));
 
     for (const waba of business.wabas) {
-      const tpl = waba.templates.find((t) => t.status === "APPROVED" && t.category === "UTILITY") ?? waba.templates[0];
+      const tpl = waba.templates.find((t) => t.status === "APPROVED" && t.category === category) ?? waba.templates[0];
       for (const phone of waba.phones) {
         const display = formatPhone(phone.displayPhoneNumber.replace(/\D/g, ""));
         const skip = (reason: string) => plan.skipped.push({ display, reason });
@@ -98,7 +99,7 @@ export async function planSenders(
         if (campaign.skipRedQuality && phone.qualityRating === "RED") { skip("Qualidade vermelha"); continue; }
         if (!tpl) { skip("Template não existe nesta WABA"); continue; }
         if (tpl.status !== "APPROVED") { skip(`Template ${tpl.status}`); continue; }
-        if (tpl.category !== "UTILITY") { skip(`Template recategorizado para ${tpl.category}`); continue; }
+        if (tpl.category !== category) { skip(`Template recategorizado para ${tpl.category}`); continue; }
         let token: string;
         try {
           token = wabaToken(waba);
@@ -147,11 +148,14 @@ async function releaseRecipients(ids: string[]) {
 
 export async function pauseCampaign(campaign: Pick<Campaign, "id" | "workspaceId" | "name">, reason: string, severity: "WARNING" | "CRITICAL" = "CRITICAL") {
   await prisma.campaign.update({ where: { id: campaign.id }, data: { status: "PAUSED", pausedReason: reason } });
+  // O funil retoma sozinho e pode pausar de novo pelo mesmo motivo: avisa uma vez a cada 6h
+  const title = `Campanha "${campaign.name}" pausada`;
+  if (await prisma.alert.findFirst({ where: { workspaceId: campaign.workspaceId, title, message: reason, createdAt: { gte: new Date(Date.now() - 6 * 3600_000) } }, select: { id: true } })) return;
   await createAlert({
     workspaceId: campaign.workspaceId,
     type: "CAMPAIGN_PAUSED",
     severity,
-    title: `Campanha "${campaign.name}" pausada`,
+    title,
     message: reason,
     data: { campaignId: campaign.id },
   });
@@ -194,7 +198,14 @@ type SendOutcome =
 
 async function sendOne(sender: Sender, campaign: Campaign, r: CampaignRecipient): Promise<SendOutcome> {
   try {
-    const components = buildSendComponents(sender.template.components, (campaign.variableMapping ?? {}) as VariableMapping, {
+    // Template de código (AUTHENTICATION): o código vai no corpo e no botão "Copiar código"
+    const code = campaign.templateCategory === "AUTHENTICATION" ? String((r.data as Record<string, unknown>)?.codigo ?? "") : null;
+    const components = code
+      ? [
+          { type: "body", parameters: [{ type: "text", text: code }] },
+          { type: "button", sub_type: "url", index: "0", parameters: [{ type: "text", text: code }] },
+        ]
+      : buildSendComponents(sender.template.components, (campaign.variableMapping ?? {}) as VariableMapping, {
       phone: r.phone,
       name: r.name,
       data: r.data as Record<string, unknown>,
@@ -224,12 +235,12 @@ async function sendOne(sender: Sender, campaign: Campaign, r: CampaignRecipient)
   }
 }
 
-async function templateStillUtility(sender: Sender): Promise<boolean> {
+async function templateStillUtility(sender: Sender, category = "UTILITY"): Promise<boolean> {
   const tpl = await prisma.template.findUnique({
     where: { wabaId_name_language: { wabaId: sender.wabaId, name: sender.template.name, language: sender.template.language } },
     select: { category: true, status: true },
   });
-  return tpl?.category === "UTILITY" && tpl.status === "APPROVED";
+  return tpl?.category === category && tpl.status === "APPROVED";
 }
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -240,6 +251,16 @@ export async function runCampaignTick(campaignId: string) {
   if (!campaign || campaign.status !== "RUNNING") return;
   if (campaign.workspace.blockedAt) {
     await prisma.campaign.update({ where: { id: campaignId }, data: { status: "PAUSED", pausedReason: "Conta bloqueada pelo administrador" } });
+    return;
+  }
+
+  // Nada na fila agora (funil esperando lead, retry agendado): não monta o rodízio à toa
+  const due = await prisma.campaignRecipient.findFirst({
+    where: { campaignId, status: "PENDING", OR: [{ retryAt: null }, { retryAt: { lte: new Date() } }] },
+    select: { id: true },
+  });
+  if (!due) {
+    await maybeComplete(campaignId);
     return;
   }
 
@@ -350,7 +371,7 @@ export async function runCampaignTick(campaignId: string) {
           const chunk = items.slice(offset, offset + rate);
           const t0 = Date.now();
           // Trava de segurança: reconfere a categoria a cada leva (a recategorização pode chegar no meio do lote)
-          if (stopped || !(await templateStillUtility(sender))) {
+          if (stopped || !(await templateStillUtility(sender, campaign.templateCategory))) {
             await releaseRecipients(items.slice(offset).map((r) => r.id));
             refund += (items.length - offset) * price;
             break;
@@ -469,7 +490,8 @@ export async function maybeComplete(campaignId: string) {
   if (open > 0) return;
   // Só conclui se ainda estiver rodando (não passa por cima de cancelada/pausada, nem conclui duas vezes)
   const done = await prisma.campaign.updateMany({
-    where: { id: campaignId, status: "RUNNING" },
+    // Campanha de funil fica sempre aberta esperando os próximos leads
+    where: { id: campaignId, status: "RUNNING", funnelId: null },
     data: { status: "COMPLETED", completedAt: new Date(), pausedReason: null },
   });
   if (!done.count) return;

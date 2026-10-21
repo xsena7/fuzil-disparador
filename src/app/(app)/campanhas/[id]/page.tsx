@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import clsx from "clsx";
 import { ArrowLeft, Copy, Pause, Play, RotateCcw, Trash2, XCircle } from "lucide-react";
 import { requireAuth } from "@/lib/auth";
@@ -40,6 +40,8 @@ export default async function CampaignPage({ params, searchParams }: { params: P
   const { id } = await params;
   const campaign = await prisma.campaign.findFirst({ where: { id, workspaceId: auth.workspace.id }, include: { group: true } });
   if (!campaign) notFound();
+  // Campanha interna de um funil de aquecimento: o lugar dela é a tela do funil
+  if (campaign.funnelId) redirect(`/aquecimento/${campaign.funnelId}`);
   const started = !["DRAFT", "SCHEDULED"].includes(campaign.status);
   const step = (await searchParams).etapa ?? (started ? "metricas" : "template");
 

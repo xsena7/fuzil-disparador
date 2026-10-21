@@ -15,6 +15,7 @@ Produção: VM Oracle grátis, Docker Compose (db, app, worker, caddy). O servid
 - Meta Graph API: `src/lib/meta.ts`. Sincronização de WABA/números/templates: `src/lib/sync.ts`. Webhook: `src/lib/webhook.ts`.
 - Chat: `src/lib/chat.ts`, `src/app/(app)/chat/`. Templates padrão (com versões numeradas): `src/lib/blueprints.ts`.
 - BMs com problema (grupo automático): `src/lib/bm-problems.ts`. O que falta para disparar: `src/lib/readiness.ts`.
+- Aquecimento (landing de vagas + código + funil): `src/lib/funnels.ts`, `src/app/v/[key]/*` (página pública, também em domínio próprio pelo `src/middleware.ts` + on-demand TLS no Caddy), painel em `src/app/(app)/aquecimento/`. Cada passo é uma campanha interna (`Campaign.funnelId`).
 - Logo: `src/components/brand.tsx`. Gaveta padrão: `src/components/drawer.tsx`.
 - Server actions: `src/app/actions/*.ts`. Telas: `src/app/(app)/*`. Site público: `src/app/site/*`.
 

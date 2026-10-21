@@ -16,8 +16,9 @@ export type CreateResult =
  */
 export async function createUtilityTemplate(
   waba: WhatsAppAccount,
-  input: { name: string; language: string; components: TemplateComponent[]; headerSample?: { path: string; mime: string } | null },
+  input: { name: string; language: string; components: TemplateComponent[]; headerSample?: { path: string; mime: string } | null; category?: "UTILITY" | "AUTHENTICATION" },
 ): Promise<CreateResult> {
+  const category = input.category ?? "UTILITY";
   const token = wabaToken(waba);
   const components = structuredClone(input.components);
   try {
@@ -31,17 +32,17 @@ export async function createUtilityTemplate(
     const res = await meta.createTemplate(token, waba.wabaId, {
       name: input.name,
       language: input.language,
-      category: "UTILITY",
+      category,
       components,
     });
-    if (res.category && res.category !== "UTILITY") {
+    if (res.category && res.category !== category) {
       await meta.deleteTemplate(token, waba.wabaId, input.name).catch(() => undefined);
       return { ok: false, recategorized: true, category: res.category };
     }
     // Traz o template para o Fuzil e guarda a hora do envio
     await syncWaba(waba.id).catch(() => undefined);
     await prisma.template.updateMany({ where: { wabaId: waba.id, name: input.name, language: input.language }, data: { submittedAt: new Date() } });
-    return { ok: true, status: res.status, category: res.category ?? "UTILITY" };
+    return { ok: true, status: res.status, category: res.category ?? category };
   } catch (err) {
     return { ok: false, recategorized: false, error: err instanceof MetaError ? `${err.message}${err.details ? ` (${err.details})` : ""}` : String(err) };
   }
@@ -121,7 +122,7 @@ export async function deployBlueprints(workspaceId?: string) {
       // Já enviado: só acompanha o status (não cria de novo enquanto a sincronização não trouxer)
       if (dep && !burned && dep.status !== "ERROR" && !existing) continue;
       if (existing) {
-        const status = deploymentStatusFor(existing.status, existing.category);
+        const status = deploymentStatusFor(existing.status, existing.category, bp.category);
         if (dep?.status !== status) {
           await prisma.templateDeployment.upsert({
             where: { blueprintId_wabaId: { blueprintId: bp.id, wabaId: waba.id } },
@@ -129,7 +130,7 @@ export async function deployBlueprints(workspaceId?: string) {
             update: { status, error: existing.rejectedReason },
           });
         }
-        if (existing.category !== "UTILITY") await handleRecategorized(bp.workspaceId, waba.id, name, bp.language, existing.category);
+        if (existing.category !== bp.category) await handleRecategorized(bp.workspaceId, waba.id, name, bp.language, existing.category);
         continue;
       }
 
@@ -138,14 +139,15 @@ export async function deployBlueprints(workspaceId?: string) {
         language: bp.language,
         components: bp.components as unknown as TemplateComponent[],
         headerSample: bp.headerSamplePath ? { path: bp.headerSamplePath, mime: bp.headerSampleMime ?? "image/jpeg" } : null,
+        category: bp.category === "AUTHENTICATION" ? "AUTHENTICATION" : "UTILITY",
       });
       const where = { blueprintId_wabaId: { blueprintId: bp.id, wabaId: waba.id } };
       const naming = { currentName: name, version };
       if (result.ok) {
         await prisma.templateDeployment.upsert({
           where,
-          create: { blueprintId: bp.id, wabaId: waba.id, status: deploymentStatusFor(result.status, result.category), submittedAt: new Date(), ...naming },
-          update: { status: deploymentStatusFor(result.status, result.category), error: null, attempts: burned ? 1 : { increment: 1 }, submittedAt: new Date(), ...naming },
+          create: { blueprintId: bp.id, wabaId: waba.id, status: deploymentStatusFor(result.status, result.category, bp.category), submittedAt: new Date(), ...naming },
+          update: { status: deploymentStatusFor(result.status, result.category, bp.category), error: null, attempts: burned ? 1 : { increment: 1 }, submittedAt: new Date(), ...naming },
         });
       } else if (result.recategorized) {
         await prisma.templateDeployment.upsert({
@@ -174,8 +176,8 @@ export async function deployBlueprints(workspaceId?: string) {
   }
 }
 
-function deploymentStatusFor(status: string, category: string): Prisma.TemplateDeploymentCreateInput["status"] {
-  if (category !== "UTILITY") return "RECATEGORIZED_DELETED";
+function deploymentStatusFor(status: string, category: string, expected = "UTILITY"): Prisma.TemplateDeploymentCreateInput["status"] {
+  if (category !== expected) return "RECATEGORIZED_DELETED";
   if (status === "APPROVED") return "APPROVED";
   if (status === "REJECTED") return "REJECTED";
   return "SUBMITTED";
@@ -200,6 +202,8 @@ async function alertRecategorized(workspaceId: string, wabaLabel: string, name: 
 export async function handleRecategorized(workspaceId: string, wabaRecordId: string, name: string, language: string, to: string) {
   if (to === "UTILITY") return;
   const bp = await blueprintForName(workspaceId, name, language);
+  // Template de código (AUTHENTICATION) é assim mesmo: não é recategorização
+  if (bp && bp.category === to) return;
   const ws = await prisma.workspace.findUnique({ where: { id: workspaceId }, select: { autoDeleteMarketing: true } });
   if (!bp && !ws?.autoDeleteMarketing) return;
 

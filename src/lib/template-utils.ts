@@ -59,13 +59,14 @@ export function templateShape(components: TComponent[], redirectDomain: string):
     bodyVars,
     urlButtons: buttons
       .map((b, index) => ({ b, index }))
-      .filter(({ b }) => b.type === "URL")
+      // Botão "Copiar código" do template de código (AUTHENTICATION) também leva o código como parâmetro
+      .filter(({ b }) => b.type === "URL" || b.type === "OTP")
       .map(({ b, index }) => ({
         index,
         text: b.text,
         url: b.url ?? "",
-        dynamic: (b.url ?? "").includes("{{"),
-        tracked: isTrackedUrl(b.url ?? "", redirectDomain),
+        dynamic: b.type === "OTP" || (b.url ?? "").includes("{{"),
+        tracked: b.type === "URL" && isTrackedUrl(b.url ?? "", redirectDomain),
       })),
     namedParams: bodyVars.some((v) => !/^\d+$/.test(v)),
   };

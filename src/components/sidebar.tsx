@@ -4,7 +4,7 @@ import clsx from "clsx";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Bell, Building2, GraduationCap, MessagesSquare, Coins, FileText, Home, Layers, LogOut, Megaphone, Menu, X, Settings, Shield, Sparkles } from "lucide-react";
+import { Bell, Building2, GraduationCap, MessagesSquare, Coins, FileText, Flame, Home, Layers, LogOut, Megaphone, Menu, X, Settings, Shield, Sparkles } from "lucide-react";
 import { logoutAction } from "@/app/actions/auth";
 import { Logo } from "./brand";
 import { APP_VERSION } from "@/version";
@@ -15,6 +15,7 @@ const sections = [
     items: [
       { href: "/", label: "Início", icon: Home },
       { href: "/campanhas", label: "Campanhas", icon: Megaphone },
+      { href: "/aquecimento", label: "Aquecimento", icon: Flame },
       { href: "/chat", label: "Chat", icon: MessagesSquare },
       { href: "/alertas", label: "Alertas", icon: Bell },
     ],

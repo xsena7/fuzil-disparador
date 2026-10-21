@@ -115,7 +115,10 @@ export type TemplateComponent = {
   format?: "TEXT" | "IMAGE" | "VIDEO" | "DOCUMENT" | "LOCATION";
   text?: string;
   example?: Record<string, unknown>;
-  buttons?: Array<{ type: string; text: string; url?: string; phone_number?: string; example?: string[] }>;
+  buttons?: Array<{ type: string; text: string; url?: string; phone_number?: string; example?: string[]; otp_type?: string }>;
+  // Template de código (AUTHENTICATION)
+  add_security_recommendation?: boolean;
+  code_expiration_minutes?: number;
 };
 
 // ---------------------------------------------------------------------------
@@ -181,7 +184,7 @@ export const meta = {
   createTemplate(
     token: string,
     wabaId: string,
-    body: { name: string; language: string; category: "UTILITY"; components: TemplateComponent[] },
+    body: { name: string; language: string; category: "UTILITY" | "AUTHENTICATION"; components: TemplateComponent[] },
   ) {
     return graph<{ id: string; status: string; category: string }>(token, "POST", `${wabaId}/message_templates`, { body });
   },

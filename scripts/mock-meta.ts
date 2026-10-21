@@ -79,7 +79,7 @@ createServer(async (req, res) => {
       waba.templates = waba.templates.filter((t) => t.name !== url.searchParams.get("name"));
       return json(res, 200, { success: true });
     }
-    const category = body.name.includes("promo") ? "MARKETING" : "UTILITY";
+    const category = body.category === "AUTHENTICATION" ? "AUTHENTICATION" : body.name.includes("promo") ? "MARKETING" : "UTILITY";
     const tpl = { id: `t${Date.now()}`, name: body.name, language: body.language, category, status: "APPROVED", components: body.components };
     waba.templates.push(tpl);
     return json(res, 200, { id: tpl.id, status: "APPROVED", category });

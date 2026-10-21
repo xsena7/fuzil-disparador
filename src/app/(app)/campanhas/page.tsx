@@ -26,7 +26,7 @@ type Row = Campaign & { group: { name: string } | null };
 export default async function CampaignsPage() {
   const auth = await requireAuth();
   const [campaigns, folders] = await Promise.all([
-    prisma.campaign.findMany({ where: { workspaceId: auth.workspace.id }, include: { group: { select: { name: true } } }, orderBy: { createdAt: "desc" }, take: 1000 }),
+    prisma.campaign.findMany({ where: { workspaceId: auth.workspace.id, funnelId: null }, include: { group: { select: { name: true } } }, orderBy: { createdAt: "desc" }, take: 1000 }),
     prisma.campaignFolder.findMany({ where: { workspaceId: auth.workspace.id }, orderBy: { createdAt: "desc" } }),
   ]);
   const ids = campaigns.map((c) => c.id);
