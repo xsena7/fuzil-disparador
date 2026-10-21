@@ -12,7 +12,7 @@ export type Tutorial = {
   slug: string;
   title: string;
   summary: string;
-  icon: "rocket" | "building" | "layers" | "file" | "sparkles" | "megaphone" | "chart" | "chat" | "bell" | "coins" | "settings" | "shield" | "help";
+  icon: "rocket" | "flame" | "key" | "building" | "layers" | "file" | "sparkles" | "megaphone" | "chart" | "chat" | "bell" | "coins" | "settings" | "shield" | "help";
   /** Página do painel a que o tutorial se refere */
   href?: string;
   minutes: number;
@@ -40,6 +40,8 @@ export const TUTORIALS: Tutorial[] = [
           "Métricas e Alertas: acompanhe entregas, leituras, cliques e qualquer problema com os números.",
         ],
       },
+      { kind: "tip", text: "Em Conexões, cada conta mostra em verde \"Pronta para disparar\" ou, em vermelho/amarelo, exatamente o que falta: número registrado, cartão (forma de pagamento) ou template aprovado." },
+      { kind: "tip", text: "BM nova com limite baixo? Use o Aquecimento: uma página de vagas que gera conversas reais e aquece as BMs do grupo (veja o tutorial Aquecimento)." },
       { kind: "image", src: "/tutoriais/inicio.png", caption: "Tela inicial: BMs conectadas, quanto ainda dá para enviar hoje, envios e cliques das últimas 24h." },
       { kind: "tip", text: "A tela Início mostra o \"Disponível hoje\": é quanto ainda dá para disparar nas próximas 24h somando o limite de todas as suas BMs." },
     ],
@@ -63,7 +65,17 @@ export const TUTORIALS: Tutorial[] = [
           "Aceite as permissões até o fim. Ao fechar a janela, a BM aparece na lista em alguns segundos.",
         ],
       },
-      { kind: "tip", text: "Configuração manual: se você tem o ID da WABA (no Gerenciador do WhatsApp), dá para conectar colando o ID em \"Configuração manual\" no fim da página." },
+      { kind: "tip", text: "Conexão manual (com o app e o token da própria BM): veja o tutorial \"Conexão manual (app da BM)\". Nesse caso também é preciso colar a chave secreta do app para as respostas aparecerem no Chat." },
+      { kind: "text", text: "A tela de Conexões tem \"Nova conexão\" em cima e as BMs embaixo, em gavetas: a última conectada fica sempre no topo. A bolinha da gaveta mostra o estado de cada BM sem precisar abrir: verde (tudo certo), amarela (atenção) ou vermelha (algo impede o disparo)." },
+      {
+        kind: "steps",
+        items: [
+          "\"Pronta para disparar\": a conta tem número registrado, forma de pagamento e template de utilidade aprovado.",
+          "\"Falta isso para essa conta disparar\": a lista diz o que falta e como resolver (ex.: cadastrar o cartão no WhatsApp Manager, registrar o número, esperar o template aprovar).",
+          "Números de teste da Meta são apagados sozinhos e nunca entram no rodízio. Só número de WhatsApp válido dispara.",
+          "Número que você apagou na Meta some do Fuzil na próxima sincronização (ou clique em ↻ na WABA).",
+        ],
+      },
       { kind: "text", text: "O que cada informação significa:" },
       {
         kind: "steps",
@@ -75,6 +87,38 @@ export const TUTORIALS: Tutorial[] = [
         ],
       },
       { kind: "warn", text: "Número com qualidade Vermelha, sinalizado ou banido sai automaticamente dos disparos e você recebe um alerta." },
+    ],
+  },
+  {
+    slug: "conexao-manual",
+    title: "Conexão manual (app da BM)",
+    summary: "Conectar uma BM com o app e o token dela, e fazer as respostas chegarem no Chat.",
+    icon: "key",
+    href: "/conexoes",
+    minutes: 4,
+    blocks: [
+      { kind: "text", text: "A conexão manual usa um app criado dentro da própria BM, com um token de usuário do sistema. Use quando a conexão pelo botão da Meta não estiver disponível. O Fuzil dispara normalmente; para receber as respostas, ele precisa da chave secreta desse app." },
+      {
+        kind: "steps",
+        items: [
+          "No developers.facebook.com, crie um app do tipo Empresa ligado à BM, com o caso de uso \"Connect with customers through WhatsApp\".",
+          "No Gerenciador de Negócios da BM: Usuários → Usuários do sistema → crie um (Admin), adicione o app e a conta do WhatsApp como ativos e gere um token permanente com whatsapp_business_management e whatsapp_business_messaging.",
+          "No Fuzil, em Conexões → Configuração manual: cole o ID da WABA, o token e a chave secreta do app (App settings → Basic → App secret → Show).",
+          "No app da BM: menu da esquerda → Publish → Publish. App \"Unpublished\" não recebe as respostas dos clientes.",
+        ],
+      },
+      { kind: "warn", text: "Nunca mande token nem chave secreta em chat, print ou e-mail. Cole direto no Fuzil: ele guarda criptografado." },
+      { kind: "text", text: "Já conectou antes e as respostas não chegam? Em Conexões, abra a BM: a faixa \"Receber respostas no Chat\" mostra a situação." },
+      {
+        kind: "steps",
+        items: [
+          "🟡 Falta a chave secreta: cole a chave e clique em Salvar chave. O Fuzil liga sozinho o webhook do app (endereço, token e campos).",
+          "🟡 Nenhum evento chegou ainda: publique o app (Publish) e responda uma mensagem para testar.",
+          "🔴 A chave não confere: a chave colada é de outro app. Copie a do mesmo app que gerou o token.",
+          "🟢 Funcionando: mostra a hora do último evento recebido.",
+        ],
+      },
+      { kind: "tip", text: "Se o automático der erro, o passo a passo para ligar o webhook na mão aparece logo abaixo, em \"Ligar o webhook na mão\" (Use cases → Customize → Configuration → Webhook)." },
     ],
   },
   {
@@ -96,6 +140,8 @@ export const TUTORIALS: Tutorial[] = [
         ],
       },
       { kind: "tip", text: "Uma BM pode estar em mais de um grupo. Se quiser separar por cliente ou por produto, crie um grupo para cada." },
+      { kind: "text", text: "Cada grupo fica numa gaveta: fechada, mostra quantas BMs, números ativos e o limite disponível; aberta, mostra os números grandes e o limite de cada BM." },
+      { kind: "warn", text: "Grupo automático \"⚠️ BMs com problema\": BM banida, restrita, sem forma de pagamento, sem acesso ou com qualidade vermelha sai sozinha dos grupos de disparo e vai para lá, com o motivo e como resolver. Isso só acontece depois do primeiro disparo dela (BM recém-conectada fica onde você colocou). Resolveu? Clique em \"Resolvido\" e ela volta para os grupos em que estava." },
     ],
   },
   {
@@ -123,6 +169,8 @@ export const TUTORIALS: Tutorial[] = [
       { kind: "image", src: "/tutoriais/template-novo.png", caption: "Criação de template com pré-visualização igual ao WhatsApp." },
       { kind: "text", text: "Link rastreado: o botão é aprovado com o link do Fuzil e, na campanha, você cola o site final. Cada pessoa recebe um link único, e o painel conta quem clicou (ignorando robôs de pré-visualização)." },
       { kind: "warn", text: "Marketing NÃO é disparado de jeito nenhum. Se a Meta mudar a categoria de um template para Marketing, os números daquela BM saem do disparo na hora e você recebe um alerta urgente. Crie outro template com texto mais \"de serviço\": aviso de pedido, lembrete, confirmação. Evite promoção, desconto, \"aproveite\", \"oferta\"." },
+      { kind: "text", text: "A lista fica em gavetas por conta do WhatsApp (a última conectada em cima). Fechada, a gaveta mostra o último template enviado e quando. Aberta, mostra cada template com a data e a hora em que foi enviado para a Meta." },
+      { kind: "tip", text: "Excluir: o botão de lixeira apaga o template direto na Meta (e no Fuzil). Os templates de exemplo da Meta (hello_world etc.) não têm lixeira porque a Meta não deixa apagar." },
       { kind: "tip", text: "Dicas para aprovar como Utilidade: fale de algo que a pessoa já tem (pedido, cadastro, agendamento, conta), seja direto, e não coloque preço nem chamada de venda." },
     ],
   },
@@ -145,7 +193,9 @@ export const TUTORIALS: Tutorial[] = [
           "Pronto. Ele vai sendo criado em cada BM, e a tela mostra o status de cada cópia.",
         ],
       },
-      { kind: "warn", text: "Se a Meta classificar uma cópia como marketing, ela é EXCLUÍDA automaticamente daquela BM e você recebe um alerta." },
+      { kind: "warn", text: "Se a Meta classificar uma cópia como marketing, ela é EXCLUÍDA automaticamente daquela BM e você recebe um alerta. O Fuzil cria sozinho a próxima versão com o nome numerado (ex.: fzl_disp1 vira fzl_disp2) e as campanhas passam a usar ela. Se a Meta já criar como marketing de cara, o problema é o texto: mude o texto do template." },
+      { kind: "tip", text: "\"Aplicar agora\" não manda tudo de novo: só tenta outra vez as cópias que deram erro e cria nas BMs onde ainda não existe. As que já estão enviadas ou aprovadas ficam como estão." },
+      { kind: "tip", text: "Botões não podem ter emoji, quebra de linha nem formatação (regra da Meta). O Fuzil limpa isso sozinho antes de enviar." },
     ],
   },
   {
@@ -165,7 +215,7 @@ export const TUTORIALS: Tutorial[] = [
       {
         kind: "steps",
         items: [
-          "4. Audiência: suba a planilha em CSV (no Excel/Google Planilhas: Arquivo → Baixar/Salvar como → CSV).",
+          "4. Audiência: arraste a planilha para a área pontilhada (ou clique para escolher). Aceita Excel (.xlsx), CSV, TXT e TSV. Arquivo .xls antigo, .ods ou Numbers: salve como .xlsx ou CSV antes.",
           "O Fuzil reconhece sozinho as colunas nome, telefone/celular/whatsapp e DDI. As outras colunas viram variáveis.",
           "Telefone pode vir com ou sem 55, com ou sem traço/parênteses. Números inválidos, repetidos e quem pediu para sair (SAIR) são descartados automaticamente.",
         ],
@@ -184,6 +234,47 @@ export const TUTORIALS: Tutorial[] = [
       { kind: "tip", text: "Se o limite de 24h das BMs acabar no meio da campanha, ela NÃO para: fica \"aguardando limite\" e continua sozinha quando liberar. Se o saldo acabar, ela pausa; coloque créditos e clique em Retomar." },
       { kind: "tip", text: "Quer responder sozinho quem responder o disparo? Ative a Resposta automática na etapa Conteúdo (veja o tutorial do Chat)." },
       { kind: "text", text: "Durante o disparo dá para Pausar, Retomar ou Cancelar pela tela da campanha. Depois de concluída, use \"Reenviar falhas\" para tentar de novo quem falhou por erro temporário." },
+    ],
+  },
+  {
+    slug: "aquecimento",
+    title: "Aquecimento (página de vagas)",
+    summary: "Página de vagas num domínio seu, código no WhatsApp e funil com timers que aquece as BMs.",
+    icon: "flame",
+    href: "/aquecimento",
+    minutes: 8,
+    blocks: [
+      { kind: "text", text: "O Aquecimento junta duas coisas: você divulga vagas de emprego e, ao mesmo tempo, aquece as BMs com conversas reais. A pessoa se inscreve na página, recebe um código no WhatsApp (disparado pelo rodízio de um grupo de BM), confirma no site e entra num funil de mensagens. Cada mensagem conta no limite das BMs e é cobrada em créditos, como nas campanhas." },
+      {
+        kind: "steps",
+        items: [
+          "Em Grupos de BM, crie um grupo só com as BMs que você quer aquecer.",
+          "Em Aquecimento → Novo funil: dê um nome, um endereço e escolha o grupo. O funil já nasce com página, perguntas, mensagens e timers prontos.",
+          "Os 5 templates do funil sobem sozinhos em todas as BMs do grupo: o código (Autenticação/OTP) e 4 de Utilidade (inscrição confirmada, link do cadastro, lembrete e cadastro recebido).",
+          "Abra o funil e ajuste as gavetas: Vagas, Página de inscrição, Cadastro final e Domínio.",
+        ],
+      },
+      { kind: "text", text: "Vagas: cada cargo tem título, área, nível, salário, descrição, requisitos e a quantidade de vagas (padrão 200). O site mostra quantas vagas cada cargo tem e o total no topo. Desmarque \"Aberta\" para esconder uma vaga sem apagar." },
+      { kind: "text", text: "Página de inscrição: nome da empresa, títulos, textos, cor e a foto do perfil que aparece no celular de exemplo do site." },
+      { kind: "text", text: "Cadastro final: são as perguntas do link que chega no WhatsApp um dia depois (idade, escolaridade, computador, internet, experiência, horário, quando pode começar). Dá para trocar, apagar e criar perguntas." },
+      { kind: "text", text: "Funil: os blocos no estilo n8n. Gatilho (inscreveu / confirmou o código), Mensagem (escolha o template padrão e o que vai em cada variável), Timer (minutos, horas ou dias) e Condicional (\"só enviar se ainda não respondeu o cadastro\"). Use + Timer e + Mensagem entre os blocos e clique em Salvar funil." },
+      { kind: "tip", text: "As mensagens dos passos só saem no horário escolhido (padrão 8h às 21h, horário de Brasília). O código sai na hora, sempre." },
+      { kind: "text", text: "Domínio próprio (sem o nome do Fuzil):" },
+      {
+        kind: "steps",
+        items: [
+          "Compre um domínio com nome neutro (registro.br, KingHost etc.).",
+          "No funil, gaveta \"Domínio, grupo, Pixel e API de Conversões\": digite o domínio e salve. O IP do servidor aparece ali.",
+          "No DNS do domínio, deixe só 2 registros tipo A: nome @ (ou vazio) e nome www, os dois com esse IP. Apague registros AAAA e CNAME antigos de @ e www.",
+          "Clique em \"Verificar agora\" até ficar tudo verde: domínio, www e cadeado (HTTPS). O cadeado é gerado sozinho na primeira visita.",
+        ],
+      },
+      { kind: "warn", text: "\"Sua conexão não é particular\" com o nome de outra empresa (ex.: *.kinghost.net): o domínio ainda aponta para a empresa onde você comprou. \"Demorou muito para responder\": o DNS já está certo, mas sua internet ainda lembra do endereço antigo. Teste no celular com 4G, rode ipconfig /flushdns no Windows ou limpe em chrome://net-internals/#dns." },
+      { kind: "text", text: "Pixel e API de Conversões: cole o número do Pixel e, se quiser, o token da API de Conversões (Gerenciador de Eventos → pixel → Configurações → Gerar token). Eventos enviados: PageView, Lead (enviou o formulário), CompleteRegistration (confirmou o código) e SubmitApplication (respondeu o cadastro). Navegador e servidor são contados uma vez só." },
+      { kind: "tip", text: "Para testar, use \"Código de teste\" (aba Testar eventos do Gerenciador) e faça uma inscrição até o fim. Depois apague o código de teste e exclua o lead de teste." },
+      { kind: "text", text: "Leads: todo mundo que se inscreveu, com a vaga escolhida e as respostas. Filtre por situação e baixe a planilha para usar numa campanha. Em cada lead: \"Tirar do funil\" (para de receber, continua na lista, dá para voltar) ou \"Excluir\" (some; se se inscrever de novo, começa do zero)." },
+      { kind: "text", text: "Aquecimento das BMs: tabela com enviadas, entregues, lidas, respostas e falhas de cada BM nos últimos 7 dias. Cada mensagem sai por uma BM diferente do rodízio, e o botão \"Recebi\" incentiva a pessoa a responder, o que melhora a qualidade." },
+      { kind: "warn", text: "Anúncio no Facebook/Instagram: marque a categoria especial \"Emprego\" (obrigatório para vagas) e otimize para CompleteRegistration (ou Lead no começo). Divulgue vagas de verdade: promessa enganosa reprova o anúncio e gera denúncias que derrubam a qualidade das BMs." },
     ],
   },
   {
@@ -236,6 +327,7 @@ export const TUTORIALS: Tutorial[] = [
       { kind: "text", text: "Resposta automática: em cada campanha (etapa Conteúdo ou Métricas) você pode deixar uma mensagem que é enviada sozinha, na hora, quando o cliente responde ao disparo. Ela vai uma única vez por contato e pode ter imagem, vídeo, áudio ou PDF." },
       { kind: "image", src: "/tutoriais/campanha-resposta-automatica.png", caption: "Resposta automática na campanha: dá para ligar, desligar e mudar o texto a qualquer momento, até com a campanha rodando." },
       { kind: "tip", text: "Use {{primeiro_nome}} na resposta automática para chamar o cliente pelo nome. Quem responde SAIR não recebe a resposta automática e é descadastrado." },
+      { kind: "warn", text: "Respostas não aparecem no Chat? Se a BM foi conectada de forma manual (com o app da própria BM), cadastre a chave secreta do app e publique o app. Veja o tutorial \"Conexão manual (app da BM)\"." },
       { kind: "tip", text: "Nova conversa: o botão laranja ao lado da busca inicia uma conversa com qualquer número, começando por um template aprovado." },
     ],
   },
@@ -256,6 +348,8 @@ export const TUTORIALS: Tutorial[] = [
           "🔴 Qualidade Vermelha / número sinalizado ou banido: o número sai dos disparos. Descanse ele 1 ou 2 dias e revise texto e lista.",
           "🔴 Campanha pausada: leia o motivo (saldo, template, nenhum número apto) e corrija antes de retomar.",
           "🟡 Número retirado da campanha: a campanha seguiu com os outros números.",
+          "🔴 BM foi para \"BMs com problema\": ela saiu dos grupos de disparo. O alerta diz o motivo e como resolver; depois clique em \"Resolvido\" em Grupos de BM.",
+          "🟡 Template padrão não subiu: leia o erro. O Fuzil tenta 3 vezes; depois de corrigir, clique em \"Aplicar agora\" em Templates padrão.",
           "🟡 Limite da BM caiu: cuide da qualidade dos números dessa BM.",
           "🟢 Limite liberado, campanha concluída, template aprovado: só aviso.",
         ],
@@ -339,6 +433,9 @@ export const TUTORIALS: Tutorial[] = [
       { kind: "text", text: "As leituras parecem baixas. Normal: só contam as pessoas com confirmação de leitura ligada." },
       { kind: "text", text: "Posso mandar a mesma campanha de novo? Sim: no ⋮ da campanha, clique em Duplicar." },
       { kind: "text", text: "Meu número sumiu dos disparos. Ele pode estar com qualidade vermelha, sinalizado, sem template aprovado ou ter sido tirado do rodízio. Veja em Alertas e Conexões." },
+      { kind: "text", text: "As respostas dos clientes não aparecem no Chat. Se a BM foi conectada de forma manual, falta a chave secreta do app ou publicar o app. Em Conexões, a faixa \"Receber respostas no Chat\" diz o que falta." },
+      { kind: "text", text: "Minha BM sumiu do grupo. Ela deu problema depois de disparar e foi para \"⚠️ BMs com problema\" em Grupos de BM, com o motivo e como resolver." },
+      { kind: "text", text: "O site do Aquecimento não abre. \"Conexão não é particular\" com o nome de outra empresa (ex.: kinghost): o domínio ainda aponta para onde você comprou, troque os registros A. \"Demorou muito para responder\": cache da sua internet, teste no 4G (veja o tutorial Aquecimento)." },
       { kind: "tip", text: "Encontrou algo quebrado? Clique no bichinho 🐞 no canto inferior direito da tela e conte o que aconteceu (dá para anexar um print)." },
     ],
   },

@@ -1,8 +1,10 @@
-import { MessagesSquare, Bell, BookOpen, Building2, ChartLine, Coins, FileText, HelpCircle, Layers, Megaphone, Rocket, Settings, ShieldCheck, Sparkles } from "lucide-react";
+import { MessagesSquare, Bell, BookOpen, Building2, ChartLine, Coins, FileText, Flame, HelpCircle, KeyRound, Layers, Megaphone, Rocket, Settings, ShieldCheck, Sparkles } from "lucide-react";
 import type { Tutorial } from "@/lib/tutorials";
 
 export const TUTORIAL_ICONS: Record<Tutorial["icon"], typeof BookOpen> = {
   rocket: Rocket,
+  flame: Flame,
+  key: KeyRound,
   building: Building2,
   layers: Layers,
   file: FileText,

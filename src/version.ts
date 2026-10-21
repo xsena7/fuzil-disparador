@@ -2,6 +2,15 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "1.38",
+    date: "21/10/2026",
+    items: [
+      "Tutoriais atualizados com todas as novidades: gavetas, o que falta para disparar, BMs com problema, templates numerados, exclusão de template, audiência em Excel",
+      "Tutorial novo: Aquecimento (vagas, funil, domínio, Pixel e API de Conversões, leads)",
+      "Tutorial novo: Conexão manual (app da BM), com a chave secreta e a publicação do app para o Chat receber as respostas",
+    ],
+  },
+  {
     version: "1.37",
     date: "21/10/2026",
     items: ["Conexões manuais: ao salvar a chave secreta do app, o Fuzil liga sozinho o webhook do app da BM (URL, token e campos). Falta só publicar o app"],
