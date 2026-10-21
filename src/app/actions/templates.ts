@@ -180,6 +180,7 @@ export async function deployNowAction() {
   await prisma.templateDeployment.updateMany({ where: { status: "ERROR", blueprint: { workspaceId: auth.workspace.id } }, data: { attempts: 0 } });
   await deployBlueprints(auth.workspace.id);
   revalidatePath("/templates-padrao");
+  return { ok: true };
 }
 
 export async function updateAutoDeleteAction(form: FormData) {

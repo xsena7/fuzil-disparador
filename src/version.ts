@@ -2,11 +2,18 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
-    version: "1.29",
+    version: "1.30",
     date: "21/10/2026",
     items: [
       "Correção: o botão \"Recebi\" da mensagem de inscrição não tem mais emoji (a Meta recusava). As cópias que deram erro sobem de novo sozinhas",
       "Templates padrão: emoji e formatação em botões são removidos antes de enviar para a Meta",
+      "\"Aplicar agora\" atualiza a tela assim que termina",
+    ],
+  },
+  {
+    version: "1.29",
+    date: "21/10/2026",
+    items: [
       "Aquecimento: botão \"Verificar agora\" no domínio. Mostra se o domínio e o www já apontam para o servidor e se o cadeado (HTTPS) já está funcionando"],
   },
   {
