@@ -79,10 +79,14 @@ export const DEFAULT_PAGE: FunnelPage = {
 
 export const DEFAULT_FIELDS: FormField[] = [
   { key: "cidade", label: "Cidade e estado", type: "text", required: true },
-  { key: "idade", label: "Idade", type: "text", required: true },
-  { key: "experiencia", label: "Já trabalhou com atendimento ou vendas?", type: "select", options: ["Sim", "Não"], required: true },
+  { key: "idade", label: "Qual sua idade?", type: "select", options: ["18 a 24", "25 a 34", "35 a 44", "45 ou mais"], required: true },
+  { key: "escolaridade", label: "Escolaridade", type: "select", options: ["Médio em andamento", "Médio completo", "Superior em andamento", "Superior completo"], required: true },
+  { key: "computador", label: "Você tem computador ou notebook?", type: "select", options: ["Sim", "Não", "Só celular"], required: true },
+  { key: "internet", label: "Como é sua internet em casa?", type: "select", options: ["Fibra (boa)", "4G ou rádio", "Instável"], required: true },
+  { key: "experiencia", label: "Já trabalhou com tecnologia ou atendimento?", type: "select", options: ["Nunca, quero aprender", "Já atendi clientes", "Já trabalhei com TI"], required: true },
   { key: "horario", label: "Qual horário você tem disponível?", type: "select", options: ["Manhã", "Tarde", "Noite", "Integral"], required: true },
-  { key: "sobre", label: "Conte um pouco sobre você", type: "textarea", required: false },
+  { key: "inicio", label: "Quando pode começar?", type: "select", options: ["Imediatamente", "Em até 15 dias", "Em até 30 dias"], required: true },
+  { key: "motivo", label: "Por que você quer trabalhar com tecnologia?", type: "textarea", required: false },
 ];
 
 // --- Templates padrão que todo funil novo ganha ---------------------------

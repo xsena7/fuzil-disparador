@@ -12,6 +12,7 @@ export const CHANGELOG: Array<{ version: string; date: string; items: string[] }
       "Leads com todas as respostas, filtro por situação e planilha para usar em campanhas",
       "Tabela de aquecimento por BM: enviadas, entregues, lidas e respostas dos últimos 7 dias",
       "Mensagens do funil só saem no horário que você escolher; o código sai na hora",
+      "Cadastro final com perguntas prontas para vagas de TI/suporte: idade, escolaridade, computador, internet, experiência, horário e quando pode começar",
     ],
   },
   {
