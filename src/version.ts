@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "1.48",
+    date: "21/10/2026",
+    items: ["Correção: o motor de disparo também aplica as atualizações do banco ao subir, então o erro de coluna nova não aparece mais na virada de versão"],
+  },
+  {
     version: "1.47",
     date: "21/10/2026",
     items: ["Nova página Higienização: cole ou envie uma lista e veja quais números têm WhatsApp. Baixe só os válidos para limpar a lista antes de disparar"],

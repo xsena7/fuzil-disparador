@@ -38,7 +38,7 @@ services:
     pull_policy: never
     restart: unless-stopped
     # Worker já empacotado (bem mais leve que rodar pelo tsx/npx)
-    command: ["node", "dist/worker.mjs"]
+    command: ["sh", "-c", "node node_modules/prisma/build/index.js migrate deploy && exec node dist/worker.mjs"]
     init: true
     stop_grace_period: 60s
     env_file: .env
