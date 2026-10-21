@@ -2,6 +2,14 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "1.45",
+    date: "21/10/2026",
+    items: [
+      "Grupos de BM: em cada BM aparece quantos números estão ativos e, se faltar algo para disparar, o que falta",
+      "Grupos de BM: números de teste da Meta e números removidos não entram mais na contagem de números do grupo",
+    ],
+  },
+  {
     version: "1.44",
     date: "21/10/2026",
     items: [

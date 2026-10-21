@@ -144,11 +144,19 @@ export default async function GroupsPage() {
               <div className="mb-5 grid gap-3 md:grid-cols-2">
                 {g.members.map((m) => {
                   const w = windows.get(m.businessId);
+                  const bm = businesses.find((b) => b.id === m.businessId);
+                  const phones = bm?.wabas.flatMap((x) => x.phones.filter((p) => !p.invalidReason)) ?? [];
+                  const activeNow = phones.filter((p) => p.enabled && p.status === "CONNECTED").length;
+                  const a = apt.get(m.businessId);
                   return w ? (
                     <div key={m.businessId}>
                       <div className="mb-1.5 flex items-center gap-2 truncate text-sm font-medium">
                         {aptDot(m.businessId)}
                         <span className="truncate">{m.business.name}</span>
+                      </div>
+                      <div className="mb-2 text-xs text-zinc-500">
+                        {activeNow} de {phones.length} número{phones.length === 1 ? "" : "s"} ativo{activeNow === 1 ? "" : "s"}
+                        {a && !a.apta && <span className="ml-1.5 font-medium text-red-700">· falta: {a.falta.join(", ")}</span>}
                       </div>
                       <LimitWindow w={w} compact />
                       <div className="mt-2">
