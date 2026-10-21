@@ -25,8 +25,9 @@ export async function createCampaignAction(_: FormState, form: FormData): Promis
   const auth = await requireAuth();
   const name = String(form.get("name") ?? "").trim();
   if (!name) return { error: "Dê um nome à campanha" };
-  const lastGroup = await prisma.campaign.findFirst({ where: { workspaceId: auth.workspace.id, groupId: { not: null }, group: { system: null } }, orderBy: { createdAt: "desc" } });
-  const c = await prisma.campaign.create({ data: { workspaceId: auth.workspace.id, name, groupId: lastGroup?.groupId } });
+  const scope = String(form.get("scope") ?? "GROUP") === "BM" ? "BM" : "GROUP";
+  const lastGroup = scope === "GROUP" ? await prisma.campaign.findFirst({ where: { workspaceId: auth.workspace.id, groupId: { not: null }, group: { system: null } }, orderBy: { createdAt: "desc" } }) : null;
+  const c = await prisma.campaign.create({ data: { workspaceId: auth.workspace.id, name, scope, groupId: lastGroup?.groupId } });
   redirect(`/campanhas/${c.id}?etapa=template`);
 }
 
@@ -35,6 +36,7 @@ export async function duplicateCampaignAction(id: string) {
   const copy = await prisma.campaign.create({
     data: {
       workspaceId: c.workspaceId,
+      scope: c.scope,
       name: `${c.name} (cópia)`,
       groupId: c.groupId,
       templateName: c.templateName,
@@ -57,6 +59,8 @@ export async function saveTemplateStepAction(id: string, _: FormState, form: For
   let groupId = String(form.get("groupId") ?? "");
   const [name, language] = String(form.get("template") ?? "").split("|");
   if (!groupId) return { error: "Escolha um grupo de BM" };
+  if (c.scope === "BM" && !groupId.startsWith("bm:")) return { error: "Essa campanha é de uma BM só: escolha uma BM na lista" };
+  if (c.scope === "GROUP" && groupId.startsWith("bm:")) return { error: "Essa campanha é de grupo: escolha um grupo de BMs" };
   if (groupId.startsWith("bm:")) {
     // Só uma BM: usa um grupo oculto com essa BM (o disparo é igual ao de um grupo)
     const bm = await prisma.businessManager.findFirst({ where: { id: groupId.slice(3), workspaceId: c.workspaceId }, select: { id: true, name: true } });

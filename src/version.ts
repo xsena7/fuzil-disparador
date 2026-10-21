@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "1.57",
+    date: "21/10/2026",
+    items: ["Nova campanha: escolha se o disparo é de um grupo de BMs ou de uma BM só"],
+  },
+  {
     version: "1.56",
     date: "21/10/2026",
     items: ["Campanhas: dá para disparar de uma BM só (opção \"Só a BM: nome\" na etapa Template), usando os templates dela com os nomes que ela tem"],

@@ -14,6 +14,7 @@ export function StepTemplate({
   groupId,
   templateKey,
   locked,
+  scope,
 }: {
   action: (s: FormState, f: FormData) => Promise<FormState>;
   name: string;
@@ -22,6 +23,7 @@ export function StepTemplate({
   groupId: string;
   templateKey: string;
   locked: boolean;
+  scope: "GROUP" | "BM";
 }) {
   const [state, formAction, pending] = useActionState(action, undefined);
   const [group, setGroup] = useState(groupId || groups[0]?.id || "");
@@ -33,7 +35,7 @@ export function StepTemplate({
     <form action={formAction} className="max-w-2xl space-y-5">
       <h2 className="text-xl font-semibold drop-shadow-[0_0_14px_rgba(255,149,0,0.35)]">Template</h2>
       <Field label="Nome da campanha"><Input name="name" defaultValue={name} disabled={locked} /></Field>
-      <Field label="Grupo de BM" hint="Os envios serão distribuídos entre todos os números aptos das BMs desse grupo.">
+      <Field label={scope === "BM" ? "BM" : "Grupo de BM"} hint={scope === "BM" ? "Dispara só dessa BM, com os templates dela." : "Os envios serão distribuídos entre todos os números aptos das BMs desse grupo."}>
         <Select name="groupId" value={group} onChange={(e) => { setGroup(e.target.value); setTpl(""); }} disabled={locked}>
           {groups.length === 0 && <option value="">Crie um grupo de BM primeiro</option>}
           {groups.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}

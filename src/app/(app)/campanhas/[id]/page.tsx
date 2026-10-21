@@ -124,8 +124,8 @@ async function TemplateStep({ campaignId, workspaceId, locked }: { campaignId: s
   // Cada BM também pode ser usada sozinha: entra como "bm:<id>" (vira um grupo oculto só com ela ao salvar)
   const businesses = await prisma.businessManager.findMany({ where: { workspaceId }, select: { id: true, name: true }, orderBy: { name: "asc" } });
   const pickable = [
-    ...groups.map((g) => ({ id: g.id, name: g.name, members: g.members })),
-    ...businesses.map((b) => ({ id: `bm:${b.id}`, name: `Só a BM: ${b.name}`, members: [{ businessId: b.id }] })),
+    ...(campaign.scope === "BM" ? [] : groups.map((g) => ({ id: g.id, name: g.name, members: g.members }))),
+    ...(campaign.scope === "GROUP" ? [] : businesses.map((b) => ({ id: `bm:${b.id}`, name: `Só a BM: ${b.name}`, members: [{ businessId: b.id }] }))),
   ];
   const currentGroup = campaign.groupId ? await prisma.bmGroup.findUnique({ where: { id: campaign.groupId }, select: { system: true } }) : null;
   const groupKey = currentGroup?.system?.startsWith("BM:") ? `bm:${currentGroup.system.slice(3)}` : (campaign.groupId ?? "");
@@ -164,6 +164,7 @@ async function TemplateStep({ campaignId, workspaceId, locked }: { campaignId: s
       groups={pickable.map((g) => ({ id: g.id, name: g.name }))}
       optionsByGroup={optionsByGroup}
       groupId={groupKey}
+      scope={campaign.scope === "BM" ? "BM" : "GROUP"}
       templateKey={campaign.templateName ? `${campaign.templateName}|${campaign.templateLanguage}` : ""}
       locked={locked}
     />
