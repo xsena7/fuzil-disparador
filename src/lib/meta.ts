@@ -231,6 +231,16 @@ export const meta = {
   // Mensagens
   // -------------------------------------------------------------------------
 
+  /**
+   * Checagem de números: diz se cada número tem WhatsApp (valid) ou não (invalid).
+   * Até 100 números por chamada. Usa o número da própria conta como remetente da checagem.
+   */
+  checkContacts(token: string, phoneNumberId: string, phones: string[]) {
+    return graph<{ contacts: Array<{ input: string; status: "valid" | "invalid"; wa_id?: string }> }>(token, "POST", `${phoneNumberId}/contacts`, {
+      body: { blocking: "wait", contacts: phones, force_check: true },
+    });
+  },
+
   sendTemplate(
     token: string,
     phoneNumberId: string,

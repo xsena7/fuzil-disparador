@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "1.47",
+    date: "21/10/2026",
+    items: ["Nova página Higienização: cole ou envie uma lista e veja quais números têm WhatsApp. Baixe só os válidos para limpar a lista antes de disparar"],
+  },
+  {
     version: "1.46",
     date: "21/10/2026",
     items: [

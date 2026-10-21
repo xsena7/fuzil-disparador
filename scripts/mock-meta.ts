@@ -66,6 +66,11 @@ createServer(async (req, res) => {
     return res.end(Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==", "base64"));
   }
   if (id === "oauth") return json(res, 200, { access_token: "mock-business-token" });
+  // Higienização: POST /{phone-id}/contacts (números com final par têm WhatsApp)
+  if (edge === "contacts" && req.method === "POST") {
+    const contacts = (body.contacts ?? []).map((c: string) => ({ input: c, status: Number(c.slice(-1)) % 2 === 0 ? "valid" : "invalid", wa_id: c }));
+    return json(res, 200, { contacts });
+  }
   // API de Conversões: POST /{pixel}/events
   if (edge === "events" && req.method === "POST") {
     if (body.access_token !== "capi-ok") return json(res, 400, { error: { message: "Invalid OAuth access token", code: 190 } });
