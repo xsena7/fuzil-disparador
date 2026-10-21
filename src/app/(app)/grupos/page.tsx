@@ -13,6 +13,8 @@ import { PROBLEMS_GROUP } from "@/lib/bm-problems";
 import { bmAptidao } from "@/lib/readiness";
 import { StatusDot } from "@/components/drawer";
 import { SendToGroup } from "./send-to-group";
+import { ColorPicker } from "./color-picker";
+import { groupDot, groupTag } from "@/lib/group-colors";
 
 export const dynamic = "force-dynamic";
 
@@ -24,7 +26,7 @@ export default async function GroupsPage() {
       where: { workspaceId: auth.workspace.id },
       orderBy: { name: "asc" },
       include: {
-        groups: { include: { group: { select: { id: true, name: true, system: true } } } },
+        groups: { include: { group: { select: { id: true, name: true, system: true, color: true } } } },
         wabas: {
           include: {
             phones: { select: { enabled: true, invalidReason: true, status: true } },
@@ -50,7 +52,7 @@ export default async function GroupsPage() {
   const bmCheckboxes = (selected: string[], currentGroupId?: string) => (
     <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
       {businesses.map((b) => {
-        const others = b.groups.filter((m) => !m.group.system && m.group.id !== currentGroupId).map((m) => m.group.name);
+        const others = b.groups.filter((m) => !m.group.system && m.group.id !== currentGroupId);
         return (
           <label key={b.id} className="flex items-start gap-2 rounded-lg border border-zinc-200 px-3 py-2">
             <input type="checkbox" name="businessIds" value={b.id} defaultChecked={selected.includes(b.id)} className="mt-1" />
@@ -60,8 +62,8 @@ export default async function GroupsPage() {
               <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-zinc-500">
                 <span>{tierLabel(b.messagingLimitTier)}</span>
             {others.length > 0 && (
-              <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-800 ring-1 ring-amber-600/20" title="Uma BM só pode estar em um grupo de disparo">
-                está em {others.join(", ")} · sai de lá ao salvar
+              <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 ${groupTag(others[0].group.color)}`} title="Uma BM só pode estar em um grupo de disparo">
+                está em {others.map((m) => m.group.name).join(", ")} · sai de lá ao salvar
               </span>
             )}
               </span>
@@ -114,7 +116,7 @@ export default async function GroupsPage() {
           return (
             <Drawer
               key={g.id}
-              title={g.name}
+              title={<span className="flex items-center gap-2"><span className={`size-2.5 shrink-0 rounded-full ${groupDot(g.color)}`} />{g.name}</span>}
               subtitle={g.description || g.members.map((m) => m.business.name).join(" · ") || "Sem BMs"}
               tone={tone}
               toneTitle={tone === "red" ? "Nenhum número ativo" : tone === "amber" ? "Limite esgotado agora" : "Pronto para disparar"}
@@ -150,20 +152,21 @@ export default async function GroupsPage() {
                       </div>
                       <LimitWindow w={w} compact />
                       <div className="mt-2">
-                        <SendToGroup businessId={m.businessId} groups={regular.filter((x) => x.id !== g.id).map((x) => ({ id: x.id, name: x.name }))} />
+                        <SendToGroup businessId={m.businessId} groups={regular.filter((x) => x.id !== g.id).map((x) => ({ id: x.id, name: x.name, color: x.color }))} />
                       </div>
                     </div>
                   ) : null;
                 })}
               </div>
               <details className="group/edit">
-                <summary className="cursor-pointer list-none text-sm font-medium text-zinc-600 hover:text-zinc-900 [&::-webkit-details-marker]:hidden">Editar grupo</summary>
+                <summary className="cursor-pointer list-none text-sm font-medium text-zinc-600 hover:text-zinc-900 [&::-webkit-details-marker]:hidden">✏️ Editar nome, cor e BMs</summary>
                 <ActionForm action={saveGroupAction} submit="Salvar" className="mt-4">
                   <input type="hidden" name="id" value={g.id} />
                   <div className="mb-4 grid gap-4 md:grid-cols-2">
                     <Field label="Nome"><Input name="name" defaultValue={g.name} required /></Field>
                     <Field label="Descrição"><Input name="description" defaultValue={g.description ?? ""} /></Field>
                   </div>
+                  <ColorPicker current={g.color} />
                   {bmCheckboxes(g.members.map((m) => m.businessId), g.id)}
                 </ActionForm>
                 <div className="mt-4 border-t border-zinc-100 pt-4">

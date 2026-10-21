@@ -226,6 +226,8 @@ model BmGroup {
   description String?
   // "PROBLEMS" = grupo automático das BMs com problema (não entra em campanha)
   system      String?
+  // Cor da etiqueta do grupo (nome da cor: red, amber, emerald, sky, violet, pink, orange, zinc)
+  color       String?
   createdAt   DateTime        @default(now())
   workspace   Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   members     BmGroupMember[]

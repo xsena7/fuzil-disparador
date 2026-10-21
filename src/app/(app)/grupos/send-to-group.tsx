@@ -5,7 +5,7 @@ import { Loader2, Send } from "lucide-react";
 import { addBusinessToGroupAction } from "@/app/actions/groups";
 
 /** Move a BM para outro grupo (ela sai do grupo em que estava: uma BM só fica em um grupo de disparo). */
-export function SendToGroup({ businessId, groups }: { businessId: string; groups: Array<{ id: string; name: string }> }) {
+export function SendToGroup({ businessId, groups }: { businessId: string; groups: Array<{ id: string; name: string; color?: string | null }> }) {
   const [target, setTarget] = useState("");
   const [msg, setMsg] = useState<{ ok?: boolean; text: string } | null>(null);
   const [pending, start] = useTransition();

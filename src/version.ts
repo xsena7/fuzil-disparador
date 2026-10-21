@@ -2,6 +2,14 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "1.44",
+    date: "21/10/2026",
+    items: [
+      "Grupos de BM: cada grupo tem uma cor, que aparece na bolinha do grupo e nas etiquetas das BMs",
+      "Grupos de BM: o botão para editar o nome e a cor ficou mais visível (\"✏️ Editar nome, cor e BMs\")",
+    ],
+  },
+  {
     version: "1.43",
     date: "21/10/2026",
     items: ["Grupos de BM: nome completo da BM na lista de seleção (a etiqueta de grupo fica embaixo)"],
