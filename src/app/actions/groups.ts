@@ -46,3 +46,20 @@ export async function restoreBusinessAction(businessId: string) {
   revalidatePath("/grupos");
   return { ok: true };
 }
+
+/** Coloca a BM também no grupo escolhido (ela continua nos grupos em que já estava). */
+export async function addBusinessToGroupAction(businessId: string, groupId: string): Promise<{ ok?: true; error?: string }> {
+  const auth = await requireAuth();
+  const [bm, group] = await Promise.all([
+    prisma.businessManager.findFirst({ where: { id: businessId, workspaceId: auth.workspace.id }, select: { id: true } }),
+    prisma.bmGroup.findFirst({ where: { id: groupId, workspaceId: auth.workspace.id, system: null }, select: { id: true, name: true } }),
+  ]);
+  if (!bm || !group) return { error: "BM ou grupo não encontrado" };
+  await prisma.bmGroupMember.upsert({
+    where: { groupId_businessId: { groupId: group.id, businessId: bm.id } },
+    create: { groupId: group.id, businessId: bm.id },
+    update: {},
+  });
+  revalidatePath("/grupos");
+  return { ok: true };
+}

@@ -12,6 +12,7 @@ import { deleteGroupAction, restoreBusinessAction, saveGroupAction } from "@/app
 import { PROBLEMS_GROUP } from "@/lib/bm-problems";
 import { bmAptidao } from "@/lib/readiness";
 import { StatusDot } from "@/components/drawer";
+import { SendToGroup } from "./send-to-group";
 
 export const dynamic = "force-dynamic";
 
@@ -144,6 +145,9 @@ export default async function GroupsPage() {
                         <span className="truncate">{m.business.name}</span>
                       </div>
                       <LimitWindow w={w} compact />
+                      <div className="mt-2">
+                        <SendToGroup businessId={m.businessId} groups={regular.filter((x) => x.id !== g.id).map((x) => ({ id: x.id, name: x.name }))} />
+                      </div>
                     </div>
                   ) : null;
                 })}

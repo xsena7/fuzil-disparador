@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "1.42",
+    date: "21/10/2026",
+    items: ["Grupos de BM: em cada BM da gaveta, \"Mandar para o grupo…\" coloca a BM também no grupo escolhido na hora (ela continua no grupo atual)"],
+  },
+  {
     version: "1.41",
     date: "21/10/2026",
     items: ["Conexões: botão \"Testar conexão\" em cada conta. Confere na Meta se o token funciona e explica o problema em português"],
