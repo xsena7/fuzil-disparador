@@ -34,11 +34,14 @@ export function DomainChecker({ funnelId, domain, initial }: { funnelId: string;
       <ul className="space-y-1.5">
         <Row ok={r.rootOk} wait={!r.rootIps.length} label={domain} detail={r.rootOk ? "apontado ✅" : `${where(r.rootIps)} (precisa ser ${ip})`} />
         <Row ok={r.wwwOk} wait={!r.wwwIps.length} label={`www.${domain}`} detail={r.wwwOk ? "apontado ✅" : `${where(r.wwwIps)} (precisa ser ${ip})`} />
+        {r.ipv6?.length > 0 && (
+          <Row ok={false} label="Registro AAAA (IPv6)" detail={`apague no DNS: ${r.ipv6.join(", ")}. Ele faz o site não abrir para parte das pessoas`} />
+        )}
         {r.https !== null && (
           <Row ok={r.https} wait={!r.https} label="Cadeado (HTTPS)" detail={r.https ? "funcionando, a página já abre no domínio ✅" : "sendo gerado, verifique de novo em 1 minuto"} />
         )}
       </ul>
-      {r.rootOk && r.https && <p className="mt-2 font-medium text-emerald-700">Tudo pronto! Já pode usar https://{domain} nos anúncios.</p>}
+      {r.rootOk && r.https && !r.ipv6?.length && <p className="mt-2 font-medium text-emerald-700">Tudo pronto! Já pode usar https://{domain} nos anúncios.</p>}
       {!r.rootOk && <p className="mt-2 text-xs text-zinc-500">A propagação leva de alguns minutos a algumas horas depois de salvar no registro.br.</p>}
       <div className="mt-3 flex items-center gap-3">
         <Button

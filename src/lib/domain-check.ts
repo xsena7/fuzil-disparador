@@ -13,7 +13,17 @@ async function ips(host: string): Promise<string[]> {
   }
 }
 
+async function ips6(host: string): Promise<string[]> {
+  try {
+    return await Promise.race([resolver.resolve6(host), new Promise<string[]>((r) => setTimeout(() => r([]), 3000))]);
+  } catch {
+    return [];
+  }
+}
+
 export type DomainCheck = {
+  /** Registros AAAA (IPv6): o servidor não usa IPv6, então qualquer um manda parte das pessoas para outro lugar */
+  ipv6: string[];
   serverIps: string[];
   rootIps: string[];
   wwwIps: string[];
@@ -26,7 +36,8 @@ export type DomainCheck = {
 /** Confere se o domínio (e o www) já apontam para o servidor e, opcionalmente, se o HTTPS já abre. */
 export async function checkDomain(domain: string, testHttps = false): Promise<DomainCheck> {
   const appHost = env.appUrl().replace(/^https?:\/\//, "").replace(/[:/].*$/, "");
-  const [serverIps, rootIps, wwwIps] = await Promise.all([ips(appHost), ips(domain), ips(`www.${domain}`)]);
+  const [serverIps, rootIps, wwwIps, v6a, v6b, server6] = await Promise.all([ips(appHost), ips(domain), ips(`www.${domain}`), ips6(domain), ips6(`www.${domain}`), ips6(appHost)]);
+  const ipv6 = [...new Set([...v6a, ...v6b])].filter((x) => !server6.includes(x));
   const points = (list: string[]) => list.length > 0 && serverIps.length > 0 && list.some((x) => serverIps.includes(x));
   const rootOk = points(rootIps);
   let https: boolean | null = null;
@@ -39,5 +50,5 @@ export async function checkDomain(domain: string, testHttps = false): Promise<Do
       https = false;
     }
   }
-  return { serverIps, rootIps, wwwIps, rootOk, wwwOk: points(wwwIps), https };
+  return { ipv6, serverIps, rootIps, wwwIps, rootOk, wwwOk: points(wwwIps), https };
 }

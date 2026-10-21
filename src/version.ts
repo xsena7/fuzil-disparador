@@ -6,6 +6,7 @@ export const CHANGELOG: Array<{ version: string; date: string; items: string[] }
     date: "21/10/2026",
     items: [
       "Aquecimento: \"Tirar do funil\" em cada lead. A pessoa para de receber as mensagens na hora, mas continua na lista (dá para voltar)",
+      "\"Verificar agora\" também avisa se sobrou registro AAAA (IPv6) apontando para outro lugar",
       "Aquecimento: \"Excluir\" lead. Apaga a pessoa; se ela se inscrever de novo, começa do zero",
     ],
   },
