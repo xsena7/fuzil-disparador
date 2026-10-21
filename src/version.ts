@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "1.37",
+    date: "21/10/2026",
+    items: ["Conexões manuais: ao salvar a chave secreta do app, o Fuzil liga sozinho o webhook do app da BM (URL, token e campos). Falta só publicar o app"],
+  },
+  {
     version: "1.36",
     date: "21/10/2026",
     items: ["Conexões manuais: mostra se as respostas estão chegando (último evento recebido) ou sendo recusadas, com o passo a passo do webhook no app da BM"],

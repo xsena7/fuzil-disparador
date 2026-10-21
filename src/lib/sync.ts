@@ -359,3 +359,31 @@ export async function ensureWebhook(wabaRecordId: string) {
     return false;
   }
 }
+
+const WEBHOOK_FIELDS = [
+  "messages",
+  "message_template_status_update",
+  "template_category_update",
+  "message_template_quality_update",
+  "phone_number_quality_update",
+  "account_update",
+  "account_alerts",
+];
+
+/**
+ * Conexão manual: configura sozinho o webhook do app da BM (URL do Fuzil + campos) usando a chave secreta do app.
+ * Retorna null se deu certo, ou o motivo.
+ */
+export async function configureBmAppWebhook(wabaRecordId: string, appSecret: string): Promise<string | null> {
+  const waba = await prisma.whatsAppAccount.findUniqueOrThrow({ where: { id: wabaRecordId } });
+  if (!env.appUrl().startsWith("https://") || !env.metaVerifyToken()) return "o painel precisa estar em https com o token de verificação configurado";
+  try {
+    const appId = await meta.appIdOf(wabaToken(waba));
+    // App do próprio Fuzil já tem o webhook configurado pelo admin
+    if (appId !== env.metaAppId()) await meta.setAppWebhook(appId, appSecret, `${env.appUrl()}/api/webhook`, env.metaVerifyToken(), WEBHOOK_FIELDS);
+  } catch (err) {
+    return err instanceof Error ? err.message : String(err);
+  }
+  await ensureWebhook(waba.id).catch(() => undefined);
+  return null;
+}

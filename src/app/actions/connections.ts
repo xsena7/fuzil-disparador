@@ -6,7 +6,7 @@ import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { encrypt } from "@/lib/crypto";
-import { connectWaba, ensureWebhook, syncWaba, wabaToken } from "@/lib/sync";
+import { configureBmAppWebhook, connectWaba, syncWaba, wabaToken } from "@/lib/sync";
 import { deployBlueprints } from "@/lib/blueprints";
 import { meta } from "@/lib/meta";
 import { env } from "@/lib/env";
@@ -30,6 +30,8 @@ export async function connectManualAction(_: FormState, form: FormData): Promise
     if (/^[a-f0-9]{32}$/i.test(appSecret)) {
       await prisma.whatsAppAccount.updateMany({ where: { workspaceId: auth.workspace.id, wabaId }, data: { appSecretEnc: encrypt(appSecret) } });
       resetBmSecrets();
+      const saved = await prisma.whatsAppAccount.findFirst({ where: { workspaceId: auth.workspace.id, wabaId }, select: { id: true } });
+      if (saved) await configureBmAppWebhook(saved.id, appSecret);
     }
     deployBlueprints(auth.workspace.id).catch(() => undefined);
   } catch (err) {
@@ -113,8 +115,12 @@ export async function setAppSecretAction(_: FormState, form: FormData): Promise<
   } else {
     if (!/^[a-f0-9]{32}$/i.test(appSecret)) return { error: "A chave secreta do app tem 32 letras e números (Configurações do app → Básico → Chave secreta do app)" };
     await prisma.whatsAppAccount.update({ where: { id: waba.id }, data: { appSecretEnc: encrypt(appSecret) } });
-    // Reinscreve o app dessa BM na WABA apontando para o Fuzil (sem isso a Meta não manda nada)
-    await ensureWebhook(waba.id).catch(() => undefined);
+    resetBmSecrets();
+    // Configura sozinho o webhook do app da BM (URL do Fuzil + campos) e reinscreve na WABA
+    const problem = await configureBmAppWebhook(waba.id, appSecret);
+    revalidatePath("/conexoes");
+    if (problem) return { error: `Chave salva, mas não consegui ligar o webhook do app sozinho (${problem}). Confira se a chave é do mesmo app do token, ou siga o passo 2.` };
+    return { ok: "Chave salva e webhook do app configurado. Falta só publicar o app (Publish) no painel da Meta." };
   }
   resetBmSecrets();
   revalidatePath("/conexoes");

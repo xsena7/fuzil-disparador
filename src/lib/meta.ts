@@ -164,6 +164,21 @@ export const meta = {
     });
   },
 
+  /** Id do app dono do token (conexão manual usa o app da própria BM). */
+  appIdOf(token: string) {
+    return graph<{ id: string }>(token, "GET", "app", { query: { fields: "id" } }).then((a) => a.id);
+  },
+
+  /**
+   * Liga o webhook do WhatsApp no app (o mesmo que preencher Callback URL, Verify token e assinar os campos no painel).
+   * Usa o token do próprio app (app_id|app_secret).
+   */
+  setAppWebhook(appId: string, appSecret: string, callbackUrl: string, verifyToken: string, fields: string[]) {
+    return graph<{ success: boolean }>(`${appId}|${appSecret}`, "POST", `${appId}/subscriptions`, {
+      body: { object: "whatsapp_business_account", callback_url: callbackUrl, verify_token: verifyToken, fields: fields.join(",") },
+    });
+  },
+
   registerPhone(token: string, phoneNumberId: string, pin: string) {
     return graph<{ success: boolean }>(token, "POST", `${phoneNumberId}/register`, {
       body: { messaging_product: "whatsapp", pin },

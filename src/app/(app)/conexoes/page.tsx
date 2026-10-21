@@ -176,20 +176,27 @@ export default async function ConnectionsPage() {
                             </ActionForm>
                           </div>
                           <div>
-                            <b className="text-zinc-800">2. Webhook no app da BM</b> {last && <span className="text-emerald-700">chegando ✅</span>}
-                            <ol className="mt-1 list-decimal space-y-1 pl-5">
-                              <li>No mesmo app, menu da esquerda: <b>WhatsApp → Configuração</b>.</li>
+                            <b className="text-zinc-800">2. Publicar o app</b> {last && <span className="text-emerald-700">chegando ✅</span>}
+                            <p className="mt-1">
+                              Ao salvar a chave, o Fuzil liga o webhook do app sozinho. Falta só: no app da BM, menu da esquerda → <b>Publish</b> → <b>Publish</b> (app &quot;Unpublished&quot; não recebe
+                              respostas). Se pedir política de privacidade, use o link de privacidade do seu site.
+                            </p>
+                          </div>
+                          <details>
+                            <summary className="cursor-pointer text-xs text-zinc-500">Ligar o webhook na mão (se o automático der erro)</summary>
+                            <ol className="mt-2 list-decimal space-y-1 pl-5">
+                              <li>No app da BM: <b>Use cases → Connect with customers through WhatsApp → Customize → Configuration</b>.</li>
                               <li>
                                 Em Webhook, clique em <b>Editar</b>. URL de callback: <code className="rounded bg-zinc-100 px-1">{env.appUrl()}/api/webhook</code> · Token de verificação:{" "}
                                 <code className="rounded bg-zinc-100 px-1">{env.metaVerifyToken() || "(peça ao admin)"}</code> → <b>Verificar e salvar</b>.
                               </li>
                               <li>
-                                Logo abaixo, em <b>Campos do webhook</b>, clique em <b>Assinar</b> na linha <b>messages</b>.
+                                Em <b>Webhook fields</b>, ligue <b>messages</b>, message_template_status_update, template_category_update e account_update.
                               </li>
                               <li>No topo do app, se estiver &quot;Em desenvolvimento&quot;, mude para <b>Publicado</b> (pede um link de privacidade: use o do seu site).</li>
                               <li>Volte aqui, clique em ↻ (sincronizar) e responda uma mensagem para testar.</li>
                             </ol>
-                          </div>
+                          </details>
                         </div>
                       </details>
                     );
