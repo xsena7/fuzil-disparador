@@ -14,6 +14,7 @@ import { wabaReadiness } from "@/lib/readiness";
 import { PHONE_REMOVED } from "@/lib/sync";
 import { PasswordInput } from "@/components/password-input";
 import { StatusDot } from "@/components/drawer";
+import { TestWaba } from "./test-waba";
 import {
   connectManualAction,
   deleteWabaAction,
@@ -119,6 +120,7 @@ export default async function ConnectionsPage() {
                     <span className="ml-auto text-xs text-zinc-400">
                       {waba.lastSyncedAt ? `Sincronizado ${waba.lastSyncedAt.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}` : "Nunca sincronizado"}
                     </span>
+                    <TestWaba id={waba.id} />
                     <ConfirmButton action={syncWabaAction.bind(null, waba.id)} variant="ghost" className="px-2 py-1"><RefreshCw className="size-4" /></ConfirmButton>
                     <ConfirmButton action={deleteWabaAction.bind(null, waba.id)} variant="ghost" className="px-2 py-1 text-red-600" confirm={`Remover a WABA ${waba.name} do painel? (Nada é apagado na Meta)`}><Trash2 className="size-4" /></ConfirmButton>
                   </div>

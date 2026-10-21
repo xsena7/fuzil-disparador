@@ -126,3 +126,30 @@ export async function setAppSecretAction(_: FormState, form: FormData): Promise<
   revalidatePath("/conexoes");
   return { ok: "Salvo" };
 }
+
+/** Testa o token guardado dessa WABA na Meta e devolve uma explicação em português (sem mostrar o token). */
+export async function testWabaAction(id: string): Promise<{ ok?: boolean; text: string }> {
+  const waba = await ownWaba(id);
+  const { wabaToken } = await import("@/lib/sync");
+  const { meta, MetaError } = await import("@/lib/meta");
+  let token: string;
+  try {
+    token = wabaToken(waba);
+  } catch {
+    return { text: "Não há token guardado para essa conta. Conecte de novo com o token." };
+  }
+  try {
+    const info = await meta.getWaba(token, waba.wabaId);
+    return {
+      ok: true,
+      text: `A Meta reconhece a conta "${info.name}" e o token tem acesso a ela.${info.account_review_status ? ` Status de análise: ${info.account_review_status}.` : ""}`,
+    };
+  } catch (err) {
+    if (err instanceof MetaError) {
+      if (err.code === 100) return { text: "O ID informado não é de uma conta do WhatsApp. Use o ID da conta do WhatsApp (e não o da BM)." };
+      if (err.code === 190 || err.code === 10 || err.code === 200) return { text: "O token não tem permissão para essa conta (ou expirou). Gere um token novo com o app dessa BM e as permissões de WhatsApp." };
+      return { text: `A Meta respondeu com erro: ${err.message}` };
+    }
+    return { text: "Não consegui falar com a Meta agora. Tente de novo em instantes." };
+  }
+}

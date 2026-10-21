@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "1.41",
+    date: "21/10/2026",
+    items: ["Conexões: botão \"Testar conexão\" em cada conta. Confere na Meta se o token funciona e explica o problema em português"],
+  },
+  {
     version: "1.40",
     date: "21/10/2026",
     items: ["Templates: passe o mouse no nome do template e aparece um preview de como a pessoa vai receber no WhatsApp"],
