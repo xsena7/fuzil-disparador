@@ -30,6 +30,8 @@ export type FunnelPage = {
   color: string;
   salary?: string;
   location?: string;
+  /** Foto do perfil no celular de exemplo (caminho relativo /media/..., abre no domínio próprio sem mostrar o painel) */
+  avatar?: string;
   jobs: Job[];
 };
 

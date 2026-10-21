@@ -32,7 +32,7 @@ function Clock24() {
 }
 
 /** Celular mostrando a conversa que a pessoa vai receber (as mensagens vão aparecendo em loop). */
-function Phone({ company, job }: { company: string; job: string }) {
+function Phone({ company, job, avatar }: { company: string; job: string; avatar?: string }) {
   const msgs = [
     { me: false, text: <>Seu código de confirmação é <b>482 913</b>. Não compartilhe com ninguém.</>, button: "Copiar código", icon: Copy },
     { me: false, text: <>Olá, Ana! Sua inscrição para a vaga de <b>{job}</b> foi confirmada ✅</>, button: "Recebi" },
@@ -63,7 +63,12 @@ function Phone({ company, job }: { company: string; job: string }) {
     <div className="relative mx-auto w-[290px] rotate-[2deg] rounded-[44px] bg-[#1b1b1f] p-2.5 shadow-[0_40px_80px_-20px_rgba(0,0,0,.6),inset_0_0_0_1px_rgba(255,255,255,.08)] md:w-[310px]">
       <div className="overflow-hidden rounded-[36px] bg-[#efe7dd]">
         <div className="flex items-center gap-2.5 bg-[#1f2c33] px-4 pb-3 pt-7 text-white">
-          <span className="flex size-8 items-center justify-center rounded-full bg-[var(--c)] text-sm font-bold">{company.charAt(0)}</span>
+          {avatar ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={avatar} alt="" className="size-8 rounded-full object-cover" />
+          ) : (
+            <span className="flex size-8 items-center justify-center rounded-full bg-[var(--c)] text-sm font-bold">{company.charAt(0)}</span>
+          )}
           <span className="leading-tight">
             <span className="block text-sm font-semibold">{company}</span>
             <span className="block text-[11px] text-white/60">{typing && n < msgs.length && !msgs[n]?.me ? "digitando..." : "online"}</span>
@@ -211,7 +216,7 @@ export function TechLanding({ page, jobs, funnelKey, utm, privacyHref, open }: P
             </dl>
           </div>
           <div className="fu" style={{ animationDelay: ".25s" }}>
-            <Phone company={page.company} job={jobs[0]?.title ?? page.jobTitle} />
+            <Phone company={page.company} job={jobs[0]?.title ?? page.jobTitle} avatar={page.avatar} />
           </div>
         </header>
 

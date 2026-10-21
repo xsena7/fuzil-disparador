@@ -246,3 +246,24 @@ export async function deleteLeadAction(id: string) {
   revalidatePath(`/aquecimento/${lead.funnelId}`);
   return { ok: true };
 }
+
+export async function saveAvatarAction(id: string, form: FormData): Promise<{ ok?: true; error?: string }> {
+  const { funnel } = await ownFunnel(id);
+  if (!funnel) return { error: "Funil não encontrado" };
+  let avatar: string | undefined;
+  if (!form.get("remove")) {
+    const file = form.get("file");
+    if (!(file instanceof File) || !file.size) return { error: "Escolha uma imagem" };
+    if (!["image/jpeg", "image/png"].includes(file.type)) return { error: "Use uma imagem JPG ou PNG" };
+    const { saveUpload } = await import("@/lib/uploads");
+    try {
+      const saved = await saveUpload(file);
+      avatar = `/media/${saved.path.split("/").pop()}`;
+    } catch (err) {
+      return { error: friendlyError(err) };
+    }
+  }
+  await prisma.funnel.update({ where: { id: funnel.id }, data: { page: { ...funnelPage(funnel), avatar } } });
+  revalidatePath(`/aquecimento/${funnel.id}`);
+  return { ok: true };
+}

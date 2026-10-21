@@ -16,6 +16,7 @@ import { FieldsEditor } from "./fields-editor";
 import { DomainChecker } from "./domain-check";
 import { checkDomain } from "@/lib/domain-check";
 import { JobsEditor } from "./jobs-editor";
+import { AvatarUpload } from "./avatar-upload";
 
 export const dynamic = "force-dynamic";
 
@@ -211,6 +212,10 @@ export default async function FunnelPage({ params, searchParams }: { params: Pro
       </Drawer>
 
       <Drawer title="Página de inscrição" subtitle="Textos e cor da landing page" meta={<span className="truncate">{page.jobTitle}</span>}>
+        <div className="mb-6 border-b border-zinc-100 pb-5">
+          <p className="mb-3 text-sm font-medium text-zinc-700">Foto do perfil no celular de exemplo</p>
+          <AvatarUpload funnelId={funnel.id} avatar={page.avatar} company={page.company} />
+        </div>
         <ActionForm action={savePageAction} submit="Salvar página">
           <input type="hidden" name="id" value={funnel.id} />
           <div className="grid gap-4 md:grid-cols-2">

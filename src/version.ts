@@ -2,9 +2,16 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "1.34",
+    date: "21/10/2026",
+    items: ["Aquecimento: escolha a foto do perfil que aparece no celular de exemplo do site"],
+  },
+  {
     version: "1.33",
     date: "21/10/2026",
-    items: ["Aquecimento: cada vaga tem \"Quantidade de vagas\" (padrão 200). O site mostra quantas vagas tem em cada cargo e o total no topo"],
+    items: [
+      "Aquecimento: cada vaga tem \"Quantidade de vagas\" (padrão 200). O site mostra quantas vagas tem em cada cargo e o total no topo",
+    ],
   },
   {
     version: "1.32",
