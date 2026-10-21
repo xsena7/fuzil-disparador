@@ -314,12 +314,23 @@ export async function testCampaignSendAction(id: string, _: { ok?: string; error
     headerMediaName: c.headerMediaName,
   });
   const used = `${sender.display} · ${sender.template.name} · ${sender.template.language}`;
+  const wabaRec = await prisma.whatsAppAccount.findUnique({ where: { id: sender.wabaId }, select: { wabaId: true } });
+  // Diagnóstico: o mesmo token vê o template nessa WABA? (o que a Meta devolve para esse nome)
+  const lookup = async () => {
+    try {
+      const found = await meta.findTemplates(sender.token, wabaRec?.wabaId ?? "", sender.template.name);
+      return found.data.length ? found.data : "nenhum template com esse nome visível para este token";
+    } catch (e) {
+      return `erro ao consultar: ${e instanceof Error ? e.message : String(e)}`;
+    }
+  };
   try {
     const res = await meta.sendTemplate(sender.token, sender.phoneNumberId, phone, { name: sender.template.name, language: sender.template.language, components });
     return { ok: `Mensagem aceita pela Meta (${used}).`, raw: JSON.stringify(res, null, 2) };
   } catch (err) {
     if (err instanceof MetaError) {
-      return { error: `A Meta recusou (${used}).`, raw: JSON.stringify({ message: err.message, code: err.code, subcode: err.subcode, httpStatus: err.httpStatus, details: err.details }, null, 2) };
+      const diag = { waba: wabaRec?.wabaId, phoneNumberId: sender.phoneNumberId, meta_error: { message: err.message, code: err.code, subcode: err.subcode, httpStatus: err.httpStatus, details: err.details }, token_ve_o_template: await lookup() };
+      return { error: `A Meta recusou (${used}).`, raw: JSON.stringify(diag, null, 2) };
     }
     return { error: `Erro inesperado (${used}): ${err instanceof Error ? err.message : String(err)}` };
   }

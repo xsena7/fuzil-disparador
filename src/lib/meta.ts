@@ -241,6 +241,13 @@ export const meta = {
     });
   },
 
+  /** Diagnóstico: o token enxerga o template por esse nome? (lista da WABA filtrada pelo nome) */
+  findTemplates(token: string, wabaId: string, name: string) {
+    return graph<{ data: Array<{ id: string; name: string; language: string; status: string; category: string; waba_id?: string }> }>(token, "GET", `${wabaId}/message_templates`, {
+      query: { name, fields: "id,name,language,status,category" },
+    });
+  },
+
   sendTemplate(
     token: string,
     phoneNumberId: string,
