@@ -2,6 +2,14 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "1.32",
+    date: "21/10/2026",
+    items: [
+      "Aquecimento: \"Tirar do funil\" em cada lead. A pessoa para de receber as mensagens na hora, mas continua na lista (dá para voltar)",
+      "Aquecimento: \"Excluir\" lead. Apaga a pessoa; se ela se inscrever de novo, começa do zero",
+    ],
+  },
+  {
     version: "1.31",
     date: "21/10/2026",
     items: [

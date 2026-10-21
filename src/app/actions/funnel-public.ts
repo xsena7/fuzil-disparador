@@ -77,6 +77,7 @@ export async function verifyCodeAction(token: string, code: string): Promise<{ o
   if (tooMany(`fver:${token}`, 15, 10 * 60_000)) return { error: "Muitas tentativas. Espere alguns minutos." };
   const lead = await prisma.lead.findUnique({ where: { formToken: token }, include: { funnel: true } });
   if (!lead) return { error: "Inscrição não encontrada. Recarregue a página." };
+  if (lead.status === "STOPPED") return { error: "Essa inscrição foi encerrada." };
   if (lead.status !== "CODE_SENT") return { ok: true };
   const digits = String(code ?? "").replace(/\D/g, "");
   if (digits.length !== 6) return { error: "Digite os 6 números do código." };
@@ -112,7 +113,7 @@ export async function resendCodeAction(token: string): Promise<{ ok?: true; erro
 /** Cadastro final (link que chega no WhatsApp). */
 export async function answersAction(token: string, _: { ok?: true; error?: string } | undefined, form: FormData): Promise<{ ok?: true; error?: string }> {
   const lead = await prisma.lead.findUnique({ where: { formToken: token }, include: { funnel: true } });
-  if (!lead || lead.status === "CODE_SENT") return { error: "Link inválido." };
+  if (!lead || lead.status === "CODE_SENT" || lead.status === "STOPPED") return { error: "Link inválido." };
   if (lead.status === "COMPLETED") return { ok: true };
   const answers: Record<string, string> = {};
   for (const f of funnelFields(lead.funnel)) {

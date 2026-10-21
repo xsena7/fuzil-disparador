@@ -2,7 +2,7 @@ import { getAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { funnelFields } from "@/lib/funnels";
 
-const STATUS = { CODE_SENT: "Falta o código", VERIFIED: "Confirmado", COMPLETED: "Cadastro completo" };
+const STATUS = { CODE_SENT: "Falta o código", VERIFIED: "Confirmado", COMPLETED: "Cadastro completo", STOPPED: "Tirado do funil" };
 
 /** Planilha (CSV) com todos os leads do funil: dá para subir direto numa campanha. */
 export async function GET(_: Request, { params }: { params: Promise<{ id: string }> }) {

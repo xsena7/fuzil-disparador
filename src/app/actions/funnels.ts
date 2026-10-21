@@ -213,3 +213,35 @@ export async function checkDomainAction(id: string): Promise<{ error?: string; r
   revalidatePath(`/aquecimento/${funnel.id}`);
   return { result };
 }
+
+async function ownLead(id: string) {
+  const auth = await requireAuth();
+  return prisma.lead.findFirst({ where: { id, workspaceId: auth.workspace.id } });
+}
+
+export async function stopLeadAction(id: string) {
+  const lead = await ownLead(id);
+  if (!lead) return { error: "Lead não encontrado" };
+  const { stopLead } = await import("@/lib/funnels");
+  await stopLead(lead);
+  revalidatePath(`/aquecimento/${lead.funnelId}`);
+  return { ok: true };
+}
+
+export async function resumeLeadAction(id: string) {
+  const lead = await ownLead(id);
+  if (!lead) return { error: "Lead não encontrado" };
+  const { resumeLead } = await import("@/lib/funnels");
+  await resumeLead(lead);
+  revalidatePath(`/aquecimento/${lead.funnelId}`);
+  return { ok: true };
+}
+
+export async function deleteLeadAction(id: string) {
+  const lead = await ownLead(id);
+  if (!lead) return { error: "Lead não encontrado" };
+  const { deleteLead } = await import("@/lib/funnels");
+  await deleteLead(lead);
+  revalidatePath(`/aquecimento/${lead.funnelId}`);
+  return { ok: true };
+}

@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { Download, ExternalLink, Pause, Play, Trash2 } from "lucide-react";
+import { Download, ExternalLink, Pause, Play, Trash2, Undo2, UserX } from "lucide-react";
 import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { planSenders } from "@/lib/dispatcher";
@@ -10,7 +10,7 @@ import { getComponent, type TComponent } from "@/lib/template-utils";
 import { Drawer, MetaItem } from "@/components/drawer";
 import { Badge, Field, Input, PageHeader, Select, Stat, Table, Td, Textarea } from "@/components/ui";
 import { ActionForm, ConfirmButton } from "@/components/action-form";
-import { deleteFunnelAction, savePageAction, saveSettingsAction, toggleFunnelAction } from "@/app/actions/funnels";
+import { deleteFunnelAction, deleteLeadAction, resumeLeadAction, savePageAction, saveSettingsAction, stopLeadAction, toggleFunnelAction } from "@/app/actions/funnels";
 import { FlowEditor, type BlueprintOption } from "./flow-editor";
 import { FieldsEditor } from "./fields-editor";
 import { DomainChecker } from "./domain-check";
@@ -19,7 +19,7 @@ import { JobsEditor } from "./jobs-editor";
 
 export const dynamic = "force-dynamic";
 
-const STATUS = { CODE_SENT: { label: "Falta o código", color: "yellow" }, VERIFIED: { label: "Confirmado", color: "blue" }, COMPLETED: { label: "Cadastro completo", color: "green" } } as const;
+const STATUS = { CODE_SENT: { label: "Falta o código", color: "yellow" }, VERIFIED: { label: "Confirmado", color: "blue" }, COMPLETED: { label: "Cadastro completo", color: "green" }, STOPPED: { label: "Tirado do funil", color: "gray" } } as const;
 
 export default async function FunnelPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ s?: string }> }) {
   const auth = await requireAuth();
@@ -177,6 +177,20 @@ export default async function FunnelPage({ params, searchParams }: { params: Pro
                     {funnelFields(funnel).map((f) => (
                       <Info key={f.key} label={f.label} value={answers[f.key]} />
                     ))}
+                    <div className="flex flex-wrap gap-2 pt-2 sm:col-span-2">
+                      {l.status === "STOPPED" ? (
+                        <ConfirmButton action={resumeLeadAction.bind(null, l.id)}>
+                          <Undo2 className="size-4" /> Voltar para o funil
+                        </ConfirmButton>
+                      ) : (
+                        <ConfirmButton action={stopLeadAction.bind(null, l.id)} confirm={`Tirar ${l.name} do funil? Ela para de receber as mensagens, mas continua na lista.`}>
+                          <UserX className="size-4" /> Tirar do funil
+                        </ConfirmButton>
+                      )}
+                      <ConfirmButton action={deleteLeadAction.bind(null, l.id)} variant="danger" confirm={`Excluir ${l.name}? Some da lista e, se ela se inscrever de novo, começa do zero.`}>
+                        <Trash2 className="size-4" /> Excluir
+                      </ConfirmButton>
+                    </div>
                   </div>
                 </details>
               );

@@ -16,7 +16,7 @@ export default async function Cadastro({ params }: { params: Promise<{ key: stri
   const funnel = await resolveFunnel(key);
   if (!funnel) notFound();
   const lead = await prisma.lead.findUnique({ where: { formToken: token } });
-  if (!lead || lead.funnelId !== funnel.id || lead.status === "CODE_SENT") notFound();
+  if (!lead || lead.funnelId !== funnel.id || lead.status === "CODE_SENT" || lead.status === "STOPPED") notFound();
   const p = funnelPage(funnel);
 
   return (

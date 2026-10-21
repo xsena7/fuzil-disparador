@@ -385,3 +385,28 @@ export async function setFunnelStatus(funnelId: string, active: boolean) {
     data: active ? { status: "RUNNING", pausedReason: null } : { status: "PAUSED", pausedReason: FUNNEL_PAUSED },
   });
 }
+
+/** Cancela o que ainda estava na fila do funil para esse número (não chega mais nada). */
+async function cancelQueued(lead: Pick<Lead, "funnelId" | "phone">, reason: string) {
+  await prisma.campaignRecipient.updateMany({
+    where: { phone: lead.phone, status: "PENDING", campaign: { funnelId: lead.funnelId } },
+    data: { status: "SKIPPED", errorTitle: reason },
+  });
+}
+
+/** Tira a pessoa do funil: para os timers e cancela o que estava na fila. */
+export async function stopLead(lead: Lead) {
+  await prisma.lead.update({ where: { id: lead.id }, data: { status: "STOPPED", stoppedAt: new Date(), nextStepAt: null } });
+  await cancelQueued(lead, "Tirado do funil");
+}
+
+/** Volta para o funil do passo em que parou. */
+export async function resumeLead(lead: Lead) {
+  const status = lead.answeredAt ? "COMPLETED" : lead.verifiedAt ? "VERIFIED" : "CODE_SENT";
+  await prisma.lead.update({ where: { id: lead.id }, data: { status, stoppedAt: null, nextStepAt: lead.verifiedAt ? new Date() : null } });
+}
+
+export async function deleteLead(lead: Lead) {
+  await cancelQueued(lead, "Lead excluído");
+  await prisma.lead.delete({ where: { id: lead.id } });
+}

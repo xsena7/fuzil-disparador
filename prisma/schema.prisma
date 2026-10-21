@@ -698,6 +698,7 @@ enum LeadStatus {
   CODE_SENT // preencheu o formulário, falta confirmar o código
   VERIFIED // confirmou o WhatsApp, está no funil
   COMPLETED // respondeu o cadastro final
+  STOPPED // tirado do funil pelo dono: não recebe mais nada
 }
 
 model Lead {
@@ -716,6 +717,7 @@ model Lead {
   codeSends     Int        @default(0)
   lastCodeAt    DateTime?
   verifiedAt    DateTime?
+  stoppedAt     DateTime?
   // Link do cadastro final
   formToken     String     @unique
   answers       Json?
