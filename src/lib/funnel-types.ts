@@ -10,7 +10,13 @@ export type Job = {
   description: string;
   requirements: string[];
   open: boolean;
+  /** Quantas pessoas a empresa quer contratar nesse cargo (padrão 200) */
+  positions?: number;
 };
+
+/** Vagas por cargo quando o campo não foi preenchido. */
+export const DEFAULT_POSITIONS = 200;
+export const jobPositions = (j: Pick<Job, "positions">) => (j.positions && j.positions > 0 ? j.positions : DEFAULT_POSITIONS);
 
 export type FunnelPage = {
   company: string;

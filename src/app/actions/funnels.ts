@@ -197,6 +197,7 @@ export async function saveJobsAction(id: string, jobs: Job[]): Promise<{ ok?: tr
       description: String(j.description ?? "").trim().slice(0, 1500),
       requirements: (j.requirements ?? []).map((r) => String(r).trim().slice(0, 120)).filter(Boolean).slice(0, 12),
       open: j.open !== false,
+      positions: Math.min(100_000, Math.max(1, Math.round(Number(j.positions) || 200))),
     });
   }
   await prisma.funnel.update({ where: { id: funnel.id }, data: { page: { ...funnelPage(funnel), jobs: clean } } });

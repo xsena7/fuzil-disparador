@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import clsx from "clsx";
 import { ArrowRight, ArrowUpRight, CheckCheck, Clock, Copy, GraduationCap, HeartHandshake, Home, Laptop, Plus, Wallet, X } from "lucide-react";
-import type { FunnelPage, Job } from "@/lib/funnel-types";
+import { jobPositions, type FunnelPage, type Job } from "@/lib/funnel-types";
 import { Signup } from "./signup";
 
 type Props = { page: FunnelPage; jobs: Job[]; funnelKey: string; utm: Record<string, string>; privacyHref: string; open: boolean };
@@ -114,6 +114,8 @@ export function TechLanding({ page, jobs, funnelKey, utm, privacyHref, open }: P
   const [faq, setFaq] = useState<number | null>(0);
   const shown = jobs.filter((j) => !area || j.area === area);
   const active = jobs.find((j) => j.id === panel);
+  // Total de vagas = soma das posições de cada cargo
+  const total = jobs.reduce((n, j) => n + jobPositions(j), 0).toLocaleString("pt-BR");
   const words = page.headline.split(" ");
   const last = words.pop();
 
@@ -158,7 +160,7 @@ export function TechLanding({ page, jobs, funnelKey, utm, privacyHref, open }: P
               <span className="absolute inline-flex size-full animate-ping rounded-full bg-[var(--c)]" />
               <span className="relative size-1.5 rounded-full bg-[var(--c)]" />
             </span>
-            Contratando · {pad(jobs.length)} vagas
+            Contratando · {total} vagas
           </span>
           <span>
             Brasília <Clock24 />
@@ -197,7 +199,7 @@ export function TechLanding({ page, jobs, funnelKey, utm, privacyHref, open }: P
             </div>
             <dl className="fu mt-14 grid max-w-xl grid-cols-3 border-t border-white/10 pt-6" style={{ animationDelay: ".28s" }}>
               {[
-                [pad(jobs.length), "vagas abertas"],
+                [total, "vagas abertas"],
                 ["100%", "remoto"],
                 ["0", "custo para participar"],
               ].map(([v, l]) => (
@@ -235,7 +237,7 @@ export function TechLanding({ page, jobs, funnelKey, utm, privacyHref, open }: P
       <section id="vagas" className="scroll-mt-4 px-5 py-16 md:px-10 md:py-24">
         <div className="flex flex-wrap items-end justify-between gap-6">
           <div>
-            <p className="mono text-xs uppercase tracking-[0.2em] text-black/45">Vagas abertas · {pad(jobs.length)}</p>
+            <p className="mono text-xs uppercase tracking-[0.2em] text-black/45">Vagas abertas · {total}</p>
             <h2 className="mt-3 text-4xl font-semibold tracking-[-0.03em] md:text-6xl">Escolha a sua.</h2>
           </div>
           {areas.length > 1 && (
@@ -276,6 +278,7 @@ export function TechLanding({ page, jobs, funnelKey, utm, privacyHref, open }: P
                 <span className="flex items-center gap-1.5 text-black/60">
                   <Home className="size-4" /> Remoto
                 </span>
+                <span className="font-medium">{jobPositions(j).toLocaleString("pt-BR")} vagas</span>
                 {j.level && <span className="text-black/60">{j.level}</span>}
                 <span className="mono font-medium">{j.salary || "A combinar"}</span>
                 <span className="ml-auto flex size-10 items-center justify-center rounded-full bg-[#f5f4f0] transition group-hover:bg-[var(--a)] group-hover:text-white">

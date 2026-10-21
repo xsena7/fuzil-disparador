@@ -31,7 +31,7 @@ export function JobsEditor({ funnelId, initial }: { funnelId: string; initial: J
               <ChevronRight className={`size-4 shrink-0 text-zinc-400 transition-transform ${openIdx === i ? "rotate-90" : ""}`} />
               <span className={`size-2 shrink-0 rounded-full ${j.open ? "bg-emerald-500" : "bg-zinc-300"}`} />
               <span className="truncate font-medium">{j.title || "Nova vaga"}</span>
-              <span className="truncate text-xs text-zinc-500">{[j.area, j.level, j.salary].filter(Boolean).join(" · ")}</span>
+              <span className="truncate text-xs text-zinc-500">{[`${j.positions ?? 200} vagas`, j.area, j.level, j.salary].filter(Boolean).join(" · ")}</span>
             </button>
             <label className="flex shrink-0 items-center gap-1.5 text-xs text-zinc-600">
               <input type="checkbox" checked={j.open} onChange={(e) => patch(i, { open: e.target.checked })} /> Aberta
@@ -46,6 +46,10 @@ export function JobsEditor({ funnelId, initial }: { funnelId: string; initial: J
               <input value={j.area} onChange={(e) => patch(i, { area: e.target.value })} placeholder="Área (ex.: Desenvolvimento)" className={inp} />
               <input value={j.level} onChange={(e) => patch(i, { level: e.target.value })} placeholder="Nível (ex.: Júnior, Sem experiência)" className={inp} />
               <input value={j.salary} onChange={(e) => patch(i, { salary: e.target.value })} placeholder="Salário (ex.: R$ 2.500)" className={inp} />
+              <label className="flex items-center gap-2 text-sm text-zinc-600">
+                Quantidade de vagas
+                <input type="number" min={1} value={j.positions ?? 200} onChange={(e) => patch(i, { positions: Number(e.target.value) })} className={`${inp} w-28`} />
+              </label>
               <textarea value={j.description} onChange={(e) => patch(i, { description: e.target.value })} placeholder="O que a pessoa vai fazer" rows={4} className={inp} />
               <textarea value={j.reqText} onChange={(e) => patch(i, { reqText: e.target.value })} placeholder="Requisitos (um por linha)" rows={4} className={inp} />
             </div>
@@ -57,7 +61,7 @@ export function JobsEditor({ funnelId, initial }: { funnelId: string; initial: J
           variant="secondary"
           type="button"
           onClick={() => {
-            setJobs([...jobs, { id: "", title: "", area: "", level: "", salary: "", description: "", requirements: [], open: true, reqText: "" }]);
+            setJobs([...jobs, { id: "", title: "", area: "", level: "", salary: "", description: "", requirements: [], open: true, positions: 200, reqText: "" }]);
             setOpenIdx(jobs.length);
           }}
         >
