@@ -672,6 +672,11 @@ model Funnel {
   // Textos da landing page: { company, jobTitle, headline, subtitle, about, benefits[], requirements[], cta, color }
   page        Json
   pixelId     String?
+  // API de Conversões (CAPI): token criptografado, código de teste e o resultado do último envio
+  capiTokenEnc  String?
+  capiTestCode  String?
+  capiLastOkAt  DateTime?
+  capiLastError String?
   // Perguntas do cadastro final: [{ key, label, type: text|textarea|select, options[], required }]
   formFields  Json
   // Passos depois que a pessoa confirma o número: [{ id, type: wait|send, amount, unit, blueprintId, mapping, onlyIfPending }]

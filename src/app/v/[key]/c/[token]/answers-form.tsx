@@ -11,7 +11,7 @@ const input = "w-full rounded-none border-0 border-b border-black/25 bg-transpar
 export function AnswersForm({ token, fields }: { token: string; fields: FormField[] }) {
   const [state, action, pending] = useActionState(answersAction.bind(null, token), undefined);
   useEffect(() => {
-    if (state?.ok) track("SubmitApplication");
+    if (state?.ok) track("SubmitApplication", token);
   }, [state]);
 
   if (state?.ok)

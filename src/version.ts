@@ -2,6 +2,14 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "1.31",
+    date: "21/10/2026",
+    items: [
+      "Aquecimento: API de Conversões da Meta. Cole o token no funil e o servidor manda Lead, CompleteRegistration e SubmitApplication direto para a Meta (sem contar em dobro com o Pixel)",
+      "Mostra se o último envio para a API de Conversões deu certo ou o erro, e aceita código de teste",
+    ],
+  },
+  {
     version: "1.30",
     date: "21/10/2026",
     items: [

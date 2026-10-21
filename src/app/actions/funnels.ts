@@ -7,6 +7,7 @@ import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { deployBlueprints } from "@/lib/blueprints";
 import { friendlyError } from "@/lib/meta-errors";
+import { encrypt } from "@/lib/crypto";
 import { createFunnel, funnelPage, setFunnelStatus, slugify, type FormField, type FunnelStep, type Job } from "@/lib/funnels";
 import type { FormState } from "./auth";
 
@@ -96,7 +97,11 @@ export async function saveSettingsAction(_: FormState, form: FormData): Promise<
   }
   const group = await prisma.bmGroup.findFirst({ where: { id: groupId, workspaceId: auth.workspace.id, system: null } });
   if (!group) return { error: "Escolha o grupo de BM" };
-  await prisma.funnel.update({ where: { id: funnel.id }, data: { name, groupId, pixelId, domain, sendFrom, sendTo } });
+  // Token da API de Conversões: em branco mantém o atual; "remover" apaga
+  const capiToken = str(form, "capiToken", 600).replace(/\s+/g, "");
+  const capi = form.get("capiRemove") ? { capiTokenEnc: null, capiLastOkAt: null, capiLastError: null } : capiToken ? { capiTokenEnc: encrypt(capiToken), capiLastError: null } : {};
+  const capiTestCode = str(form, "capiTestCode", 40) || null;
+  await prisma.funnel.update({ where: { id: funnel.id }, data: { name, groupId, pixelId, domain, sendFrom, sendTo, capiTestCode, ...capi } });
   if (group.id !== funnel.groupId) {
     // Os templates do funil passam a subir nas BMs do grupo novo
     const ids = [funnel.codeBlueprintId, funnel.doneBlueprintId, ...(funnel.steps as unknown as FunnelStep[]).flatMap((s) => (s.type === "send" ? [s.blueprintId] : []))].filter((x): x is string => Boolean(x));

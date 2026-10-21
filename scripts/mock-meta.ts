@@ -66,6 +66,12 @@ createServer(async (req, res) => {
     return res.end(Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==", "base64"));
   }
   if (id === "oauth") return json(res, 200, { access_token: "mock-business-token" });
+  // API de Conversões: POST /{pixel}/events
+  if (edge === "events" && req.method === "POST") {
+    if (body.access_token !== "capi-ok") return json(res, 400, { error: { message: "Invalid OAuth access token", code: 190 } });
+    sent.push({ capi: body.data?.[0]?.event_name, event_id: body.data?.[0]?.event_id, test: body.test_event_code, ud: Object.keys(body.data?.[0]?.user_data ?? {}) } as never);
+    return json(res, 200, { events_received: body.data?.length ?? 0 });
+  }
 
   const waba = wabas[id];
   if (waba && !edge && req.method === "GET") {

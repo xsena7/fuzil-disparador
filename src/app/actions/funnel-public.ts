@@ -6,6 +6,17 @@ import { normalizePhone } from "@/lib/phone";
 import { clientIp, tooMany } from "@/lib/rate-limit";
 import { advanceLead, CODE_COOLDOWN_S, funnelFields, funnelPage, hashCode, MAX_CODE_ATTEMPTS, MAX_CODE_SENDS, sendCode, sendDone } from "@/lib/funnels";
 import { resolveFunnel } from "@/lib/funnel-public";
+import { cookies, headers } from "next/headers";
+import type { Funnel, Lead } from "@prisma/client";
+import { sendCapi, type CapiEvent } from "@/lib/capi";
+
+/** Manda o evento para a API de Conversões sem segurar a resposta da pessoa. */
+async function capi(funnel: Funnel, lead: Lead, event: CapiEvent) {
+  if (!funnel.pixelId || !funnel.capiTokenEnc) return;
+  const [h, c, ip] = await Promise.all([headers(), cookies(), clientIp()]);
+  const ctx = { ip, ua: h.get("user-agent"), fbp: c.get("_fbp")?.value, fbc: c.get("_fbc")?.value, url: h.get("referer") };
+  void sendCapi(funnel, lead, event, ctx).catch(() => undefined);
+}
 
 export type SignupState = { token?: string; phone?: string; already?: boolean; error?: string } | undefined;
 
@@ -57,6 +68,7 @@ export async function signupAction(key: string, _: SignupState, form: FormData):
       .catch(() => prisma.lead.findUniqueOrThrow({ where: { funnelId_phone: { funnelId: funnel.id, phone } } }));
   }
   await sendCode(funnel, lead);
+  await capi(funnel, lead, "Lead");
   return { token: lead.formToken, phone };
 }
 
@@ -82,6 +94,7 @@ export async function verifyCodeAction(token: string, code: string): Promise<{ o
   });
   // Já manda o primeiro passo (mensagem de inscrição confirmada) sem esperar o worker
   await advanceLead(funnel, verified).catch((e) => console.error("[funil] avançar", e));
+  await capi(funnel, verified, "CompleteRegistration");
   return { ok: true };
 }
 
@@ -112,6 +125,7 @@ export async function answersAction(token: string, _: { ok?: true; error?: strin
   if (done.count) {
     const { funnel, ...rest } = lead;
     await sendDone(funnel, { ...rest, status: "COMPLETED" }).catch((e) => console.error("[funil] recebido", e));
+    await capi(funnel, { ...rest, status: "COMPLETED" }, "SubmitApplication");
   }
   return { ok: true };
 }

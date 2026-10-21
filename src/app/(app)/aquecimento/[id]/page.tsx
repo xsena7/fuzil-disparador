@@ -244,7 +244,7 @@ export default async function FunnelPage({ params, searchParams }: { params: Pro
       </Drawer>
 
       <Drawer
-        title="Domínio, grupo e Pixel"
+        title="Domínio, grupo, Pixel e API de Conversões"
         subtitle={funnel.domain ? funnel.domain : "Sem domínio próprio (usando o endereço do painel)"}
         tone={funnel.domain ? (domainOk ? "green" : "amber") : "gray"}
         toneTitle={funnel.domain ? (domainOk ? "Domínio apontado" : "Domínio ainda não aponta para o servidor") : undefined}
@@ -272,6 +272,26 @@ export default async function FunnelPage({ params, searchParams }: { params: Pro
             <Field label="Pixel do Facebook (opcional)" hint="Só o número do pixel. Marca Lead, cadastro completo e envio do formulário">
               <Input name="pixelId" defaultValue={funnel.pixelId ?? ""} inputMode="numeric" />
             </Field>
+            <Field
+              label="Token da API de Conversões (opcional)"
+              hint={
+                funnel.capiTokenEnc ? (
+                  <>
+                    Configurado ✅ (fica guardado criptografado). Em branco mantém o atual.{" "}
+                    <label className="inline-flex items-center gap-1">
+                      <input type="checkbox" name="capiRemove" /> remover
+                    </label>
+                  </>
+                ) : (
+                  "Gerado no Gerenciador de Eventos → pixel → Configurações → API de Conversões"
+                )
+              }
+            >
+              <Input name="capiToken" type="password" autoComplete="off" placeholder={funnel.capiTokenEnc ? "••••••••••••" : "Cole o token aqui"} />
+            </Field>
+            <Field label="Código de teste (opcional)" hint="Só para testar na aba Testar eventos (ex.: TEST12345). Apague depois">
+              <Input name="capiTestCode" defaultValue={funnel.capiTestCode ?? ""} />
+            </Field>
             <Field label="Mensagens dos passos a partir de (hora)">
               <Input name="sendFrom" type="number" min={0} max={23} defaultValue={funnel.sendFrom} />
             </Field>
@@ -280,6 +300,17 @@ export default async function FunnelPage({ params, searchParams }: { params: Pro
             </Field>
           </div>
         </ActionForm>
+        {funnel.capiTokenEnc && (
+          <p className={`mt-4 rounded-lg px-3 py-2 text-sm ${funnel.capiLastError ? "bg-red-50 text-red-700" : "bg-emerald-50 text-emerald-700"}`}>
+            API de Conversões:{" "}
+            {funnel.capiLastError
+              ? `último envio falhou (${funnel.capiLastError}). Confira o token e o número do pixel.`
+              : funnel.capiLastOkAt
+                ? `funcionando, último evento enviado em ${funnel.capiLastOkAt.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", dateStyle: "short", timeStyle: "short" })}`
+                : "esperando a primeira inscrição para enviar o primeiro evento"}
+            {!funnel.pixelId && " (falta o número do pixel)"}
+          </p>
+        )}
         <div className="mt-6 rounded-xl bg-zinc-50 p-4 text-sm leading-relaxed text-zinc-600">
           <b className="text-zinc-800">Como ligar o domínio</b>
           <ol className="mt-2 list-decimal space-y-1 pl-5">

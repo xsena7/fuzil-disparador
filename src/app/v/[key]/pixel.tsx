@@ -9,9 +9,10 @@ declare global {
 }
 
 /** Evento do Pixel do Facebook (Lead, CompleteRegistration...). Sem pixel, não faz nada. */
-export function track(event: string) {
+export function track(event: string, token?: string) {
   try {
-    window.fbq?.("track", event);
+    // Mesmo event_id que o servidor manda pela API de Conversões (capi.ts): a Meta não conta em dobro
+    window.fbq?.("track", event, {}, token ? { eventID: `${event}-${token.slice(0, 12)}` } : undefined);
   } catch {
     // sem pixel
   }

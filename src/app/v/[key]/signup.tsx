@@ -45,7 +45,7 @@ export function Signup({
   useEffect(() => {
     if (state?.token && !state.already) {
       setEditing(false);
-      track("Lead");
+      track("Lead", state.token);
     }
   }, [state]);
 
@@ -58,7 +58,7 @@ export function Signup({
         phone={state.phone ?? ""}
         onBack={() => setEditing(true)}
         onDone={() => {
-          track("CompleteRegistration");
+          track("CompleteRegistration", state.token);
           setVerified(true);
         }}
       />
