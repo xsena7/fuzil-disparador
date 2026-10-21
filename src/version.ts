@@ -2,6 +2,14 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "1.58",
+    date: "21/10/2026",
+    items: [
+      "Correção: o disparo nunca mais manda um template com outro nome no lugar do escolhido. Se a BM não tem o template, ela fica de fora com o aviso",
+      "Erros de template agora mostram o nome e o idioma que foram enviados",
+    ],
+  },
+  {
     version: "1.57",
     date: "21/10/2026",
     items: ["Nova campanha: escolha se o disparo é de um grupo de BMs ou de uma BM só"],

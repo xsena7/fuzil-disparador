@@ -105,7 +105,8 @@ export async function planSenders(
       // Prefere o template do nome escolhido; se a conta não tem esse nome, usa o aprovado com o mesmo conteúdo
       const byName = waba.templates.find((t) => family.includes(t.name) && t.status === "APPROVED" && t.category === category);
       const sameContent = !byName && reference ? waba.templates.find((t) => t.status === "APPROVED" && t.category === category && signature(t.components) === reference) : undefined;
-      const tpl = byName ?? sameContent ?? waba.templates.find((t) => family.includes(t.name)) ?? waba.templates[0];
+      // Sem o nome escolhido nem um template de mesmo conteúdo, a BM fica de fora (nunca manda outro template no lugar)
+      const tpl = byName ?? sameContent ?? waba.templates.find((t) => family.includes(t.name));
       for (const phone of waba.phones) {
         const display = formatPhone(phone.displayPhoneNumber.replace(/\D/g, ""));
         const skip = (reason: string) => plan.skipped.push({ display, reason });
@@ -242,7 +243,7 @@ async function sendOne(sender: Sender, campaign: Campaign, r: CampaignRecipient)
     return { kind: "sent", wamid };
   } catch (err) {
     if (err instanceof MetaError) {
-      const title = metaErrorLabel(err.code) + (err.code !== null ? ` (código ${err.code})` : "") + (err.message ? ` — ${err.message}` : "");
+      const title = metaErrorLabel(err.code) + (err.code !== null ? ` (código ${err.code})` : "") + (err.message ? ` — ${err.message}` : "") + ` [enviado: ${sender.template.name} · ${sender.template.language}]`;
       if (err.code !== null && SENDER_FATAL_CODES.has(err.code)) return { kind: "sender_fatal", code: err.code, title };
       if (err.code !== null && TEMPLATE_FATAL_CODES.has(err.code)) return { kind: "template_fatal", code: err.code, title };
       if ((err.code !== null && RETRYABLE_CODES.has(err.code)) || err.httpStatus >= 500) return { kind: "retry", code: err.code };
