@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "1.59",
+    date: "21/10/2026",
+    items: ["Conexões: a tag de grupo não aparece mais nas BMs que foram usadas numa campanha de BM só"],
+  },
+  {
     version: "1.58",
     date: "21/10/2026",
     items: [

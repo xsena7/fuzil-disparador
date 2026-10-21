@@ -97,7 +97,9 @@ export default async function ConnectionsPage() {
                 title={tone === "red" ? "Falta algo para disparar" : tone === "amber" ? "Tem aviso" : "Pronta para disparar"}
               />
               <span className="text-base font-semibold">{bm.name}</span>
-              {bm.groups.map((g) => <Badge key={g.groupId} color={g.group.system ? "red" : "orange"} dot={false}>{g.group.name}</Badge>)}
+              {bm.groups
+                .filter((g) => !g.group.system?.startsWith("BM:")) // grupo oculto de campanha de uma BM só não aparece como grupo
+                .map((g) => <Badge key={g.groupId} color={g.group.system ? "red" : "orange"} dot={false}>{g.group.name}</Badge>)}
               <span className="ml-auto flex flex-wrap items-center gap-3 text-xs text-zinc-500">
                 <span>{bm.wabas.length} conta(s) · {phones} número(s)</span>
                 <Badge color="blue">Limite: {tierLabel(bm.messagingLimitTier)}</Badge>
