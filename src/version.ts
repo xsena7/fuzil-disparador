@@ -2,6 +2,15 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "1.65",
+    date: "21/10/2026",
+    items: [
+      "Templates: a busca filtra enquanto você digita",
+      "Templates: no lugar de categorias, escolha qual grupo de BM aparece",
+      "Disparo: o rodízio começa por um número diferente a cada rodada, para campanhas pequenas não saírem todas pelo mesmo número",
+    ],
+  },
+  {
     version: "1.64",
     date: "21/10/2026",
     items: ["Campanhas, métricas: saiu o gráfico \"Evolução por hora\""],

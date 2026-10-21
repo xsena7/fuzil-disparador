@@ -180,10 +180,11 @@ export async function pauseCampaign(campaign: Pick<Campaign, "id" | "workspaceId
 }
 
 /** Distribui os destinatários entre os números, respeitando a capacidade de cada BM (round-robin). */
-export function distribute<T>(items: T[], senders: Sender[], capacity: Map<string, number>, perSenderMax: number) {
+export function distribute<T>(items: T[], senders: Sender[], capacity: Map<string, number>, perSenderMax: number, start?: number) {
   const buckets = new Map<string, T[]>(senders.map((s) => [s.phoneId, []]));
   const cap = new Map(capacity);
-  let i = 0;
+  // Começa num número sorteado: em lotes pequenos (1 a 5 por rodada) não sai tudo sempre pelo primeiro da lista
+  let i = start ?? Math.floor(Math.random() * Math.max(1, senders.length));
   let idle = 0;
   const rest: T[] = [];
   for (const item of items) {

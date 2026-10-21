@@ -8,6 +8,7 @@ import { syncAllAction } from "@/app/actions/connections";
 import { deleteTemplateAction, updateAutoDeleteAction } from "@/app/actions/templates";
 import type { TComponent } from "@/lib/template-utils";
 import { ago, templateUsage } from "@/lib/limit-windows";
+import { TemplateFilters } from "./filters";
 
 export const dynamic = "force-dynamic";
 
@@ -16,26 +17,28 @@ const sentAt = (d: Date) => d.toLocaleString("pt-BR", { day: "2-digit", month: "
 /** Templates de exemplo que a própria Meta coloca nas contas: não dá para apagar. */
 const isMetaSample = (name: string) => name === "hello_world" || /^(jaspers_market_|sample_)/.test(name);
 
-export default async function TemplatesPage({ searchParams }: { searchParams: Promise<{ q?: string; cat?: string }> }) {
+export default async function TemplatesPage({ searchParams }: { searchParams: Promise<{ q?: string; group?: string }> }) {
   const auth = await requireAuth();
-  const { q, cat } = await searchParams;
-  const [templates, ws] = await Promise.all([
+  const { q, group } = await searchParams;
+  const inGroup = group ? { waba: { business: { groups: { some: { groupId: group } } } } } : {};
+  const [templates, ws, groups] = await Promise.all([
     prisma.template.findMany({
       where: {
         workspaceId: auth.workspace.id,
         ...(q ? { name: { contains: q, mode: "insensitive" } } : {}),
-        ...(cat ? { category: cat } : {}),
+        ...inGroup,
       },
       include: { waba: { include: { business: true } } },
       orderBy: [{ name: "asc" }, { language: "asc" }],
     }),
     prisma.workspace.findUniqueOrThrow({ where: { id: auth.workspace.id } }),
+    prisma.bmGroup.findMany({ where: { workspaceId: auth.workspace.id, system: null }, select: { id: true, name: true }, orderBy: { name: "asc" } }),
   ]);
   const usage = await templateUsage(auth.workspace.id);
 
   // Uma gaveta por conta (WABA): primeiro as contas, ao abrir aparecem os templates dela
   const wabas = await prisma.whatsAppAccount.findMany({
-    where: { workspaceId: auth.workspace.id },
+    where: { workspaceId: auth.workspace.id, ...(group ? { business: { groups: { some: { groupId: group } } } } : {}) },
     include: { business: true },
     // A última conectada fica em cima, a primeira lá embaixo
     orderBy: { createdAt: "desc" },
@@ -49,8 +52,8 @@ export default async function TemplatesPage({ searchParams }: { searchParams: Pr
   for (const t of templates) t.submittedAt ??= depSent.get(`${t.wabaId}|${t.name}|${t.language}`) ?? null;
   const byWaba = new Map<string, typeof templates>();
   for (const t of templates) byWaba.set(t.wabaId, [...(byWaba.get(t.wabaId) ?? []), t]);
-  const filtering = Boolean(q || cat);
-  const shown = filtering ? wabas.filter((w) => byWaba.has(w.id)) : wabas;
+  const filtering = Boolean(q || group);
+  const shown = q ? wabas.filter((w) => byWaba.has(w.id)) : wabas;
   const marketingCount = templates.filter((t) => t.category === "MARKETING").length;
 
   return (
@@ -73,16 +76,7 @@ export default async function TemplatesPage({ searchParams }: { searchParams: Pr
       )}
 
       <Card className="mb-4 flex flex-wrap items-center gap-4 p-4">
-        <form className="flex flex-1 gap-2">
-          <input name="q" defaultValue={q} placeholder="Buscar por nome..." className="flex-1 rounded-lg border border-zinc-200 px-3 py-2" />
-          <select name="cat" defaultValue={cat ?? ""} className="rounded-lg border border-zinc-200 px-3 py-2">
-            <option value="">Todas as categorias</option>
-            <option value="UTILITY">Utilidade</option>
-            <option value="MARKETING">Marketing</option>
-            <option value="AUTHENTICATION">Autenticação</option>
-          </select>
-          <button className="rounded-lg border border-zinc-200 px-3">Filtrar</button>
-        </form>
+        <TemplateFilters groups={groups} />
         <form action={updateAutoDeleteAction} className="flex items-center gap-2">
           <label className="flex items-center gap-2">
             <input type="checkbox" name="autoDelete" defaultChecked={ws.autoDeleteMarketing} />
