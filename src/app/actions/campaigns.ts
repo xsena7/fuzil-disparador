@@ -294,3 +294,33 @@ export async function saveAutoReplyAction(campaignId: string, _: FormState, form
   await prisma.campaign.update({ where: { id: c.id }, data });
   return { ok: enabled ? "Resposta automática ativada" : "Resposta automática desligada" };
 }
+
+/** Manda UMA mensagem de teste com o template da campanha (pelo primeiro número apto) e mostra a resposta da Meta. */
+export async function testCampaignSendAction(id: string, _: { ok?: string; error?: string; raw?: string } | undefined, form: FormData): Promise<{ ok?: string; error?: string; raw?: string }> {
+  const { c } = await ownCampaign(id);
+  const phone = String(form.get("phone") ?? "").replace(/\D/g, "");
+  if (phone.length < 10) return { error: "Digite o número com DDD (ex.: 11 99999-8888)" };
+  if (!c.templateName || !c.templateLanguage) return { error: "Escolha o template na etapa Template primeiro" };
+  const plan = await planSenders({ ...c, skipRedQuality: false, excludedSenders: [] });
+  const sender = plan.senders[0];
+  if (!sender) return { error: "Nenhum número apto com esse template. Veja a etapa Template." };
+  const { buildSendComponents } = await import("@/lib/template-utils");
+  const { env } = await import("@/lib/env");
+  const { meta, MetaError } = await import("@/lib/meta");
+  const components = buildSendComponents(sender.template.components, {}, { phone, name: "Teste", data: {} }, {
+    redirectDomain: env.redirectDomain(),
+    clickToken: "teste",
+    headerMediaUrl: c.headerMediaUrl,
+    headerMediaName: c.headerMediaName,
+  });
+  const used = `${sender.display} · ${sender.template.name} · ${sender.template.language}`;
+  try {
+    const res = await meta.sendTemplate(sender.token, sender.phoneNumberId, phone, { name: sender.template.name, language: sender.template.language, components });
+    return { ok: `Mensagem aceita pela Meta (${used}).`, raw: JSON.stringify(res, null, 2) };
+  } catch (err) {
+    if (err instanceof MetaError) {
+      return { error: `A Meta recusou (${used}).`, raw: JSON.stringify({ message: err.message, code: err.code, subcode: err.subcode, httpStatus: err.httpStatus, details: err.details }, null, 2) };
+    }
+    return { error: `Erro inesperado (${used}): ${err instanceof Error ? err.message : String(err)}` };
+  }
+}

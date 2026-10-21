@@ -22,6 +22,7 @@ import { Logo } from "@/components/brand";
 import { StepContent } from "./step-content";
 import { StepAudience, type AudienceStats } from "./step-audience";
 import { StepSendForm } from "./step-send";
+import { TestSend } from "./test-send";
 import { Metrics } from "./metrics";
 import { AutoRefresh } from "./auto-refresh";
 import { templateAliases, templateFamily } from "@/lib/blueprints";
@@ -97,7 +98,12 @@ export default async function CampaignPage({ params, searchParams }: { params: P
           {step === "audiencia" && (
             <AudienceStep campaignId={id} fileName={campaign.audienceFileName} stats={campaign.audienceStats as unknown as AudienceStats | null} locked={started} />
           )}
-          {step === "envio" && <SendStep campaignId={id} />}
+          {step === "envio" && (
+            <>
+              <SendStep campaignId={id} />
+              <TestSend campaignId={id} />
+            </>
+          )}
           {step === "metricas" && (
             <>
               {["RUNNING", "SCHEDULED"].includes(campaign.status) && <AutoRefresh />}
