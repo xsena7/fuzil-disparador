@@ -5,8 +5,10 @@ import { env } from "./env";
 import { decrypt } from "./crypto";
 import { createAlert } from "./alerts";
 import { onCategoryChanged, onStatusChanged, syncWaba } from "./sync";
-import { metaErrorLabel } from "./meta-errors";
-import { canonicalWaId } from "./phone";
+import { metaErrorLabel, SENDER_FATAL_CODES } from "./meta-errors";
+import { addCredits } from "./credits";
+import { flagBusinessProblem, problemFix } from "./bm-problems";
+import { canonicalWaId, formatPhone } from "./phone";
 import { applyChatStatus, ingestInbound, maybeAutoReply } from "./chat";
 
 function signedWith(raw: string, header: string, secret: string) {
@@ -103,6 +105,50 @@ export async function processWebhook(payload: any) {
   }
 }
 
+const MAX_REROUTES = 3;
+
+/**
+ * A Meta aceitou a mensagem, mas avisou depois (webhook) que ela falhou por um problema da BM
+ * (pagamento, conta bloqueada/restrita...). O destinatário volta para a fila, o crédito é estornado,
+ * o número sai da campanha e a BM vai para "BMs com problema": as outras BMs do grupo enviam no lugar.
+ */
+async function rerouteFailed(
+  r: { id: string; campaignId: string; senderId: string | null; attempts: number; creditsCharged: number },
+  err: { code?: number; title?: string; message?: string; error_data?: { details?: string } } | undefined,
+): Promise<boolean> {
+  const code = err?.code;
+  if (code === undefined || code === null || !SENDER_FATAL_CODES.has(code) || !r.senderId || r.attempts >= MAX_REROUTES) return false;
+  const campaign = await prisma.campaign.findUnique({ where: { id: r.campaignId }, select: { id: true, name: true, workspaceId: true, status: true, excludedSenders: true } });
+  if (!campaign || campaign.status === "CANCELLED") return false;
+  const sender = await prisma.phoneNumber.findUnique({ where: { id: r.senderId }, include: { waba: { include: { business: true } } } });
+
+  const back = await prisma.campaignRecipient.updateMany({
+    where: { id: r.id, status: { in: ["SENT", "DELIVERED"] } },
+    data: { status: "PENDING", wamid: null, senderId: null, sentAt: null, deliveredAt: null, failedAt: null, retryAt: null, creditsCharged: 0, errorCode: code, errorTitle: `${metaErrorLabel(code)} no número anterior: reenviando por outra BM` },
+  });
+  if (!back.count) return false;
+  if (r.creditsCharged > 0) await addCredits(campaign.workspaceId, r.creditsCharged, "REFUND", `Estorno (reenvio por outra BM) — ${campaign.name}`, { campaignId: campaign.id });
+
+  if (!campaign.excludedSenders.includes(r.senderId)) {
+    await prisma.campaign.update({ where: { id: campaign.id }, data: { excludedSenders: { push: r.senderId } } });
+    if (sender) {
+      const display = formatPhone(sender.displayPhoneNumber.replace(/\D/g, ""));
+      const reason = `${metaErrorLabel(code)} (código ${code})${err?.error_data?.details ? ` — ${err.error_data.details}` : ""}`;
+      await flagBusinessProblem(sender.waba.businessId, `${display}: ${reason}`, problemFix(code)).catch(() => undefined);
+      await createAlert({
+        workspaceId: campaign.workspaceId,
+        type: "SENDER_REMOVED",
+        severity: "CRITICAL",
+        title: `Número ${display} retirado da campanha "${campaign.name}"`,
+        message: `${sender.waba.business.name}: ${reason}. As mensagens dele vão sair pelas outras BMs do grupo.`,
+      });
+    }
+  }
+  // Campanha já tinha terminado: volta a rodar para as outras BMs mandarem o que voltou para a fila
+  if (campaign.status === "COMPLETED") await prisma.campaign.update({ where: { id: campaign.id }, data: { status: "RUNNING", completedAt: null, pausedReason: null } });
+  return true;
+}
+
 async function handleMessages(value: any, workspaceIds: string[]) {
   const phoneNumberId: string | undefined = value.metadata?.phone_number_id;
 
@@ -125,6 +171,8 @@ async function handleMessages(value: any, workspaceIds: string[]) {
       data.errorDetail = e?.error_data?.details ?? e?.message ?? e?.title ?? null;
     }
     if (!next) continue;
+    // Falha por problema da BM (pagamento, bloqueio, restrição) que chega depois do envio: manda por outra BM do grupo
+    if (next === "FAILED" && (await rerouteFailed(r, st.errors?.[0]))) continue;
     // Só avança o status (os webhooks podem chegar fora de ordem). Falha vale sempre.
     if (next === "FAILED" || RANK[next] > RANK[r.status]) data.status = next;
     await prisma.campaignRecipient.update({ where: { id: r.id }, data });

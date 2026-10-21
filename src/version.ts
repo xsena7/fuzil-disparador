@@ -2,6 +2,14 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "1.63",
+    date: "21/10/2026",
+    items: [
+      "Correção urgente: quando a Meta avisa DEPOIS do envio que a mensagem falhou por problema da BM (pagamento, bloqueio, restrição), o Fuzil devolve a mensagem para a fila, estorna o crédito, tira o número da campanha e manda pelas outras BMs do grupo",
+      "A BM com o problema vai para \"BMs com problema\" e a campanha volta a rodar se já tinha concluído",
+    ],
+  },
+  {
     version: "1.62",
     date: "21/10/2026",
     items: ["Campanhas, métricas: botão \"Reenviar falhas\" também aparece ao lado da tabela de resultados", "Campanhas, métricas: tabela \"O que aconteceu com cada número\" mostra cada destinatário, pelo número que enviou, com o resultado e o motivo da falha"],
