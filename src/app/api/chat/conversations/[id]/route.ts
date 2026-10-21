@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getActiveAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { windowOpen, WINDOW_MS } from "@/lib/chat";
+import type { TComponent } from "@/lib/template-utils";
 
 export const dynamic = "force-dynamic";
 
@@ -30,6 +31,36 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const statuses = after
     ? await prisma.chatMessage.findMany({ where: { conversationId: id, direction: "OUT", createdAt: { gt: new Date(Date.now() - 2 * 86400_000) } }, select: { id: true, status: true, error: true } })
     : [];
+
+  // Disparos: imagem do cabeçalho, rodapé e botões do template, para aparecer como o cliente recebeu
+  const campaignIds = [...new Set(messages.filter((m) => m.source === "CAMPAIGN" && m.campaignId).map((m) => m.campaignId!))];
+  const layouts = new Map<string, { headerKind: string | null; headerUrl: string | null; headerName: string | null; headerText: string | null; footer: string | null; buttons: string[] }>();
+  if (campaignIds.length) {
+    const camps = await prisma.campaign.findMany({
+      where: { id: { in: campaignIds }, workspaceId: auth.workspace.id },
+      select: { id: true, templateName: true, templateLanguage: true, headerMediaUrl: true, headerMediaType: true, headerMediaName: true },
+    });
+    const tpls = await prisma.template.findMany({
+      where: { workspaceId: auth.workspace.id, OR: camps.filter((c) => c.templateName).map((c) => ({ name: c.templateName!, language: c.templateLanguage ?? undefined })) },
+      select: { name: true, language: true, wabaId: true, components: true },
+    });
+    for (const c of camps) {
+      const same = tpls.filter((t) => t.name === c.templateName && (!c.templateLanguage || t.language === c.templateLanguage));
+      const tpl = same.find((t) => t.wabaId === conv.phone.wabaId) ?? same[0];
+      const comps = (tpl?.components ?? []) as unknown as TComponent[];
+      const header = comps.find((x) => x.type === "HEADER");
+      const format = header?.format ?? (c.headerMediaUrl ? c.headerMediaType : null);
+      layouts.set(c.id, {
+        headerKind: format && format !== "TEXT" ? format : null,
+        headerUrl: format && format !== "TEXT" ? c.headerMediaUrl : null,
+        headerName: c.headerMediaName,
+        headerText: format === "TEXT" ? header?.text ?? null : null,
+        footer: comps.find((x) => x.type === "FOOTER")?.text ?? null,
+        buttons: comps.filter((x) => x.type === "BUTTONS").flatMap((x) => x.buttons ?? []).map((b) => b.text),
+      });
+    }
+  }
+  const withLayout = messages.map((m) => (m.campaignId && layouts.has(m.campaignId) ? { ...m, layout: layouts.get(m.campaignId) } : m));
 
   let extra = null;
   if (!after && !before) {
@@ -63,7 +94,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       windowEndsAt: conv.lastInboundAt ? new Date(conv.lastInboundAt.getTime() + WINDOW_MS) : null,
       phone: { id: conv.phone.id, display: conv.phone.displayPhoneNumber, name: conv.phone.verifiedName, bm: conv.phone.waba.business.name, wabaId: conv.phone.wabaId },
     },
-    messages,
+    messages: withLayout,
     statuses,
     extra,
     now: new Date().toISOString(),

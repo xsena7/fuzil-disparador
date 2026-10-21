@@ -8,6 +8,7 @@ export const CHANGELOG: Array<{ version: string; date: string; items: string[] }
       "Templates: a busca filtra enquanto você digita",
       "Templates: no lugar de categorias, escolha qual grupo de BM aparece",
       "Disparo: o rodízio começa por um número diferente a cada rodada, para campanhas pequenas não saírem todas pelo mesmo número",
+      "Chat: os disparos aparecem como o cliente recebeu, com a imagem do cabeçalho, o rodapé e os botões",
     ],
   },
   {

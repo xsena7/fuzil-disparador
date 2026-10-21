@@ -18,7 +18,30 @@ export type ChatMsg = {
   source: "CAMPAIGN" | "AUTO_REPLY" | "AGENT" | "CUSTOMER" | "SYSTEM";
   campaignId: string | null;
   createdAt: string;
+  /** Disparo: como o template chegou (imagem do cabeçalho, rodapé e botões) */
+  layout?: { headerKind: string | null; headerUrl: string | null; headerName: string | null; headerText: string | null; footer: string | null; buttons: string[] };
 };
+
+function TemplateHeader({ l }: { l: NonNullable<ChatMsg["layout"]> }) {
+  if (l.headerText) return <div className="mb-1 font-semibold">{l.headerText}</div>;
+  if (!l.headerKind) return null;
+  if (!l.headerUrl)
+    return <div className="mb-1.5 rounded-xl bg-black/5 px-3 py-6 text-center text-xs text-zinc-500">{l.headerKind === "VIDEO" ? "Vídeo" : l.headerKind === "DOCUMENT" ? "Documento" : "Imagem"} do template</div>;
+  if (l.headerKind === "IMAGE")
+    return (
+      <a href={l.headerUrl} target="_blank" rel="noreferrer" className="mb-1.5 block">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={l.headerUrl} alt="" loading="lazy" className="max-h-72 w-full max-w-xs rounded-xl bg-black/5 object-cover" />
+      </a>
+    );
+  if (l.headerKind === "VIDEO") return <video controls preload="metadata" src={l.headerUrl} className="mb-1.5 max-h-72 w-full max-w-xs rounded-xl bg-black" />;
+  return (
+    <a href={l.headerUrl} target="_blank" rel="noreferrer" className="mb-1.5 flex items-center gap-2 rounded-xl bg-black/5 px-3 py-2 text-sm">
+      <FileText className="size-5 shrink-0 opacity-70" />
+      <span className="truncate">{l.headerName || "Documento"}</span>
+    </a>
+  );
+}
 
 /** Formatação do WhatsApp (*negrito*, _itálico_, ~riscado~) e links clicáveis, sem HTML cru. */
 export function WaText({ text }: { text: string }) {
@@ -104,13 +127,22 @@ export function Bubble({ m, campaignName }: { m: ChatMsg; campaignName?: string 
         {out && m.source === "AGENT" && m.kind === "template" && (
           <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-white/80">Template</div>
         )}
+        {m.layout && <TemplateHeader l={m.layout} />}
         {hasMedia && <div className={clsx(m.text && "mb-1.5")}><Media m={m} /></div>}
         {m.kind === "reaction" ? <span className="text-2xl">{m.text}</span> : m.text ? <WaText text={m.text} /> : !hasMedia && <span className="italic opacity-60">Mensagem não suportada</span>}
+        {m.layout?.footer && <div className="mt-1 text-[12px] text-zinc-500">{m.layout.footer}</div>}
         <div className={clsx("mt-0.5 flex items-center justify-end gap-1 text-[11px]", agent ? "text-white/75" : "text-zinc-400")}>
           {time(m.createdAt)}
           {out && <Ticks m={m} />}
         </div>
         {m.status === "failed" && m.error && <div className={clsx("mt-1 text-[11px]", agent ? "text-white" : "text-rose-600")}>Não enviada: {m.error}</div>}
+        {m.layout && m.layout.buttons.length > 0 && (
+          <div className="-mx-3.5 -mb-2 mt-2 divide-y divide-orange-200/70 border-t border-orange-200/70">
+            {m.layout.buttons.map((b, i) => (
+              <div key={i} className="py-2 text-center text-[13px] font-medium text-sky-600">{b}</div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
