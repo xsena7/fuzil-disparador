@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "1.52",
+    date: "21/10/2026",
+    items: ["A página Higienização saiu do menu. A limpeza fica na etapa Audiência da campanha: duplicados, números inválidos e quem pediu SAIR são removidos automaticamente"],
+  },
+  {
     version: "1.49",
     date: "21/10/2026",
     items: [
