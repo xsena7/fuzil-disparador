@@ -5,6 +5,7 @@ export const CHANGELOG: Array<{ version: string; date: string; items: string[] }
     version: "1.53",
     date: "21/10/2026",
     items: [
+      "Templates: o preview ao passar o mouse aparece logo abaixo do nome, sem ser cortado pelo cartão",
       "Campanhas, etapa Template: mostra o nome de cada BM / WABA que não está apta para o template escolhido",
       "Campanhas: etapas com mais contraste, fundo com a logo clara e brilho laranja",
     ],

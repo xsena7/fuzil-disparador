@@ -126,9 +126,9 @@ export default async function TemplatesPage({ searchParams }: { searchParams: Pr
                     <div key={t.id} className="flex flex-wrap items-start gap-3 px-4 py-3">
                       <div className="min-w-56 flex-1">
                         <div className="flex flex-wrap items-center gap-2">
-                          <span className="group/tip relative font-medium">
+                          <span className="group/tip flex flex-col items-start font-medium">
                             <span className="cursor-help border-b border-dotted border-zinc-400">{t.name}</span>
-                            <span className="pointer-events-none invisible absolute left-0 top-full z-30 mt-2 block w-72 rounded-2xl bg-[#efe7dd] p-3 opacity-0 shadow-xl ring-1 ring-black/10 transition group-hover/tip:visible group-hover/tip:opacity-100">
+                            <span className="hidden group-hover/tip:block mt-2 w-80 max-w-full rounded-2xl bg-[#efe7dd] p-3 font-normal shadow-md ring-1 ring-black/10">
                               <span className="mb-2 block text-center text-[10px] uppercase tracking-wide text-zinc-500">Como a pessoa recebe</span>
                               <span className="block rounded-lg rounded-tl-none bg-white p-2.5 text-[13px] leading-snug text-[#111] shadow-sm">
                                 {(t.components as unknown as TComponent[]).map((c, i) => {
