@@ -139,7 +139,7 @@ export default async function FunnelPage({ params, searchParams }: { params: Pro
         )}
         <p className="mt-3 text-xs text-zinc-500">
           A Meta sobe o limite quando a BM manda para muitas pessoas diferentes com qualidade boa. Por isso cada mensagem do funil sai por uma BM diferente do rodízio, e o botão
-          &quot;Recebi ✅&quot; incentiva a pessoa a responder.
+          &quot;Recebi&quot; incentiva a pessoa a responder.
         </p>
       </Drawer>
 

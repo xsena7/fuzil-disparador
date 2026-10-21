@@ -113,7 +113,7 @@ function defaultBlueprints(prefix: string) {
           text: "Olá, {{1}}! Sua inscrição para a vaga de {{2}} foi confirmada. ✅\n\nSalve este número: é por aqui que vamos enviar as próximas etapas do processo seletivo.",
           example: ex(["Maria", "Atendente de WhatsApp"]),
         },
-        { type: "BUTTONS", buttons: [{ type: "QUICK_REPLY", text: "Recebi ✅" }] },
+        { type: "BUTTONS", buttons: [{ type: "QUICK_REPLY", text: "Recebi" }] },
       ],
       mapping: { body: [{ type: "field", field: "firstName" }, { type: "field", field: "col:vaga" }] } as VariableMapping,
     },
@@ -255,7 +255,7 @@ async function stepCampaign(funnel: Funnel, step: string, bp: TemplateBlueprint,
     const revive = funnel.status === "ACTIVE" && !["RUNNING", "PAUSED"].includes(existing.status);
     return changed || revive ? prisma.campaign.update({ where: { id: existing.id }, data: { ...data, ...(revive ? { status: "RUNNING" as const, pausedReason: null } : {}) } }) : existing;
   }
-  // "Recebi ✅" na mensagem de inscrição abre a conversa: responde na hora (mensagem grátis, conta como conversa de verdade)
+  // "Recebi" na mensagem de inscrição abre a conversa: responde na hora (mensagem grátis, conta como conversa de verdade)
   const autoReply =
     step !== "code" && getComponent(bp.components as unknown as TComponent[], "BUTTONS")?.buttons?.some((b) => b.type === "QUICK_REPLY")
       ? { autoReplyEnabled: true, autoReplyText: "Perfeito, {{primeiro_nome}}! Fique de olho por aqui, em breve enviamos a próxima etapa. 😉" }

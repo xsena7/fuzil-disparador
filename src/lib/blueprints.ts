@@ -21,6 +21,10 @@ export async function createUtilityTemplate(
   const category = input.category ?? "UTILITY";
   const token = wabaToken(waba);
   const components = structuredClone(input.components);
+  // A Meta recusa botão com emoji, quebra de linha ou formatação (*, _, ~): limpa antes de enviar
+  for (const c of components)
+    for (const btn of c.buttons ?? [])
+      if (btn.text) btn.text = btn.text.replace(/[\p{Extended_Pictographic}\uFE0F\u200D*_~`]/gu, "").replace(/\s+/g, " ").trim() || "OK";
   try {
     const header = components.find((c) => c.type === "HEADER");
     if (header && header.format && ["IMAGE", "VIDEO", "DOCUMENT"].includes(header.format)) {

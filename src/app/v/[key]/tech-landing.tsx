@@ -35,8 +35,8 @@ function Clock24() {
 function Phone({ company, job }: { company: string; job: string }) {
   const msgs = [
     { me: false, text: <>Seu código de confirmação é <b>482 913</b>. Não compartilhe com ninguém.</>, button: "Copiar código", icon: Copy },
-    { me: false, text: <>Olá, Ana! Sua inscrição para a vaga de <b>{job}</b> foi confirmada ✅</>, button: "Recebi ✅" },
-    { me: true, text: <>Recebi ✅</> },
+    { me: false, text: <>Olá, Ana! Sua inscrição para a vaga de <b>{job}</b> foi confirmada ✅</>, button: "Recebi" },
+    { me: true, text: <>Recebi</> },
     { me: false, text: <>Perfeito, Ana! Fique de olho por aqui, em breve enviamos a próxima etapa 😉</> },
   ];
   const [n, setN] = useState(0);
