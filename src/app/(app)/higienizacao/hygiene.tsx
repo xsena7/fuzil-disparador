@@ -107,6 +107,11 @@ export function Hygiene() {
             <Stat label="Não checados" value={ok.notChecked.length} tone="gray" />
           </div>
           <p className="mt-3 text-xs text-zinc-500">Checado pelo número {ok.sender}. Total de linhas com número: {ok.total.toLocaleString("pt-BR")}.</p>
+          {ok.metaError && (
+            <p className="mt-2 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+              A Meta recusou a checagem: <b>{ok.metaError}</b>
+            </p>
+          )}
           {ok.beyondLimit > 0 && (
             <p className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
               A planilha tinha mais de {HYGIENE_MAX.toLocaleString("pt-BR")} números. Os {HYGIENE_MAX.toLocaleString("pt-BR")} primeiros foram checados; os {ok.beyondLimit.toLocaleString("pt-BR")} restantes estão no arquivo de não checados. Suba esse arquivo de novo para continuar.

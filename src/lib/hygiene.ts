@@ -15,6 +15,8 @@ export type HygieneResult = {
   malformed: number;
   total: number;
   sender: string;
+  /** Primeiro erro da Meta, quando as checagens falham (mostrado na tela) */
+  metaError?: string;
 };
 
 /** Escolhe um número conectado da conta para fazer a checagem (qualquer número ativo serve). */
@@ -47,6 +49,7 @@ export async function hygienePhones(workspaceId: string, raw: string[]): Promise
   const valid: string[] = [];
   const invalid: string[] = [];
   const notChecked: string[] = [];
+  let metaError: string | undefined;
   for (let i = 0; i < list.length; i += 100) {
     const chunk = list.slice(i, i + 100);
     try {
@@ -60,8 +63,9 @@ export async function hygienePhones(workspaceId: string, raw: string[]): Promise
       }
     } catch (err) {
       if (err instanceof MetaError && err.code === 80007) return { error: "A Meta limitou as checagens por enquanto. Tente de novo em alguns minutos." };
+      metaError ??= err instanceof MetaError ? `${err.message}${err.code ? ` (código ${err.code})` : ""}` : String(err);
       notChecked.push(...chunk);
     }
   }
-  return { valid, invalid, notChecked: [...notChecked, ...beyond], beyondLimit: beyond.length, malformed, total: raw.filter((r) => r.trim()).length, sender: sender.display };
+  return { valid, invalid, notChecked: [...notChecked, ...beyond], beyondLimit: beyond.length, malformed, total: raw.filter((r) => r.trim()).length, sender: sender.display, metaError };
 }

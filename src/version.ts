@@ -5,6 +5,7 @@ export const CHANGELOG: Array<{ version: string; date: string; items: string[] }
     version: "1.49",
     date: "21/10/2026",
     items: [
+      "Higienização: quando a Meta recusa a checagem, a tela mostra o motivo exato",
       "Correção: a higienização volta a compilar sem erro (o limite por vez ficou em um arquivo que roda dos dois lados)",
       "Higienização: arraste a planilha para a área pontilhada (ou clique para escolher), igual à audiência da campanha",
       "Higienização: planilha com mais de 3.000 números checa os 3.000 primeiros e gera o arquivo com os que ficaram para checar",
