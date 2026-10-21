@@ -5,7 +5,8 @@ import clsx from "clsx";
 import { FileSpreadsheet, UploadCloud } from "lucide-react";
 import { CheckCircle2, Download, Loader2, XCircle } from "lucide-react";
 import { hygieneAction, type HygieneState } from "@/app/actions/hygiene";
-import { HYGIENE_MAX, type HygieneResult } from "@/lib/hygiene";
+import { HYGIENE_MAX } from "@/lib/hygiene-limits";
+import type { HygieneResult } from "@/lib/hygiene";
 import { Button, Card, Textarea } from "@/components/ui";
 
 /** Baixa uma lista de números em CSV (um por linha). */

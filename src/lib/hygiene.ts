@@ -3,7 +3,7 @@ import { meta, MetaError } from "./meta";
 import { wabaToken } from "./sync";
 import { normalizePhone } from "./phone";
 
-export const HYGIENE_MAX = 3000;
+import { HYGIENE_MAX } from "./hygiene-limits";
 
 export type HygieneResult = {
   valid: string[];
