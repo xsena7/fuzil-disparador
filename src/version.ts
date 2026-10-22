@@ -2,6 +2,14 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "1.84",
+    date: "22/10/2026",
+    items: [
+      "\"API access blocked\" volta a tirar a BM dos grupos de disparo (a BM não dispara assim). O motivo agora explica: a Meta bloqueou o app da BM, geralmente pedindo uma verificação em developers.facebook.com",
+      "Quando o acesso voltar, a BM volta sozinha para os grupos em que estava",
+    ],
+  },
+  {
     version: "1.83",
     date: "22/10/2026",
     items: ["Grupos de BM: em \"Mandar para o grupo\" agora tem a opção \"BMs com problema\". A BM sai dos grupos de disparo e volta para onde estava quando você clicar em Resolvido"],

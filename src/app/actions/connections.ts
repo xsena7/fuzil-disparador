@@ -147,13 +147,8 @@ export async function testWabaAction(id: string): Promise<{ ok?: boolean; text: 
   } catch (err) {
     if (err instanceof MetaError) {
       if (err.code === 100) return { text: "O ID informado não é de uma conta do WhatsApp. Use o ID da conta do WhatsApp (e não o da BM)." };
-      // Sem o Tech Provider a Meta bloqueia só alguns dados da conta: confere se o token envia (lista os números)
-      if (/api access blocked/i.test(err.message)) {
-        const phones = await meta.listPhones(token, waba.wabaId).catch(() => null);
-        if (phones)
-          return { ok: true, text: `O token está funcionando e enxerga ${phones.length} número(s) dessa conta: os disparos funcionam. A Meta só não libera alguns dados extras (qualidade da conta, pagamento) até o Tech Provider ser aprovado.` };
-        return { text: "A Meta bloqueou o acesso do app a essa conta (API access blocked). Confira se o app dessa BM está publicado e com as permissões de WhatsApp." };
-      }
+      if (/api access blocked/i.test(err.message))
+        return { text: "A Meta bloqueou o app dessa BM (API access blocked), e ela não dispara assim. Entre em developers.facebook.com com a conta dona do app e conclua a verificação que a Meta pedir (código no e-mail/celular ou identidade). Depois, clique em Testar conexão de novo." };
       if (err.code === 190) return { text: "O token expirou ou foi revogado. Gere um token novo (System User, sem validade) e conecte de novo." };
       if (err.code === 10 || err.code === 200) return { text: "O token não tem permissão para essa conta. Gere um token com o app dessa BM e as permissões whatsapp_business_management e whatsapp_business_messaging." };
       return { text: `A Meta respondeu com erro: ${err.message}` };

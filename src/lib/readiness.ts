@@ -16,9 +16,8 @@ export function wabaReadiness(waba: {
   usableTemplates: number;
 }): ReadinessIssue[] {
   const out: ReadinessIssue[] = [];
-  // "API access blocked" é do app (sem o Tech Provider): o token funciona e o envio segue normal, só alguns dados não atualizam
   if (waba.lastSyncError && /api access blocked/i.test(waba.lastSyncError))
-    out.push({ block: false, text: "Alguns dados dessa conta não atualizam sozinhos (a Meta ainda não liberou o Tech Provider).", fix: "Não precisa fazer nada: o token está certo e os disparos funcionam normal. Some quando o Tech Provider for aprovado." });
+    out.push({ block: true, text: "A Meta bloqueou o app dessa BM (API access blocked): ela não dispara.", fix: "Entre em developers.facebook.com com a conta dona do app e conclua a verificação que a Meta pedir (código ou confirmação de identidade)." });
   else if (waba.lastSyncError) out.push({ block: true, text: "O Fuzil não está conseguindo acessar essa conta na Meta.", fix: "Confira se o token ainda é válido e tem acesso a essa WABA, e conecte de novo." });
   if (waba.hasPaymentMethod === false)
     out.push({ block: true, text: "Sem forma de pagamento (cartão).", fix: "No WhatsApp Manager dessa conta: Configurações de pagamento → Adicionar forma de pagamento." });

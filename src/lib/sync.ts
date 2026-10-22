@@ -27,7 +27,7 @@ export async function syncWaba(wabaRecordId: string) {
   const waba = await prisma.whatsAppAccount.findUniqueOrThrow({ where: { id: wabaRecordId }, include: { business: true } });
   const token = wabaToken(waba);
   if (!waba.webhookSubscribed && waba.lastSyncedAt) await ensureWebhook(waba.id).catch(() => undefined);
-  // Cada parte separada: se a Meta negar uma (ex.: "API access blocked" sem o Tech Provider), as outras continuam
+  // Cada parte separada: se a Meta negar uma, as outras continuam atualizando
   const errors: string[] = [];
   const step = async (fn: () => Promise<void>) => {
     try {
@@ -104,8 +104,7 @@ export async function syncWaba(wabaRecordId: string) {
   const message = [...new Set(errors)].join(" · ");
   await prisma.whatsAppAccount.update({ where: { id: waba.id }, data: { lastSyncError: message, lastSyncedAt: new Date() } });
   await checkBusinessAfterSync(waba.id).catch(() => undefined);
-  // "API access blocked" é do app (falta o Tech Provider), não da BM: o envio segue normal, então não vira alerta
-  if (waba.lastSyncError !== message && !isAppAccessBlocked(message)) {
+  if (waba.lastSyncError !== message) {
     await createAlert({
       workspaceId: waba.workspaceId,
       type: "SYNC_ERROR",
@@ -119,10 +118,6 @@ export async function syncWaba(wabaRecordId: string) {
   if (errors.length === 3) throw new Error(message);
 }
 
-/** Erro do app da Meta sem permissão avançada (sem Tech Provider). Não é problema da BM. */
-export function isAppAccessBlocked(message: string | null | undefined) {
-  return /api access blocked/i.test(message ?? "");
-}
 
 /** O limite agora é por portfólio (BM). Guardamos o maior tier informado pelos números. */
 async function refreshBusinessTier(wabaRecordId: string) {

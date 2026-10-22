@@ -23,6 +23,8 @@ export function problemFix(code: number | null | undefined, kind?: string): stri
   if (code === 131031 || kind === "BANNED") return "A Meta bloqueou a conta/número. No WhatsApp Manager → Visão geral da conta, veja o motivo e peça revisão (recurso).";
   if (code === 368 || kind === "RESTRICTED") return "Restrição temporária por política. Espere o prazo informado no WhatsApp Manager e revise os templates antes de voltar.";
   if (code === 131048 || kind === "QUALITY") return "Qualidade baixa: deixe essa BM descansar alguns dias e revise o texto do template (muita gente bloqueando/denunciando).";
+  if (kind === "APP_BLOCKED")
+    return "Entre em developers.facebook.com com a conta dona do app dessa BM: a Meta costuma pedir uma verificação (código no e-mail/celular ou confirmação de identidade). Depois de concluir, a BM volta sozinha para os grupos.";
   if (code === 190 || code === 0 || code === 10 || code === 200 || kind === "ACCESS") return "O Fuzil perdeu acesso: gere um novo token (ou reconecte pela Conexões) com acesso a essa WABA.";
   if (code === 131045 || kind === "REGISTER") return "Número não registrado na Cloud API: em Conexões, clique em Registrar número.";
   if (code === 131057) return "A conta está em manutenção na Meta. Tente de novo mais tarde.";
@@ -98,13 +100,17 @@ export async function checkBusinessAfterSync(wabaRecordId: string) {
   let fix = "";
   const health = (Array.isArray(waba.healthIssues) ? waba.healthIssues : []) as Array<{ text?: string; fix?: string }>;
   // Só erro de acesso de verdade (token/permissão); queda de rede ou instabilidade da Meta não conta
-  // "API access blocked" é do app (falta o Tech Provider): o envio segue normal, não tira a BM dos grupos
+  // Só erro de acesso de verdade (token/permissão/app bloqueado); queda de rede ou instabilidade da Meta não conta
+  const appBlocked = Boolean(waba.lastSyncError && /api access blocked/i.test(waba.lastSyncError));
   const accessLost =
-    waba.lastSyncError &&
-    !/api access blocked/i.test(waba.lastSyncError) &&
-    /invalid.{0,20}token|token.{0,30}(invalid|inv[aá]lido|expired|expirad)|session has expired|error validating access token|oauth/i.test(waba.lastSyncError) &&
-    !/fetch failed|ECONN|ETIMEDOUT|timeout|socket|network|indispon|temporar/i.test(waba.lastSyncError);
-  if (accessLost) {
+    appBlocked ||
+    (waba.lastSyncError &&
+      /invalid.{0,20}token|token.{0,30}(invalid|inv[aá]lido|expired|expirad)|session has expired|error validating access token|oauth|permiss/i.test(waba.lastSyncError) &&
+      !/fetch failed|ECONN|ETIMEDOUT|timeout|socket|network|indispon|temporar/i.test(waba.lastSyncError));
+  if (appBlocked) {
+    reason = `O Fuzil não consegue acessar a WABA ${waba.name}: a Meta bloqueou o app dessa BM (API access blocked)`;
+    fix = problemFix(null, "APP_BLOCKED");
+  } else if (accessLost) {
     reason = `O Fuzil não consegue acessar a WABA ${waba.name}`;
     fix = problemFix(null, "ACCESS");
   } else if (waba.status === "BLOCKED") {
@@ -124,7 +130,7 @@ export async function checkBusinessAfterSync(wabaRecordId: string) {
       fix = problemFix(null, "QUALITY");
     }
   }
-  // Foi para "BMs com problema" só por erro de acesso que não é de verdade (ex.: falta do Tech Provider): volta sozinha
+  // Foi para "BMs com problema" por falta de acesso e o acesso voltou: volta sozinha para os grupos
   if (!accessLost) {
     const bm = await prisma.businessManager.findUnique({ where: { id: waba.businessId }, select: { problemAt: true, problemReason: true, workspaceId: true } });
     if (bm?.problemAt && bm.problemReason?.startsWith("O Fuzil não consegue acessar a WABA")) {

@@ -118,14 +118,9 @@ export default async function ConnectionsPage() {
                     <span className="text-xs text-zinc-500">WABA: {waba.wabaId}</span>
                     <span className="text-xs text-zinc-500">{waba._count.templates} templates</span>
                     {!waba.webhookSubscribed && <Badge color="yellow">Webhook não inscrito</Badge>}
-                    {waba.lastSyncError &&
-                      (/api access blocked/i.test(waba.lastSyncError) ? (
-                        <span title="A Meta só libera esses dados com o Tech Provider aprovado. O token está certo e os disparos funcionam.">
-                          <Badge color="yellow">Parte dos dados aguardando Tech Provider</Badge>
-                        </span>
-                      ) : (
-                        <Badge color="red">Erro: {waba.lastSyncError.slice(0, 80)}</Badge>
-                      ))}
+                    {waba.lastSyncError && (
+                      <Badge color="red">{/api access blocked/i.test(waba.lastSyncError) ? "App da BM bloqueado pela Meta" : `Erro: ${waba.lastSyncError.slice(0, 80)}`}</Badge>
+                    )}
                     <span className="ml-auto text-xs text-zinc-400">
                       {waba.lastSyncedAt ? `Sincronizado ${waba.lastSyncedAt.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}` : "Nunca sincronizado"}
                     </span>
