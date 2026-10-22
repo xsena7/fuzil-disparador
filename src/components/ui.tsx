@@ -118,11 +118,12 @@ export function Empty({ children, icon }: { children: ReactNode; icon?: ReactNod
   );
 }
 
-export function Table({ head, children }: { head: ReactNode[]; children: ReactNode }) {
+/** Tabela padrão. `maxHeight` = altura máxima com barra de rolagem (o cabeçalho fica parado no topo). */
+export function Table({ head, children, maxHeight }: { head: ReactNode[]; children: ReactNode; maxHeight?: string }) {
   return (
-    <div className="overflow-x-auto rounded-2xl border border-zinc-200/70 bg-white shadow-soft">
+    <div className={clsx("overflow-x-auto rounded-2xl border border-zinc-200/70 bg-white shadow-soft", maxHeight && "overflow-y-auto")} style={maxHeight ? { maxHeight } : undefined}>
       <table className="w-full text-left text-sm">
-        <thead className="border-b border-zinc-100 bg-zinc-50/70 text-xs uppercase tracking-wide text-zinc-500">
+        <thead className={clsx("border-b border-zinc-100 bg-zinc-50/70 text-xs uppercase tracking-wide text-zinc-500", maxHeight && "sticky top-0 z-10 bg-zinc-50")}>
           <tr>{head.map((h, i) => <th key={i} className="px-4 py-3 font-medium">{h}</th>)}</tr>
         </thead>
         <tbody className="divide-y divide-zinc-100 [&>tr]:transition-colors [&>tr:hover]:bg-zinc-50/60">{children}</tbody>

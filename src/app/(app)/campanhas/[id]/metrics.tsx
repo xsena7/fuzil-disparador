@@ -81,13 +81,14 @@ export async function Metrics({ campaignId }: { campaignId: string }) {
             )}
           </span>
         </div>
-        <Table head={["Número", "Enviado pelo número", "Resultado", "Motivo"]}>
+        {/* Mostra uns 20 por vez, o resto com a barra de rolagem */}
+        <Table head={["Número", "Enviado pelo número", "Resultado", "Motivo"]} maxHeight="760px">
           {recipients.map((r, i) => (
             <tr key={i}>
-              <Td className="whitespace-nowrap font-medium">{formatPhone(r.phone)}</Td>
-              <Td className="whitespace-nowrap">{r.sender?.displayPhoneNumber ?? "—"}</Td>
-              <Td className={`whitespace-nowrap font-medium ${RESULT[r.status]?.cls ?? ""}`}>{RESULT[r.status]?.label ?? r.status}</Td>
-              <Td className="text-xs text-zinc-600">{r.errorTitle ?? ""}</Td>
+              <Td className="whitespace-nowrap py-2 font-medium">{formatPhone(r.phone)}</Td>
+              <Td className="whitespace-nowrap py-2">{r.sender?.displayPhoneNumber ?? "—"}</Td>
+              <Td className={`whitespace-nowrap py-2 font-medium ${RESULT[r.status]?.cls ?? ""}`}>{RESULT[r.status]?.label ?? r.status}</Td>
+              <Td className="py-2 text-xs text-zinc-600">{r.errorTitle ?? ""}</Td>
             </tr>
           ))}
         </Table>
