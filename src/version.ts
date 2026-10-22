@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "1.70",
+    date: "22/10/2026",
+    items: ["Templates: ao criar um template (padrão ou normal), escolha um modelo pronto do Fuzil (pedido, entrega, cadastro, candidatura, agendamento, pagamento, fatura, conta, protocolo). Ele preenche tudo e você edita o que quiser"],
+  },
+  {
     version: "1.69",
     date: "22/10/2026",
     items: ["Campanhas, teste de envio: quando a Meta recusa, o Fuzil mostra a qual WABA o número pertence de verdade e se ele pode enviar (ajuda a achar o erro 132001)"],

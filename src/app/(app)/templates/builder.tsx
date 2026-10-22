@@ -1,9 +1,10 @@
 "use client";
 
 import { useActionState, useMemo, useRef, useState } from "react";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Sparkles, Trash2 } from "lucide-react";
 import { createTemplateAction } from "@/app/actions/templates";
 import { extractVars } from "@/lib/template-utils";
+import { TEMPLATE_PRESETS, type TemplatePreset } from "@/lib/template-presets";
 import { Button, Card, Field, Input, Select, Textarea } from "@/components/ui";
 import { WhatsAppPreview } from "@/components/whatsapp-preview";
 
@@ -54,12 +55,47 @@ export function TemplateBuilder({
     setBody(body.slice(0, s) + mark + body.slice(s, e) + mark + body.slice(e));
   }
 
+  const [preset, setPreset] = useState<string | null>(null);
+  // Modelo pronto: preenche tudo de uma vez (dá para editar qualquer campo depois)
+  function applyPreset(p: TemplatePreset) {
+    if ((body.trim() || name) && !confirm(`Usar o modelo "${p.label}"? O que já está preenchido será substituído.`)) return;
+    setPreset(p.key);
+    setName(p.name);
+    setHeaderType(p.headerText ? "TEXT" : "NONE");
+    setHeaderText(p.headerText ?? "");
+    setHeaderExample("");
+    setBody(p.body);
+    setBodyExamples(p.examples);
+    setFooter(p.footer ?? "");
+    setButtons(p.buttons.map((b) => ({ ...b })));
+  }
+
   const setBtn = (i: number, patch: Partial<Btn>) => setButtons(buttons.map((b, j) => (j === i ? { ...b, ...patch } : b)));
 
   return (
     <form action={action} className="grid gap-6 lg:grid-cols-[1fr_320px]">
       <input type="hidden" name="payload" value={payload} />
       <div className="space-y-5">
+        <Card className="space-y-3 p-5">
+          <div className="flex items-center gap-2">
+            <Sparkles className="size-4 text-brand-500" />
+            <div className="flex-1 font-semibold">Começar de um modelo pronto</div>
+            <span className="text-xs text-zinc-500">opcional · preenche tudo e você edita</span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {TEMPLATE_PRESETS.map((p) => (
+              <button
+                key={p.key}
+                type="button"
+                onClick={() => applyPreset(p)}
+                className={`rounded-full border px-3 py-1.5 text-sm transition ${preset === p.key ? "border-brand-400 bg-brand-50 font-medium text-brand-700" : "border-zinc-200 text-zinc-700 hover:border-brand-300 hover:bg-brand-50/50"}`}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+        </Card>
+
         <Card className="space-y-4 p-5">
           <div className="grid gap-4 md:grid-cols-3">
             <Field label="Nome do template" hint="Minúsculas, números e _">
