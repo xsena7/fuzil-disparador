@@ -125,7 +125,14 @@ export default async function ConnectionsPage() {
       )}
 
       <div data-tour="connections">
-      <h2 className="mt-10 mb-4 text-base font-semibold">Suas conexões</h2>
+      <div className="mt-10 mb-4 flex flex-wrap items-center gap-3">
+        <h2 className="text-base font-semibold">Suas conexões</h2>
+        {businesses.length > 0 && (
+          <ConfirmButton action={syncAllAction} className="px-3 py-1.5 text-xs">
+            <RefreshCw className="size-3.5" /> Verificar todas
+          </ConfirmButton>
+        )}
+      </div>
       {businesses.length === 0 && <Empty>Nenhuma BM conectada ainda. Use uma das opções acima.</Empty>}
 
       <div className="space-y-4">
@@ -188,7 +195,7 @@ export default async function ConnectionsPage() {
                       {waba.lastSyncedAt ? `Sincronizado ${waba.lastSyncedAt.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}` : "Nunca sincronizado"}
                     </span>
                     <TestWaba id={waba.id} />
-                    <ConfirmButton action={syncWabaAction.bind(null, waba.id)} variant="ghost" className="px-2 py-1"><RefreshCw className="size-4" /></ConfirmButton>
+                    <ConfirmButton action={syncWabaAction.bind(null, waba.id)} className="px-2.5 py-1 text-xs"><RefreshCw className="size-3.5" /> Verificar</ConfirmButton>
                     <ConfirmButton action={deleteWabaAction.bind(null, waba.id)} variant="ghost" className="px-2 py-1 text-red-600" confirm={`Remover a WABA ${waba.name} do painel? (Nada é apagado na Meta)`}><Trash2 className="size-4" /></ConfirmButton>
                   </div>
                   <div className="space-y-3 p-3">

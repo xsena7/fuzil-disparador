@@ -64,9 +64,12 @@ export async function syncWabaAction(id: string) {
 export async function syncAllAction() {
   const auth = await requireAuth();
   const wabas = await prisma.whatsAppAccount.findMany({ where: { workspaceId: auth.workspace.id }, select: { id: true } });
-  await Promise.allSettled(wabas.map((w) => syncWaba(w.id)));
+  // 4 por vez, para não estourar o limite de chamadas da Meta com muitas BMs
+  for (let i = 0; i < wabas.length; i += 4) await Promise.allSettled(wabas.slice(i, i + 4).map((w) => syncWaba(w.id)));
   revalidatePath("/conexoes");
   revalidatePath("/templates");
+  revalidatePath("/grupos");
+  revalidatePath("/");
 }
 
 export async function deleteWabaAction(id: string) {
