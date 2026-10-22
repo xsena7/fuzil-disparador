@@ -75,3 +75,24 @@ export async function addBusinessToGroupAction(businessId: string, groupId: stri
   revalidatePath("/grupos");
   return { ok: true };
 }
+
+/** Manda a BM para "BMs com problema" na mão (sai dos grupos de disparo; "Resolvido" devolve para onde estava). */
+export async function moveBusinessToProblemsAction(businessId: string): Promise<{ ok?: true; error?: string }> {
+  const auth = await requireAuth();
+  const bm = await prisma.businessManager.findFirst({ where: { id: businessId, workspaceId: auth.workspace.id }, include: { groups: { include: { group: true } } } });
+  if (!bm) return { error: "BM não encontrada" };
+  if (bm.problemAt) return { error: "Essa BM já está em BMs com problema" };
+  const { problemGroup } = await import("@/lib/bm-problems");
+  const group = await problemGroup(auth.workspace.id);
+  const prev = bm.groups.filter((g) => !g.group.system).map((g) => g.groupId);
+  await prisma.$transaction([
+    prisma.bmGroupMember.deleteMany({ where: { businessId, groupId: { in: prev } } }),
+    prisma.bmGroupMember.upsert({ where: { groupId_businessId: { groupId: group.id, businessId } }, create: { groupId: group.id, businessId }, update: {} }),
+    prisma.businessManager.update({
+      where: { id: businessId },
+      data: { problemReason: "Colocada aqui por você", problemFix: "Quando estiver tudo certo, clique em Resolvido e ela volta para o grupo em que estava.", problemAt: new Date(), problemPrevGroups: prev },
+    }),
+  ]);
+  revalidatePath("/grupos");
+  return { ok: true };
+}
