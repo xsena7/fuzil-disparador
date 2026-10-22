@@ -4,9 +4,11 @@ import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { funnelPage, funnelUrl } from "@/lib/funnels";
 import { StatusDot, MetaItem, Drawer } from "@/components/drawer";
-import { Empty, Field, Input, PageHeader, Select } from "@/components/ui";
+import { Empty, PageHeader } from "@/components/ui";
 import { ActionForm } from "@/components/action-form";
 import { createFunnelAction } from "@/app/actions/funnels";
+import { company } from "@/lib/company";
+import { NewFunnelFields } from "./new-funnel-fields";
 
 export const dynamic = "force-dynamic";
 
@@ -24,7 +26,7 @@ export default async function WarmupPage() {
     <div className="space-y-4">
       <PageHeader
         title="Aquecimento"
-        description="Página de vagas num domínio seu → a pessoa se inscreve → recebe um código no WhatsApp → entra num funil de mensagens com timers. Cada mensagem sai pelo rodízio de um grupo de BM: aquece as contas com gente real e ainda gera uma lista de contatos."
+        description="Funis que aquecem suas BMs com gente real: a pessoa confirma o WhatsApp com um código e recebe as mensagens do funil, cada uma por uma BM diferente do grupo. Dois tipos: página de vagas de emprego ou login do gerador de links."
       />
 
       {funnels.length ? (
@@ -39,13 +41,15 @@ export default async function WarmupPage() {
               <span className="min-w-0 flex-1">
                 <span className="block truncate font-semibold">{f.name}</span>
                 <span className="block truncate text-xs text-zinc-500">
-                  {funnelUrl(f).replace(/^https?:\/\//, "")} · {funnelPage(f).jobs.filter((j) => j.open).length} vagas abertas
+                  {f.kind === "LINKS"
+                    ? `Gerador de links · ${company().siteUrl.replace(/^https?:\/\//, "")}/links`
+                    : `${funnelUrl(f).replace(/^https?:\/\//, "")} · ${funnelPage(f).jobs.filter((j) => j.open).length} vagas abertas`}
                 </span>
               </span>
               <span className="flex flex-wrap items-center gap-x-4 text-xs text-zinc-500">
-                <MetaItem value={count(f.id)} label="inscritos" />
-                <MetaItem value={count(f.id, "VERIFIED") + count(f.id, "COMPLETED")} label="confirmados" />
-                <MetaItem value={count(f.id, "COMPLETED")} label="cadastros" />
+                <MetaItem value={count(f.id)} label={f.kind === "LINKS" ? "pediram código" : "inscritos"} />
+                <MetaItem value={count(f.id, "VERIFIED") + count(f.id, "COMPLETED")} label={f.kind === "LINKS" ? "com acesso" : "confirmados"} />
+                {f.kind !== "LINKS" && <MetaItem value={count(f.id, "COMPLETED")} label="cadastros" />}
               </span>
               <ChevronRight className="size-4 text-zinc-400" />
             </Link>
@@ -57,29 +61,10 @@ export default async function WarmupPage() {
         </Empty>
       )}
 
-      <Drawer title="Novo funil" subtitle="Leva 10 segundos. Depois é só ajustar as vagas e textos" open={!funnels.length}>
+      <Drawer title="Novo funil" subtitle="Leva 10 segundos. Os templates já vêm prontos" open={!funnels.length}>
         {groups.length ? (
           <ActionForm action={createFunnelAction} submit="Criar funil">
-            <div className="grid gap-4 md:grid-cols-3">
-              <Field label="Nome (só você vê)">
-                <Input name="name" required placeholder="Vagas tech" />
-              </Field>
-              <Field label="Endereço" hint="Usado em /v/endereco enquanto não tiver domínio próprio">
-                <Input name="slug" placeholder="vagas-tech" />
-              </Field>
-              <Field label="Grupo de BM que dispara">
-                <Select name="groupId" required defaultValue="">
-                  <option value="" disabled>
-                    Escolha
-                  </option>
-                  {groups.map((g) => (
-                    <option key={g.id} value={g.id}>
-                      {g.name}
-                    </option>
-                  ))}
-                </Select>
-              </Field>
-            </div>
+            <NewFunnelFields groups={groups.map((g) => ({ id: g.id, name: g.name }))} canLinks={auth.user.isSuperAdmin && !auth.inspecting} linksExists={funnels.some((f) => f.kind === "LINKS")} />
           </ActionForm>
         ) : (
           <p className="text-zinc-500">

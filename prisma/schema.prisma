@@ -672,38 +672,42 @@ enum FunnelStatus {
 }
 
 model Funnel {
-  id              String       @id @default(cuid())
-  workspaceId     String
-  name            String
+  id               String       @id @default(cuid())
+  workspaceId      String
+  name             String
   // Endereço público: /v/<slug> (ou o domínio próprio)
-  slug            String       @unique
-  domain          String?      @unique
-  status          FunnelStatus @default(ACTIVE)
+  slug             String       @unique
+  domain           String?      @unique
+  status           FunnelStatus @default(ACTIVE)
   // Grupo de BM que dispara as mensagens do funil
-  groupId         String?
+  groupId          String?
   // Textos da landing page: { company, jobTitle, headline, subtitle, about, benefits[], requirements[], cta, color }
-  page            Json
-  pixelId         String?
+  page             Json
+  pixelId          String?
   // API de Conversões (CAPI): token criptografado, código de teste e o resultado do último envio
-  capiTokenEnc    String?
-  capiTestCode    String?
-  capiLastOkAt    DateTime?
-  capiLastError   String?
+  capiTokenEnc     String?
+  capiTestCode     String?
+  capiLastOkAt     DateTime?
+  capiLastError    String?
   // Perguntas do cadastro final: [{ key, label, type: text|textarea|select, options[], required }]
-  formFields      Json
+  formFields       Json
   // Passos depois que a pessoa confirma o número: [{ id, type: wait|send, amount, unit, blueprintId, mapping, onlyIfPending }]
-  steps           Json
+  steps            Json
   // Templates padrão do código e da mensagem de cadastro recebido
-  codeBlueprintId String?
-  doneBlueprintId String?
+  codeBlueprintId  String?
+  doneBlueprintId  String?
+  // JOBS = landing de vagas; LINKS = login por WhatsApp do gerador de links (sem landing)
+  kind             String       @default("JOBS")
+  // LINKS: aviso de "novo acesso" com os botões Fui eu / Não fui eu
+  loginBlueprintId String?
   // Janela de envio dos passos (hora de Brasília)
-  sendFrom        Int          @default(8)
-  sendTo          Int          @default(21)
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
-  workspace       Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  leads           Lead[]
-  campaigns       Campaign[]
+  sendFrom         Int          @default(8)
+  sendTo           Int          @default(21)
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  workspace        Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  leads            Lead[]
+  campaigns        Campaign[]
 }
 
 enum LeadStatus {
@@ -714,7 +718,7 @@ enum LeadStatus {
 }
 
 model Lead {
-  id            String     @id @default(cuid())
+  id            String         @id @default(cuid())
   funnelId      String
   workspaceId   String
   name          String
@@ -722,25 +726,27 @@ model Lead {
   email         String?
   // Vaga que a pessoa escolheu na página
   job           String?
-  status        LeadStatus @default(CODE_SENT)
+  status        LeadStatus     @default(CODE_SENT)
   codeHash      String?
   codeExpiresAt DateTime?
-  codeAttempts  Int        @default(0)
-  codeSends     Int        @default(0)
+  codeAttempts  Int            @default(0)
+  codeSends     Int            @default(0)
   lastCodeAt    DateTime?
   verifiedAt    DateTime?
   stoppedAt     DateTime?
   // Link do cadastro final
-  formToken     String     @unique
+  formToken     String         @unique
   answers       Json?
   answeredAt    DateTime?
   // Próximo passo do funil e quando ele roda
-  stepIndex     Int        @default(0)
+  stepIndex     Int            @default(0)
   nextStepAt    DateTime?
   utm           Json?
   ip            String?
-  createdAt     DateTime   @default(now())
-  funnel        Funnel     @relation(fields: [funnelId], references: [id], onDelete: Cascade)
+  createdAt     DateTime       @default(now())
+  funnel        Funnel         @relation(fields: [funnelId], references: [id], onDelete: Cascade)
+  linkSessions  LinkSession[]
+  links         ExternalLink[]
 
   @@unique([funnelId, phone])
   @@index([nextStepAt])
@@ -764,6 +770,27 @@ model ExternalLink {
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
   workspace   Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  // Dono do link (cliente logado pelo WhatsApp no gerador de links)
+  leadId      String?
+  lead        Lead?      @relation(fields: [leadId], references: [id], onDelete: Cascade)
 
   @@index([workspaceId])
+  @@index([leadId])
+}
+
+// Login salvo no navegador do gerador de links. Vale só no mesmo IP; IP novo pede código de novo.
+model LinkSession {
+  id         String    @id @default(cuid())
+  leadId     String
+  tokenHash  String    @unique
+  ip         String
+  userAgent  String?
+  createdAt  DateTime  @default(now())
+  lastSeenAt DateTime  @default(now())
+  // Último aviso de "novo acesso" mandado no WhatsApp
+  alertedAt  DateTime?
+  revokedAt  DateTime?
+  lead       Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([leadId])
 }

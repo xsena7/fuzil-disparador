@@ -20,7 +20,7 @@ import { company } from "@/lib/company";
 import { env } from "@/lib/env";
 import { cachedSetting } from "@/lib/settings-cache";
 import { PasswordInput } from "@/components/password-input";
-import { adminDeleteLinkAction, saveLinksAccessAction } from "@/app/actions/links";
+import { adminDeleteLinkAction } from "@/app/actions/links";
 import { Trash2 } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -32,8 +32,8 @@ export default async function AdminPage() {
     prisma.user.findMany({ where: { memberships: { none: {} } }, orderBy: { createdAt: "desc" } }),
     platformDiscordHooks(),
   ]);
-  const extLinks = await prisma.externalLink.findMany({ orderBy: { createdAt: "desc" }, take: 200 });
-  const linksAccess = cachedSetting("LINKS_ACCESS_CODE") ?? process.env.LINKS_ACCESS_CODE ?? "";
+  const extLinks = await prisma.externalLink.findMany({ orderBy: { createdAt: "desc" }, take: 200, include: { lead: { select: { name: true, phone: true } } } });
+  const linksFunnel = await prisma.funnel.findFirst({ where: { kind: "LINKS" }, select: { id: true, status: true } });
   const bugs = await prisma.bugReport.findMany({ orderBy: [{ status: "asc" }, { createdAt: "desc" }], take: 50 });
   const openBugs = bugs.filter((b) => b.status === "OPEN").length;
   const discordHooks = (hooks ?? {}) as Record<string, string>;
@@ -154,26 +154,26 @@ export default async function AdminPage() {
 
       <Drawer
         title="Gerador de links do botão (site público)"
-        tone={linksAccess ? "green" : "amber"}
-        meta={<span>{linksAccess ? `Liberado · ${extLinks.length} link(s)` : "Desligado: falta a senha de acesso"}</span>}
+        tone={linksFunnel?.status === "ACTIVE" ? "green" : "amber"}
+        meta={<span>{linksFunnel ? `${linksFunnel.status === "ACTIVE" ? "No ar" : "Pausado"} · ${extLinks.length} link(s)` : "Desligado: falta criar o funil"}</span>}
       >
         <p className="mb-4 text-sm text-zinc-500">
-          Página sem login onde seus clientes criam o código do botão para disparar o template do Fuzil por outra plataforma:{" "}
-          <a href={`${company().siteUrl}/links`} target="_blank" rel="noreferrer" className="font-medium text-brand-600 hover:underline">{company().siteUrl.replace(/^https:\/\//, "")}/links</a>.
-          Só cria link quem tiver a senha abaixo.
+          Página sem senha onde seus clientes entram pelo WhatsApp e criam o código do botão:{" "}
+          <a href={`${company().siteUrl}/links`} target="_blank" rel="noreferrer" className="font-medium text-brand-600 hover:underline">{company().siteUrl.replace(/^https:\/\//, "")}/links</a>.{" "}
+          {linksFunnel ? (
+            <LinkButton href={`/aquecimento/${linksFunnel.id}`} variant="secondary" className="ml-1 px-3 py-1 text-xs">Abrir o funil do login</LinkButton>
+          ) : (
+            <>Para ligar, vá em <b>Aquecimento → Novo funil → Login do gerador de links</b>.</>
+          )}
         </p>
-        <ActionForm action={saveLinksAccessAction} submit="Salvar senha">
-          <Field label="Senha de acesso" hint={linksAccess ? "Configurada ✓ (digite outra para trocar, ou apague e salve para desligar)" : "Passe essa senha só para os clientes que vão criar links"}>
-            <PasswordInput name="access" defaultValue={linksAccess} autoComplete="off" />
-          </Field>
-        </ActionForm>
         {extLinks.length > 0 && (
           <div className="mt-6">
             <div className="mb-2 text-sm font-semibold">Links criados</div>
-            <Table head={["Nome", "Código", "Destino", "Cliques", ""]}>
+            <Table head={["Nome", "Cliente", "Código", "Destino", "Cliques", ""]}>
               {extLinks.map((l) => (
                 <tr key={l.id}>
                   <Td className="font-medium">{l.name}</Td>
+                  <Td className="text-xs">{l.lead ? `${l.lead.name} · ${l.lead.phone}` : "—"}</Td>
                   <Td className="font-mono">{l.code}</Td>
                   <Td className="max-w-xs truncate text-xs text-zinc-500" title={l.url}>{l.url}</Td>
                   <Td>{l.clicks.toLocaleString("pt-BR")}</Td>

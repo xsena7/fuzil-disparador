@@ -2,6 +2,15 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "1.79",
+    date: "22/10/2026",
+    items: [
+      "Aquecimento: novo tipo de funil \"Login do gerador de links\" (só na conta do dono da plataforma), com os templates prontos: código, aviso de novo acesso (Fui eu / Não fui eu) e boas-vindas",
+      "Gerador de links (fuzildisparador.com.br/links): sem senha, o cliente entra pelo WhatsApp com código. Login salvo no computador; IP novo pede código de novo; a cada acesso chega o aviso no WhatsApp",
+      "Cada cliente vê só os links dele: cria, copia o código, vê os cliques, troca o destino e apaga",
+    ],
+  },
+  {
     version: "1.78",
     date: "22/10/2026",
     items: ["Links externos saíram do painel e viraram um site separado. Novo: gerador de links do botão, num site público (fuzildisparador.com.br/links), sem precisar de login. O cliente cria o link com a senha de acesso, copia o código e cola na variável do botão na outra plataforma. Ele troca o destino e vê os cliques pelo link secreto que recebe", "Admin: senha de acesso do gerador e lista de todos os links criados (dá para apagar qualquer um)"],

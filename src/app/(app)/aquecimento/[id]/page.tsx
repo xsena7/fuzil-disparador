@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { Download, ExternalLink, Pause, Play, Trash2, Undo2, UserX } from "lucide-react";
 import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { company } from "@/lib/company";
 import { planSenders } from "@/lib/dispatcher";
 import { tierLabel } from "@/lib/limits";
 import { formatPhone } from "@/lib/phone";
@@ -52,6 +53,7 @@ export default async function FunnelPage({ params, searchParams }: { params: Pro
       WHERE c."funnelId" = ${id} AND r."createdAt" > NOW() - INTERVAL '7 days'
       GROUP BY b.id, b.name, b."messagingLimitTier" ORDER BY sent DESC`,
   ]);
+  const linkCount = funnel.kind === "LINKS" ? await prisma.externalLink.count({ where: { lead: { funnelId: id } } }) : 0;
   const count = (k: keyof typeof STATUS) => counts.find((c) => c.status === k)?._count ?? 0;
   const total = counts.reduce((a, c) => a + c._count, 0);
   const verified = count("VERIFIED") + count("COMPLETED");
@@ -66,7 +68,7 @@ export default async function FunnelPage({ params, searchParams }: { params: Pro
     const top = reasons.sort((a, b) => reasons.filter((r) => r === b).length - reasons.filter((r) => r === a).length)[0];
     return `0 BMs prontas${top ? ` · ${top}` : funnel.groupId ? " · grupo sem números" : " · escolha o grupo"}`;
   };
-  const used = new Set([funnel.codeBlueprintId, funnel.doneBlueprintId, ...funnelSteps(funnel).flatMap((x) => (x.type === "send" ? [x.blueprintId] : []))]);
+  const used = new Set([funnel.codeBlueprintId, funnel.doneBlueprintId, funnel.loginBlueprintId, ...funnelSteps(funnel).flatMap((x) => (x.type === "send" ? [x.blueprintId] : []))]);
   const options: BlueprintOption[] = await Promise.all(
     blueprints
       .filter((b) => b.category === "UTILITY" || used.has(b.id))
@@ -74,7 +76,8 @@ export default async function FunnelPage({ params, searchParams }: { params: Pro
   );
   const byId = new Map(options.map((o) => [o.id, o]));
   const page = funnelPage(funnel);
-  const url = funnelUrl(funnel);
+  const links = funnel.kind === "LINKS";
+  const url = links ? `${company().siteUrl}/links` : funnelUrl(funnel);
   const dns = funnel.domain ? await checkDomain(funnel.domain) : null;
   const serverIps = dns?.serverIps ?? [];
   const domainOk = Boolean(dns?.rootOk);
@@ -101,9 +104,13 @@ export default async function FunnelPage({ params, searchParams }: { params: Pro
       />
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Stat label="Inscritos" value={n(total)} sub={`${n(today)} nas últimas 24h`} />
-        <Stat label="Confirmaram o WhatsApp" value={n(verified)} sub={`${pct(verified, total)} dos inscritos`} tone="brand" />
-        <Stat label="Cadastro completo" value={n(count("COMPLETED"))} sub={`${pct(count("COMPLETED"), verified)} dos confirmados`} tone="green" />
+        <Stat label={links ? "Pediram código" : "Inscritos"} value={n(total)} sub={`${n(today)} nas últimas 24h`} />
+        <Stat label={links ? "Clientes com acesso" : "Confirmaram o WhatsApp"} value={n(verified)} sub={`${pct(verified, total)} ${links ? "de quem pediu" : "dos inscritos"}`} tone="brand" />
+        {links ? (
+          <Stat label="Links criados" value={n(linkCount)} sub="pelos clientes" tone="green" />
+        ) : (
+          <Stat label="Cadastro completo" value={n(count("COMPLETED"))} sub={`${pct(count("COMPLETED"), verified)} dos confirmados`} tone="green" />
+        )}
         <Stat label="Mensagens (7 dias)" value={n(warm.reduce((a, w) => a + Number(w.sent), 0))} sub={`${warm.length} BM${warm.length === 1 ? "" : "s"} aquecendo`} />
       </div>
 
@@ -114,6 +121,8 @@ export default async function FunnelPage({ params, searchParams }: { params: Pro
           blueprints={options.filter((o) => blueprints.find((b) => b.id === o.id)?.category === "UTILITY")}
           code={funnel.codeBlueprintId ? byId.get(funnel.codeBlueprintId) ?? null : null}
           done={funnel.doneBlueprintId ? byId.get(funnel.doneBlueprintId) ?? null : null}
+          login={funnel.loginBlueprintId ? byId.get(funnel.loginBlueprintId) ?? null : null}
+          kind={funnel.kind}
         />
         <p className="mt-3 text-xs text-zinc-500">
           Mensagens dos passos só saem entre {funnel.sendFrom}h e {funnel.sendTo}h (Brasília). O código sai na hora. Os templates sobem sozinhos em todas as BMs do grupo (Templates padrão).
@@ -202,6 +211,8 @@ export default async function FunnelPage({ params, searchParams }: { params: Pro
         )}
       </Drawer>
 
+      {!links && (
+        <>
       <Drawer
         title="Vagas"
         subtitle="Aparecem em cartões na página. A pessoa escolhe uma e se inscreve"
@@ -262,9 +273,12 @@ export default async function FunnelPage({ params, searchParams }: { params: Pro
         <FieldsEditor funnelId={funnel.id} initial={funnelFields(funnel)} />
       </Drawer>
 
+        </>
+      )}
+
       <Drawer
-        title="Domínio, grupo, Pixel e API de Conversões"
-        subtitle={funnel.domain ? funnel.domain : "Sem domínio próprio (usando o endereço do painel)"}
+        title={links ? "Nome e grupo de BM" : "Domínio, grupo, Pixel e API de Conversões"}
+        subtitle={links ? "Grupo que manda o código e os avisos de acesso" : funnel.domain ? funnel.domain : "Sem domínio próprio (usando o endereço do painel)"}
         tone={funnel.domain ? (domainOk ? "green" : "amber") : "gray"}
         toneTitle={funnel.domain ? (domainOk ? "Domínio apontado" : "Domínio ainda não aponta para o servidor") : undefined}
         open={Boolean(funnel.domain && !domainOk)}
@@ -285,6 +299,8 @@ export default async function FunnelPage({ params, searchParams }: { params: Pro
                 ))}
               </Select>
             </Field>
+            {!links && (
+              <>
             <Field label="Domínio próprio" hint="Ex.: vagasbrasil.com.br (sem https://)">
               <Input name="domain" defaultValue={funnel.domain ?? ""} placeholder="vagasbrasil.com.br" />
             </Field>
@@ -311,6 +327,8 @@ export default async function FunnelPage({ params, searchParams }: { params: Pro
             <Field label="Código de teste (opcional)" hint="Só para testar na aba Testar eventos (ex.: TEST12345). Apague depois">
               <Input name="capiTestCode" defaultValue={funnel.capiTestCode ?? ""} />
             </Field>
+              </>
+            )}
             <Field label="Mensagens dos passos a partir de (hora)">
               <Input name="sendFrom" type="number" min={0} max={23} defaultValue={funnel.sendFrom} />
             </Field>
@@ -319,6 +337,8 @@ export default async function FunnelPage({ params, searchParams }: { params: Pro
             </Field>
           </div>
         </ActionForm>
+        {!links && (
+          <>
         {funnel.capiTokenEnc && (
           <p className={`mt-4 rounded-lg px-3 py-2 text-sm ${funnel.capiLastError ? "bg-red-50 text-red-700" : "bg-emerald-50 text-emerald-700"}`}>
             API de Conversões:{" "}
@@ -341,6 +361,8 @@ export default async function FunnelPage({ params, searchParams }: { params: Pro
           </ol>
           {funnel.domain && dns && <DomainChecker funnelId={funnel.id} domain={funnel.domain} initial={dns} />}
         </div>
+          </>
+        )}
         <div className="mt-6 flex justify-end">
           <ConfirmButton action={deleteFunnelAction.bind(null, funnel.id)} variant="danger" confirm="Excluir o funil e todos os leads dele? Não dá para desfazer.">
             <Trash2 className="size-4" /> Excluir funil

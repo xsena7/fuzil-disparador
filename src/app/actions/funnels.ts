@@ -23,6 +23,17 @@ export async function createFunnelAction(_: FormState, form: FormData): Promise<
   const auth = await requireAuth();
   if (auth.role === "MEMBER") return { error: "Só donos e admins criam funis" };
   const name = String(form.get("name") ?? "").trim();
+  const kind = form.get("kind") === "LINKS" ? "LINKS" : "JOBS";
+  if (kind === "LINKS") {
+    if (!auth.user.isSuperAdmin || auth.inspecting) return { error: "Só o dono da plataforma cria o funil do gerador de links, na conta dele" };
+    if (await prisma.funnel.findFirst({ where: { kind: "LINKS" }, select: { id: true } })) return { error: "Já existe um funil do gerador de links. Abra ele na lista acima." };
+    const group = await prisma.bmGroup.findFirst({ where: { id: String(form.get("groupId") ?? ""), workspaceId: auth.workspace.id, system: null } });
+    if (!group) return { error: "Escolha o grupo de BM que vai disparar" };
+    const { createLinksFunnel } = await import("@/lib/links-login");
+    const f = await createLinksFunnel(auth.workspace.id, group.id, name || "Login do gerador de links");
+    void deployBlueprints(auth.workspace.id).catch((e) => console.error("[funil] templates", e));
+    redirect(`/aquecimento/${f.id}`);
+  }
   const slug = slugify(String(form.get("slug") ?? "") || name);
   const groupId = String(form.get("groupId") ?? "");
   const jobTitle = String(form.get("jobTitle") ?? "").trim();

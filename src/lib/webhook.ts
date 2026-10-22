@@ -1,6 +1,7 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import type { Prisma, RecipientStatus } from "@prisma/client";
 import { prisma } from "./db";
+import { handleLoginReply } from "./links-login";
 import { env } from "./env";
 import { decrypt } from "./crypto";
 import { createAlert } from "./alerts";
@@ -9,7 +10,7 @@ import { metaErrorLabel, SENDER_FATAL_CODES } from "./meta-errors";
 import { addCredits } from "./credits";
 import { flagBusinessProblem, problemFix } from "./bm-problems";
 import { canonicalWaId, formatPhone } from "./phone";
-import { applyChatStatus, ingestInbound, maybeAutoReply } from "./chat";
+import { applyChatStatus, ingestInbound, maybeAutoReply, sendChatMessage } from "./chat";
 
 function signedWith(raw: string, header: string, secret: string) {
   const expected = createHmac("sha256", secret).update(raw).digest("hex");
@@ -229,7 +230,10 @@ async function handleMessages(value: any, workspaceIds: string[]) {
     if (phone) {
       try {
         const conv = await ingestInbound(phone.waba.workspaceId, phone, msg, contactName);
-        if (conv && !optOut && msg.type !== "reaction") await maybeAutoReply(conv.id, recipient);
+        // Botões do aviso de "novo acesso" do gerador de links (Fui eu / Não fui eu)
+        const loginReply = conv && !optOut ? await handleLoginReply(recipient, text).catch(() => null) : null;
+        if (conv && loginReply) await sendChatMessage(conv.id, { source: "AUTO_REPLY", text: loginReply }).catch((e) => console.error("[webhook] links", e));
+        else if (conv && !optOut && msg.type !== "reaction") await maybeAutoReply(conv.id, recipient);
       } catch (e) {
         console.error("[webhook] chat", e);
       }

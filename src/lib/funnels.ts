@@ -257,8 +257,14 @@ async function stepCampaign(funnel: Funnel, step: string, bp: TemplateBlueprint,
   }
   // "Recebi" na mensagem de inscrição abre a conversa: responde na hora (mensagem grátis, conta como conversa de verdade)
   const autoReply =
-    step !== "code" && getComponent(bp.components as unknown as TComponent[], "BUTTONS")?.buttons?.some((b) => b.type === "QUICK_REPLY")
-      ? { autoReplyEnabled: true, autoReplyText: "Perfeito, {{primeiro_nome}}! Fique de olho por aqui, em breve enviamos a próxima etapa. 😉" }
+    step !== "code" && step !== "login" && getComponent(bp.components as unknown as TComponent[], "BUTTONS")?.buttons?.some((b) => b.type === "QUICK_REPLY")
+      ? {
+          autoReplyEnabled: true,
+          autoReplyText:
+            funnel.kind === "LINKS"
+              ? "Perfeito, {{primeiro_nome}}! Tudo certo com a sua conta. Qualquer acesso novo, a gente te avisa por aqui. 😉"
+              : "Perfeito, {{primeiro_nome}}! Fique de olho por aqui, em breve enviamos a próxima etapa. 😉",
+        }
       : {};
   return prisma.campaign
     .create({ data: { ...data, workspaceId: funnel.workspaceId, funnelId: funnel.id, funnelStep: step, status, startedAt: new Date(), ...autoReply } })
@@ -297,6 +303,12 @@ export async function sendCode(funnel: Funnel, lead: Lead) {
     data: { codeHash: hashCode(lead.id, code), codeExpiresAt: new Date(Date.now() + CODE_TTL_MIN * 60_000), codeAttempts: 0, codeSends: { increment: 1 }, lastCodeAt: new Date() },
   });
   await enqueue(funnel, updated, "code", bp, { body: [{ type: "field", field: "col:codigo" }] }, "Código", { codigo: code }, true);
+}
+
+/** Gerador de links: aviso de "novo acesso" no WhatsApp (com os botões Fui eu / Não fui eu). */
+export async function sendLoginAlert(funnel: Funnel, lead: Lead, quando: string) {
+  const bp = funnel.loginBlueprintId ? await prisma.templateBlueprint.findUnique({ where: { id: funnel.loginBlueprintId } }) : null;
+  if (bp) await enqueue(funnel, lead, "login", bp, { body: [{ type: "field", field: "col:quando" }] }, "Novo acesso", { quando }, true);
 }
 
 /** Cadastro final respondido: manda a mensagem de "recebemos". */

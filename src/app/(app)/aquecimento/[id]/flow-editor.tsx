@@ -64,7 +64,24 @@ function preview(bp: BlueprintOption | undefined, mapping: SendStep["mapping"]) 
   });
 }
 
-export function FlowEditor({ funnelId, initial, blueprints, code, done }: { funnelId: string; initial: FunnelStep[]; blueprints: BlueprintOption[]; code: BlueprintOption | null; done: BlueprintOption | null }) {
+export function FlowEditor({
+  funnelId,
+  initial,
+  blueprints,
+  code,
+  done,
+  login,
+  kind = "JOBS",
+}: {
+  funnelId: string;
+  initial: FunnelStep[];
+  blueprints: BlueprintOption[];
+  code: BlueprintOption | null;
+  done: BlueprintOption | null;
+  login?: BlueprintOption | null;
+  kind?: string;
+}) {
+  const links = kind === "LINKS";
   const [steps, setSteps] = useState<FunnelStep[]>(initial);
   const [dirty, setDirty] = useState(false);
   const [msg, setMsg] = useState<{ ok?: boolean; text: string } | null>(null);
@@ -113,14 +130,14 @@ export function FlowEditor({ funnelId, initial, blueprints, code, done }: { funn
   return (
     <div>
       <div className="flex flex-col items-center rounded-2xl border border-zinc-200 bg-[radial-gradient(circle,#e4e4e7_1px,transparent_1px)] bg-[length:16px_16px] px-3 py-6">
-        <Node tone="orange" icon={<Zap className="size-4" />} title="Gatilho" subtitle="A pessoa se inscreve na página" />
+        <Node tone="orange" icon={<Zap className="size-4" />} title="Gatilho" subtitle={links ? "O cliente digita o WhatsApp no gerador de links" : "A pessoa se inscreve na página"} />
         <Link />
         <Node tone="green" icon={<Send className="size-4" />} title="Ação: código no WhatsApp" subtitle={code ? `Template ${code.name}` : "Sem template"}>
           <p className="text-zinc-500">Código de 6 números disparado pelo rodízio do grupo. A pessoa digita no site para confirmar o número.</p>
           {code && <Ready text={code.ready} />}
         </Node>
         <Link />
-        <Node tone="orange" icon={<Zap className="size-4" />} title="Gatilho" subtitle="Confirmou o código no site" />
+        <Node tone="orange" icon={<Zap className="size-4" />} title="Gatilho" subtitle={links ? "Confirmou o código (primeiro acesso)" : "Confirmou o código no site"} />
         <Link onAdd={(t) => insert(0, t)} />
         {steps.map((s, i) => (
           <Fragment key={s.id}>
@@ -144,12 +161,28 @@ export function FlowEditor({ funnelId, initial, blueprints, code, done }: { funn
         <div className="rounded-full bg-zinc-800 px-3 py-1 text-xs font-medium text-white">Fim do funil</div>
 
         <div className="my-6 h-px w-full max-w-md bg-zinc-200" />
-        <Node tone="orange" icon={<Zap className="size-4" />} title="Gatilho" subtitle="Respondeu o cadastro final (link do WhatsApp)" />
-        <Link />
-        <Node tone="green" icon={<Send className="size-4" />} title="Ação: cadastro recebido" subtitle={done ? `Template ${done.name}` : "Sem template"}>
-          {done && <p className="whitespace-pre-line text-zinc-600">{preview(done, { body: [{ type: "field", field: "firstName" }, { type: "field", field: "col:vaga" }] })}</p>}
-          {done && <Ready text={done.ready} />}
-        </Node>
+        {links ? (
+          <>
+            <Node tone="orange" icon={<Zap className="size-4" />} title="Gatilho" subtitle="Cada novo acesso ao gerador de links" />
+            <Link />
+            <Node tone="green" icon={<Send className="size-4" />} title="Ação: aviso de novo acesso" subtitle={login ? `Template ${login.name}` : "Sem template"}>
+              {login && <p className="whitespace-pre-line text-zinc-600">{login.text.replace("{{1}}", "[data e hora]")}</p>}
+              <p className="text-xs text-zinc-500">
+                Botões &quot;Fui eu&quot; e &quot;Não fui eu&quot;. &quot;Não fui eu&quot; desconecta todos os aparelhos. Sai em todo login: IP novo pede código de novo, e no mesmo IP avisa quando a pessoa volta depois de 30 min parada.
+              </p>
+              {login && <Ready text={login.ready} />}
+            </Node>
+          </>
+        ) : (
+          <>
+            <Node tone="orange" icon={<Zap className="size-4" />} title="Gatilho" subtitle="Respondeu o cadastro final (link do WhatsApp)" />
+            <Link />
+            <Node tone="green" icon={<Send className="size-4" />} title="Ação: cadastro recebido" subtitle={done ? `Template ${done.name}` : "Sem template"}>
+              {done && <p className="whitespace-pre-line text-zinc-600">{preview(done, { body: [{ type: "field", field: "firstName" }, { type: "field", field: "col:vaga" }] })}</p>}
+              {done && <Ready text={done.ready} />}
+            </Node>
+          </>
+        )}
       </div>
       <div className="mt-4 flex items-center gap-3">
         <Button
