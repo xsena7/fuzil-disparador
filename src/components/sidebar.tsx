@@ -4,7 +4,7 @@ import clsx from "clsx";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Bell, Building2, GraduationCap, MessagesSquare, Coins, FileText, Flame, Home, Layers, LogOut, Megaphone, Menu, X, Settings, Shield, Sparkles } from "lucide-react";
+import { Bell, Building2, GraduationCap, MessagesSquare, Coins, FileText, Flame, Home, Layers, LogOut, Megaphone, Menu, X, Settings, Shield, Sparkles, Link2 } from "lucide-react";
 import { logoutAction } from "@/app/actions/auth";
 import { Logo } from "./brand";
 import { APP_VERSION } from "@/version";
@@ -27,6 +27,7 @@ const sections = [
       { href: "/grupos", label: "Grupos de BM", icon: Layers },
       { href: "/templates", label: "Templates", icon: FileText },
       { href: "/templates-padrao", label: "Templates padrão", icon: Sparkles },
+      { href: "/links", label: "Links externos", icon: Link2 },
     ],
   },
   {

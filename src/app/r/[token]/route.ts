@@ -11,12 +11,19 @@ export async function GET(req: Request, { params }: { params: Promise<{ token: s
     where: { clickToken: token },
     include: { campaign: { select: { id: true, buttonUrl: true } } },
   });
-  const target = recipient?.campaign.buttonUrl;
-  if (!recipient || !target) return new Response("Link não encontrado", { status: 404 });
-
   const ua = req.headers.get("user-agent") ?? "";
   const ip = (req.headers.get("x-forwarded-for") ?? "").split(",")[0].trim() || req.headers.get("x-real-ip") || null;
   const isBot = !ua || BOT_UA.test(ua);
+
+  // Não é de campanha do Fuzil: pode ser um link para outra plataforma (código fixo na variável do botão)
+  if (!recipient) {
+    const link = await prisma.externalLink.findUnique({ where: { code: token }, select: { id: true, url: true } });
+    if (!link) return new Response("Link não encontrado", { status: 404 });
+    if (!isBot) void prisma.externalLink.update({ where: { id: link.id }, data: { clicks: { increment: 1 }, lastClickAt: new Date() } }).catch(() => undefined);
+    return Response.redirect(link.url, 302);
+  }
+  const target = recipient.campaign.buttonUrl;
+  if (!target) return new Response("Link não encontrado", { status: 404 });
 
   // Não bloqueia o redirecionamento esperando o banco
   void (async () => {

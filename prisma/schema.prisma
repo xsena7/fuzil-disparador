@@ -12,13 +12,13 @@ datasource db {
 // ---------------------------------------------------------------------------
 
 model User {
-  id           String       @id @default(cuid())
-  email        String       @unique
+  id           String          @id @default(cuid())
+  email        String          @unique
   name         String
   passwordHash String
-  isSuperAdmin Boolean      @default(false)
+  isSuperAdmin Boolean         @default(false)
   lastLoginAt  DateTime?
-  createdAt    DateTime     @default(now())
+  createdAt    DateTime        @default(now())
   memberships  Membership[]
   sessions     Session[]
   tokens       PasswordToken[]
@@ -47,37 +47,38 @@ enum Role {
 }
 
 model Workspace {
-  id                String              @id @default(cuid())
-  name              String
+  id                  String              @id @default(cuid())
+  name                String
   // Saldo em créditos (1 crédito = 1 mensagem por padrão)
-  creditBalance     Int                 @default(0)
-  creditsPerMessage Int                 @default(1)
-  telegramChatId    String?
+  creditBalance       Int                 @default(0)
+  creditsPerMessage   Int                 @default(1)
+  telegramChatId      String?
   // Exclui na Meta qualquer template que for recategorizado para marketing
-  autoDeleteMarketing Boolean           @default(false)
+  autoDeleteMarketing Boolean             @default(false)
   // Envia por e-mail os alertas críticos para donos e admins
-  emailAlerts       Boolean             @default(true)
+  emailAlerts         Boolean             @default(true)
   // Webhooks do Discord por canal: { campaigns, templates, quality, limits, general }
-  discordWebhooks   Json?
+  discordWebhooks     Json?
   // Conta bloqueada pelo admin da plataforma: ninguém entra e nada é disparado
-  blockedAt         DateTime?
-  blockedReason     String?
-  createdAt         DateTime            @default(now())
-  memberships       Membership[]
-  creditTxs         CreditTransaction[]
-  businesses        BusinessManager[]
-  wabas             WhatsAppAccount[]
-  groups            BmGroup[]
-  templates         Template[]
-  campaigns         Campaign[]
-  contacts          Contact[]
-  alerts            Alert[]
-  inbound           InboundMessage[]
-  blueprints        TemplateBlueprint[]
-  campaignFolders   CampaignFolder[]
-  conversations     Conversation[]
-  quickReplies      QuickReply[]
-  funnels           Funnel[]
+  blockedAt           DateTime?
+  blockedReason       String?
+  createdAt           DateTime            @default(now())
+  memberships         Membership[]
+  creditTxs           CreditTransaction[]
+  businesses          BusinessManager[]
+  wabas               WhatsAppAccount[]
+  groups              BmGroup[]
+  templates           Template[]
+  campaigns           Campaign[]
+  contacts            Contact[]
+  alerts              Alert[]
+  inbound             InboundMessage[]
+  blueprints          TemplateBlueprint[]
+  campaignFolders     CampaignFolder[]
+  conversations       Conversation[]
+  quickReplies        QuickReply[]
+  funnels             Funnel[]
+  externalLinks       ExternalLink[]
 }
 
 model Membership {
@@ -162,42 +163,42 @@ enum ConnectionType {
 }
 
 model WhatsAppAccount {
-  id                   String          @id @default(cuid())
-  workspaceId          String
-  businessId           String
-  wabaId               String
-  name                 String
-  connectionType       ConnectionType  @default(MANUAL)
+  id                String               @id @default(cuid())
+  workspaceId       String
+  businessId        String
+  wabaId            String
+  name              String
+  connectionType    ConnectionType       @default(MANUAL)
   // Token criptografado (AES-256-GCM). Se nulo, usa META_SYSTEM_USER_TOKEN
-  accessTokenEnc       String?
+  accessTokenEnc    String?
   // App Secret do app da própria BM (conexão manual): valida os webhooks que esse app manda (respostas, status)
-  appSecretEnc         String?
+  appSecretEnc      String?
   // Diagnóstico do webhook: último evento aceito e último recusado (assinatura não confere)
-  webhookLastAt        DateTime?
-  webhookRejectedAt    DateTime?
-  currency             String?
-  timezoneId           String?
-  reviewStatus         String?
-  hasPaymentMethod     Boolean? // null = não deu para saber
-  healthIssues         Json? // problemas que a Meta aponta e impedem/limitam o envio
-  status               String? // ex.: ACTIVE, DISABLED, BANNED
-  webhookSubscribed    Boolean         @default(false)
-  lastSyncedAt         DateTime?
-  lastSyncError        String?
-  createdAt            DateTime        @default(now())
-  workspace            Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  business             BusinessManager @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  phones               PhoneNumber[]
-  templates            Template[]
-  deployments          TemplateDeployment[]
+  webhookLastAt     DateTime?
+  webhookRejectedAt DateTime?
+  currency          String?
+  timezoneId        String?
+  reviewStatus      String?
+  hasPaymentMethod  Boolean? // null = não deu para saber
+  healthIssues      Json? // problemas que a Meta aponta e impedem/limitam o envio
+  status            String? // ex.: ACTIVE, DISABLED, BANNED
+  webhookSubscribed Boolean              @default(false)
+  lastSyncedAt      DateTime?
+  lastSyncError     String?
+  createdAt         DateTime             @default(now())
+  workspace         Workspace            @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  business          BusinessManager      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  phones            PhoneNumber[]
+  templates         Template[]
+  deployments       TemplateDeployment[]
 
   @@unique([workspaceId, wabaId])
 }
 
 model PhoneNumber {
-  id                 String          @id @default(cuid())
+  id                 String              @id @default(cuid())
   wabaId             String
-  phoneNumberId      String          @unique
+  phoneNumberId      String              @unique
   displayPhoneNumber String
   verifiedName       String?
   qualityRating      String? // GREEN, YELLOW, RED, UNKNOWN
@@ -205,22 +206,22 @@ model PhoneNumber {
   status             String? // CONNECTED, FLAGGED, RESTRICTED, BANNED...
   nameStatus         String?
   throughputLevel    String?
-  isCoexistence      Boolean         @default(false)
+  isCoexistence      Boolean             @default(false)
   // Permite tirar o número do rodízio sem desconectar
-  enabled            Boolean         @default(true)
+  enabled            Boolean             @default(true)
   // Preenchido quando o número não serve para disparo (número de teste da Meta, não registrado...)
   invalidReason      String?
-  isDefault          Boolean         @default(false)
+  isDefault          Boolean             @default(false)
   lastSyncedAt       DateTime?
-  createdAt          DateTime        @default(now())
-  waba               WhatsAppAccount @relation(fields: [wabaId], references: [id], onDelete: Cascade)
+  createdAt          DateTime            @default(now())
+  waba               WhatsAppAccount     @relation(fields: [wabaId], references: [id], onDelete: Cascade)
   recipients         CampaignRecipient[]
   inbound            InboundMessage[]
   conversations      Conversation[]
 }
 
 model BmGroup {
-  id          String          @id @default(cuid())
+  id          String              @id @default(cuid())
   workspaceId String
   name        String
   description String?
@@ -228,8 +229,8 @@ model BmGroup {
   system      String?
   // Cor da etiqueta do grupo (nome da cor: red, amber, emerald, sky, violet, pink, orange, zinc)
   color       String?
-  createdAt   DateTime        @default(now())
-  workspace   Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdAt   DateTime            @default(now())
+  workspace   Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   members     BmGroupMember[]
   campaigns   Campaign[]
   blueprints  TemplateBlueprint[]
@@ -326,62 +327,62 @@ enum CampaignStatus {
 }
 
 model Campaign {
-  id               String              @id @default(cuid())
-  workspaceId      String
-  name             String
-  status           CampaignStatus      @default(DRAFT)
-  groupId          String?
-  templateName     String?
-  templateLanguage String?
+  id                 String              @id @default(cuid())
+  workspaceId        String
+  name               String
+  status             CampaignStatus      @default(DRAFT)
+  groupId            String?
+  templateName       String?
+  templateLanguage   String?
   // { "body": [{ "type": "field", "value": "firstName" } | { "type": "fixed", "value": "..." }], "header": [...] }
-  variableMapping  Json?
-  headerMediaUrl   String?
-  headerMediaType  String? // IMAGE, VIDEO, DOCUMENT
-  headerMediaName  String?
+  variableMapping    Json?
+  headerMediaUrl     String?
+  headerMediaType    String? // IMAGE, VIDEO, DOCUMENT
+  headerMediaName    String?
   // URL de destino do botão (o redirecionador manda o clique pra cá)
-  buttonUrl        String?
+  buttonUrl          String?
   // Mensagens por segundo por número (0 = automático)
-  ratePerSecond    Int                 @default(0)
+  ratePerSecond      Int                 @default(0)
   // Velocidade TOTAL da campanha (mensagens por segundo somando todos os números). Nulo = jeito antigo (por número)
   totalRatePerSecond Int?
   // Não usar números com qualidade vermelha
-  skipRedQuality   Boolean             @default(true)
+  skipRedQuality     Boolean             @default(true)
   // Números retirados desta campanha por erro grave (ids de PhoneNumber)
-  excludedSenders  String[]            @default([])
-  creditsRefunded  Boolean             @default(false)
-  scheduledAt      DateTime?
-  startedAt        DateTime?
-  completedAt      DateTime?
-  pausedReason     String?
-  audienceFileName String?
-  audienceStats    Json?
+  excludedSenders    String[]            @default([])
+  creditsRefunded    Boolean             @default(false)
+  scheduledAt        DateTime?
+  startedAt          DateTime?
+  completedAt        DateTime?
+  pausedReason       String?
+  audienceFileName   String?
+  audienceStats      Json?
   // Pasta (gaveta) onde a campanha foi guardada; nulo = lista principal
-  folderId         String?
+  folderId           String?
   // Resposta automática: enviada uma vez quando o contato responde a esta campanha
-  autoReplyEnabled   Boolean           @default(false)
+  autoReplyEnabled   Boolean             @default(false)
   autoReplyText      String?
   autoReplyMediaUrl  String?
   autoReplyMediaType String? // IMAGE, VIDEO, AUDIO, DOCUMENT
   autoReplyMediaName String?
   // Campanha interna de um funil de aquecimento (não aparece na lista e nunca é concluída)
-  funnelId         String?
+  funnelId           String?
   // Qual passo do funil essa campanha envia ("code", "done" ou o id do passo)
-  funnelStep       String?
+  funnelStep         String?
   // Categoria exigida do template: UTILITY (padrão) ou AUTHENTICATION (código de confirmação)
-  templateCategory String              @default("UTILITY")
+  templateCategory   String              @default("UTILITY")
   // Origem dos disparos: GROUP (grupo de BMs) ou BM (uma BM só)
-  scope            String              @default("GROUP")
-  createdAt        DateTime            @default(now())
-  updatedAt        DateTime            @updatedAt
-  workspace        Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  group            BmGroup?            @relation(fields: [groupId], references: [id], onDelete: SetNull)
-  folder           CampaignFolder?     @relation(fields: [folderId], references: [id], onDelete: SetNull)
-  funnel           Funnel?             @relation(fields: [funnelId], references: [id], onDelete: Cascade)
-  recipients       CampaignRecipient[]
-  clicks           LinkClick[]
+  scope              String              @default("GROUP")
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  workspace          Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  group              BmGroup?            @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  folder             CampaignFolder?     @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  funnel             Funnel?             @relation(fields: [funnelId], references: [id], onDelete: Cascade)
+  recipients         CampaignRecipient[]
+  clicks             LinkClick[]
 
-  @@index([workspaceId, status])
   @@unique([funnelId, funnelStep])
+  @@index([workspaceId, status])
 }
 
 enum RecipientStatus {
@@ -395,36 +396,36 @@ enum RecipientStatus {
 }
 
 model CampaignRecipient {
-  id            String          @id @default(cuid())
-  campaignId    String
-  phone         String
-  name          String?
-  data          Json // linha da planilha (para variáveis)
-  status        RecipientStatus @default(PENDING)
-  senderId      String?
-  wamid         String?         @unique
-  errorCode     Int?
-  errorTitle    String?
-  errorDetail   String?
-  clickToken    String          @unique
-  clickCount    Int             @default(0)
-  firstClickAt  DateTime?
-  repliedAt     DateTime?
-  optedOutAt    DateTime?
-  creditsCharged Int            @default(0)
+  id              String          @id @default(cuid())
+  campaignId      String
+  phone           String
+  name            String?
+  data            Json // linha da planilha (para variáveis)
+  status          RecipientStatus @default(PENDING)
+  senderId        String?
+  wamid           String?         @unique
+  errorCode       Int?
+  errorTitle      String?
+  errorDetail     String?
+  clickToken      String          @unique
+  clickCount      Int             @default(0)
+  firstClickAt    DateTime?
+  repliedAt       DateTime?
+  optedOutAt      DateTime?
+  creditsCharged  Int             @default(0)
   autoReplySentAt DateTime?
-  attempts      Int             @default(0)
+  attempts        Int             @default(0)
   // Não tenta de novo antes disso (limite de velocidade da Meta)
-  retryAt       DateTime?
-  queuedAt      DateTime?
-  sentAt        DateTime?
-  deliveredAt   DateTime?
-  readAt        DateTime?
-  failedAt      DateTime?
-  createdAt     DateTime        @default(now())
-  campaign      Campaign        @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  sender        PhoneNumber?    @relation(fields: [senderId], references: [id], onDelete: SetNull)
-  clicks        LinkClick[]
+  retryAt         DateTime?
+  queuedAt        DateTime?
+  sentAt          DateTime?
+  deliveredAt     DateTime?
+  readAt          DateTime?
+  failedAt        DateTime?
+  createdAt       DateTime        @default(now())
+  campaign        Campaign        @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  sender          PhoneNumber?    @relation(fields: [senderId], references: [id], onDelete: SetNull)
+  clicks          LinkClick[]
 
   @@unique([campaignId, phone])
   @@index([campaignId, status])
@@ -601,25 +602,25 @@ enum ConversationStatus {
 
 // Conversa = um contato falando com UM dos nossos números
 model Conversation {
-  id             String             @id @default(cuid())
-  workspaceId    String
-  phoneId        String
-  contactPhone   String
-  contactName    String?
-  status         ConversationStatus @default(OPEN)
-  unread         Int                @default(0)
-  hasInbound     Boolean            @default(false)
-  lastMessageAt  DateTime           @default(now())
+  id              String             @id @default(cuid())
+  workspaceId     String
+  phoneId         String
+  contactPhone    String
+  contactName     String?
+  status          ConversationStatus @default(OPEN)
+  unread          Int                @default(0)
+  hasInbound      Boolean            @default(false)
+  lastMessageAt   DateTime           @default(now())
   lastMessageText String?
-  lastDirection  String? // IN | OUT
-  lastInboundAt  DateTime? // abre a janela de 24h para mensagem livre
-  clickedAt      DateTime? // clicou no botão do disparo (vai para "Em andamento")
-  assignedUserId String?
-  closedAt       DateTime?
-  createdAt      DateTime           @default(now())
-  workspace      Workspace          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  phone          PhoneNumber        @relation(fields: [phoneId], references: [id], onDelete: Cascade)
-  messages       ChatMessage[]
+  lastDirection   String? // IN | OUT
+  lastInboundAt   DateTime? // abre a janela de 24h para mensagem livre
+  clickedAt       DateTime? // clicou no botão do disparo (vai para "Em andamento")
+  assignedUserId  String?
+  closedAt        DateTime?
+  createdAt       DateTime           @default(now())
+  workspace       Workspace          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  phone           PhoneNumber        @relation(fields: [phoneId], references: [id], onDelete: Cascade)
+  messages        ChatMessage[]
 
   @@unique([phoneId, contactPhone])
   @@index([workspaceId, lastMessageAt])
@@ -671,38 +672,38 @@ enum FunnelStatus {
 }
 
 model Funnel {
-  id          String       @id @default(cuid())
-  workspaceId String
-  name        String
+  id              String       @id @default(cuid())
+  workspaceId     String
+  name            String
   // Endereço público: /v/<slug> (ou o domínio próprio)
-  slug        String       @unique
-  domain      String?      @unique
-  status      FunnelStatus @default(ACTIVE)
+  slug            String       @unique
+  domain          String?      @unique
+  status          FunnelStatus @default(ACTIVE)
   // Grupo de BM que dispara as mensagens do funil
-  groupId     String?
+  groupId         String?
   // Textos da landing page: { company, jobTitle, headline, subtitle, about, benefits[], requirements[], cta, color }
-  page        Json
-  pixelId     String?
+  page            Json
+  pixelId         String?
   // API de Conversões (CAPI): token criptografado, código de teste e o resultado do último envio
-  capiTokenEnc  String?
-  capiTestCode  String?
-  capiLastOkAt  DateTime?
-  capiLastError String?
+  capiTokenEnc    String?
+  capiTestCode    String?
+  capiLastOkAt    DateTime?
+  capiLastError   String?
   // Perguntas do cadastro final: [{ key, label, type: text|textarea|select, options[], required }]
-  formFields  Json
+  formFields      Json
   // Passos depois que a pessoa confirma o número: [{ id, type: wait|send, amount, unit, blueprintId, mapping, onlyIfPending }]
-  steps       Json
+  steps           Json
   // Templates padrão do código e da mensagem de cadastro recebido
   codeBlueprintId String?
   doneBlueprintId String?
   // Janela de envio dos passos (hora de Brasília)
-  sendFrom    Int          @default(8)
-  sendTo      Int          @default(21)
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  workspace   Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  leads       Lead[]
-  campaigns   Campaign[]
+  sendFrom        Int          @default(8)
+  sendTo          Int          @default(21)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  workspace       Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  leads           Lead[]
+  campaigns       Campaign[]
 }
 
 enum LeadStatus {
@@ -744,4 +745,21 @@ model Lead {
   @@unique([funnelId, phone])
   @@index([nextStepAt])
   @@index([funnelId, createdAt])
+}
+
+// Link do botão para disparar por OUTRA plataforma com o mesmo template aprovado:
+// na variável do botão vai só o código, e o redirecionador manda para a url daqui
+model ExternalLink {
+  id          String    @id @default(cuid())
+  workspaceId String
+  name        String
+  code        String    @unique
+  url         String
+  clicks      Int       @default(0)
+  lastClickAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
 }

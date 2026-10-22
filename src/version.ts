@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "1.77",
+    date: "22/10/2026",
+    items: ["Novo: Links externos. Para disparar os templates do Fuzil por outra plataforma: crie um link, copie o código e cole na variável do botão. Quem clicar vai para o seu site, e você troca o destino quando quiser e vê quantos cliques teve"],
+  },
+  {
     version: "1.76",
     date: "22/10/2026",
     items: ["Correção: o aviso de alerta no canto da tela repetia sem parar. Agora cada alerta aparece uma vez só, some sozinho e, se chegarem muitos juntos, vira um aviso só (\"X alertas novos\")"],
