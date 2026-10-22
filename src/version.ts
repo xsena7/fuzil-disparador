@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "1.99",
+    date: "22/10/2026",
+    items: ["Números do relatório: cada campo mostra a % (enviadas do público, lidas das enviadas, cliques e respostas das lidas) do número real e do que você digita, ao vivo. Fica vermelho se passar do limite"],
+  },
+  {
     version: "1.98",
     date: "22/10/2026",
     items: [

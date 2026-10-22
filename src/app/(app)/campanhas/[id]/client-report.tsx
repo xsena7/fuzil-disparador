@@ -4,7 +4,8 @@ import { prisma } from "@/lib/db";
 import { env } from "@/lib/env";
 import { Card, Field, Input, Select } from "@/components/ui";
 import { parsePixKeys } from "@/lib/pix-keys";
-import { REPORT_FIELDS, parseOverrides, realReportNumbers, reportNumbers } from "@/lib/report-numbers";
+import { parseOverrides, realReportNumbers, reportNumbers } from "@/lib/report-numbers";
+import { ReportNumbersFields } from "./report-numbers-fields";
 import { ActionForm, ConfirmButton } from "@/components/action-form";
 import { resetReportNumbersAction, saveCampaignPriceAction, saveReportNumbersAction, shareReportAction, unshareReportAction } from "@/app/actions/client-report";
 import { CopyLink } from "./copy-link";
@@ -22,7 +23,6 @@ export async function ClientReportStep({ campaignId, workspaceId, canAdjust = fa
   const [rn, real] = await Promise.all([reportNumbers(campaignId, c.reportOverrides), realReportNumbers(campaignId)]);
   const overrides = parseOverrides(c.reportOverrides);
   const sent = rn.sent;
-  const fmt = (v: number) => v.toLocaleString("pt-BR");
   const price = c.reportPrice ?? ws.reportPrice ?? 0;
   const keys = parsePixKeys(ws.pixKeys);
   const total = Math.round(sent * price * 100) / 100;
@@ -81,13 +81,10 @@ export async function ClientReportStep({ campaignId, workspaceId, canAdjust = fa
         </p>
         <p className="mb-4 rounded-lg bg-zinc-50 px-3 py-2 text-xs text-zinc-600">Os números precisam fechar: <b>Público ≥ Enviadas ≥ Lidas ≥ Clicaram</b>, e <b>Responderam ≤ Lidas</b>.</p>
         <ActionForm action={saveReportNumbersAction.bind(null, campaignId)} submit="Salvar números" variant="secondary">
-          <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-5">
-            {REPORT_FIELDS.map((f) => (
-              <Field key={f.key} label={f.label} hint={`Real: ${fmt(real[f.key])}`}>
-                <Input name={f.key} defaultValue={String(overrides[f.key] ?? real[f.key])} inputMode="numeric" />
-              </Field>
-            ))}
-          </div>
+          <ReportNumbersFields
+            real={{ total: real.total, sent: real.sent, read: real.read, clicked: real.clicked, replied: real.replied }}
+            initial={{ total: overrides.total ?? real.total, sent: overrides.sent ?? real.sent, read: overrides.read ?? real.read, clicked: overrides.clicked ?? real.clicked, replied: overrides.replied ?? real.replied }}
+          />
         </ActionForm>
         {rn.adjusted && (
           <div className="mt-3">
