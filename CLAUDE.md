@@ -17,6 +17,7 @@ Produção: VM Oracle grátis, Docker Compose (db, app, worker, caddy). O servid
 - BMs com problema (grupo automático): `src/lib/bm-problems.ts`. O que falta para disparar: `src/lib/readiness.ts`.
 - Aquecimento (landing de vagas + código + funil): `src/lib/funnels.ts`, `src/app/v/[key]/*` (página pública, também em domínio próprio pelo `src/middleware.ts` + on-demand TLS no Caddy), painel em `src/app/(app)/aquecimento/`. Cada passo é uma campanha interna (`Campaign.funnelId`).
 - Links externos (código fixo na variável do botão, para disparar por outra plataforma): site público em `src/app/site/links/` (fuzildisparador.com.br/links), login por WhatsApp = funil kind LINKS (`src/lib/links-login.ts`), `src/app/actions/links.ts`, resolvido em `src/app/r/[token]/route.ts`.
+- Relatório do cliente (métricas + valor + Pix copia e cola): `src/app/relatorio/report-view.tsx` (logado em `/relatorio/[id]`, público em `/relatorio/p/[token]`), Pix em `src/lib/pix.ts`, aba em `src/app/(app)/campanhas/[id]/client-report.tsx`.
 - Logo: `src/components/brand.tsx`. Gaveta padrão: `src/components/drawer.tsx`.
 - Server actions: `src/app/actions/*.ts`. Telas: `src/app/(app)/*`. Site público: `src/app/site/*`.
 

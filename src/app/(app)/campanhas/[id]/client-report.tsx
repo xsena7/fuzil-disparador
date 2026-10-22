@@ -1,0 +1,80 @@
+import Link from "next/link";
+import { ExternalLink, FileBarChart, Link2, QrCode } from "lucide-react";
+import { prisma } from "@/lib/db";
+import { env } from "@/lib/env";
+import { Card, Field, Input } from "@/components/ui";
+import { ActionForm, ConfirmButton } from "@/components/action-form";
+import { saveCampaignPriceAction, shareReportAction, unshareReportAction } from "@/app/actions/client-report";
+import { CopyLink } from "./copy-link";
+
+const brl = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+/** Aba "Relatório do cliente": valor cobrado, Pix e o link público do relatório. */
+export async function ClientReportStep({ campaignId, workspaceId }: { campaignId: string; workspaceId: string }) {
+  const [c, ws, sent] = await Promise.all([
+    prisma.campaign.findFirstOrThrow({ where: { id: campaignId, workspaceId }, select: { reportPrice: true, shareToken: true } }),
+    prisma.workspace.findUniqueOrThrow({ where: { id: workspaceId }, select: { pixKey: true, reportPrice: true } }),
+    prisma.campaignRecipient.count({ where: { campaignId, sentAt: { not: null } } }),
+  ]);
+  const price = c.reportPrice ?? ws.reportPrice ?? 0;
+  const total = Math.round(sent * price * 100) / 100;
+  const url = c.shareToken ? `${env.appUrl()}/relatorio/p/${c.shareToken}` : null;
+
+  return (
+    <div className="max-w-3xl space-y-5">
+      <div>
+        <h2 className="text-xl font-semibold">Relatório do cliente</h2>
+        <p className="text-sm text-zinc-500">O relatório que você manda para o cliente: resultados da campanha, o valor a pagar e o seu Pix com o valor certinho.</p>
+      </div>
+
+      <Card className="p-5">
+        <div className="mb-3 flex items-center gap-2 font-semibold"><QrCode className="size-4 text-brand-500" /> Valor a cobrar</div>
+        <div className="mb-4 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+          <span className="text-3xl font-bold tracking-tight text-brand-gradient">{brl(total)}</span>
+          <span className="text-sm text-zinc-500">{sent.toLocaleString("pt-BR")} enviadas × {brl(price)}</span>
+        </div>
+        <ActionForm action={saveCampaignPriceAction.bind(null, campaignId)} submit="Salvar valor" variant="secondary">
+          <Field label="Valor por mensagem nesta campanha (R$)" hint={ws.reportPrice != null ? `Em branco = o padrão das Configurações (${brl(ws.reportPrice)})` : "Em branco = sem cobrança. Dá para definir um padrão em Configurações"}>
+            <Input name="reportPrice" defaultValue={c.reportPrice != null ? String(c.reportPrice).replace(".", ",") : ""} placeholder={ws.reportPrice != null ? String(ws.reportPrice).replace(".", ",") : "0,25"} inputMode="decimal" className="max-w-40" />
+          </Field>
+        </ActionForm>
+        {!ws.pixKey && (
+          <p className="mt-4 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
+            Falta cadastrar sua chave Pix: vá em <Link href="/configuracoes" className="font-medium underline">Configurações → Cobrança no relatório do cliente</Link>.
+          </p>
+        )}
+      </Card>
+
+      <Card className="p-5">
+        <div className="mb-1 flex items-center gap-2 font-semibold"><Link2 className="size-4 text-brand-500" /> Link para o cliente</div>
+        <p className="mb-4 text-sm text-zinc-500">Ele abre o relatório sem precisar de login e vê sempre os números atualizados. Os nomes e números das suas BMs não aparecem para ele.</p>
+        {url ? (
+          <div className="space-y-3">
+            <CopyLink url={url} />
+            <div className="flex flex-wrap gap-2">
+              <a href={url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm font-medium hover:bg-zinc-50">
+                <ExternalLink className="size-4" /> Abrir como o cliente vê
+              </a>
+              <ConfirmButton action={unshareReportAction.bind(null, campaignId)} variant="ghost" className="text-red-600" confirm={"Desligar o link do cliente?\nQuem tiver o endereço não consegue mais abrir o relatório. Se ligar de novo, o link muda."}>
+                Desligar link
+              </ConfirmButton>
+            </div>
+          </div>
+        ) : (
+          <ConfirmButton action={shareReportAction.bind(null, campaignId)} variant="primary">
+            <Link2 className="size-4" /> Gerar link do cliente
+          </ConfirmButton>
+        )}
+      </Card>
+
+      <Link href={`/relatorio/${campaignId}`} target="_blank" className="flex items-center gap-3 rounded-2xl bg-[#0b0b0f] px-4 py-3 text-white shadow-sm transition hover:opacity-95">
+        <span className="grid size-9 place-items-center rounded-xl bg-brand-gradient"><FileBarChart className="size-5" /></span>
+        <span className="flex-1">
+          <span className="block font-semibold">Ver o relatório</span>
+          <span className="block text-xs text-zinc-400">Com o valor e o Pix. Dá para salvar em PDF também.</span>
+        </span>
+        <span className="text-sm font-medium text-orange-300">Abrir →</span>
+      </Link>
+    </div>
+  );
+}

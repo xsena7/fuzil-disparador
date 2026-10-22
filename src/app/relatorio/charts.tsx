@@ -142,3 +142,24 @@ export function PrintButton() {
     </button>
   );
 }
+
+/** Pix copia e cola com botão de copiar. */
+export function PixCopy({ code }: { code: string }) {
+  const [done, setDone] = useState(false);
+  return (
+    <div className="flex items-stretch gap-2">
+      <code className="min-w-0 flex-1 truncate rounded-lg bg-zinc-50 px-3 py-2.5 font-mono text-xs text-zinc-600 ring-1 ring-zinc-200">{code}</code>
+      <button
+        type="button"
+        onClick={async () => {
+          await navigator.clipboard.writeText(code);
+          setDone(true);
+          setTimeout(() => setDone(false), 2000);
+        }}
+        className="shrink-0 rounded-lg bg-brand-gradient px-4 py-2 text-sm font-semibold text-white shadow-sm hover:opacity-90 print:hidden"
+      >
+        {done ? "Copiado!" : "Copiar Pix"}
+      </button>
+    </div>
+  );
+}

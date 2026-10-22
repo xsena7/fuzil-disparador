@@ -62,6 +62,11 @@ model Workspace {
   // Conta bloqueada pelo admin da plataforma: ninguém entra e nada é disparado
   blockedAt           DateTime?
   blockedReason       String?
+  // Cobrança no relatório do cliente: chave Pix, recebedor e valor padrão por mensagem enviada (R$)
+  pixKey              String?
+  pixName             String?
+  pixCity             String?
+  reportPrice         Float?
   createdAt           DateTime            @default(now())
   memberships         Membership[]
   creditTxs           CreditTransaction[]
@@ -372,6 +377,9 @@ model Campaign {
   templateCategory   String              @default("UTILITY")
   // Origem dos disparos: GROUP (grupo de BMs) ou BM (uma BM só)
   scope              String              @default("GROUP")
+  // Relatório do cliente: valor por mensagem só desta campanha (vazio = o padrão da conta) e link público
+  reportPrice        Float?
+  shareToken         String?             @unique
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
   workspace          Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)

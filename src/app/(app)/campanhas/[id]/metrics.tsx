@@ -34,11 +34,11 @@ export async function Metrics({ campaignId }: { campaignId: string }) {
 
   return (
     <div className="space-y-6">
-      <Link href={`/relatorio/${campaignId}`} target="_blank" className="flex items-center gap-3 rounded-2xl bg-[#0b0b0f] px-4 py-3 text-white shadow-sm transition hover:opacity-95">
+      <Link href={`/campanhas/${campaignId}?etapa=relatorio`} className="flex items-center gap-3 rounded-2xl bg-[#0b0b0f] px-4 py-3 text-white shadow-sm transition hover:opacity-95">
         <span className="grid size-9 place-items-center rounded-xl bg-brand-gradient"><FileBarChart className="size-5" /></span>
         <span className="flex-1">
-          <span className="block font-semibold">Relatório de envio</span>
-          <span className="block text-xs text-zinc-400">Funil, entregas e desempenho por número, com a logo do Fuzil. Dá para salvar em PDF.</span>
+          <span className="block font-semibold">Relatório do cliente</span>
+          <span className="block text-xs text-zinc-400">Resultados, valor a pagar e o seu Pix, num link para mandar ao cliente.</span>
         </span>
         <span className="text-sm font-medium text-orange-300">Abrir →</span>
       </Link>

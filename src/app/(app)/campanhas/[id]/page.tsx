@@ -23,6 +23,7 @@ import { StepAudience, type AudienceStats } from "./step-audience";
 import { StepSendForm } from "./step-send";
 import { TestSend } from "./test-send";
 import { Metrics } from "./metrics";
+import { ClientReportStep } from "./client-report";
 import { AutoRefresh } from "./auto-refresh";
 import { templateAliases, templateFamily } from "@/lib/blueprints";
 
@@ -35,6 +36,7 @@ const STEPS = [
   { key: "conteudo", label: "3. Conteúdo" },
   { key: "envio", label: "4. Envio" },
   { key: "metricas", label: "5. Métricas" },
+  { key: "relatorio", label: "6. Relatório do cliente" },
 ];
 
 export default async function CampaignPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ etapa?: string }> }) {
@@ -98,6 +100,7 @@ export default async function CampaignPage({ params, searchParams }: { params: P
               <TestSend campaignId={id} />
             </>
           )}
+          {step === "relatorio" && <ClientReportStep campaignId={id} workspaceId={auth.workspace.id} />}
           {step === "metricas" && (
             <>
               {/* Entregas, leituras, cliques e respostas continuam chegando depois do envio: atualiza sempre */}

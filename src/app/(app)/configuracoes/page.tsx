@@ -4,6 +4,7 @@ import { Card, Field, Input, PageHeader, Table, Td } from "@/components/ui";
 import { ActionForm } from "@/components/action-form";
 import { addMemberAction, changePasswordAction, saveProfileAction, saveSettingsAction } from "@/app/actions/misc";
 import { PasswordInput } from "@/components/password-input";
+import { savePixSettingsAction } from "@/app/actions/client-report";
 
 export const dynamic = "force-dynamic";
 
@@ -63,6 +64,31 @@ export default async function SettingsPage() {
                 <span className="block text-zinc-500">Só os extremos: template virou marketing, número banido ou com qualidade vermelha, campanha pausada por erro. Vai para os donos e admins da conta.</span>
               </span>
             </label>
+          </ActionForm>
+        </Card>
+      )}
+
+      {canManage && (
+        <Card className="p-5">
+          <div className="mb-1 font-semibold">Cobrança no relatório do cliente</div>
+          <p className="mb-4 text-sm text-zinc-500">
+            O relatório de cada campanha calcula sozinho <b>mensagens enviadas × valor por mensagem</b> e mostra o seu Pix copia e cola (com o valor e QR Code) para o cliente pagar.
+          </p>
+          <ActionForm action={savePixSettingsAction} submit="Salvar cobrança">
+            <div className="grid gap-4 md:grid-cols-2">
+              <Field label="Valor por mensagem enviada (R$)" hint="Ex.: 0,25. Dá para mudar em cada campanha.">
+                <Input name="reportPrice" defaultValue={ws.reportPrice != null ? String(ws.reportPrice).replace(".", ",") : ""} placeholder="0,25" inputMode="decimal" />
+              </Field>
+              <Field label="Chave Pix" hint="CPF, CNPJ, e-mail, celular ou chave aleatória">
+                <Input name="pixKey" defaultValue={ws.pixKey ?? ""} autoComplete="off" />
+              </Field>
+              <Field label="Nome de quem recebe" hint="Como aparece no banco (até 25 letras)">
+                <Input name="pixName" defaultValue={ws.pixName ?? ""} maxLength={60} />
+              </Field>
+              <Field label="Cidade de quem recebe">
+                <Input name="pixCity" defaultValue={ws.pixCity ?? ""} placeholder="São Paulo" maxLength={40} />
+              </Field>
+            </div>
           </ActionForm>
         </Card>
       )}

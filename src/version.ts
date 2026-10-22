@@ -2,6 +2,16 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "1.92",
+    date: "22/10/2026",
+    items: [
+      "Campanhas: nova aba \"6. Relatório do cliente\", com o valor a cobrar (enviadas × valor por mensagem) e um link do relatório para mandar ao cliente, sem login. Dá para desligar o link quando quiser",
+      "Relatório: mostra o valor da campanha e o seu Pix copia e cola já com o valor, com QR Code e botão de copiar",
+      "Configurações: nova parte \"Cobrança no relatório do cliente\" (chave Pix, nome, cidade e valor padrão por mensagem)",
+      "Relatório do cliente: saiu o \"Desempenho por número\" (continua em Métricas)",
+    ],
+  },
+  {
     version: "1.91",
     date: "22/10/2026",
     items: ["Relatório de envio: saiu \"Entregues\". O anel mostra as enviadas, e lidas e respostas são contadas sobre as enviadas"],
