@@ -25,7 +25,7 @@ function CopyChip({ value, label }: { value: string; label: string }) {
 const Path = ({ children }: { children: ReactNode }) => <b className="font-semibold text-zinc-900">{children}</b>;
 
 /** Passo a passo para o cliente liberar o app do Fuzil na BM dele e gerar o token */
-export function ConnectGuide({ appId, whatsappUrl, open }: { appId: string; whatsappUrl: string | null; open: boolean }) {
+export function ConnectGuide({ appId, whatsappUrl, open, admin }: { appId: string; whatsappUrl: string; open: boolean; admin: boolean }) {
   const steps: Array<{ title: string; body: ReactNode }> = [
     {
       title: "Peça acesso ao app do Fuzil",
@@ -38,7 +38,7 @@ export function ConnectGuide({ appId, whatsappUrl, open }: { appId: string; what
     },
     {
       title: "Espere a aprovação",
-      body: whatsappUrl ? (
+      body: (
         <>
           <span className="block">A gente aprova o pedido do nosso lado. Chama no WhatsApp que é rapidinho:</span>
           <a
@@ -49,10 +49,11 @@ export function ConnectGuide({ appId, whatsappUrl, open }: { appId: string; what
           >
             <MessageCircle className="size-4" /> Pedir aprovação no WhatsApp
           </a>
-        </>
-      ) : (
-        <>
-          Aprove o pedido na BM do app do Fuzil: <Path>Configurações do negócio → Solicitações</Path>.
+          {admin && (
+            <span className="mt-2 block text-xs text-zinc-500">
+              Você (admin) aprova em <Path>Configurações do negócio → Solicitações</Path>, na BM do app do Fuzil.
+            </span>
+          )}
         </>
       ),
     },

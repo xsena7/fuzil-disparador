@@ -7,7 +7,7 @@ export const CHANGELOG: Array<{ version: string; date: string; items: string[] }
     items: [
       "Tour guiado para contas novas: o Fuzil pergunta se a pessoa quer o tour e mostra, destacando cada parte da tela, do conectar a BM até o primeiro disparo. Dá para refazer em Tutoriais",
       "Conexões: passo a passo para conectar a BM (pedir acesso ao app do Fuzil, criar o usuário fuzil-api, dar acesso, gerar o token e pegar o ID da WABA), com botão de copiar o ID do app",
-      "Clientes têm o botão verde \"Pedir aprovação no WhatsApp\" para a gente aprovar o acesso ao app rapidinho",
+      "Botão verde \"Pedir aprovação no WhatsApp\" no passo \"Espere a aprovação\", para a gente aprovar o acesso ao app rapidinho",
       "A chave secreta do app do Fuzil entra sozinha também nas BMs que os clientes conectam",
     ],
   },

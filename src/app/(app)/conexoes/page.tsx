@@ -70,7 +70,8 @@ export default async function ConnectionsPage() {
       <ConnectGuide
         appId={FUZIL_APP_ID}
         open={businesses.length === 0}
-        whatsappUrl={auth.user.isSuperAdmin ? null : supportWhatsAppLink(`Oi! Pedi acesso ao app do Fuzil (ID ${FUZIL_APP_ID}) na minha BM. Pode aprovar? Conta: ${auth.workspace.name}`)}
+        admin={auth.user.isSuperAdmin}
+        whatsappUrl={supportWhatsAppLink(`Oi! Pedi acesso ao app do Fuzil (ID ${FUZIL_APP_ID}) na minha BM. Pode aprovar? Conta: ${auth.workspace.name}`)}
       />
       <EmbeddedSignup appId={env.metaAppId()} configId={env.metaConfigId()} graphVersion={env.metaGraphVersion()} />
 
