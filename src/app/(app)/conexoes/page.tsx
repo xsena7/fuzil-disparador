@@ -15,6 +15,7 @@ import { PHONE_REMOVED } from "@/lib/sync";
 import { PasswordInput } from "@/components/password-input";
 import { StatusDot } from "@/components/drawer";
 import { TestWaba } from "./test-waba";
+import { groupDot, groupTag } from "@/lib/group-colors";
 import { ConnectGuide } from "./connect-guide";
 import { FUZIL_APP_ID, defaultAppSecret, supportWhatsAppLink } from "@/lib/onboarding";
 import {
@@ -145,7 +146,12 @@ export default async function ConnectionsPage() {
               <span className="text-base font-semibold">{bm.name}</span>
               {bm.groups
                 .filter((g) => !g.group.system?.startsWith("BM:")) // grupo oculto de campanha de uma BM só não aparece como grupo
-                .map((g) => <Badge key={g.groupId} color={g.group.system ? "red" : "orange"} dot={false}>{g.group.name}</Badge>)}
+                .map((g) => (
+                  <span key={g.groupId} className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1 ring-inset ${groupTag(g.group.color)}`}>
+                    <span className={`size-1.5 rounded-full ${groupDot(g.group.color)}`} />
+                    {g.group.name}
+                  </span>
+                ))}
               <span className="ml-auto flex flex-wrap items-center gap-3 text-xs text-zinc-500">
                 <span>{bm.wabas.length} conta(s) · {phones} número(s)</span>
                 <Badge color="blue">Limite: {tierLabel(bm.messagingLimitTier)}</Badge>

@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.08",
+    date: "22/10/2026",
+    items: ["Conexões: a etiqueta do grupo em cada BM agora tem a mesma cor do grupo (Banidas vermelho, Pagamento amarelo, Template em análise azul, Qualidade baixa rosa, BMs com problema preto e os seus grupos na cor que você escolheu)"],
+  },
+  {
     version: "2.07",
     date: "22/10/2026",
     items: [

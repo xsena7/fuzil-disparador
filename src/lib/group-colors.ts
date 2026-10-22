@@ -13,6 +13,6 @@ export const GROUP_COLORS = {
 
 export type GroupColor = keyof typeof GROUP_COLORS;
 export const isGroupColor = (v: string): v is GroupColor => v in GROUP_COLORS;
-export const groupTag = (color?: string | null) => GROUP_COLORS[(color && isGroupColor(color) ? color : "amber") as GroupColor].tag;
+export const groupTag = (color?: string | null) => GROUP_COLORS[(color && isGroupColor(color) ? color : "zinc") as GroupColor].tag;
 export const groupDot = (color?: string | null) => GROUP_COLORS[(color && isGroupColor(color) ? color : "zinc") as GroupColor].dot;
 export const groupStripe = (color?: string | null) => GROUP_COLORS[(color && isGroupColor(color) ? color : "zinc") as GroupColor].stripe;
