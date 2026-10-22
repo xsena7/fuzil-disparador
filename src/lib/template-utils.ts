@@ -169,7 +169,7 @@ const normKey = (s: string) => s.trim().toLowerCase().normalize("NFD").replace(/
  * Aceita qualquer coluna da planilha e também {{nome}}, {{primeiro_nome}} e {{telefone}}.
  */
 export function fillUrlVars(url: string, r: { phone: string; name: string | null; data: unknown }) {
-  // Também aceita o jeito da Infobip/outras plataformas: {cnpj} com uma chave só (se for uma coluna da planilha)
+  // Também aceita o jeito de outras plataformas: {cnpj} com uma chave só (se for uma coluna da planilha)
   const data = (r.data && typeof r.data === "object" ? r.data : {}) as Record<string, unknown>;
   const keys = new Set(Object.keys(data).map(normKey));
   const doubled = url.replace(/(?<!\{)\{\s*([^{}]+?)\s*\}(?!\})/g, (m, k: string) => (keys.has(normKey(k)) ? `{{${k}}}` : m));

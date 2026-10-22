@@ -192,7 +192,7 @@ export function StepContent({
                 <Input name="buttonUrl" value={url} disabled={locked} onChange={(e) => setUrl(e.target.value)} placeholder="https://seusite.com.br/" />
               </Field>
               <div className="mt-3 rounded-lg bg-zinc-50 p-3 text-xs text-zinc-600">
-                <b className="text-zinc-800">Quer mandar um dado da planilha junto no link?</b> Coloque o nome da coluna entre {"{{ }}"} (ou {"{ }"}, igual na Infobip). Ex.:{" "}
+                <b className="text-zinc-800">Quer mandar um dado da planilha junto no link?</b> Coloque o nome da coluna entre {"{{ }}"} (ou {"{ }"}). Ex.:{" "}
                 <code className="rounded bg-white px-1">https://site.com/?cnpj={"{{var1}}"}</code>. Cada pessoa vai para o link com o dado dela.
                 {columns.length > 0 && !locked && (
                   <div className="mt-2 flex flex-wrap gap-1.5">

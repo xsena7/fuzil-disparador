@@ -2,12 +2,17 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "1.89",
+    date: "22/10/2026",
+    items: ["Campanhas, link do botão: texto de ajuda mais curto"],
+  },
+  {
     version: "1.88",
     date: "22/10/2026",
     items: [
       "Campanhas: a etapa Audiência agora vem antes do Conteúdo, para as variáveis já mostrarem as colunas da planilha",
       "Variáveis: cada uma tem 3 tipos (Da planilha, Dado do cliente, Texto fixo). As colunas aparecem com um exemplo, e embaixo mostra como vai sair com a 1ª linha da planilha",
-      "Link do botão aceita o formato da Infobip: https://site.com/?cnpj={cnpj}",
+      "Link do botão também aceita a coluna com uma chave só: https://site.com/?cnpj={cnpj}",
     ],
   },
   {
