@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "1.91",
+    date: "22/10/2026",
+    items: ["Relatório de envio: saiu \"Entregues\". O anel mostra as enviadas, e lidas e respostas são contadas sobre as enviadas"],
+  },
+  {
     version: "1.90",
     date: "22/10/2026",
     items: ["Campanhas, métricas: a tabela \"O que aconteceu com cada número\" mostra uns 20 números por vez, com barra de rolagem (o cabeçalho fica parado)"],

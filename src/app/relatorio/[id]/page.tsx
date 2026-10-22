@@ -23,7 +23,7 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
   if (!campaign) notFound();
   const m = await campaignMetrics(id);
   const t = m.totals;
-  const [read, delivered] = [t.read, t.delivered];
+  const read = t.read;
   // Resultado final pelo status de cada contato (soma sempre o público inteiro)
   const byStatus = await prisma.campaignRecipient.groupBy({ by: ["status"], where: { campaignId: id }, _count: true });
   const st = (k: string) => byStatus.find((x) => x.status === k)?._count ?? 0;
@@ -75,21 +75,20 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
                 ))}
               </dl>
             </div>
-            <Ring value={delivered} total={t.sent} label="entregues" />
+            <Ring value={t.sent} total={t.total} label="enviadas" />
           </div>
         </div>
       </header>
 
       <main className="mx-auto max-w-5xl space-y-5 px-5 py-8 sm:px-8">
         {/* Números principais */}
-        <section className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+        <section className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
           {[
             { k: "Público", v: t.total, s: t.pending ? `${n(t.pending)} na fila` : "contatos na lista" },
-            { k: "Enviadas", v: t.sent, s: pct(t.sent, t.total) + " do público" },
-            { k: "Entregues", v: delivered, s: pct(delivered, t.sent) + " das enviadas", hi: true },
-            { k: "Lidas", v: read, s: pct(read, delivered) + " das entregues" },
+            { k: "Enviadas", v: t.sent, s: pct(t.sent, t.total) + " do público", hi: true },
+            { k: "Lidas", v: read, s: pct(read, t.sent) + " das enviadas" },
             { k: "Cliques", v: t.clicked, s: `${n(t.clicks)} cliques no total` },
-            { k: "Respostas", v: t.replied, s: pct(t.replied, delivered) + " das entregues" },
+            { k: "Respostas", v: t.replied, s: pct(t.replied, t.sent) + " das enviadas" },
           ].map((x) => (
             <div key={x.k} className={`report-card rounded-2xl border bg-white p-4 shadow-sm ${x.hi ? "border-orange-200 ring-1 ring-orange-100" : "border-zinc-200"}`}>
               <div className="text-xs font-medium text-zinc-500">{x.k}</div>
@@ -106,7 +105,6 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
             steps={[
               { key: "total", label: "Público", value: t.total, hint: "Contatos válidos da lista (sem repetidos e sem descadastrados)." },
               { key: "sent", label: "Enviadas", value: t.sent, hint: "A Meta aceitou a mensagem." },
-              { key: "delivered", label: "Entregues", value: delivered, hint: "Chegou no celular da pessoa." },
               { key: "read", label: "Lidas", value: read, hint: "A pessoa abriu (só conta quem deixa a confirmação de leitura ligada)." },
               { key: "clicked", label: "Clicaram", value: t.clicked, hint: "Clicaram no botão do link." },
               { key: "replied", label: "Responderam", value: t.replied, hint: "Mandaram alguma mensagem de volta." },
@@ -120,18 +118,16 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
           <OutcomeBar
             items={[
               { key: "read", label: "Lida", value: st("READ"), color: "#047857" },
-              { key: "delivered", label: "Entregue (não lida)", value: st("DELIVERED"), color: "#34d399" },
-              { key: "sent", label: "Enviada, sem confirmação", value: st("SENT"), color: "#38bdf8" },
-              { key: "undeliverable", label: "Não entregue (sem WhatsApp/bloqueou)", value: noWa, color: "#f59e0b" },
+              { key: "sent", label: "Enviada (ainda não lida)", value: st("DELIVERED") + st("SENT"), color: "#38bdf8" },
+              { key: "undeliverable", label: "Sem WhatsApp ou bloqueou", value: noWa, color: "#f59e0b" },
               { key: "failed", label: "Falhou", value: Math.max(0, st("FAILED") - noWa), color: "#e11d48" },
               { key: "other", label: "Na fila / não enviada", value: st("PENDING") + st("SENDING") + st("SKIPPED"), color: "#a1a1aa" },
             ]}
           />
         </section>
 
-        <div className="grid grid-cols-3 gap-3 sm:gap-5">
+        <div className="grid grid-cols-2 gap-3 sm:gap-5">
           {[
-            ["Até entregar", m.timing.deliver],
             ["Até ler", m.timing.read],
             ["Até clicar", m.timing.click],
           ].map(([k, v]) => (
@@ -153,7 +149,6 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
                   <tr className="text-left text-[11px] uppercase tracking-wide text-zinc-500">
                     <th className="pb-2 font-medium">Número</th>
                     <th className="pb-2 font-medium">Enviadas</th>
-                    <th className="pb-2 text-right font-medium">Entrega</th>
                     <th className="pb-2 text-right font-medium">Lidas</th>
                     <th className="pb-2 text-right font-medium">Falhas</th>
                   </tr>
@@ -171,8 +166,7 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
                           <span className="w-12 text-right tabular-nums">{n(s.sent)}</span>
                         </div>
                       </td>
-                      <td className="py-2.5 text-right tabular-nums">{pct(s.delivered, s.sent)}</td>
-                      <td className="py-2.5 text-right tabular-nums">{pct(s.read, s.delivered)}</td>
+                      <td className="py-2.5 text-right tabular-nums">{pct(s.read, s.sent)}</td>
                       <td className={`py-2.5 text-right tabular-nums ${s.failed ? "text-rose-600" : ""}`}>{n(s.failed)}</td>
                     </tr>
                   ))}
