@@ -5,8 +5,7 @@ import { campaignMetrics, duration, pct } from "@/lib/campaign-metrics";
 import { Logo } from "@/components/brand";
 import { AutoRefresh } from "@/app/(app)/campanhas/[id]/auto-refresh";
 import { Countdown } from "@/components/countdown";
-import QRCode from "qrcode";
-import { pixPayload } from "@/lib/pix";
+import { keysForReport, parsePixKeys } from "@/lib/pix-keys";
 import { Funnel, MiniBar, OutcomeBar, PixCopy, PrintButton, Ring } from "./charts";
 
 const n = (v: number) => v.toLocaleString("pt-BR");
@@ -24,7 +23,7 @@ const brl = (v: number) => v.toLocaleString("pt-BR", { style: "currency", curren
 export async function ReportView({ id, workspaceId, publicView = false, expiresAt }: { id: string; workspaceId?: string; publicView?: boolean; expiresAt?: Date | null }) {
   const campaign = await prisma.campaign.findFirst({
     where: { id, ...(workspaceId ? { workspaceId } : {}) },
-    include: { group: { select: { name: true, system: true } }, workspace: { select: { pixKey: true, pixName: true, pixCity: true, reportPrice: true } } },
+    include: { group: { select: { name: true, system: true } }, workspace: { select: { pixKeys: true, reportPrice: true } } },
   });
   if (!campaign) notFound();
   const m = await campaignMetrics(id);
@@ -45,8 +44,8 @@ export async function ReportView({ id, workspaceId, publicView = false, expiresA
   const ws = campaign.workspace;
   const price = campaign.reportPrice ?? ws.reportPrice ?? 0;
   const total = Math.round(t.sent * price * 100) / 100;
-  const pix = ws.pixKey && total > 0 ? pixPayload({ key: ws.pixKey, name: ws.pixName ?? "", city: ws.pixCity ?? "", amount: total, txid: `FZ${campaign.id.slice(-10)}` }) : null;
-  const qr = pix ? await QRCode.toDataURL(pix, { margin: 1, width: 360, color: { dark: "#0b0b0f", light: "#ffffff" } }) : null;
+  const allKeys = parsePixKeys(ws.pixKeys);
+  const keys = total > 0 ? keysForReport(allKeys, campaign.reportPixKeyId) : [];
 
   return (
     <div className="min-h-screen bg-zinc-50 text-zinc-800 print:bg-white">
@@ -100,6 +99,18 @@ export async function ReportView({ id, workspaceId, publicView = false, expiresA
         </div>
       </header>
 
+      {linkExp && (
+        <div className="border-b border-orange-200 bg-orange-50 print:hidden">
+          <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-center gap-x-2 gap-y-1 px-5 py-3 text-sm text-orange-900 sm:px-8">
+            <span className="size-2 animate-pulse rounded-full bg-emerald-500" />
+            Relatório ao vivo. Este link sai do ar em
+            <b className="rounded-lg bg-white px-2 py-0.5 font-mono text-base text-orange-700 ring-1 ring-orange-200">
+              <Countdown to={linkExp.toISOString()} done="instantes" />
+            </b>
+          </div>
+        </div>
+      )}
+
       <main className="mx-auto max-w-5xl space-y-5 px-5 py-8 sm:px-8">
         {/* Números principais */}
         <section className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
@@ -118,34 +129,32 @@ export async function ReportView({ id, workspaceId, publicView = false, expiresA
           ))}
         </section>
 
-        {pix && qr ? (
+        {keys.length ? (
           <section className="report-card overflow-hidden rounded-2xl border border-orange-200 bg-white shadow-sm">
-            <div className="grid gap-6 p-5 sm:p-6 md:grid-cols-[1fr_auto] md:items-center">
-              <div className="min-w-0">
-                <h2 className="font-semibold text-zinc-900">Valor desta campanha</h2>
-                <p className="mt-1 text-sm text-zinc-500">
-                  {n(t.sent)} mensagens enviadas × {brl(price)} por mensagem
-                </p>
-                <div className="mt-3 text-4xl font-bold tracking-tight text-brand-gradient">{brl(total)}</div>
-                <div className="mt-5">
-                  <div className="mb-1.5 text-xs font-medium text-zinc-500">Pague com Pix copia e cola</div>
-                  <PixCopy code={pix} />
-                  <p className="mt-2 text-xs text-zinc-500">
-                    Recebedor: <b className="text-zinc-700">{ws.pixName}</b> · Chave: {ws.pixKey}
-                  </p>
-                </div>
-              </div>
-              <div className="flex flex-col items-center gap-2">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={qr} alt="QR Code do Pix" className="size-44 rounded-xl ring-1 ring-zinc-200" />
-                <span className="text-xs text-zinc-500">Ou leia o QR Code no app do banco</span>
+            <div className="p-5 sm:p-6">
+              <h2 className="font-semibold text-zinc-900">Valor desta campanha</h2>
+              <p className="mt-1 text-sm text-zinc-500">
+                {n(t.sent)} mensagens enviadas × {brl(price)} por mensagem
+              </p>
+              <div className="mt-3 text-4xl font-bold tracking-tight text-brand-gradient">{brl(total)}</div>
+              <div className={`mt-5 grid gap-4 ${keys.length > 1 ? "md:grid-cols-2" : "max-w-xl"}`}>
+                {keys.map((k) => (
+                  <div key={k.id} className="rounded-xl bg-zinc-50 p-4 ring-1 ring-zinc-200">
+                    <div className="mb-2 text-xs font-medium text-zinc-500">{keys.length > 1 ? "Chave Pix" : "Pague por Pix com esta chave"}</div>
+                    <PixCopy code={k.key} label="Copiar chave Pix" />
+                    <p className="mt-2 text-xs text-zinc-500">
+                      Recebedor: <b className="text-zinc-700">{k.name}</b>
+                      {k.bank && <> · Banco: <b className="text-zinc-700">{k.bank}</b></>}
+                    </p>
+                  </div>
+                ))}
               </div>
             </div>
           </section>
         ) : (
           !publicView &&
           price > 0 &&
-          !ws.pixKey && (
+          !allKeys.length && (
             <p className="rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-800 ring-1 ring-amber-200 print:hidden">
               Valor desta campanha: <b>{brl(total)}</b>. Cadastre sua chave Pix em Configurações para o cliente poder pagar direto pelo relatório.
             </p>

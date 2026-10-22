@@ -144,7 +144,7 @@ export function PrintButton() {
 }
 
 /** Pix copia e cola com botão de copiar. */
-export function PixCopy({ code }: { code: string }) {
+export function PixCopy({ code, label = "Copiar" }: { code: string; label?: string }) {
   const [done, setDone] = useState(false);
   return (
     <div className="flex items-stretch gap-2">
@@ -158,7 +158,7 @@ export function PixCopy({ code }: { code: string }) {
         }}
         className="shrink-0 rounded-lg bg-brand-gradient px-4 py-2 text-sm font-semibold text-white shadow-sm hover:opacity-90 print:hidden"
       >
-        {done ? "Copiado!" : "Copiar Pix"}
+        {done ? "Copiado!" : label}
       </button>
     </div>
   );

@@ -2,6 +2,15 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "1.94",
+    date: "22/10/2026",
+    items: [
+      "Cobrança no relatório: dá para cadastrar várias chaves Pix (chave, nome de quem recebe e banco) e escolher em cada campanha qual aparece, ou todas",
+      "O relatório mostra a chave Pix com o botão \"Copiar chave Pix\" (saíram o copia e cola e o QR Code)",
+      "Relatório do cliente: faixa com a contagem regressiva de quanto tempo o link ainda fica no ar. Links criados antes ganharam 12h",
+    ],
+  },
+  {
     version: "1.93",
     date: "22/10/2026",
     items: [

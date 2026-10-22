@@ -15,19 +15,36 @@ function parsePrice(raw: FormDataEntryValue | null): number | null | "erro" {
   return Math.round(n * 10000) / 10000;
 }
 
-/** Configurações: chave Pix, recebedor e valor padrão por mensagem (vale para todos os relatórios da conta). */
+/** Configurações: chaves Pix e valor padrão por mensagem (vale para todos os relatórios da conta). */
 export async function savePixSettingsAction(_: FormState, form: FormData): Promise<FormState> {
   const auth = await requireAuth();
   if (auth.role === "MEMBER") return { error: "Só donos e admins mudam a cobrança" };
-  const pixKey = String(form.get("pixKey") ?? "").trim().slice(0, 77) || null;
-  const pixName = String(form.get("pixName") ?? "").trim().slice(0, 60) || null;
-  const pixCity = String(form.get("pixCity") ?? "").trim().slice(0, 40) || null;
   const price = parsePrice(form.get("reportPrice"));
   if (price === "erro") return { error: "Valor por mensagem inválido. Use, por exemplo, 0,25" };
-  if (pixKey && !pixName) return { error: "Coloque o nome de quem recebe o Pix (aparece no app do banco do cliente)" };
-  await prisma.workspace.update({ where: { id: auth.workspace.id }, data: { pixKey, pixName, pixCity, reportPrice: price } });
+  let raw: unknown = [];
+  try {
+    raw = JSON.parse(String(form.get("pixKeys") ?? "[]"));
+  } catch {
+    return { error: "Não consegui ler as chaves. Recarregue a página." };
+  }
+  const keys = (Array.isArray(raw) ? raw : [])
+    .map((k) => ({
+      id: String(k?.id ?? "").slice(0, 20) || randomBytes(4).toString("hex"),
+      key: String(k?.key ?? "").trim().slice(0, 77),
+      name: String(k?.name ?? "").trim().slice(0, 60),
+      bank: String(k?.bank ?? "").trim().slice(0, 40),
+    }))
+    .filter((k) => k.key)
+    .slice(0, 10);
+  const noName = keys.find((k) => !k.name);
+  if (noName) return { error: `Coloque o nome de quem recebe na chave ${noName.key}` };
+  await prisma.workspace.update({ where: { id: auth.workspace.id }, data: { pixKeys: keys, reportPrice: price } });
   revalidatePath("/configuracoes");
-  return { ok: pixKey ? "Pronto! Os relatórios dos clientes já mostram o valor e o seu Pix para pagar." : "Salvo. Sem chave Pix, o relatório não mostra a cobrança." };
+  return {
+    ok: keys.length
+      ? `Pronto! ${keys.length > 1 ? `${keys.length} chaves salvas.` : "Chave salva."} Os relatórios dos clientes já mostram o valor e a chave Pix para pagar.`
+      : "Salvo. Sem chave Pix, o relatório não mostra a cobrança.",
+  };
 }
 
 async function ownCampaign(id: string) {
@@ -37,14 +54,15 @@ async function ownCampaign(id: string) {
   return c;
 }
 
-/** Valor por mensagem só desta campanha (em branco = o padrão das Configurações). */
+/** Valor por mensagem e chave Pix só desta campanha (em branco = o padrão das Configurações). */
 export async function saveCampaignPriceAction(id: string, _: FormState, form: FormData): Promise<FormState> {
   const c = await ownCampaign(id);
   const price = parsePrice(form.get("reportPrice"));
   if (price === "erro") return { error: "Valor por mensagem inválido. Use, por exemplo, 0,25" };
-  await prisma.campaign.update({ where: { id: c.id }, data: { reportPrice: price } });
+  const pixKeyId = String(form.get("reportPixKeyId") ?? "").slice(0, 20) || null;
+  await prisma.campaign.update({ where: { id: c.id }, data: { reportPrice: price, reportPixKeyId: pixKeyId } });
   revalidatePath(`/campanhas/${c.id}`);
-  return { ok: price === null ? "Essa campanha volta a usar o valor padrão das Configurações." : "Valor salvo! O relatório do cliente já mostra o total novo." };
+  return { ok: "Salvo! O relatório do cliente já mostra o valor e a chave Pix escolhida." };
 }
 
 const LINK_HOURS = 12;

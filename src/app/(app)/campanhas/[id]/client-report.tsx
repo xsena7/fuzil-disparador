@@ -2,7 +2,8 @@ import Link from "next/link";
 import { ExternalLink, FileBarChart, Link2, QrCode } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { env } from "@/lib/env";
-import { Card, Field, Input } from "@/components/ui";
+import { Card, Field, Input, Select } from "@/components/ui";
+import { parsePixKeys } from "@/lib/pix-keys";
 import { ActionForm, ConfirmButton } from "@/components/action-form";
 import { saveCampaignPriceAction, shareReportAction, unshareReportAction } from "@/app/actions/client-report";
 import { CopyLink } from "./copy-link";
@@ -13,11 +14,12 @@ const brl = (v: number) => v.toLocaleString("pt-BR", { style: "currency", curren
 /** Aba "Relatório do cliente": valor cobrado, Pix e o link público do relatório. */
 export async function ClientReportStep({ campaignId, workspaceId }: { campaignId: string; workspaceId: string }) {
   const [c, ws, sent] = await Promise.all([
-    prisma.campaign.findFirstOrThrow({ where: { id: campaignId, workspaceId }, select: { reportPrice: true, shareToken: true, shareExpiresAt: true } }),
-    prisma.workspace.findUniqueOrThrow({ where: { id: workspaceId }, select: { pixKey: true, reportPrice: true } }),
+    prisma.campaign.findFirstOrThrow({ where: { id: campaignId, workspaceId }, select: { reportPrice: true, reportPixKeyId: true, shareToken: true, shareExpiresAt: true } }),
+    prisma.workspace.findUniqueOrThrow({ where: { id: workspaceId }, select: { pixKeys: true, reportPrice: true } }),
     prisma.campaignRecipient.count({ where: { campaignId, sentAt: { not: null } } }),
   ]);
   const price = c.reportPrice ?? ws.reportPrice ?? 0;
+  const keys = parsePixKeys(ws.pixKeys);
   const total = Math.round(sent * price * 100) / 100;
   const alive = c.shareToken && c.shareExpiresAt && c.shareExpiresAt > new Date();
   const url = alive ? `${env.appUrl()}/relatorio/p/${c.shareToken}` : null;
@@ -26,7 +28,7 @@ export async function ClientReportStep({ campaignId, workspaceId }: { campaignId
     <div className="max-w-3xl space-y-5">
       <div>
         <h2 className="text-xl font-semibold">Relatório do cliente</h2>
-        <p className="text-sm text-zinc-500">O relatório que você manda para o cliente: resultados da campanha, o valor a pagar e o seu Pix com o valor certinho.</p>
+        <p className="text-sm text-zinc-500">O relatório que você manda para o cliente: resultados da campanha, o valor a pagar e a sua chave Pix.</p>
       </div>
 
       <Card className="p-5">
@@ -35,12 +37,26 @@ export async function ClientReportStep({ campaignId, workspaceId }: { campaignId
           <span className="text-3xl font-bold tracking-tight text-brand-gradient">{brl(total)}</span>
           <span className="text-sm text-zinc-500">{sent.toLocaleString("pt-BR")} enviadas × {brl(price)}</span>
         </div>
-        <ActionForm action={saveCampaignPriceAction.bind(null, campaignId)} submit="Salvar valor" variant="secondary">
-          <Field label="Valor por mensagem nesta campanha (R$)" hint={ws.reportPrice != null ? `Em branco = o padrão das Configurações (${brl(ws.reportPrice)})` : "Em branco = sem cobrança. Dá para definir um padrão em Configurações"}>
-            <Input name="reportPrice" defaultValue={c.reportPrice != null ? String(c.reportPrice).replace(".", ",") : ""} placeholder={ws.reportPrice != null ? String(ws.reportPrice).replace(".", ",") : "0,25"} inputMode="decimal" className="max-w-40" />
-          </Field>
+        <ActionForm action={saveCampaignPriceAction.bind(null, campaignId)} submit="Salvar" variant="secondary">
+          <div className="grid gap-4 md:grid-cols-2">
+            <Field label="Valor por mensagem nesta campanha (R$)" hint={ws.reportPrice != null ? `Em branco = o padrão das Configurações (${brl(ws.reportPrice)})` : "Em branco = sem cobrança. Dá para definir um padrão em Configurações"}>
+              <Input name="reportPrice" defaultValue={c.reportPrice != null ? String(c.reportPrice).replace(".", ",") : ""} placeholder={ws.reportPrice != null ? String(ws.reportPrice).replace(".", ",") : "0,25"} inputMode="decimal" />
+            </Field>
+            {keys.length > 0 && (
+              <Field label="Chave Pix que aparece no relatório">
+                <Select name="reportPixKeyId" defaultValue={c.reportPixKeyId ?? keys[0].id}>
+                  {keys.map((k) => (
+                    <option key={k.id} value={k.id}>
+                      {k.key}{k.bank ? ` · ${k.bank}` : ""}{k.name ? ` · ${k.name}` : ""}
+                    </option>
+                  ))}
+                  {keys.length > 1 && <option value="ALL">Todas as chaves</option>}
+                </Select>
+              </Field>
+            )}
+          </div>
         </ActionForm>
-        {!ws.pixKey && (
+        {!keys.length && (
           <p className="mt-4 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
             Falta cadastrar sua chave Pix: vá em <Link href="/configuracoes" className="font-medium underline">Configurações → Cobrança no relatório do cliente</Link>.
           </p>
