@@ -6,13 +6,17 @@ import { useRouter } from "next/navigation";
 import clsx from "clsx";
 import { AlertTriangle, Info, Siren, X } from "lucide-react";
 
-type A = { id: string; title: string; message: string; severity: "INFO" | "WARNING" | "CRITICAL"; createdAt: string };
+type A = { id: string; title: string; message: string; severity: "INFO" | "WARNING" | "CRITICAL"; createdAt: string; count?: number };
+
+// Quanto tempo cada aviso fica na tela (todos somem sozinhos; a lista completa fica em Alertas)
+const STAY = { INFO: 8000, WARNING: 15000, CRITICAL: 25000 } as const;
 
 /** Busca alertas novos a cada 15s e mostra como notificação no canto da tela (e no navegador, se permitido). */
 export function AlertToaster() {
   const router = useRouter();
   const [items, setItems] = useState<A[]>([]);
   const cursor = useRef(new Date().toISOString());
+  const seen = useRef(new Set<string>());
 
   useEffect(() => {
     let stop = false;
@@ -21,16 +25,22 @@ export function AlertToaster() {
         const res = await fetch(`/api/alerts/recent?after=${encodeURIComponent(cursor.current)}`, { cache: "no-store" });
         if (!res.ok) return;
         const json = (await res.json()) as { alerts: A[]; now: string };
-        if (json.alerts.length) {
-          cursor.current = json.alerts[json.alerts.length - 1].createdAt;
-          setItems((cur) => [...cur, ...json.alerts].slice(-4));
+        // Nunca mostra o mesmo alerta duas vezes
+        const fresh = json.alerts.filter((a) => !seen.current.has(a.id));
+        if (json.alerts.length) cursor.current = json.alerts[json.alerts.length - 1].createdAt;
+        if (fresh.length) {
+          for (const a of fresh) seen.current.add(a.id);
+          // Muitos de uma vez (ex.: sincronização com erro em várias BMs): vira um aviso só
+          const show: A[] =
+            fresh.length > 3
+              ? [{ ...fresh[fresh.length - 1], id: `grupo-${fresh[0].id}`, title: `${fresh.length} alertas novos`, message: "Clique para ver todos em Alertas.", count: fresh.length, severity: fresh.some((a) => a.severity === "CRITICAL") ? "CRITICAL" : fresh.some((a) => a.severity === "WARNING") ? "WARNING" : "INFO" }]
+              : fresh;
+          setItems((cur) => [...cur, ...show].slice(-3));
           router.refresh();
           if (typeof Notification !== "undefined" && Notification.permission === "granted" && document.hidden) {
-            for (const a of json.alerts) new Notification(`Fuzil · ${a.title}`, { body: a.message, icon: "/icon.svg" });
+            for (const a of show) new Notification(`Fuzil · ${a.title}`, { body: a.message, icon: "/icon.svg" });
           }
-          for (const a of json.alerts) {
-            if (a.severity === "INFO") setTimeout(() => setItems((cur) => cur.filter((x) => x.id !== a.id)), 8000);
-          }
+          for (const a of show) setTimeout(() => setItems((cur) => cur.filter((x) => x.id !== a.id)), STAY[a.severity]);
         }
       } catch {
         /* sem conexão: tenta de novo no próximo ciclo */

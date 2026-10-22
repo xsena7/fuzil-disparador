@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "1.76",
+    date: "22/10/2026",
+    items: ["Correção: o aviso de alerta no canto da tela repetia sem parar. Agora cada alerta aparece uma vez só, some sozinho e, se chegarem muitos juntos, vira um aviso só (\"X alertas novos\")"],
+  },
+  {
     version: "1.75",
     date: "22/10/2026",
     items: ["Painel mais leve: o fundo laranja não usa mais desfoque pesado e o brilho da setinha acompanha o mouse sem atraso"],

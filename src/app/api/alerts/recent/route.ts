@@ -7,7 +7,8 @@ export async function GET(req: Request) {
   const auth = await getActiveAuth();
   if (!auth) return NextResponse.json({ alerts: [] }, { status: 401 });
   const after = new URL(req.url).searchParams.get("after");
-  const since = after ? new Date(after) : new Date(Date.now() - 60_000);
+  // +1ms: o banco guarda microssegundos e o navegador só milissegundos; sem isso o último alerta voltava toda vez
+  const since = after ? new Date(new Date(after).getTime() + 1) : new Date(Date.now() - 60_000);
   const alerts = await prisma.alert.findMany({
     where: { workspaceId: auth.workspace.id, createdAt: { gt: Number.isNaN(since.getTime()) ? new Date() : since } },
     orderBy: { createdAt: "asc" },
