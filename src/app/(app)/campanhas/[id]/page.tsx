@@ -30,8 +30,9 @@ export const dynamic = "force-dynamic";
 
 const STEPS = [
   { key: "template", label: "1. Template" },
-  { key: "conteudo", label: "2. Conteúdo" },
-  { key: "audiencia", label: "3. Audiência" },
+  // Audiência antes do Conteúdo: as variáveis já mostram as colunas da planilha com exemplo
+  { key: "audiencia", label: "2. Audiência" },
+  { key: "conteudo", label: "3. Conteúdo" },
   { key: "envio", label: "4. Envio" },
   { key: "metricas", label: "5. Métricas" },
 ];

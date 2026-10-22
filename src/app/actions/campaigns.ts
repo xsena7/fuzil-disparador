@@ -85,7 +85,7 @@ export async function saveTemplateStepAction(id: string, _: FormState, form: For
       ...(changed ? { variableMapping: undefined, headerMediaUrl: null, headerMediaType: null, buttonUrl: null } : {}),
     },
   });
-  redirect(`/campanhas/${id}?etapa=conteudo`);
+  redirect(`/campanhas/${id}?etapa=audiencia`);
 }
 
 export async function saveContentStepAction(id: string, _: FormState, form: FormData): Promise<FormState> {
@@ -117,7 +117,7 @@ export async function saveContentStepAction(id: string, _: FormState, form: Form
     return { error: "Envie a mídia do cabeçalho" };
   }
   await prisma.campaign.update({ where: { id }, data });
-  redirect(`/campanhas/${id}?etapa=audiencia`);
+  redirect(`/campanhas/${id}?etapa=envio`);
 }
 
 export async function startCampaignAction(id: string, _: FormState, form: FormData): Promise<FormState> {

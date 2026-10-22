@@ -15,3 +15,9 @@ test("texto fixo com coluna e primeiro nome de coluna", () => {
   const out = renderText("Olá {{1}}, {{2}}", [{ type: "field", field: "first:var2" }, { type: "fixed", value: "Saldo em aberto: {{var3}}" }], r, false);
   assert.equal(out, "Olá Guilherme, Saldo em aberto: R$ 33,00");
 });
+
+test("link no formato da Infobip ({coluna})", () => {
+  const r = { phone: "5511999998888", name: null, data: { cnpj: "12.345.678/0001-90" } };
+  assert.equal(fillUrlVars("https://x.dev/?cnpj={cnpj}", r), "https://x.dev/?cnpj=12.345.678%2F0001-90");
+  assert.equal(fillUrlVars("https://x.dev/{nao_e_coluna}", r), "https://x.dev/{nao_e_coluna}");
+});

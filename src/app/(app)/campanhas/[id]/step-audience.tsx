@@ -105,7 +105,7 @@ export function StepAudience({ campaignId, fileName, stats, locked }: { campaign
             )}
             <p className="mt-2 text-xs text-zinc-500">Coluna de telefone: <b>{stats.columns.phone}</b>{stats.columns.name && <> · nome: <b>{stats.columns.name}</b></>}{stats.columns.ddi && <> · DDI: <b>{stats.columns.ddi}</b></>}</p>
           </div>
-          {!locked && <LinkButton href={`/campanhas/${campaignId}?etapa=envio`}>Continuar</LinkButton>}
+          {!locked && <LinkButton href={`/campanhas/${campaignId}?etapa=conteudo`}>Continuar</LinkButton>}
         </>
       )}
     </div>
