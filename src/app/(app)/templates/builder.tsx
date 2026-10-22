@@ -61,7 +61,8 @@ export function TemplateBuilder({
     if ((body.trim() || name) && !confirm(`Usar o modelo "${p.label}"? O que já está preenchido será substituído.`)) return;
     setPreset(p.key);
     setName(p.name);
-    setHeaderType(p.headerText ? "TEXT" : "NONE");
+    setHeaderType(p.headerType ?? (p.headerText ? "TEXT" : "NONE"));
+    setSamplePreview(null);
     setHeaderText(p.headerText ?? "");
     setHeaderExample("");
     setBody(p.body);

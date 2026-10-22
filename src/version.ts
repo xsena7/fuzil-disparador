@@ -4,7 +4,7 @@ export const CHANGELOG: Array<{ version: string; date: string; items: string[] }
   {
     version: "1.70",
     date: "22/10/2026",
-    items: ["Templates: ao criar um template (padrão ou normal), escolha um modelo pronto do Fuzil (pedido, entrega, cadastro, candidatura, agendamento, pagamento, fatura, conta, protocolo). Ele preenche tudo e você edita o que quiser"],
+    items: ["Templates: novo modelo pronto \"Atualização de pedido (com imagem)\": imagem no cabeçalho, 4 variáveis e botão Detalhes", "Templates: ao criar um template (padrão ou normal), escolha um modelo pronto do Fuzil (pedido, entrega, cadastro, candidatura, agendamento, pagamento, fatura, conta, protocolo). Ele preenche tudo e você edita o que quiser"],
   },
   {
     version: "1.69",
