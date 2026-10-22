@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.01",
+    date: "22/10/2026",
+    items: ["Conexões: em cada conta da BM tem \"Atualizar token e chave secreta\". Cola só o que mudou (o ID da WABA continua o mesmo), o Fuzil confere na Meta, liga o webhook de novo e sincroniza na hora"],
+  },
+  {
     version: "2.00",
     date: "22/10/2026",
     items: ["Conexões: botão \"Excluir BM\" dentro de cada BM. Apaga do Fuzil as contas do WhatsApp, números, templates, conversas do chat e alertas dela, e tira ela de todos os grupos. As campanhas antigas continuam no histórico, e nada é apagado na Meta"],

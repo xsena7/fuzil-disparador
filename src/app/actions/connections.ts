@@ -162,6 +162,37 @@ export async function setAppSecretAction(_: FormState, form: FormData): Promise<
   return { ok: "Salvo" };
 }
 
+/** Troca o token e/ou a chave secreta de uma WABA já conectada (o ID da WABA continua o mesmo). Campo em branco = mantém. */
+export async function updateWabaCredentialsAction(id: string, _: FormState, form: FormData): Promise<FormState> {
+  const waba = await ownWaba(id).catch(() => null);
+  if (!waba) return { error: "Conta não encontrada" };
+  const token = String(form.get("token") ?? "").trim();
+  const appSecret = String(form.get("appSecret") ?? "").trim();
+  if (!token && !appSecret) return { error: "Cole o token novo, a chave secreta nova, ou os dois." };
+  if (appSecret && !/^[a-f0-9]{32}$/i.test(appSecret)) return { error: "A chave secreta do app tem 32 letras e números (Configurações do app → Básico → Chave secreta do app)." };
+  const { meta } = await import("@/lib/meta");
+  if (token) {
+    // Confere na Meta se o token novo enxerga essa conta antes de trocar
+    const ok = await meta.getWaba(token, waba.wabaId).then(() => true).catch(() => meta.listPhones(token, waba.wabaId).then(() => true).catch(() => false));
+    if (!ok) return { error: "A Meta não deu acesso a essa conta com o token novo. Confira se o token é do usuário do sistema dessa BM e tem a conta do WhatsApp atribuída." };
+  }
+  await prisma.whatsAppAccount.update({
+    where: { id: waba.id },
+    data: { ...(token ? { accessTokenEnc: encrypt(token), lastSyncError: null } : {}), ...(appSecret ? { appSecretEnc: encrypt(appSecret) } : {}) },
+  });
+  let webhookProblem: string | null = null;
+  if (appSecret) {
+    resetBmSecrets();
+    // Liga o webhook do app (URL do Fuzil + campos) e reinscreve na WABA
+    webhookProblem = await configureBmAppWebhook(waba.id, appSecret);
+  }
+  void syncWaba(waba.id).catch(() => undefined);
+  revalidatePath("/conexoes");
+  const what = token && appSecret ? "Token e chave secreta atualizados" : token ? "Token atualizado" : "Chave secreta atualizada";
+  if (webhookProblem) return { error: `${what}, mas não consegui ligar o webhook do app sozinho (${webhookProblem}). Confira se a chave é do mesmo app do token.` };
+  return { ok: `${what}! O Fuzil já está sincronizando essa conta de novo.` };
+}
+
 /** Testa o token guardado dessa WABA na Meta e devolve uma explicação em português (sem mostrar o token). */
 export async function testWabaAction(id: string): Promise<{ ok?: boolean; text: string }> {
   const waba = await ownWaba(id);

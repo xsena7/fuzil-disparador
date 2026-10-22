@@ -22,6 +22,7 @@ import {
   registerPhoneAction,
   syncAllAction,
   setAppSecretAction,
+  updateWabaCredentialsAction,
   syncWabaAction,
   togglePhoneAction,
 } from "@/app/actions/connections";
@@ -164,6 +165,27 @@ export default async function ConnectionsPage() {
                       </div>
                     );
                   })()}
+                  {waba.connectionType === "MANUAL" && (
+                    <details className="group border-b border-zinc-100">
+                      <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-2.5 text-sm [&::-webkit-details-marker]:hidden">
+                        <ChevronRight className="size-4 text-zinc-400 transition-transform group-open:rotate-90" />
+                        <span className="font-medium">Atualizar token e chave secreta</span>
+                        <span className="text-xs text-zinc-500">o ID da WABA continua o mesmo</span>
+                      </summary>
+                      <div className="px-4 pb-4">
+                        <ActionForm action={updateWabaCredentialsAction.bind(null, waba.id)} submit="Atualizar acesso" variant="secondary">
+                          <div className="grid gap-4 md:grid-cols-2">
+                            <Field label="Token de acesso novo" hint="Em branco = mantém o atual">
+                              <PasswordInput name="token" placeholder="EAAG..." autoComplete="off" />
+                            </Field>
+                            <Field label="Chave secreta do app nova" hint={waba.appSecretEnc ? "Configurada ✓ · em branco = mantém a atual" : "Em branco = continua sem"}>
+                              <PasswordInput name="appSecret" autoComplete="off" />
+                            </Field>
+                          </div>
+                        </ActionForm>
+                      </div>
+                    </details>
+                  )}
                   {waba.connectionType === "MANUAL" && (() => {
                     const last = waba.webhookLastAt;
                     const rejected = waba.webhookRejectedAt && (!last || waba.webhookRejectedAt > last) ? waba.webhookRejectedAt : null;
