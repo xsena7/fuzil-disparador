@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "1.85",
+    date: "22/10/2026",
+    items: ["Grupos de BM: todos os grupos abrem fechados, inclusive \"BMs com problema\" (o resumo continua aparecendo do lado de fora)"],
+  },
+  {
     version: "1.84",
     date: "22/10/2026",
     items: [

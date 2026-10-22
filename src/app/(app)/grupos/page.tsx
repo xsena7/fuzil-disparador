@@ -86,7 +86,6 @@ export default async function GroupsPage() {
           subtitle="Saíram sozinhas dos grupos de disparo depois de dar problema. Resolva e clique em Resolvido."
           tone="red"
           meta={<span className="font-semibold text-red-700">{problems.members.length} BM(s)</span>}
-          open
           bodyClassName="divide-y divide-red-100"
         >
           {problems.members.map(({ business: b }) => (
