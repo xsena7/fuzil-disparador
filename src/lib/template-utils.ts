@@ -158,3 +158,19 @@ export function renderText(text: string | undefined, sources: VarSource[] | unde
     return value || (placeholder ? `{{${name}}}` : "");
   });
 }
+
+const normKey = (s: string) => s.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "_");
+
+/**
+ * Link do botão com dados da planilha: https://site.com/?cnpj={{var1}} vira o CNPJ de cada pessoa.
+ * Aceita qualquer coluna da planilha e também {{nome}}, {{primeiro_nome}} e {{telefone}}.
+ */
+export function fillUrlVars(url: string, r: { phone: string; name: string | null; data: unknown }) {
+  if (!url.includes("{{")) return url;
+  const data = (r.data && typeof r.data === "object" ? r.data : {}) as Record<string, unknown>;
+  const byKey = new Map(Object.entries(data).map(([k, v]) => [normKey(k), String(v ?? "")]));
+  byKey.set("nome", byKey.get("nome") ?? r.name ?? "");
+  byKey.set("primeiro_nome", firstName(r.name));
+  byKey.set("telefone", r.phone);
+  return url.replace(/\{\{\s*([^}]+?)\s*\}\}/g, (_m, k: string) => encodeURIComponent(byKey.get(normKey(k)) ?? ""));
+}

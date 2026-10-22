@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import { env } from "@/lib/env";
 import { recordClick } from "@/lib/chat";
+import { fillUrlVars } from "@/lib/template-utils";
 
 const BOT_UA = /facebookexternalhit|facebot|whatsapp|bot\b|crawler|spider|preview|slurp|headless|curl|wget|python-requests/i;
 
@@ -22,7 +23,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ token: s
     if (!isBot) void prisma.externalLink.update({ where: { id: link.id }, data: { clicks: { increment: 1 }, lastClickAt: new Date() } }).catch(() => undefined);
     return Response.redirect(link.url, 302);
   }
-  const target = recipient.campaign.buttonUrl;
+  // Link com dados da planilha ({{coluna}}): cada pessoa vai para o link com os dados dela
+  const target = recipient.campaign.buttonUrl ? fillUrlVars(recipient.campaign.buttonUrl, recipient) : null;
   if (!target) return new Response("Link não encontrado", { status: 404 });
 
   // Não bloqueia o redirecionamento esperando o banco

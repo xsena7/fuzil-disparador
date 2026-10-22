@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "1.86",
+    date: "22/10/2026",
+    items: ["Campanhas: o link do botão pode levar dados da planilha. Ex.: https://site.com/?cnpj={{var1}} manda cada pessoa para o link com o CNPJ dela. Na etapa Conteúdo tem os botões das colunas e um exemplo com a 1ª linha"],
+  },
+  {
     version: "1.85",
     date: "22/10/2026",
     items: ["Grupos de BM: todos os grupos abrem fechados, inclusive \"BMs com problema\" (o resumo continua aparecendo do lado de fora)"],
