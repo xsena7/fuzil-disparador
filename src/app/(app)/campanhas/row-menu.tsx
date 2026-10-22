@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import clsx from "clsx";
+import { confirmDialog } from "@/components/confirm-dialog";
+import { toast } from "@/components/toast";
 import { Copy, FolderInput, FolderMinus, FolderPlus, MoreVertical, Trash2 } from "lucide-react";
 import {
   createFolderAndMoveAction,
@@ -86,11 +88,12 @@ export function CampaignRowMenu({
             className={clsx(item, "text-rose-600 hover:bg-rose-50")}
             disabled={running}
             title={running ? "Pause ou cancele antes de excluir" : undefined}
-            onClick={() => {
-              if (window.confirm(`Excluir a campanha "${name}" e todo o relatório? Não dá pra desfazer.`)) {
+            onClick={async () => {
+              if (await confirmDialog(`Excluir a campanha "${name}"?\nO relatório dela também será apagado. Não dá pra desfazer.`)) {
                 run(async () => {
                   const r = await quickDeleteCampaignAction(id);
-                  if (r.error) window.alert(r.error);
+                  if (r.error) toast("error", r.error);
+                  else toast("success", `A campanha "${name}" foi excluída.`);
                 });
               }
             }}
@@ -120,8 +123,8 @@ export function FolderMenu({ id, name, onRename, onDelete }: { id: string; name:
       </button>
       <button
         className="rounded-lg px-2 py-1 text-xs text-zinc-500 hover:bg-rose-50 hover:text-rose-600"
-        onClick={() => {
-          if (window.confirm(`Desfazer a pasta "${name}"? As campanhas voltam para a lista principal (nada é excluído).`)) start(async () => { await onDelete(id); router.refresh(); });
+        onClick={async () => {
+          if (await confirmDialog(`Desfazer a pasta "${name}"?\nAs campanhas voltam para a lista principal. Nada é excluído.`, { danger: false, confirmText: "Desfazer pasta" })) start(async () => { await onDelete(id); router.refresh(); });
         }}
       >
         Desfazer pasta

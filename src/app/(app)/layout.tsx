@@ -7,6 +7,7 @@ import { Eye } from "lucide-react";
 import { CursorGlow } from "@/components/cursor-glow";
 import { BugReportButton } from "@/components/bug-report";
 import { Toaster } from "@/components/toast";
+import { ConfirmHost } from "@/components/confirm-dialog";
 import { Logo } from "@/components/brand";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -37,6 +38,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       </main>
       <AlertToaster />
       <Toaster />
+      <ConfirmHost />
       <CursorGlow />
       <BugReportButton />
     </div>

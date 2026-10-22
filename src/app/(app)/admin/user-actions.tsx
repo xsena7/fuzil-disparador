@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { confirmDialog } from "@/components/confirm-dialog";
 import { Copy, Mail, Trash2 } from "lucide-react";
 import { adminDeleteUserAction, adminResendInviteAction } from "@/app/actions/misc";
 
@@ -27,8 +28,8 @@ export function UserActions({ id, email, isSelf }: { id: string; email: string; 
           className={`${btn} text-rose-600 hover:bg-rose-50`}
           disabled={pending || isSelf}
           title={isSelf ? "Você não pode excluir a si mesmo" : undefined}
-          onClick={() => {
-            if (!window.confirm(`Excluir o usuário ${email}? A conta (cliente) e as campanhas dela continuam existindo.`)) return;
+          onClick={async () => {
+            if (!(await confirmDialog(`Excluir o usuário ${email}?\nA conta (cliente) e as campanhas dela continuam existindo.`))) return;
             start(async () => {
               const r = await adminDeleteUserAction(id);
               if (r.error) setMsg({ text: r.error, error: true });

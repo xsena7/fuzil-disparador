@@ -6,6 +6,7 @@ import { createTemplateAction } from "@/app/actions/templates";
 import { extractVars } from "@/lib/template-utils";
 import { TEMPLATE_PRESETS, type TemplatePreset } from "@/lib/template-presets";
 import { toastResult } from "@/components/toast";
+import { confirmDialog } from "@/components/confirm-dialog";
 import { Button, Card, Field, Input, Select, Textarea } from "@/components/ui";
 import { WhatsAppPreview } from "@/components/whatsapp-preview";
 
@@ -77,8 +78,8 @@ export function TemplateBuilder({
       .catch(() => undefined);
   }, [pendingSample, headerType]);
   // Modelo pronto: preenche tudo de uma vez (dá para editar qualquer campo depois)
-  function applyPreset(p: TemplatePreset) {
-    if ((body.trim() || name) && !confirm(`Usar o modelo "${p.label}"? O que já está preenchido será substituído.`)) return;
+  async function applyPreset(p: TemplatePreset) {
+    if ((body.trim() || name) && !(await confirmDialog(`Usar o modelo "${p.label}"?\nO que já está preenchido será substituído.`, { danger: false, confirmText: "Usar modelo" }))) return;
     setPreset(p.key);
     setName(p.name);
     setHeaderType(p.headerType ?? (p.headerText ? "TEXT" : "NONE"));

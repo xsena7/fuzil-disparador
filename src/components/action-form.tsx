@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import type { FormState } from "@/app/actions/auth";
 import { Button } from "./ui";
 import { toast, toastResult } from "./toast";
+import { confirmDialog } from "./confirm-dialog";
 
 /** Formulário genérico com mensagem de erro/sucesso. */
 export function ActionForm({
@@ -46,7 +47,9 @@ export function ConfirmButton({ action, children, confirm, variant = "secondary"
   const [pending, start] = useTransition();
   return (
     <form
-      action={() =>
+      onSubmit={async (e) => {
+        e.preventDefault();
+        if (pending || (confirm && !(await confirmDialog(confirm)))) return;
         start(async () => {
           const r = await action();
           if (r && typeof r === "object" && "error" in r && r.error) toast("error", String(r.error));
@@ -54,10 +57,7 @@ export function ConfirmButton({ action, children, confirm, variant = "secondary"
             router.refresh();
             toastResult(r, "Feito! A tela já foi atualizada.");
           }
-        })
-      }
-      onSubmit={(e) => {
-        if (pending || (confirm && !window.confirm(confirm))) e.preventDefault();
+        });
       }}
     >
       <Button variant={variant} className={clsx(className, pending && "opacity-60")} disabled={pending} aria-busy={pending}>
