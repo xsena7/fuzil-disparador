@@ -379,6 +379,8 @@ model Campaign {
   reportPrice        Float?
   // Qual chave Pix aparece no relatório desta campanha (id da chave; "ALL" = todas; vazio = a primeira)
   reportPixKeyId     String?
+  // Números ajustados à mão para o relatório do cliente: { total, sent, read, clicked, replied, failed, noWa } (vazio = números reais)
+  reportOverrides    Json?
   shareToken         String?             @unique
   // O link do cliente some sozinho depois de 12h
   shareExpiresAt     DateTime?

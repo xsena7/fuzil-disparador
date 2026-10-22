@@ -1,11 +1,12 @@
 import Link from "next/link";
-import { ExternalLink, FileBarChart, Link2, QrCode } from "lucide-react";
+import { ExternalLink, FileBarChart, Link2, QrCode, RotateCcw, SlidersHorizontal } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { env } from "@/lib/env";
 import { Card, Field, Input, Select } from "@/components/ui";
 import { parsePixKeys } from "@/lib/pix-keys";
+import { REPORT_FIELDS, parseOverrides, realReportNumbers, reportNumbers } from "@/lib/report-numbers";
 import { ActionForm, ConfirmButton } from "@/components/action-form";
-import { saveCampaignPriceAction, shareReportAction, unshareReportAction } from "@/app/actions/client-report";
+import { resetReportNumbersAction, saveCampaignPriceAction, saveReportNumbersAction, shareReportAction, unshareReportAction } from "@/app/actions/client-report";
 import { CopyLink } from "./copy-link";
 import { Countdown } from "@/components/countdown";
 
@@ -13,11 +14,15 @@ const brl = (v: number) => v.toLocaleString("pt-BR", { style: "currency", curren
 
 /** Aba "Relatório do cliente": valor cobrado, Pix e o link público do relatório. */
 export async function ClientReportStep({ campaignId, workspaceId }: { campaignId: string; workspaceId: string }) {
-  const [c, ws, sent] = await Promise.all([
-    prisma.campaign.findFirstOrThrow({ where: { id: campaignId, workspaceId }, select: { reportPrice: true, reportPixKeyId: true, shareToken: true, shareExpiresAt: true } }),
+  const [c, ws] = await Promise.all([
+    prisma.campaign.findFirstOrThrow({ where: { id: campaignId, workspaceId }, select: { reportPrice: true, reportPixKeyId: true, shareToken: true, shareExpiresAt: true, reportOverrides: true } }),
     prisma.workspace.findUniqueOrThrow({ where: { id: workspaceId }, select: { pixKeys: true, reportPrice: true } }),
-    prisma.campaignRecipient.count({ where: { campaignId, sentAt: { not: null } } }),
   ]);
+  // Enviadas do relatório (as ajustadas em Métricas, se você ajustou)
+  const [rn, real] = await Promise.all([reportNumbers(campaignId, c.reportOverrides), realReportNumbers(campaignId)]);
+  const overrides = parseOverrides(c.reportOverrides);
+  const sent = rn.sent;
+  const fmt = (v: number) => v.toLocaleString("pt-BR");
   const price = c.reportPrice ?? ws.reportPrice ?? 0;
   const keys = parsePixKeys(ws.pixKeys);
   const total = Math.round(sent * price * 100) / 100;
@@ -36,6 +41,7 @@ export async function ClientReportStep({ campaignId, workspaceId }: { campaignId
         <div className="mb-4 flex flex-wrap items-baseline gap-x-3 gap-y-1">
           <span className="text-3xl font-bold tracking-tight text-brand-gradient">{brl(total)}</span>
           <span className="text-sm text-zinc-500">{sent.toLocaleString("pt-BR")} enviadas × {brl(price)}</span>
+          {rn.adjusted && <span className="rounded-full bg-orange-50 px-2 py-0.5 text-xs font-medium text-orange-700 ring-1 ring-orange-200">com os números ajustados abaixo</span>}
         </div>
         <ActionForm action={saveCampaignPriceAction.bind(null, campaignId)} submit="Salvar" variant="secondary">
           <div className="grid gap-4 md:grid-cols-2">
@@ -60,6 +66,32 @@ export async function ClientReportStep({ campaignId, workspaceId }: { campaignId
           <p className="mt-4 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
             Falta cadastrar sua chave Pix: vá em <Link href="/configuracoes" className="font-medium underline">Configurações → Cobrança no relatório do cliente</Link>.
           </p>
+        )}
+      </Card>
+
+      <Card className="p-5">
+        <div className="mb-1 flex items-center gap-2 font-semibold">
+          <SlidersHorizontal className="size-4 text-brand-500" /> Números do relatório
+          {rn.adjusted && <span className="rounded-full bg-orange-50 px-2 py-0.5 text-xs font-medium text-orange-700">ajustados por você</span>}
+        </div>
+        <p className="mb-4 text-sm text-zinc-500">
+          Se a Meta cobrou diferente do que o Fuzil contou (ex.: conta banida no meio do disparo), ajuste aqui. O valor cobrado usa as <b>Enviadas</b>, e o funil do relatório (inclusive o que aparece ao passar o mouse) usa todos estes números. As Métricas continuam mostrando os números reais.
+        </p>
+        <ActionForm action={saveReportNumbersAction.bind(null, campaignId)} submit="Salvar números" variant="secondary">
+          <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-5">
+            {REPORT_FIELDS.map((f) => (
+              <Field key={f.key} label={f.label} hint={`Real: ${fmt(real[f.key])}`}>
+                <Input name={f.key} defaultValue={String(overrides[f.key] ?? real[f.key])} inputMode="numeric" />
+              </Field>
+            ))}
+          </div>
+        </ActionForm>
+        {rn.adjusted && (
+          <div className="mt-3">
+            <ConfirmButton action={resetReportNumbersAction.bind(null, campaignId)} variant="ghost" className="text-zinc-600" confirm={"Voltar aos números reais?\nO relatório do cliente volta a mostrar os números de verdade da campanha."}>
+              <RotateCcw className="size-4" /> Voltar aos números reais
+            </ConfirmButton>
+          </div>
         )}
       </Card>
 

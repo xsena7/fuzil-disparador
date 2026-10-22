@@ -3,6 +3,7 @@
 import { randomBytes } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/lib/auth";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import type { FormState } from "./auth";
 
@@ -87,4 +88,34 @@ export async function unshareReportAction(id: string): Promise<{ ok?: string; er
   await prisma.campaign.update({ where: { id: c.id }, data: { shareToken: null, shareExpiresAt: null } });
   revalidatePath(`/campanhas/${c.id}`);
   return { ok: "Link desligado. O endereço antigo não abre mais." };
+}
+
+/** Relatório do cliente: números ajustados à mão para o relatório do cliente (o resto do relatório é recalculado com eles). */
+export async function saveReportNumbersAction(id: string, _: FormState, form: FormData): Promise<FormState> {
+  const c = await ownCampaign(id);
+  const { REPORT_FIELDS, realReportNumbers } = await import("@/lib/report-numbers");
+  const real = await realReportNumbers(c.id);
+  const v: Record<string, number> = {};
+  for (const { key, label } of REPORT_FIELDS) {
+    const raw = String(form.get(key) ?? "").replace(/\D/g, "");
+    const n = raw === "" ? real[key] : Number(raw);
+    if (!Number.isFinite(n) || n < 0 || n > 10_000_000) return { error: `Número inválido em ${label}` };
+    v[key] = n;
+  }
+  if (v.sent > v.total) return { error: "Enviadas não pode ser maior que o Público." };
+  for (const k of ["read", "clicked", "replied"] as const)
+    if (v[k] > v.sent) return { error: `${REPORT_FIELDS.find((f) => f.key === k)!.label} não pode ser maior que Enviadas.` };
+  if (v.clicked < 0 || v.replied < 0) return { error: "Número inválido." };
+  // Igual aos reais: não guarda nada (o relatório volta a seguir os números de verdade)
+  const same = REPORT_FIELDS.every(({ key }) => v[key] === real[key]);
+  await prisma.campaign.update({ where: { id: c.id }, data: { reportOverrides: same ? Prisma.DbNull : v } });
+  revalidatePath(`/campanhas/${c.id}`);
+  return { ok: same ? "Os números são iguais aos reais: o relatório segue os números da campanha." : "Números do relatório salvos! O valor e o funil do relatório do cliente já usam esses números." };
+}
+
+export async function resetReportNumbersAction(id: string): Promise<{ ok?: string; error?: string }> {
+  const c = await ownCampaign(id);
+  await prisma.campaign.update({ where: { id: c.id }, data: { reportOverrides: Prisma.DbNull } });
+  revalidatePath(`/campanhas/${c.id}`);
+  return { ok: "Pronto! O relatório voltou a mostrar os números reais da campanha." };
 }

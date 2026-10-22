@@ -2,6 +2,14 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "1.95",
+    date: "22/10/2026",
+    items: [
+      "Relatório do cliente: dá para ajustar à mão os números (público, enviadas, lidas, cliques e respostas) na aba Relatório do cliente. O valor cobrado e o funil (inclusive ao passar o mouse) usam esses números. As Métricas continuam com os números reais, e um botão volta para eles",
+      "O relatório do cliente ficou só com o topo, o valor da campanha e o funil (saíram os números soltos, como terminou cada mensagem, tempos, motivos de falha e respostas)",
+    ],
+  },
+  {
     version: "1.94",
     date: "22/10/2026",
     items: [

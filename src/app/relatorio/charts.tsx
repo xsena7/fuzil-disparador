@@ -6,7 +6,7 @@ import clsx from "clsx";
 const n = (v: number) => v.toLocaleString("pt-BR");
 const pc = (part: number, whole: number) => (whole ? `${((part / whole) * 100).toFixed(1).replace(".", ",")}%` : "0%");
 
-/** Anel com a taxa de entrega (o número que mais importa no relatório). */
+/** Anel com a % de enviadas (o número que mais importa no relatório). */
 export function Ring({ value, total, label }: { value: number; total: number; label: string }) {
   const r = 52;
   const c = 2 * Math.PI * r;
@@ -85,56 +85,6 @@ export function Funnel({ steps }: { steps: FunnelStep[] }) {
   );
 }
 
-export type Outcome = { key: string; label: string; value: number; color: string };
-
-/** Como terminou cada mensagem, numa barra só (100%). */
-export function OutcomeBar({ items }: { items: Outcome[] }) {
-  const [hover, setHover] = useState<string | null>(null);
-  const total = items.reduce((a, x) => a + x.value, 0);
-  const shown = items.filter((x) => x.value > 0);
-  return (
-    <div>
-      <div className="flex h-10 gap-[2px] overflow-hidden rounded-lg">
-        {shown.map((x) => (
-          <div
-            key={x.key}
-            onMouseEnter={() => setHover(x.key)}
-            onMouseLeave={() => setHover(null)}
-            className={clsx("relative h-full transition-opacity first:rounded-l-lg last:rounded-r-lg", hover && hover !== x.key && "opacity-40")}
-            style={{ width: `${(x.value / Math.max(1, total)) * 100}%`, background: x.color, minWidth: 6 }}
-            title={`${x.label}: ${n(x.value)} (${pc(x.value, total)})`}
-          />
-        ))}
-        {!shown.length && <div className="h-full w-full rounded-lg bg-zinc-100" />}
-      </div>
-      <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-        {items.map((x) => (
-          <div
-            key={x.key}
-            onMouseEnter={() => setHover(x.key)}
-            onMouseLeave={() => setHover(null)}
-            className={clsx("flex items-center gap-2.5 rounded-lg px-2.5 py-2 transition", hover === x.key ? "bg-zinc-100" : "bg-transparent")}
-          >
-            <span className="size-3 shrink-0 rounded-sm" style={{ background: x.color }} />
-            <span className="flex-1 text-sm text-zinc-600">{x.label}</span>
-            <span className="text-sm tabular-nums"><b className="font-semibold text-zinc-900">{n(x.value)}</b> <span className="text-zinc-500">{pc(x.value, total)}</span></span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-/** Barra horizontal fina usada nas listas (por número, motivos, respostas). */
-export function MiniBar({ value, max, tone = "brand" }: { value: number; max: number; tone?: "brand" | "red" | "green" }) {
-  const bg = tone === "red" ? "#e11d48" : tone === "green" ? "#059669" : "#f97316";
-  return (
-    <div className="h-2 w-full min-w-16 rounded-full bg-zinc-100">
-      <div className="h-full rounded-full transition-all duration-700" style={{ width: `${max ? Math.max(2, (value / max) * 100) : 0}%`, background: bg }} />
-    </div>
-  );
-}
-
 export function PrintButton() {
   return (
     <button type="button" onClick={() => window.print()} className="rounded-lg bg-brand-gradient px-4 py-2 text-sm font-semibold text-white shadow-sm hover:opacity-90">
@@ -143,7 +93,7 @@ export function PrintButton() {
   );
 }
 
-/** Pix copia e cola com botão de copiar. */
+/** Texto (chave Pix) com botão de copiar. */
 export function PixCopy({ code, label = "Copiar" }: { code: string; label?: string }) {
   const [done, setDone] = useState(false);
   return (

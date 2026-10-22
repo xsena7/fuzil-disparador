@@ -6,7 +6,8 @@ import { Logo } from "@/components/brand";
 import { AutoRefresh } from "@/app/(app)/campanhas/[id]/auto-refresh";
 import { Countdown } from "@/components/countdown";
 import { keysForReport, parsePixKeys } from "@/lib/pix-keys";
-import { Funnel, MiniBar, OutcomeBar, PixCopy, PrintButton, Ring } from "./charts";
+import { reportNumbers } from "@/lib/report-numbers";
+import { Funnel, PixCopy, PrintButton, Ring } from "./charts";
 
 const n = (v: number) => v.toLocaleString("pt-BR");
 const when = (d: Date | null | undefined) =>
@@ -28,22 +29,17 @@ export async function ReportView({ id, workspaceId, publicView = false, expiresA
   if (!campaign) notFound();
   const m = await campaignMetrics(id);
   const t = m.totals;
-  const read = t.read;
-  // Resultado final pelo status de cada contato (soma sempre o público inteiro)
-  const byStatus = await prisma.campaignRecipient.groupBy({ by: ["status"], where: { campaignId: id }, _count: true });
-  const st = (k: string) => byStatus.find((x) => x.status === k)?._count ?? 0;
-  const noWa = await prisma.campaignRecipient.count({ where: { campaignId: id, status: "FAILED", errorCode: 131026 } });
+  // Números do relatório: os reais ou os ajustados pelo dono em Métricas (tudo abaixo usa esses)
+  const r = await reportNumbers(id, campaign.reportOverrides);
   const origin = campaign.group?.system?.startsWith("BM:") ? `Só a BM ${campaign.group.name}` : campaign.group ? campaign.group.name : "—";
   const elapsed = t.firstSent && t.lastSent ? (t.lastSent.getTime() - t.firstSent.getTime()) / 1000 : null;
-  const maxErr = Math.max(1, ...m.errors.map((e) => e.count));
-  const maxReply = Math.max(1, ...m.topReplies.map((r) => r.count));
 
   // Link do cliente ligado: mostra quanto tempo ele ainda fica no ar
   const linkExp = (expiresAt ?? (campaign.shareToken && campaign.shareExpiresAt && campaign.shareExpiresAt > new Date() ? campaign.shareExpiresAt : null));
   // Cobrança: enviadas × valor por mensagem (o da campanha ou o padrão da conta) e o Pix com o valor
   const ws = campaign.workspace;
   const price = campaign.reportPrice ?? ws.reportPrice ?? 0;
-  const total = Math.round(t.sent * price * 100) / 100;
+  const total = Math.round(r.sent * price * 100) / 100;
   const allKeys = parsePixKeys(ws.pixKeys);
   const keys = total > 0 ? keysForReport(allKeys, campaign.reportPixKeyId) : [];
 
@@ -94,7 +90,7 @@ export async function ReportView({ id, workspaceId, publicView = false, expiresA
                 ))}
               </dl>
             </div>
-            <Ring value={t.sent} total={t.total} label="enviadas" />
+            <Ring value={r.sent} total={r.total} label="enviadas" />
           </div>
         </div>
       </header>
@@ -112,29 +108,13 @@ export async function ReportView({ id, workspaceId, publicView = false, expiresA
       )}
 
       <main className="mx-auto max-w-5xl space-y-5 px-5 py-8 sm:px-8">
-        {/* Números principais */}
-        <section className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-          {[
-            { k: "Público", v: t.total, s: t.pending ? `${n(t.pending)} na fila` : "contatos na lista" },
-            { k: "Enviadas", v: t.sent, s: pct(t.sent, t.total) + " do público", hi: true },
-            { k: "Lidas", v: read, s: pct(read, t.sent) + " das enviadas" },
-            { k: "Cliques", v: t.clicked, s: `${n(t.clicks)} cliques no total` },
-            { k: "Respostas", v: t.replied, s: pct(t.replied, t.sent) + " das enviadas" },
-          ].map((x) => (
-            <div key={x.k} className={`report-card rounded-2xl border bg-white p-4 shadow-sm ${x.hi ? "border-orange-200 ring-1 ring-orange-100" : "border-zinc-200"}`}>
-              <div className="text-xs font-medium text-zinc-500">{x.k}</div>
-              <div className={`mt-1 text-2xl font-bold tabular-nums ${x.hi ? "text-brand-gradient" : "text-zinc-900"}`}>{n(x.v)}</div>
-              <div className="mt-0.5 text-[11px] text-zinc-500">{x.s}</div>
-            </div>
-          ))}
-        </section>
 
         {keys.length ? (
           <section className="report-card overflow-hidden rounded-2xl border border-orange-200 bg-white shadow-sm">
             <div className="p-5 sm:p-6">
               <h2 className="font-semibold text-zinc-900">Valor desta campanha</h2>
               <p className="mt-1 text-sm text-zinc-500">
-                {n(t.sent)} mensagens enviadas × {brl(price)} por mensagem
+                {n(r.sent)} mensagens enviadas × {brl(price)} por mensagem
               </p>
               <div className="mt-3 text-4xl font-bold tracking-tight text-brand-gradient">{brl(total)}</div>
               <div className={`mt-5 grid gap-4 ${keys.length > 1 ? "md:grid-cols-2" : "max-w-xl"}`}>
@@ -166,84 +146,18 @@ export async function ReportView({ id, workspaceId, publicView = false, expiresA
           <p className="mb-2 text-sm text-zinc-500">De quem estava na lista até quem respondeu. Passe o mouse em cada etapa.</p>
           <Funnel
             steps={[
-              { key: "total", label: "Público", value: t.total, hint: "Contatos válidos da lista (sem repetidos e sem descadastrados)." },
-              { key: "sent", label: "Enviadas", value: t.sent, hint: "A Meta aceitou a mensagem." },
-              { key: "read", label: "Lidas", value: read, hint: "A pessoa abriu (só conta quem deixa a confirmação de leitura ligada)." },
-              { key: "clicked", label: "Clicaram", value: t.clicked, hint: "Clicaram no botão do link." },
-              { key: "replied", label: "Responderam", value: t.replied, hint: "Mandaram alguma mensagem de volta." },
+              { key: "total", label: "Público", value: r.total, hint: "Contatos válidos da lista (sem repetidos e sem descadastrados)." },
+              { key: "sent", label: "Enviadas", value: r.sent, hint: "A Meta aceitou a mensagem." },
+              { key: "read", label: "Lidas", value: r.read, hint: "A pessoa abriu (só conta quem deixa a confirmação de leitura ligada)." },
+              { key: "clicked", label: "Clicaram", value: r.clicked, hint: "Clicaram no botão do link." },
+              { key: "replied", label: "Responderam", value: r.replied, hint: "Mandaram alguma mensagem de volta." },
             ]}
           />
         </section>
-
-        <section className="report-card rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-6">
-          <h2 className="font-semibold text-zinc-900">Como terminou cada mensagem</h2>
-          <p className="mb-4 text-sm text-zinc-500">O resultado final de cada contato da lista.</p>
-          <OutcomeBar
-            items={[
-              { key: "read", label: "Lida", value: st("READ"), color: "#047857" },
-              { key: "sent", label: "Enviada (ainda não lida)", value: st("DELIVERED") + st("SENT"), color: "#38bdf8" },
-              { key: "undeliverable", label: "Sem WhatsApp ou bloqueou", value: noWa, color: "#f59e0b" },
-              { key: "failed", label: "Falhou", value: Math.max(0, st("FAILED") - noWa), color: "#e11d48" },
-              { key: "other", label: "Na fila / não enviada", value: st("PENDING") + st("SENDING") + st("SKIPPED"), color: "#a1a1aa" },
-            ]}
-          />
-        </section>
-
-        <div className="grid grid-cols-2 gap-3 sm:gap-5">
-          {[
-            ["Até ler", m.timing.read],
-            ["Até clicar", m.timing.click],
-          ].map(([k, v]) => (
-            <div key={k as string} className="report-card rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm sm:p-5">
-              <div className="text-xs font-medium text-zinc-500"><span className="hidden sm:inline">Tempo mediano </span>{String(k).replace("Até", "até")}</div>
-              <div className="mt-1 text-2xl font-bold tabular-nums text-zinc-900">{duration(v as number | null)}</div>
-            </div>
-          ))}
-        </div>
-
-
-        <div className="grid gap-5 lg:grid-cols-2">
-          <section className="report-card rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-6">
-            <h2 className="mb-4 font-semibold text-zinc-900">Motivos de falha</h2>
-            {m.errors.length === 0 ? (
-              <p className="text-sm text-emerald-700">Nenhuma falha nessa campanha.</p>
-            ) : (
-              <ul className="space-y-3">
-                {m.errors.slice(0, 8).map((e, i) => (
-                  <li key={i}>
-                    <div className="mb-1 flex justify-between gap-3 text-sm">
-                      <span className="line-clamp-2 text-zinc-700">{e.title}</span>
-                      <b className="shrink-0 tabular-nums text-zinc-900">{n(e.count)}</b>
-                    </div>
-                    <MiniBar value={e.count} max={maxErr} tone="red" />
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
-          <section className="report-card rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-6">
-            <h2 className="mb-4 font-semibold text-zinc-900">Respostas mais comuns</h2>
-            {m.topReplies.length === 0 ? (
-              <p className="text-sm text-zinc-500">Ninguém respondeu ainda.</p>
-            ) : (
-              <ul className="space-y-3">
-                {m.topReplies.slice(0, 8).map((r, i) => (
-                  <li key={i}>
-                    <div className="mb-1 flex justify-between gap-3 text-sm">
-                      <span className="truncate text-zinc-700">&ldquo;{r.text}&rdquo;</span>
-                      <b className="shrink-0 tabular-nums text-zinc-900">{n(r.count)}</b>
-                    </div>
-                    <MiniBar value={r.count} max={maxReply} tone="green" />
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
-        </div>
 
         <footer className="flex flex-wrap items-center justify-between gap-2 pt-4 text-xs text-zinc-400">
           <span>Gerado pelo Fuzil Disparador em {when(new Date())}</span>
-          <span>{n(t.credits)} créditos usados{t.optedOut ? ` · ${n(t.optedOut)} descadastraram` : ""}</span>
+          {!publicView && <span>{n(t.credits)} créditos usados{t.optedOut ? ` · ${n(t.optedOut)} descadastraram` : ""}{r.adjusted ? " · números ajustados por você" : ""}</span>}
         </footer>
       </main>
     </div>
