@@ -13,7 +13,7 @@ import { Countdown } from "@/components/countdown";
 const brl = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
 /** Aba "Relatório do cliente": valor cobrado, Pix e o link público do relatório. */
-export async function ClientReportStep({ campaignId, workspaceId }: { campaignId: string; workspaceId: string }) {
+export async function ClientReportStep({ campaignId, workspaceId, canAdjust = false }: { campaignId: string; workspaceId: string; canAdjust?: boolean }) {
   const [c, ws] = await Promise.all([
     prisma.campaign.findFirstOrThrow({ where: { id: campaignId, workspaceId }, select: { reportPrice: true, reportPixKeyId: true, shareToken: true, shareExpiresAt: true, reportOverrides: true } }),
     prisma.workspace.findUniqueOrThrow({ where: { id: workspaceId }, select: { pixKeys: true, reportPrice: true } }),
@@ -41,7 +41,7 @@ export async function ClientReportStep({ campaignId, workspaceId }: { campaignId
         <div className="mb-4 flex flex-wrap items-baseline gap-x-3 gap-y-1">
           <span className="text-3xl font-bold tracking-tight text-brand-gradient">{brl(total)}</span>
           <span className="text-sm text-zinc-500">{sent.toLocaleString("pt-BR")} enviadas × {brl(price)}</span>
-          {rn.adjusted && <span className="rounded-full bg-orange-50 px-2 py-0.5 text-xs font-medium text-orange-700 ring-1 ring-orange-200">com os números ajustados abaixo</span>}
+          {rn.adjusted && canAdjust && <span className="rounded-full bg-orange-50 px-2 py-0.5 text-xs font-medium text-orange-700 ring-1 ring-orange-200">com os números ajustados abaixo</span>}
         </div>
         <ActionForm action={saveCampaignPriceAction.bind(null, campaignId)} submit="Salvar" variant="secondary">
           <div className="grid gap-4 md:grid-cols-2">
@@ -69,6 +69,8 @@ export async function ClientReportStep({ campaignId, workspaceId }: { campaignId
         )}
       </Card>
 
+      {/* Ajustar os números: só administradores do Fuzil */}
+      {canAdjust && (
       <Card className="p-5">
         <div className="mb-1 flex items-center gap-2 font-semibold">
           <SlidersHorizontal className="size-4 text-brand-500" /> Números do relatório
@@ -94,6 +96,7 @@ export async function ClientReportStep({ campaignId, workspaceId }: { campaignId
           </div>
         )}
       </Card>
+      )}
 
       <Card className="p-5">
         <div className="mb-1 flex items-center gap-2 font-semibold"><Link2 className="size-4 text-brand-500" /> Link para o cliente</div>

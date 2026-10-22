@@ -100,7 +100,7 @@ export default async function CampaignPage({ params, searchParams }: { params: P
               <TestSend campaignId={id} />
             </>
           )}
-          {step === "relatorio" && <ClientReportStep campaignId={id} workspaceId={auth.workspace.id} />}
+          {step === "relatorio" && <ClientReportStep campaignId={id} workspaceId={auth.workspace.id} canAdjust={auth.user.isSuperAdmin} />}
           {step === "metricas" && (
             <>
               {/* Entregas, leituras, cliques e respostas continuam chegando depois do envio: atualiza sempre */}

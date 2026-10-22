@@ -93,6 +93,8 @@ export async function unshareReportAction(id: string): Promise<{ ok?: string; er
 /** Relatório do cliente: números ajustados à mão para o relatório do cliente (o resto do relatório é recalculado com eles). */
 export async function saveReportNumbersAction(id: string, _: FormState, form: FormData): Promise<FormState> {
   const c = await ownCampaign(id);
+  // Ajustar números do relatório é só para administradores do Fuzil
+  if (!(await requireAuth()).user.isSuperAdmin) return { error: "Só administradores do Fuzil podem ajustar os números do relatório." };
   const { REPORT_FIELDS, realReportNumbers } = await import("@/lib/report-numbers");
   const real = await realReportNumbers(c.id);
   const v: Record<string, number> = {};
@@ -115,6 +117,8 @@ export async function saveReportNumbersAction(id: string, _: FormState, form: Fo
 
 export async function resetReportNumbersAction(id: string): Promise<{ ok?: string; error?: string }> {
   const c = await ownCampaign(id);
+  // Ajustar números do relatório é só para administradores do Fuzil
+  if (!(await requireAuth()).user.isSuperAdmin) return { error: "Só administradores do Fuzil podem ajustar os números do relatório." };
   await prisma.campaign.update({ where: { id: c.id }, data: { reportOverrides: Prisma.DbNull } });
   revalidatePath(`/campanhas/${c.id}`);
   return { ok: "Pronto! O relatório voltou a mostrar os números reais da campanha." };

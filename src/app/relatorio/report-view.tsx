@@ -157,7 +157,7 @@ export async function ReportView({ id, workspaceId, publicView = false, expiresA
 
         <footer className="flex flex-wrap items-center justify-between gap-2 pt-4 text-xs text-zinc-400">
           <span>Gerado pelo Fuzil Disparador em {when(new Date())}</span>
-          {!publicView && <span>{n(t.credits)} créditos usados{t.optedOut ? ` · ${n(t.optedOut)} descadastraram` : ""}{r.adjusted ? " · números ajustados por você" : ""}</span>}
+          {!publicView && <span>{n(t.credits)} créditos usados{t.optedOut ? ` · ${n(t.optedOut)} descadastraram` : ""}</span>}
         </footer>
       </main>
     </div>
