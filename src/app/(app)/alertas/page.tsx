@@ -28,7 +28,7 @@ export default async function AlertsPage({ searchParams }: { searchParams: Promi
       />
       <div className="mb-4 flex gap-2 text-sm">
         {[["", "Todos"], ["CRITICAL", "Críticos"], ["WARNING", "Atenção"], ["INFO", "Informativos"]].map(([v, l]) => (
-          <a key={v} href={v ? `?nivel=${v}` : "?"} className={clsx("rounded-full border px-3 py-1", (nivel ?? "") === v ? "border-zinc-900 bg-zinc-900 text-white" : "border-zinc-200 bg-white")}>{l}</a>
+          <a key={v} href={v ? `?nivel=${v}` : "?"} className={clsx("rounded-full border px-3.5 py-1.5 font-medium transition", (nivel ?? "") === v ? "border-transparent bg-brand-gradient text-white shadow-sm shadow-orange-500/30" : "border-orange-200 bg-orange-50 text-orange-800 hover:bg-orange-100")}>{l}</a>
         ))}
       </div>
       {alerts.length === 0 && <Empty>Nenhum alerta.</Empty>}
@@ -39,15 +39,17 @@ export default async function AlertsPage({ searchParams }: { searchParams: Promi
             const ex = a.severity === "INFO" ? null : explainAlert(a);
             return (
               // Uma linha por alerta; o detalhe abre ao clicar
-              <details key={a.id} className="group">
-                <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-3 hover:bg-zinc-50 [&::-webkit-details-marker]:hidden">
-                  <Icon className={clsx("size-4 shrink-0", a.severity === "CRITICAL" ? "text-red-600" : a.severity === "WARNING" ? "text-amber-600" : "text-sky-600")} />
+              <details key={a.id} className={clsx("group border-l-4", a.severity === "CRITICAL" ? "border-l-red-500" : a.severity === "WARNING" ? "border-l-amber-400" : "border-l-sky-400")}>
+                <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-3 hover:bg-orange-50/50 [&::-webkit-details-marker]:hidden">
+                  <span className={clsx("flex size-7 shrink-0 items-center justify-center rounded-lg", a.severity === "CRITICAL" ? "bg-red-100 text-red-600" : a.severity === "WARNING" ? "bg-amber-100 text-amber-700" : "bg-sky-100 text-sky-600")}>
+                    <Icon className="size-4" />
+                  </span>
                   <span className={clsx("min-w-0 flex-1 truncate text-sm", a.readAt ? "text-zinc-600" : "font-medium text-zinc-900")}>{a.title}</span>
                   {!a.readAt && <span className="size-2 shrink-0 rounded-full bg-red-500" />}
                   <span className="shrink-0 text-xs text-zinc-400">{a.createdAt.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}</span>
                   <ChevronRight className="size-4 shrink-0 text-zinc-300 transition-transform group-open:rotate-90" />
                 </summary>
-                <div className="px-11 pb-4 text-sm">
+                <div className="px-14 pb-4 text-sm">
                   <p className="text-zinc-600">{a.message}</p>
                   {ex && ex.urgency !== "INFO" && <p className="mt-1.5 text-zinc-500"><b className="text-zinc-700">O que fazer:</b> {ex.action}</p>}
                 </div>

@@ -67,7 +67,7 @@ export default async function BlueprintsPage() {
             <Drawer
               key={bp.id}
               title={<>{bp.name} <span className="text-xs font-normal text-zinc-400">{bp.language}</span></>}
-              subtitle={body}
+              subtitle={bp.category === "AUTHENTICATION" ? "Código de acesso" : bp.category === "MARKETING" ? "Marketing" : "Utilidade"}
               tone={!bp.active ? "gray" : bad > 0 ? "red" : approved === scope.length ? "green" : "amber"}
               toneTitle={!bp.active ? "Desativado" : bad > 0 ? "Tem BM com problema" : approved === scope.length ? "Aprovado em todas as BMs" : "Em análise em alguma BM"}
               meta={
@@ -84,6 +84,11 @@ export default async function BlueprintsPage() {
                   <ConfirmButton action={deleteBlueprintAction.bind(null, bp.id)} variant="ghost" className="text-red-600" confirm="Remover este template padrão? (as cópias já criadas na Meta continuam lá)"><Trash2 className="size-4" /></ConfirmButton>
                 </div>
               </div>
+              {body && bp.category !== "AUTHENTICATION" && (
+                <div className="mb-4 rounded-2xl bg-[#e7ddd3] p-4">
+                  <div className="max-w-xl whitespace-pre-wrap rounded-xl rounded-tl-sm bg-white px-3.5 py-2.5 text-sm text-zinc-800 shadow-sm">{body}</div>
+                </div>
+              )}
               {bp.category === "AUTHENTICATION" ? (
                 <p className="mb-3 text-zinc-600">Template de código (a Meta monta o texto sozinha).</p>
               ) : (

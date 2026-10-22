@@ -14,7 +14,7 @@ import { bmAptidao } from "@/lib/readiness";
 import { StatusDot } from "@/components/drawer";
 import { SendToGroup } from "./send-to-group";
 import { ColorPicker } from "./color-picker";
-import { groupDot, groupTag } from "@/lib/group-colors";
+import { groupDot, groupStripe, groupTag } from "@/lib/group-colors";
 
 export const dynamic = "force-dynamic";
 
@@ -85,6 +85,7 @@ export default async function GroupsPage() {
         <Drawer
           key={problems.id}
           className="mb-3"
+          stripe={groupStripe(problems.color)}
           title={<span className="flex items-center gap-2"><span className={`size-2.5 shrink-0 rounded-full ${groupDot(problems.color)}`} />{problems.name}</span>}
           subtitle={problems.description ?? "Saíram sozinhas dos grupos de disparo. Voltam sozinhas quando o problema sumir."}
           meta={<span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1 ${groupTag(problems.color)}`}>{problems.members.length} BM(s)</span>}
@@ -118,6 +119,7 @@ export default async function GroupsPage() {
           return (
             <Drawer
               key={g.id}
+              stripe={groupStripe(g.color)}
               title={<span className="flex items-center gap-2"><span className={`size-2.5 shrink-0 rounded-full ${groupDot(g.color)}`} />{g.name}</span>}
               subtitle={g.description || g.members.map((m) => m.business.name).join(" · ") || "Sem BMs"}
               meta={
@@ -191,7 +193,7 @@ export default async function GroupsPage() {
         })}
 
         <div data-tour="new-group">
-        <Drawer title={<span className="flex items-center gap-2"><Plus className="size-4" /> Novo grupo</span>} open={regular.length === 0}>
+        <Drawer className="border-dashed border-orange-300 bg-orange-50/40" title={<span className="flex items-center gap-2 text-orange-800"><Plus className="size-4" /> Novo grupo</span>} open={regular.length === 0}>
           <ActionForm action={saveGroupAction} submit="Criar grupo">
             <div className="mb-4 grid gap-4 md:grid-cols-2">
               <Field label="Nome"><Input name="name" placeholder="Ex.: Disparos principais" required /></Field>

@@ -2,6 +2,19 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.07",
+    date: "22/10/2026",
+    items: [
+      "Visual repaginado: botões coloridos, letras um pouco maiores e com mais contraste, títulos com a marca laranja do Fuzil",
+      "Gavetas com faixa colorida do lado (cor do status ou do grupo) e seta destacada",
+      "Números com cores diferentes (enviadas laranja, entregues verde, lidas azul, cliques roxo, respostas rosa)",
+      "Campanhas: cada uma com faixa da cor da situação, barra de progresso e resultados em etiquetas coloridas",
+      "Métricas: \"O que aconteceu com cada número\" mostra uns 10 por vez, o resto com barra de rolagem",
+      "Templates padrão: o texto do template só aparece ao abrir a gaveta, num balão igual ao WhatsApp",
+      "Alertas com cor por gravidade (vermelho, amarelo, azul)",
+    ],
+  },
+  {
     version: "2.06",
     date: "22/10/2026",
     items: [

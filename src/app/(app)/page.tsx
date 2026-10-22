@@ -68,10 +68,10 @@ export default async function HomePage() {
       )}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Stat label="BMs conectadas" value={businesses.length} sub={`${stats.activePhones}/${stats.phones} números ativos`} icon={<Building2 className="size-4" />} />
+        <Stat label="BMs conectadas" value={businesses.length} sub={`${stats.activePhones}/${stats.phones} números ativos`} tone="blue" icon={<Building2 className="size-4" />} />
         <Stat label="Disponível hoje" value={formatLimit(stats.available)} sub={`de ${formatLimit(stats.totalLimit)} · ${usedPct.toLocaleString("pt-BR")}% usado`} tone="brand" icon={<Gauge className="size-4" />} />
-        <Stat label="Enviadas (24h)" value={n(t.sent)} sub={`${pct(Number(t.delivered), Number(t.sent))} entregues · ${pct(Number(t.read), Number(t.delivered))} lidas`} icon={<Send className="size-4" />} />
-        <Stat label="Cliques (24h)" value={n(t.clicked)} sub={`${n(t.failed)} falhas no período`} icon={<MousePointerClick className="size-4" />} />
+        <Stat label="Enviadas (24h)" value={n(t.sent)} sub={`${pct(Number(t.delivered), Number(t.sent))} entregues · ${pct(Number(t.read), Number(t.delivered))} lidas`} tone="green" icon={<Send className="size-4" />} />
+        <Stat label="Cliques (24h)" value={n(t.clicked)} sub={`${n(t.failed)} falhas no período`} tone="violet" icon={<MousePointerClick className="size-4" />} />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
