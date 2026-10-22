@@ -4,7 +4,7 @@ export const CHANGELOG: Array<{ version: string; date: string; items: string[] }
   {
     version: "1.71",
     date: "22/10/2026",
-    items: ["Templates: novo modelo pronto \"Atualização de pedido (com imagem)\": imagem no cabeçalho, 4 variáveis e botão Detalhes"],
+    items: ["Templates: novo modelo pronto \"fuzil_utilidade1\" (atualização de pedido com imagem): imagem no cabeçalho, 4 variáveis e botão Detalhes", "O modelo já vem com uma imagem do Fuzil de atualização de pedido (dá para trocar)"],
   },
   {
     version: "1.70",

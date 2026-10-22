@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useMemo, useRef, useState } from "react";
+import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 import { Plus, Sparkles, Trash2 } from "lucide-react";
 import { createTemplateAction } from "@/app/actions/templates";
 import { extractVars } from "@/lib/template-utils";
@@ -56,6 +56,24 @@ export function TemplateBuilder({
   }
 
   const [preset, setPreset] = useState<string | null>(null);
+  const sampleRef = useRef<HTMLInputElement>(null);
+  const [pendingSample, setPendingSample] = useState<string | null>(null);
+  // Modelo com imagem pronta: baixa e coloca no campo "Arquivo de exemplo" (dá para trocar)
+  useEffect(() => {
+    if (!pendingSample || !sampleRef.current) return;
+    const url = pendingSample;
+    setPendingSample(null);
+    fetch(url)
+      .then((r) => r.blob())
+      .then((blob) => {
+        const file = new File([blob], url.split("/").pop() ?? "exemplo.jpg", { type: blob.type || "image/jpeg" });
+        const dt = new DataTransfer();
+        dt.items.add(file);
+        if (sampleRef.current) sampleRef.current.files = dt.files;
+        setSamplePreview(URL.createObjectURL(file));
+      })
+      .catch(() => undefined);
+  }, [pendingSample, headerType]);
   // Modelo pronto: preenche tudo de uma vez (dá para editar qualquer campo depois)
   function applyPreset(p: TemplatePreset) {
     if ((body.trim() || name) && !confirm(`Usar o modelo "${p.label}"? O que já está preenchido será substituído.`)) return;
@@ -63,6 +81,7 @@ export function TemplateBuilder({
     setName(p.name);
     setHeaderType(p.headerType ?? (p.headerText ? "TEXT" : "NONE"));
     setSamplePreview(null);
+    setPendingSample(p.sampleUrl ?? null);
     setHeaderText(p.headerText ?? "");
     setHeaderExample("");
     setBody(p.body);
@@ -133,6 +152,7 @@ export function TemplateBuilder({
           {["IMAGE", "VIDEO", "DOCUMENT"].includes(headerType) && (
             <Field label="Arquivo de exemplo" hint="A Meta exige um exemplo para análise. Na campanha você escolhe a mídia real.">
               <Input
+                ref={sampleRef}
                 type="file"
                 name="sample"
                 accept={headerType === "IMAGE" ? "image/jpeg,image/png" : headerType === "VIDEO" ? "video/mp4" : "application/pdf"}

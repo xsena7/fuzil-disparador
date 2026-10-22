@@ -8,6 +8,8 @@ export type TemplatePreset = {
   name: string;
   /** Cabeçalho de mídia: a pessoa escolhe o arquivo de exemplo no formulário */
   headerType?: "IMAGE" | "VIDEO" | "DOCUMENT";
+  /** Arquivo de exemplo já pronto (em /public), carregado sozinho no formulário */
+  sampleUrl?: string;
   headerText?: string;
   body: string;
   examples: string[];
@@ -18,9 +20,10 @@ export type TemplatePreset = {
 export const TEMPLATE_PRESETS: TemplatePreset[] = [
   {
     key: "pedido_imagem",
-    label: "Atualização de pedido (com imagem)",
-    name: "atualizacao_pedido_img",
+    label: "fuzil_utilidade1 · pedido com imagem",
+    name: "fuzil_utilidade1",
     headerType: "IMAGE",
+    sampleUrl: "/modelos/atualizacao-pedido.jpg",
     body: "Olá {{1}},\n\nInformamos uma atualização em seu pedido {{2}}.\n\n{{3}}\n\n{{4}}\n\nToque no botão abaixo para ver mais informações.",
     examples: ["João", "56156612", "Atualização no seu pedido", "Saiu para entrega"],
     buttons: [{ type: "URL_TRACKED", text: "Detalhes" }],
