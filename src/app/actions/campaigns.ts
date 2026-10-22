@@ -329,8 +329,33 @@ export async function testCampaignSendAction(id: string, _: { ok?: string; error
     return { ok: `Mensagem aceita pela Meta (${used}).`, raw: JSON.stringify(res, null, 2) };
   } catch (err) {
     if (err instanceof MetaError) {
-      const diag = { waba: wabaRec?.wabaId, phoneNumberId: sender.phoneNumberId, meta_error: { message: err.message, code: err.code, subcode: err.subcode, httpStatus: err.httpStatus, details: err.details }, token_ve_o_template: await lookup() };
-      return { error: `A Meta recusou (${used}).`, raw: JSON.stringify(diag, null, 2) };
+      // A qual WABA o número pertence de verdade (o 132001 com template aprovado quase sempre é número de outra WABA)
+      const owner = async () => {
+        try {
+          const h = await meta.phoneHealth(sender.token, sender.phoneNumberId);
+          const ents = h.health_status?.entities ?? [];
+          const realWaba = ents.find((e) => e.entity_type === "WABA")?.id ?? null;
+          return {
+            waba_do_numero: realWaba,
+            mesma_waba_do_template: realWaba ? realWaba === wabaRec?.wabaId : "a Meta não informou",
+            pode_enviar: h.health_status?.can_send_message,
+            status: h.status,
+            plataforma: h.platform_type,
+            entidades: ents,
+          };
+        } catch (e) {
+          return `erro ao consultar: ${e instanceof Error ? e.message : String(e)}`;
+        }
+      };
+      const diag = { waba: wabaRec?.wabaId, phoneNumberId: sender.phoneNumberId, meta_error: { message: err.message, code: err.code, subcode: err.subcode, httpStatus: err.httpStatus, details: err.details }, token_ve_o_template: await lookup(), numero: await owner() };
+      const own = typeof diag.numero === "object" ? diag.numero : null;
+      const hint =
+        own && own.mesma_waba_do_template === false
+          ? ` O número ${sender.display} está na WABA ${own.waba_do_numero}, mas o template está na WABA ${wabaRec?.wabaId}. Clique em "Puxar da Meta" em Conexões para o Fuzil corrigir.`
+          : own && own.pode_enviar && own.pode_enviar !== "AVAILABLE"
+            ? ` A Meta diz que esse número não pode enviar agora (${own.pode_enviar}). Veja o motivo em "entidades" abaixo.`
+            : "";
+      return { error: `A Meta recusou (${used}).${hint}`, raw: JSON.stringify(diag, null, 2) };
     }
     return { error: `Erro inesperado (${used}): ${err instanceof Error ? err.message : String(err)}` };
   }

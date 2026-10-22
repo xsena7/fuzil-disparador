@@ -242,6 +242,16 @@ export const meta = {
   },
 
   /** Diagnóstico: o token enxerga o template por esse nome? (lista da WABA filtrada pelo nome) */
+  /** Saúde do número: a Meta devolve a WABA, a BM e o app ligados a ele, e se cada um pode enviar. */
+  phoneHealth(token: string, phoneNumberId: string) {
+    return graph<{ id: string; display_phone_number?: string; status?: string; platform_type?: string; health_status?: { can_send_message?: string; entities?: Array<{ entity_type: string; id: string; can_send_message?: string; errors?: unknown[] }> } }>(
+      token,
+      "GET",
+      phoneNumberId,
+      { query: { fields: "display_phone_number,status,platform_type,health_status" } },
+    );
+  },
+
   findTemplates(token: string, wabaId: string, name: string) {
     return graph<{ data: Array<{ id: string; name: string; language: string; status: string; category: string; waba_id?: string }> }>(token, "GET", `${wabaId}/message_templates`, {
       query: { name, fields: "id,name,language,status,category" },
