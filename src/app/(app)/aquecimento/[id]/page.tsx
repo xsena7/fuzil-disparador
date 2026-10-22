@@ -99,6 +99,18 @@ export default async function FunnelPage({ params, searchParams }: { params: Pro
               {funnel.status === "ACTIVE" ? <Pause className="size-4" /> : <Play className="size-4" />}
               {funnel.status === "ACTIVE" ? "Pausar" : "Ativar"}
             </ConfirmButton>
+            <ConfirmButton
+              action={deleteFunnelAction.bind(null, funnel.id)}
+              variant="ghost"
+              className="text-red-600"
+              confirm={
+                links
+                  ? "Excluir o funil do gerador de links?\nTodos os clientes perdem o acesso e os links deles param de funcionar. Não dá para desfazer."
+                  : "Excluir o funil e todos os leads dele?\nNão dá para desfazer."
+              }
+            >
+              <Trash2 className="size-4" /> Excluir
+            </ConfirmButton>
           </>
         }
       />

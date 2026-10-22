@@ -2,6 +2,14 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "1.81",
+    date: "22/10/2026",
+    items: [
+      "Gerador de links: o Fuzil confere sozinho se o funil tem o template de código e o de aviso de acesso. Se faltar algum, ele recria e sobe nas BMs do grupo",
+      "Aquecimento: botão Excluir no topo de cada funil",
+    ],
+  },
+  {
     version: "1.80",
     date: "22/10/2026",
     items: [

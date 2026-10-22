@@ -5,6 +5,7 @@ import type { CampaignRecipient, Funnel, Lead, Prisma } from "@prisma/client";
 import { cookies } from "next/headers";
 import { prisma } from "./db";
 import { DEFAULT_PAGE, sendLoginAlert } from "./funnels";
+import { makeLinksBlueprint } from "./links-templates";
 import { clientIp } from "./rate-limit";
 
 export const LINKS_COOKIE = "fz_links";
@@ -19,33 +20,12 @@ export function linksFunnel() {
   return prisma.funnel.findFirst({ where: { kind: "LINKS" }, orderBy: { createdAt: "asc" } });
 }
 
-/** Cria o funil do login com os 2 templates padrão (código e aviso de novo acesso) no grupo escolhido. */
+/** Cria o funil do login com os 3 templates padrão (código, aviso de novo acesso e boas-vindas) no grupo escolhido. */
 export async function createLinksFunnel(workspaceId: string, groupId: string, name = "Login do gerador de links") {
   const suffix = randomBytes(2).toString("hex");
-  const mk = (name: string, category: string, components: unknown[]) =>
-    prisma.templateBlueprint.create({ data: { workspaceId, groupId, name, language: "pt_BR", category, components: components as Prisma.InputJsonValue } });
-  const code = await mk(`fzlinks_codigo_${suffix}`, "AUTHENTICATION", [
-    { type: "BODY", add_security_recommendation: true },
-    { type: "FOOTER", code_expiration_minutes: 10 },
-    { type: "BUTTONS", buttons: [{ type: "OTP", otp_type: "COPY_CODE", text: "Copiar código" }] },
-  ]);
-  const login = await mk(`fzlinks_acesso_${suffix}`, "UTILITY", [
-    {
-      type: "BODY",
-      text: "Novo acesso à sua conta do gerador de links em {{1}}.\n\nFoi você? Toque em um dos botões abaixo para confirmar. Se não reconhece este acesso, toque em \"Não fui eu\" e desconectamos todos os aparelhos.",
-      example: { body_text: [["22/10 às 14:32"]] },
-    },
-    { type: "BUTTONS", buttons: [{ type: "QUICK_REPLY", text: "Fui eu" }, { type: "QUICK_REPLY", text: "Não fui eu" }] },
-  ]);
-  // Boas-vindas no primeiro acesso: a pessoa toca em "Recebi" e abre conversa de verdade (bom para a BM)
-  const welcome = await mk(`fzlinks_boasvindas_${suffix}`, "UTILITY", [
-    {
-      type: "BODY",
-      text: "Olá, {{1}}. Seu cadastro no gerador de links foi concluído.\n\nOs avisos de acesso à sua conta serão enviados para este número. Toque em \"Recebi\" para confirmar o recebimento.",
-      example: { body_text: [["Maria"]] },
-    },
-    { type: "BUTTONS", buttons: [{ type: "QUICK_REPLY", text: "Recebi" }] },
-  ]);
+  const code = await makeLinksBlueprint(workspaceId, groupId, "code", suffix);
+  const login = await makeLinksBlueprint(workspaceId, groupId, "login", suffix);
+  const welcome = await makeLinksBlueprint(workspaceId, groupId, "welcome", suffix);
   return prisma.funnel.create({
     data: {
       workspaceId,
