@@ -98,7 +98,12 @@ export async function checkBusinessAfterSync(wabaRecordId: string) {
   let fix = "";
   const health = (Array.isArray(waba.healthIssues) ? waba.healthIssues : []) as Array<{ text?: string; fix?: string }>;
   // Só erro de acesso de verdade (token/permissão); queda de rede ou instabilidade da Meta não conta
-  const accessLost = waba.lastSyncError && /token|permiss|oauth|access|acesso|session|expired|expirad/i.test(waba.lastSyncError) && !/fetch failed|ECONN|ETIMEDOUT|timeout|socket|network|indispon|temporar/i.test(waba.lastSyncError);
+  // "API access blocked" é do app (falta o Tech Provider): o envio segue normal, não tira a BM dos grupos
+  const accessLost =
+    waba.lastSyncError &&
+    !/api access blocked/i.test(waba.lastSyncError) &&
+    /invalid.{0,20}token|token.{0,30}(invalid|inv[aá]lido|expired|expirad)|session has expired|error validating access token|oauth/i.test(waba.lastSyncError) &&
+    !/fetch failed|ECONN|ETIMEDOUT|timeout|socket|network|indispon|temporar/i.test(waba.lastSyncError);
   if (accessLost) {
     reason = `O Fuzil não consegue acessar a WABA ${waba.name}`;
     fix = problemFix(null, "ACCESS");
@@ -117,6 +122,14 @@ export async function checkBusinessAfterSync(wabaRecordId: string) {
     } else if (red) {
       reason = `Qualidade vermelha no número ${red.displayPhoneNumber}`;
       fix = problemFix(null, "QUALITY");
+    }
+  }
+  // Foi para "BMs com problema" só por erro de acesso que não é de verdade (ex.: falta do Tech Provider): volta sozinha
+  if (!accessLost) {
+    const bm = await prisma.businessManager.findUnique({ where: { id: waba.businessId }, select: { problemAt: true, problemReason: true, workspaceId: true } });
+    if (bm?.problemAt && bm.problemReason?.startsWith("O Fuzil não consegue acessar a WABA")) {
+      await restoreBusiness(waba.businessId, bm.workspaceId);
+      await prisma.businessManager.update({ where: { id: waba.businessId }, data: { problemIgnored: null } });
     }
   }
   if (reason) await flagBusinessProblem(waba.businessId, reason, fix);

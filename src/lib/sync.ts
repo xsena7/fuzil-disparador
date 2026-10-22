@@ -27,7 +27,16 @@ export async function syncWaba(wabaRecordId: string) {
   const waba = await prisma.whatsAppAccount.findUniqueOrThrow({ where: { id: wabaRecordId }, include: { business: true } });
   const token = wabaToken(waba);
   if (!waba.webhookSubscribed && waba.lastSyncedAt) await ensureWebhook(waba.id).catch(() => undefined);
-  try {
+  // Cada parte separada: se a Meta negar uma (ex.: "API access blocked" sem o Tech Provider), as outras continuam
+  const errors: string[] = [];
+  const step = async (fn: () => Promise<void>) => {
+    try {
+      await fn();
+    } catch (err) {
+      errors.push(err instanceof Error ? err.message : String(err));
+    }
+  };
+  await step(async () => {
     const info = await meta.getWaba(token, waba.wabaId);
     const hasPaymentMethod = await meta.wabaHasPayment(token, waba.wabaId);
     const healthIssues = (info.health_status?.entities ?? []).flatMap((e) =>
@@ -62,7 +71,8 @@ export async function syncWaba(wabaRecordId: string) {
         });
       }
     }
-
+  });
+  await step(async () => {
     const phones = await meta.listPhones(token, waba.wabaId);
     // Números de teste da Meta nem entram no Fuzil (e os que já estavam saem)
     const real = phones.filter((p) => phoneInvalidReason(p) !== TEST_NUMBER);
@@ -72,7 +82,8 @@ export async function syncWaba(wabaRecordId: string) {
     const test = phones.filter((p) => phoneInvalidReason(p) === TEST_NUMBER).map((p) => p.id);
     if (test.length) await prisma.phoneNumber.deleteMany({ where: { wabaId: waba.id, phoneNumberId: { in: test } } });
     await refreshBusinessTier(waba.id);
-
+  });
+  await step(async () => {
     const templates = await meta.listTemplates(token, waba.wabaId);
     const seen = new Set<string>();
     for (const t of templates) {
@@ -83,25 +94,34 @@ export async function syncWaba(wabaRecordId: string) {
     const local = await prisma.template.findMany({ where: { wabaId: waba.id }, select: { id: true, name: true, language: true } });
     const gone = local.filter((t) => !seen.has(`${t.name}|${t.language}`)).map((t) => t.id);
     if (gone.length) await prisma.template.deleteMany({ where: { id: { in: gone } } });
+  });
 
+  if (!errors.length) {
     await prisma.whatsAppAccount.update({ where: { id: waba.id }, data: { lastSyncedAt: new Date(), lastSyncError: null } });
     await checkBusinessAfterSync(waba.id).catch((e) => console.error("[sync] problema da BM", e));
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    await prisma.whatsAppAccount.update({ where: { id: waba.id }, data: { lastSyncError: message, lastSyncedAt: new Date() } });
-    await checkBusinessAfterSync(waba.id).catch(() => undefined);
-    if (waba.lastSyncError !== message) {
-      await createAlert({
-        workspaceId: waba.workspaceId,
-        type: "SYNC_ERROR",
-        severity: "WARNING",
-        title: `Falha ao sincronizar ${waba.business.name} / ${waba.name}`,
-        message: `${message}. Qualidade, limite e templates dessa WABA podem estar desatualizados.`,
-        data: { wabaId: waba.id },
-      });
-    }
-    throw err;
+    return;
   }
+  const message = [...new Set(errors)].join(" · ");
+  await prisma.whatsAppAccount.update({ where: { id: waba.id }, data: { lastSyncError: message, lastSyncedAt: new Date() } });
+  await checkBusinessAfterSync(waba.id).catch(() => undefined);
+  // "API access blocked" é do app (falta o Tech Provider), não da BM: o envio segue normal, então não vira alerta
+  if (waba.lastSyncError !== message && !isAppAccessBlocked(message)) {
+    await createAlert({
+      workspaceId: waba.workspaceId,
+      type: "SYNC_ERROR",
+      severity: "WARNING",
+      title: `Falha ao sincronizar ${waba.business.name} / ${waba.name}`,
+      message: `${message}. Qualidade, limite e templates dessa WABA podem estar desatualizados.`,
+      data: { wabaId: waba.id },
+    });
+  }
+  // Só conta como falha se nada deu certo
+  if (errors.length === 3) throw new Error(message);
+}
+
+/** Erro do app da Meta sem permissão avançada (sem Tech Provider). Não é problema da BM. */
+export function isAppAccessBlocked(message: string | null | undefined) {
+  return /api access blocked/i.test(message ?? "");
 }
 
 /** O limite agora é por portfólio (BM). Guardamos o maior tier informado pelos números. */

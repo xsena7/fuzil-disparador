@@ -2,6 +2,16 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "1.82",
+    date: "22/10/2026",
+    items: [
+      "Correção importante: o erro \"API access blocked\" (falta do Tech Provider) não tira mais as BMs dos grupos nem gera alerta de falha todo dia. O token está certo e os disparos funcionam",
+      "As BMs que foram para \"BMs com problema\" só por esse erro voltam sozinhas para os grupos em que estavam",
+      "Sincronização por partes: se a Meta negar um dado, os números e templates continuam atualizando",
+      "Conexões e Testar conexão explicam esse caso direito (antes dizia que o token tinha expirado)",
+    ],
+  },
+  {
     version: "1.81",
     date: "22/10/2026",
     items: [
