@@ -2,9 +2,14 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "1.78",
+    date: "22/10/2026",
+    items: ["Links externos saíram do painel e viraram um site separado. Novo: gerador de links do botão, num site público (fuzildisparador.com.br/links), sem precisar de login. O cliente cria o link com a senha de acesso, copia o código e cola na variável do botão na outra plataforma. Ele troca o destino e vê os cliques pelo link secreto que recebe", "Admin: senha de acesso do gerador e lista de todos os links criados (dá para apagar qualquer um)"],
+  },
+  {
     version: "1.77",
     date: "22/10/2026",
-    items: ["Novo: Links externos. Para disparar os templates do Fuzil por outra plataforma: crie um link, copie o código e cole na variável do botão. Quem clicar vai para o seu site, e você troca o destino quando quiser e vê quantos cliques teve"],
+    items: ["Novo: Links externos, para disparar os templates do Fuzil por outra plataforma com o botão funcionando"],
   },
   {
     version: "1.76",

@@ -748,18 +748,22 @@ model Lead {
 }
 
 // Link do botão para disparar por OUTRA plataforma com o mesmo template aprovado:
-// na variável do botão vai só o código, e o redirecionador manda para a url daqui
+// na variável do botão vai só o código, e o redirecionador manda para a url daqui.
+// Criado no site público (sem login, com a senha de acesso do Admin); quem criou edita pelo link secreto.
 model ExternalLink {
-  id          String    @id @default(cuid())
-  workspaceId String
+  id          String     @id @default(cuid())
+  workspaceId String?
   name        String
-  code        String    @unique
+  code        String     @unique
   url         String
-  clicks      Int       @default(0)
+  // sha256 da chave do link de gerenciamento (a chave em si só quem criou tem)
+  editKeyHash String?    @unique
+  creatorIp   String?
+  clicks      Int        @default(0)
   lastClickAt DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  workspace   Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@index([workspaceId])
 }

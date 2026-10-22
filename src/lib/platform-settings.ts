@@ -41,7 +41,7 @@ export async function refreshPlatformSettings() {
   replaceSettings(entries);
 }
 
-export async function savePlatformSetting(key: PlatformKey | CompanyKey | "DISCORD_CHANNELS", value: string) {
+export async function savePlatformSetting(key: PlatformKey | CompanyKey | "DISCORD_CHANNELS" | "LINKS_ACCESS_CODE", value: string) {
   if (!value) {
     await prisma.platformSetting.deleteMany({ where: { key } });
   } else {

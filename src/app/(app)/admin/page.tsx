@@ -20,6 +20,8 @@ import { company } from "@/lib/company";
 import { env } from "@/lib/env";
 import { cachedSetting } from "@/lib/settings-cache";
 import { PasswordInput } from "@/components/password-input";
+import { adminDeleteLinkAction, saveLinksAccessAction } from "@/app/actions/links";
+import { Trash2 } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -30,6 +32,8 @@ export default async function AdminPage() {
     prisma.user.findMany({ where: { memberships: { none: {} } }, orderBy: { createdAt: "desc" } }),
     platformDiscordHooks(),
   ]);
+  const extLinks = await prisma.externalLink.findMany({ orderBy: { createdAt: "desc" }, take: 200 });
+  const linksAccess = cachedSetting("LINKS_ACCESS_CODE") ?? process.env.LINKS_ACCESS_CODE ?? "";
   const bugs = await prisma.bugReport.findMany({ orderBy: [{ status: "asc" }, { createdAt: "desc" }], take: 50 });
   const openBugs = bugs.filter((b) => b.status === "OPEN").length;
   const discordHooks = (hooks ?? {}) as Record<string, string>;
@@ -146,6 +150,43 @@ export default async function AdminPage() {
           Convites, recuperação de senha e alertas críticos. Usa o Resend (grátis até 3.000 e-mails/mês): cole a chave no campo &quot;Chave do Resend&quot; acima.
         </p>
         <ActionForm action={adminTestEmailAction} submit="Enviar e-mail de teste para mim" variant="secondary" />
+      </Drawer>
+
+      <Drawer
+        title="Gerador de links do botão (site público)"
+        tone={linksAccess ? "green" : "amber"}
+        meta={<span>{linksAccess ? `Liberado · ${extLinks.length} link(s)` : "Desligado: falta a senha de acesso"}</span>}
+      >
+        <p className="mb-4 text-sm text-zinc-500">
+          Página sem login onde seus clientes criam o código do botão para disparar o template do Fuzil por outra plataforma:{" "}
+          <a href={`${company().siteUrl}/links`} target="_blank" rel="noreferrer" className="font-medium text-brand-600 hover:underline">{company().siteUrl.replace(/^https:\/\//, "")}/links</a>.
+          Só cria link quem tiver a senha abaixo.
+        </p>
+        <ActionForm action={saveLinksAccessAction} submit="Salvar senha">
+          <Field label="Senha de acesso" hint={linksAccess ? "Configurada ✓ (digite outra para trocar, ou apague e salve para desligar)" : "Passe essa senha só para os clientes que vão criar links"}>
+            <PasswordInput name="access" defaultValue={linksAccess} autoComplete="off" />
+          </Field>
+        </ActionForm>
+        {extLinks.length > 0 && (
+          <div className="mt-6">
+            <div className="mb-2 text-sm font-semibold">Links criados</div>
+            <Table head={["Nome", "Código", "Destino", "Cliques", ""]}>
+              {extLinks.map((l) => (
+                <tr key={l.id}>
+                  <Td className="font-medium">{l.name}</Td>
+                  <Td className="font-mono">{l.code}</Td>
+                  <Td className="max-w-xs truncate text-xs text-zinc-500" title={l.url}>{l.url}</Td>
+                  <Td>{l.clicks.toLocaleString("pt-BR")}</Td>
+                  <Td>
+                    <ConfirmButton action={adminDeleteLinkAction.bind(null, l.id)} variant="ghost" className="px-2 py-1 text-red-600" confirm={`Apagar o link "${l.name}" (${l.code})?\nQuem clicar no botão com esse código vai ver "link não encontrado".`}>
+                      <Trash2 className="size-4" />
+                    </ConfirmButton>
+                  </Td>
+                </tr>
+              ))}
+            </Table>
+          </div>
+        )}
       </Drawer>
 
       <Drawer title="Avisos no Discord" tone={hookCount > 0 ? "green" : "red"} meta={<span>{hookCount > 0 ? `${hookCount} de ${DISCORD_CHANNELS.length} canais configurados` : "Nenhum canal: nada está indo pro Discord"}</span>}>
