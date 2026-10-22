@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "1.73",
+    date: "22/10/2026",
+    items: ["Templates: os modelos prontos agora são só o fuzil_utilidade1 (atualização de pedido com imagem)"],
+  },
+  {
     version: "1.72",
     date: "22/10/2026",
     items: [
