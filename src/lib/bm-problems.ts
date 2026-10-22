@@ -18,6 +18,7 @@ export const PROBLEM_KINDS = {
   UNKNOWN: { system: PROBLEMS_GROUP, name: "⚠️ BMs com problema", color: "black", description: "Problemas que o Fuzil não conseguiu identificar (ou colocadas aqui por você)." },
 } as const;
 export type ProblemKind = keyof typeof PROBLEM_KINDS;
+const SETUP_KINDS: ProblemKind[] = ["NO_PHONE", "PAYMENT", "TEMPLATE"];
 
 export const isProblemSystem = (system?: string | null) => Boolean(system && system.startsWith(PROBLEMS_GROUP));
 const kindOfStored = (k?: string | null): ProblemKind => (k && k in PROBLEM_KINDS ? (k as ProblemKind) : "UNKNOWN");
@@ -55,12 +56,14 @@ export function problemFix(code: number | null | undefined, kind?: string): stri
 }
 
 /**
- * Move a BM para o grupo do tipo de problema (se já tiver disparado alguma vez).
+ * Move a BM para o grupo do tipo de problema (se já tiver disparado alguma vez, ou se o problema impede o primeiro disparo).
  * Se ela já está num grupo de problema e o tipo mudou, troca de grupo sozinha.
  */
 export async function flagBusinessProblem(businessId: string, reason: string, fix: string, kind: ProblemKind = "UNKNOWN", fromSend = true) {
   const bm = await prisma.businessManager.findUnique({ where: { id: businessId }, include: { groups: { include: { group: true } } } });
-  if (!bm || !bm.firstSentAt) return;
+  if (!bm) return;
+  // BM que nunca disparou só muda de grupo se o problema impede o primeiro disparo (sem número, sem cartão, sem template)
+  if (!bm.firstSentAt && !SETUP_KINDS.includes(kind)) return;
   if (bm.problemIgnored === reason) return; // o cliente marcou esse problema como resolvido
   if (bm.problemKind === "MANUAL") return; // colocada à mão: só sai quando o cliente clicar em Resolvido
   const group = await problemGroup(bm.workspaceId, kind);
