@@ -108,7 +108,8 @@ export async function deployBlueprints(workspaceId?: string) {
 
       let name = dep?.currentName ?? bp.name;
       let version = dep?.version ?? 1;
-      const burned = dep?.status === "RECATEGORIZED_DELETED";
+      // Queimou o nome (virou marketing) ou o texto foi editado depois de rejeitar: sobe com o próximo nome
+      const burned = dep?.status === "RECATEGORIZED_DELETED" || dep?.status === "RETRY";
       if (burned) {
         // O nome queimou nessa WABA: tenta o próximo número (pulando nomes que já existem nela)
         if (version >= MAX_VERSIONS) continue;

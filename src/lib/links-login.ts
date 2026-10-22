@@ -41,7 +41,7 @@ export async function createLinksFunnel(workspaceId: string, groupId: string, na
   const welcome = await mk(`fzlinks_boasvindas_${suffix}`, "UTILITY", [
     {
       type: "BODY",
-      text: "Olá, {{1}}! Sua conta no gerador de links está ativa. ✅\n\nÉ por este número que vamos avisar sempre que alguém entrar na sua conta. Toque em \"Recebi\" para confirmar que está recebendo.",
+      text: "Olá, {{1}}. Seu cadastro no gerador de links foi concluído.\n\nOs avisos de acesso à sua conta serão enviados para este número. Toque em \"Recebi\" para confirmar o recebimento.",
       example: { body_text: [["Maria"]] },
     },
     { type: "BUTTONS", buttons: [{ type: "QUICK_REPLY", text: "Recebi" }] },

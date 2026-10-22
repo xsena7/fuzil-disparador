@@ -188,3 +188,34 @@ export async function updateAutoDeleteAction(form: FormData) {
   await prisma.workspace.update({ where: { id: auth.workspace.id }, data: { autoDeleteMarketing: form.get("autoDelete") === "on" } });
   revalidatePath("/templates");
 }
+
+/** Troca o texto de um template padrão e reenvia (com o próximo nome) nas BMs onde foi rejeitado ou deu erro. */
+export async function editBlueprintTextAction(id: string, _: FormState, form: FormData): Promise<FormState> {
+  const auth = await requireAuth();
+  const bp = await prisma.templateBlueprint.findFirst({ where: { id, workspaceId: auth.workspace.id } });
+  if (!bp) return { error: "Template padrão não encontrado" };
+  if (bp.category === "AUTHENTICATION") return { error: "O template de código não tem texto para editar (a Meta monta sozinha)." };
+  const text = String(form.get("body") ?? "").replace(/\r/g, "").trim();
+  if (text.length < 10) return { error: "Escreva o texto da mensagem." };
+  if (text.length > 1024) return { error: "Texto grande demais (máximo 1.024 caracteres)." };
+  const components = bp.components as unknown as TemplateComponent[];
+  const body = components.find((c) => c.type === "BODY");
+  const before = extractVars(body?.text ?? "");
+  const after = extractVars(text);
+  // As campanhas e o funil preenchem as variáveis pela posição: a quantidade tem que continuar igual
+  if (before.length !== after.length) return { error: `O texto precisa ter as mesmas variáveis de antes (${before.map((v) => `{{${v}}}`).join(", ") || "nenhuma"}).` };
+  if (/^\s*\{\{|\}\}\s*$/.test(text)) return { error: "A Meta não aceita variável no começo nem no fim do texto. Coloque alguma palavra antes/depois." };
+  const next = components.map((c) => (c.type === "BODY" ? { ...c, text } : c));
+  await prisma.templateBlueprint.update({ where: { id: bp.id }, data: { components: next as unknown as Prisma.InputJsonValue } });
+  const r = await prisma.templateDeployment.updateMany({
+    where: { blueprintId: bp.id, status: { in: ["REJECTED", "ERROR", "MARKETING_ON_CREATE"] } },
+    data: { status: "RETRY", attempts: 0, error: null },
+  });
+  void deployBlueprints(auth.workspace.id).catch((e) => console.error("[blueprints] reenviar", e));
+  revalidatePath("/templates-padrao");
+  return {
+    ok: r.count
+      ? `Texto salvo! O Fuzil está reenviando para a Meta aprovar em ${r.count} BM${r.count > 1 ? "s" : ""} (com um nome novo, porque o antigo ficou rejeitado). Onde já estava aprovado continua igual.`
+      : "Texto salvo! Ele vale para as BMs que forem entrar no grupo daqui pra frente. Onde já estava aprovado continua igual.",
+  };
+}

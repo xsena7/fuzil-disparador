@@ -3,8 +3,9 @@ import { Drawer, MetaItem } from "@/components/drawer";
 import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { Badge, Empty, LinkButton, PageHeader, type BadgeColor } from "@/components/ui";
-import { ConfirmButton } from "@/components/action-form";
-import { deleteBlueprintAction, deployNowAction, toggleBlueprintAction } from "@/app/actions/templates";
+import { ActionForm, ConfirmButton } from "@/components/action-form";
+import { Textarea } from "@/components/ui";
+import { deleteBlueprintAction, deployNowAction, editBlueprintTextAction, toggleBlueprintAction } from "@/app/actions/templates";
 import type { TComponent } from "@/lib/template-utils";
 
 export const dynamic = "force-dynamic";
@@ -18,6 +19,17 @@ const DEP: Record<string, [BadgeColor, string]> = {
   RECATEGORIZED_DELETED: ["red", "Virou marketing: criando próxima versão"],
   MARKETING_ON_CREATE: ["red", "Meta criou como marketing: mude o texto"],
   ERROR: ["red", "Erro"],
+  RETRY: ["yellow", "Reenviando com o texto novo"],
+};
+
+// Motivos de rejeição da Meta, em português
+const REASON: Record<string, string> = {
+  INVALID_FORMAT: "formato inválido",
+  TAG_CONTENT_MISMATCH: "o texto não combina com a categoria (a Meta achou que não é utilidade)",
+  PROMOTIONAL: "texto promocional",
+  SCAM: "a Meta achou que pode ser golpe",
+  ABUSIVE_CONTENT: "conteúdo não permitido",
+  INCORRECT_CATEGORY: "categoria errada",
 };
 
 export default async function BlueprintsPage() {
@@ -72,7 +84,21 @@ export default async function BlueprintsPage() {
                   <ConfirmButton action={deleteBlueprintAction.bind(null, bp.id)} variant="ghost" className="text-red-600" confirm="Remover este template padrão? (as cópias já criadas na Meta continuam lá)"><Trash2 className="size-4" /></ConfirmButton>
                 </div>
               </div>
-              <p className="mb-3 line-clamp-3 whitespace-pre-wrap text-zinc-600">{body}</p>
+              {bp.category === "AUTHENTICATION" ? (
+                <p className="mb-3 text-zinc-600">Template de código (a Meta monta o texto sozinha).</p>
+              ) : (
+                <details className="mb-3 rounded-lg border border-zinc-100" open={bad > 0}>
+                  <summary className="cursor-pointer px-3 py-2 text-sm font-medium text-zinc-700">
+                    {bad > 0 ? "Foi rejeitado? Mude o texto e reenvie" : "Texto do template"}
+                  </summary>
+                  <div className="border-t border-zinc-100 p-3">
+                    <ActionForm action={editBlueprintTextAction.bind(null, bp.id)} submit={bad > 0 ? "Salvar e reenviar onde foi rejeitado" : "Salvar texto"} variant={bad > 0 ? "primary" : "secondary"}>
+                      <Textarea name="body" defaultValue={body} rows={5} />
+                      <p className="mt-1 text-xs text-zinc-500">Mantenha as variáveis ({"{{1}}"}, {"{{2}}"}...). Evite emoji, letras maiúsculas demais e tom de oferta: a Meta rejeita.</p>
+                    </ActionForm>
+                  </div>
+                </details>
+              )}
               <div className="divide-y divide-zinc-100 rounded-lg border border-zinc-100">
                 {scope.map((w) => {
                   const dep = bp.deployments.find((d) => d.wabaId === w.id);
@@ -83,7 +109,7 @@ export default async function BlueprintsPage() {
                       {dep?.currentName && dep.currentName !== bp.name && <span className="rounded-full bg-orange-50 px-2 py-0.5 text-xs font-medium text-orange-700" title="O nome anterior foi reclassificado pela Meta nessa conta, então o Fuzil criou a próxima versão">usando {dep.currentName}</span>}
                       {dep?.submittedAt && <span className="text-xs text-zinc-500">Enviado em {sentAt(dep.submittedAt)}</span>}
                       <Badge color={color}>{label}</Badge>
-                      {dep?.error && <span className="text-xs text-red-600">{dep.error}</span>}
+                      {dep?.error && <span className="text-xs text-red-600">{dep.status === "REJECTED" ? `Motivo: ${REASON[dep.error] ?? dep.error}` : dep.error}</span>}
                     </div>
                   );
                 })}

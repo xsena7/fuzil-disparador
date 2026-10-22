@@ -2,6 +2,16 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "1.80",
+    date: "22/10/2026",
+    items: [
+      "Templates padrão: quando a Meta rejeita, dá para mudar o texto ali mesmo e reenviar. O Fuzil sobe de novo com o próximo nome só nas BMs onde foi rejeitado",
+      "O motivo da rejeição aparece em português",
+      "Gerador de links: o template de boas-vindas ganhou um texto mais simples e está sendo reenviado sozinho onde foi rejeitado",
+      "Correção: ao trocar o grupo do funil do gerador de links, o template de aviso de acesso ficava no grupo antigo. Agora acompanha o funil",
+    ],
+  },
+  {
     version: "1.79",
     date: "22/10/2026",
     items: [

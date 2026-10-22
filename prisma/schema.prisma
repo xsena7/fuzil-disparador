@@ -513,6 +513,8 @@ enum DeploymentStatus {
   // A Meta já criou como marketing: o texto é que é marketing, trocar o nome não resolve
   MARKETING_ON_CREATE
   ERROR
+  // Texto editado depois de rejeitar: sobe de novo com o próximo nome (o antigo segue rejeitado na Meta)
+  RETRY
 }
 
 model TemplateDeployment {

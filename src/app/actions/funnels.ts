@@ -115,7 +115,7 @@ export async function saveSettingsAction(_: FormState, form: FormData): Promise<
   await prisma.funnel.update({ where: { id: funnel.id }, data: { name, groupId, pixelId, domain, sendFrom, sendTo, capiTestCode, ...capi } });
   if (group.id !== funnel.groupId) {
     // Os templates do funil passam a subir nas BMs do grupo novo
-    const ids = [funnel.codeBlueprintId, funnel.doneBlueprintId, ...(funnel.steps as unknown as FunnelStep[]).flatMap((s) => (s.type === "send" ? [s.blueprintId] : []))].filter((x): x is string => Boolean(x));
+    const ids = [funnel.codeBlueprintId, funnel.doneBlueprintId, funnel.loginBlueprintId, ...(funnel.steps as unknown as FunnelStep[]).flatMap((s) => (s.type === "send" ? [s.blueprintId] : []))].filter((x): x is string => Boolean(x));
     await prisma.templateBlueprint.updateMany({ where: { id: { in: ids }, workspaceId: auth.workspace.id }, data: { groupId: group.id } });
     await prisma.campaign.updateMany({ where: { funnelId: funnel.id }, data: { groupId: group.id } });
     void deployBlueprints(auth.workspace.id).catch(() => undefined);
@@ -181,7 +181,7 @@ export async function deleteFunnelAction(id: string) {
   if (!funnel) return { error: "Funil não encontrado" };
   if (auth.role === "MEMBER") return { error: "Só donos e admins excluem funis" };
   // Os templates continuam na Meta, mas param de ser criados em BMs novas
-  const ids = [funnel.codeBlueprintId, funnel.doneBlueprintId, ...(funnel.steps as unknown as FunnelStep[]).flatMap((s) => (s.type === "send" ? [s.blueprintId] : []))].filter((x): x is string => Boolean(x));
+  const ids = [funnel.codeBlueprintId, funnel.doneBlueprintId, funnel.loginBlueprintId, ...(funnel.steps as unknown as FunnelStep[]).flatMap((s) => (s.type === "send" ? [s.blueprintId] : []))].filter((x): x is string => Boolean(x));
   await prisma.templateBlueprint.updateMany({ where: { id: { in: ids }, workspaceId: auth.workspace.id }, data: { active: false } });
   await prisma.funnel.delete({ where: { id: funnel.id } });
   revalidatePath("/aquecimento");
