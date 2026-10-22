@@ -6,19 +6,21 @@ import { Card, Field, Input } from "@/components/ui";
 import { ActionForm, ConfirmButton } from "@/components/action-form";
 import { saveCampaignPriceAction, shareReportAction, unshareReportAction } from "@/app/actions/client-report";
 import { CopyLink } from "./copy-link";
+import { Countdown } from "@/components/countdown";
 
 const brl = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
 /** Aba "Relatório do cliente": valor cobrado, Pix e o link público do relatório. */
 export async function ClientReportStep({ campaignId, workspaceId }: { campaignId: string; workspaceId: string }) {
   const [c, ws, sent] = await Promise.all([
-    prisma.campaign.findFirstOrThrow({ where: { id: campaignId, workspaceId }, select: { reportPrice: true, shareToken: true } }),
+    prisma.campaign.findFirstOrThrow({ where: { id: campaignId, workspaceId }, select: { reportPrice: true, shareToken: true, shareExpiresAt: true } }),
     prisma.workspace.findUniqueOrThrow({ where: { id: workspaceId }, select: { pixKey: true, reportPrice: true } }),
     prisma.campaignRecipient.count({ where: { campaignId, sentAt: { not: null } } }),
   ]);
   const price = c.reportPrice ?? ws.reportPrice ?? 0;
   const total = Math.round(sent * price * 100) / 100;
-  const url = c.shareToken ? `${env.appUrl()}/relatorio/p/${c.shareToken}` : null;
+  const alive = c.shareToken && c.shareExpiresAt && c.shareExpiresAt > new Date();
+  const url = alive ? `${env.appUrl()}/relatorio/p/${c.shareToken}` : null;
 
   return (
     <div className="max-w-3xl space-y-5">
@@ -47,14 +49,20 @@ export async function ClientReportStep({ campaignId, workspaceId }: { campaignId
 
       <Card className="p-5">
         <div className="mb-1 flex items-center gap-2 font-semibold"><Link2 className="size-4 text-brand-500" /> Link para o cliente</div>
-        <p className="mb-4 text-sm text-zinc-500">Ele abre o relatório sem precisar de login e vê sempre os números atualizados. Os nomes e números das suas BMs não aparecem para ele.</p>
+        <p className="mb-4 text-sm text-zinc-500">Ele abre o relatório sem precisar de login e vê os números atualizando ao vivo. O link fica no ar por 12 horas e depois é apagado sozinho. Os nomes e números das suas BMs não aparecem para ele.</p>
         {url ? (
           <div className="space-y-3">
             <CopyLink url={url} />
+            <p className="flex items-center gap-1.5 text-sm text-zinc-600">
+              <span className="size-2 animate-pulse rounded-full bg-emerald-500" /> No ar · sai do ar em <b className="font-semibold text-zinc-900"><Countdown to={c.shareExpiresAt!.toISOString()} done="instantes" /></b>
+            </p>
             <div className="flex flex-wrap gap-2">
               <a href={url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm font-medium hover:bg-zinc-50">
                 <ExternalLink className="size-4" /> Abrir como o cliente vê
               </a>
+              <ConfirmButton action={shareReportAction.bind(null, campaignId)} variant="secondary">
+                Mais 12 horas
+              </ConfirmButton>
               <ConfirmButton action={unshareReportAction.bind(null, campaignId)} variant="ghost" className="text-red-600" confirm={"Desligar o link do cliente?\nQuem tiver o endereço não consegue mais abrir o relatório. Se ligar de novo, o link muda."}>
                 Desligar link
               </ConfirmButton>
@@ -62,7 +70,7 @@ export async function ClientReportStep({ campaignId, workspaceId }: { campaignId
           </div>
         ) : (
           <ConfirmButton action={shareReportAction.bind(null, campaignId)} variant="primary">
-            <Link2 className="size-4" /> Gerar link do cliente
+            <Link2 className="size-4" /> Gerar link do cliente (12 horas)
           </ConfirmButton>
         )}
       </Card>

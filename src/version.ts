@@ -2,6 +2,14 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "1.93",
+    date: "22/10/2026",
+    items: [
+      "Link do relatório do cliente: atualiza ao vivo e fica no ar por 12 horas. Depois disso sai do ar e é apagado sozinho",
+      "O relatório mostra \"Ao vivo · sai do ar em\" com contagem regressiva. Na aba Relatório do cliente dá para dar mais 12 horas",
+    ],
+  },
+  {
     version: "1.92",
     date: "22/10/2026",
     items: [

@@ -58,6 +58,8 @@ async function housekeeping() {
   for (const c of runningCampaigns) if (!running.has(c.id)) await maybeComplete(c.id);
   // Sessões vencidas e eventos de webhook antigos (já processados)
   await prisma.session.deleteMany({ where: { expiresAt: { lt: new Date() } } });
+  // Link do relatório do cliente passou das 12h: sai do ar e é apagado
+  await prisma.campaign.updateMany({ where: { shareExpiresAt: { lt: new Date() } }, data: { shareToken: null, shareExpiresAt: null } });
   await prisma.webhookEvent.deleteMany({ where: { createdAt: { lt: new Date(Date.now() - 3 * 86400_000) } } });
   // Chat: conversas que são só disparo (cliente nunca respondeu) somem depois de 45 dias
   await prisma.conversation.deleteMany({ where: { hasInbound: false, lastMessageAt: { lt: new Date(Date.now() - 45 * 86400_000) } } });

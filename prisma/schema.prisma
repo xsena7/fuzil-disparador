@@ -380,6 +380,8 @@ model Campaign {
   // Relatório do cliente: valor por mensagem só desta campanha (vazio = o padrão da conta) e link público
   reportPrice        Float?
   shareToken         String?             @unique
+  // O link do cliente some sozinho depois de 12h
+  shareExpiresAt     DateTime?
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
   workspace          Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)

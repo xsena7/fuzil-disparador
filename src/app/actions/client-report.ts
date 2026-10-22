@@ -47,18 +47,26 @@ export async function saveCampaignPriceAction(id: string, _: FormState, form: Fo
   return { ok: price === null ? "Essa campanha volta a usar o valor padrão das Configurações." : "Valor salvo! O relatório do cliente já mostra o total novo." };
 }
 
-/** Liga o link público do relatório (o cliente abre sem login). */
+const LINK_HOURS = 12;
+
+/** Liga o link público do relatório (o cliente abre sem login). Fica no ar 12h e depois some sozinho. */
 export async function shareReportAction(id: string): Promise<{ ok?: string; error?: string }> {
   const c = await ownCampaign(id);
-  if (!c.shareToken) await prisma.campaign.update({ where: { id: c.id }, data: { shareToken: randomBytes(16).toString("base64url") } });
+  const alive = c.shareToken && c.shareExpiresAt && c.shareExpiresAt > new Date();
+  await prisma.campaign.update({
+    where: { id: c.id },
+    data: alive
+      ? { shareExpiresAt: new Date(Date.now() + LINK_HOURS * 3600_000) }
+      : { shareToken: randomBytes(16).toString("base64url"), shareExpiresAt: new Date(Date.now() + LINK_HOURS * 3600_000) },
+  });
   revalidatePath(`/campanhas/${c.id}`);
-  return { ok: "Link do cliente ligado! Copie e mande para ele." };
+  return { ok: alive ? `Pronto! O link fica no ar por mais ${LINK_HOURS} horas.` : `Link do cliente ligado! Ele fica no ar por ${LINK_HOURS} horas. Copie e mande para ele.` };
 }
 
 /** Desliga o link: quem tiver o endereço antigo vê "relatório não encontrado". */
 export async function unshareReportAction(id: string): Promise<{ ok?: string; error?: string }> {
   const c = await ownCampaign(id);
-  await prisma.campaign.update({ where: { id: c.id }, data: { shareToken: null } });
+  await prisma.campaign.update({ where: { id: c.id }, data: { shareToken: null, shareExpiresAt: null } });
   revalidatePath(`/campanhas/${c.id}`);
   return { ok: "Link desligado. O endereço antigo não abre mais." };
 }

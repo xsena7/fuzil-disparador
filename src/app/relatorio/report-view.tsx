@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { campaignMetrics, duration, pct } from "@/lib/campaign-metrics";
 import { Logo } from "@/components/brand";
 import { AutoRefresh } from "@/app/(app)/campanhas/[id]/auto-refresh";
+import { Countdown } from "@/components/countdown";
 import QRCode from "qrcode";
 import { pixPayload } from "@/lib/pix";
 import { Funnel, MiniBar, OutcomeBar, PixCopy, PrintButton, Ring } from "./charts";
@@ -20,7 +21,7 @@ const brl = (v: number) => v.toLocaleString("pt-BR", { style: "currency", curren
  * Relatório da campanha: interativo na tela e pronto para salvar em PDF.
  * `publicView` = link do cliente (sem login): esconde o grupo de BM e o botão Voltar.
  */
-export async function ReportView({ id, workspaceId, publicView = false }: { id: string; workspaceId?: string; publicView?: boolean }) {
+export async function ReportView({ id, workspaceId, publicView = false, expiresAt }: { id: string; workspaceId?: string; publicView?: boolean; expiresAt?: Date | null }) {
   const campaign = await prisma.campaign.findFirst({
     where: { id, ...(workspaceId ? { workspaceId } : {}) },
     include: { group: { select: { name: true, system: true } }, workspace: { select: { pixKey: true, pixName: true, pixCity: true, reportPrice: true } } },
@@ -38,6 +39,8 @@ export async function ReportView({ id, workspaceId, publicView = false }: { id: 
   const maxErr = Math.max(1, ...m.errors.map((e) => e.count));
   const maxReply = Math.max(1, ...m.topReplies.map((r) => r.count));
 
+  // Link do cliente ligado: mostra quanto tempo ele ainda fica no ar
+  const linkExp = (expiresAt ?? (campaign.shareToken && campaign.shareExpiresAt && campaign.shareExpiresAt > new Date() ? campaign.shareExpiresAt : null));
   // Cobrança: enviadas × valor por mensagem (o da campanha ou o padrão da conta) e o Pix com o valor
   const ws = campaign.workspace;
   const price = campaign.reportPrice ?? ws.reportPrice ?? 0;
@@ -47,7 +50,8 @@ export async function ReportView({ id, workspaceId, publicView = false }: { id: 
 
   return (
     <div className="min-h-screen bg-zinc-50 text-zinc-800 print:bg-white">
-      {campaign.status === "RUNNING" && <AutoRefresh every={4000} />}
+      {/* Ao vivo: rápido enquanto envia; no link do cliente continua atualizando (leituras, cliques, respostas) */}
+      {campaign.status === "RUNNING" ? <AutoRefresh every={4000} /> : publicView && <AutoRefresh every={15000} />}
       <style>{"@media print { @page { margin: 12mm } .report-card { break-inside: avoid } }"}</style>
 
       {/* Topo escuro com a marca e o número principal */}
@@ -70,6 +74,11 @@ export async function ReportView({ id, workspaceId, publicView = false }: { id: 
                   <span className={`size-1.5 rounded-full ${campaign.status === "RUNNING" ? "animate-pulse bg-emerald-400" : campaign.status === "COMPLETED" ? "bg-emerald-400" : "bg-amber-400"}`} />
                   {STATUS[campaign.status] ?? campaign.status}
                 </span>
+                {linkExp && (
+                  <span className="flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1 font-medium text-orange-200 print:hidden">
+                    <span className="size-1.5 animate-pulse rounded-full bg-emerald-400" /> Ao vivo · sai do ar em <Countdown to={linkExp.toISOString()} done="instantes" />
+                  </span>
+                )}
               </div>
               <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">{campaign.name}</h1>
               <dl className="mt-5 grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-4">
