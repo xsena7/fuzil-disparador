@@ -190,6 +190,7 @@ export default async function GroupsPage() {
           );
         })}
 
+        <div data-tour="new-group">
         <Drawer title={<span className="flex items-center gap-2"><Plus className="size-4" /> Novo grupo</span>} open={regular.length === 0}>
           <ActionForm action={saveGroupAction} submit="Criar grupo">
             <div className="mb-4 grid gap-4 md:grid-cols-2">
@@ -199,6 +200,7 @@ export default async function GroupsPage() {
             {bmCheckboxes([])}
           </ActionForm>
         </Drawer>
+        </div>
       </div>
     </div>
   );

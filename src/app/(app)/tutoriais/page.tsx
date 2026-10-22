@@ -1,9 +1,10 @@
 import Link from "next/link";
-import { ArrowRight, Clock, GraduationCap } from "lucide-react";
+import { ArrowRight, Clock, GraduationCap, Rocket } from "lucide-react";
 import { requireAuth } from "@/lib/auth";
 import { TUTORIALS } from "@/lib/tutorials";
 import { PixelBug } from "@/components/pixel-bug";
 import { TUTORIAL_ICONS } from "./icons";
+import { StartTourButton } from "@/components/tour";
 
 export default async function TutorialsPage() {
   await requireAuth();
@@ -26,6 +27,9 @@ export default async function TutorialsPage() {
             </span>
             <ArrowRight className="ml-2 size-4" />
           </Link>
+          <StartTourButton className="mt-3 ml-0 inline-flex items-center gap-2 rounded-2xl bg-brand-gradient px-4 py-3 font-semibold text-white shadow-lg shadow-orange-500/30 transition hover:brightness-110 sm:ml-3">
+            <Rocket className="size-4" /> Fazer o tour guiado
+          </StartTourButton>
         </div>
       </div>
 

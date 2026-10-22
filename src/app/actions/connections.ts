@@ -12,6 +12,7 @@ import { meta } from "@/lib/meta";
 import { env } from "@/lib/env";
 import type { FormState } from "./auth";
 import { resetBmSecrets } from "@/lib/webhook";
+import { defaultAppSecret } from "@/lib/onboarding";
 
 const errMsg = friendlyError;
 
@@ -28,10 +29,7 @@ export async function connectManualAction(_: FormState, form: FormData): Promise
     await connectWaba({ workspaceId: auth.workspace.id, wabaId, accessTokenEnc: token ? encrypt(token) : null, connectionType: "MANUAL" });
     // Sem chave no formulário: usa a chave secreta padrão da conta (se o admin cadastrou)
     let appSecret = String(form.get("appSecret") ?? "").trim();
-    if (!appSecret) {
-      const ws = await prisma.workspace.findUnique({ where: { id: auth.workspace.id }, select: { defaultAppSecretEnc: true } });
-      if (ws?.defaultAppSecretEnc) appSecret = decrypt(ws.defaultAppSecretEnc);
-    }
+    if (!appSecret) appSecret = (await defaultAppSecret(auth.workspace.id)) ?? "";
     if (/^[a-f0-9]{32}$/i.test(appSecret)) {
       await prisma.whatsAppAccount.updateMany({ where: { workspaceId: auth.workspace.id, wabaId }, data: { appSecretEnc: encrypt(appSecret) } });
       resetBmSecrets();

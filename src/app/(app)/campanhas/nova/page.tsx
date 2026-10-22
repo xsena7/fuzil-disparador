@@ -6,7 +6,7 @@ export default function NewCampaignPage() {
   return (
     <div className="mx-auto max-w-xl">
       <PageHeader title="Nova campanha" />
-      <Card className="p-5">
+      <Card className="p-5" data-tour="new-campaign">
         <ActionForm action={createCampaignAction} submit="Continuar">
           <Field label="Nome da campanha" hint="Ex.: FELIPE 07/10 16H"><Input name="name" required autoFocus /></Field>
           <div className="mt-4">

@@ -97,6 +97,7 @@ export function Sidebar({ workspace, user, unread, chatUnread = 0, balance, isSu
                   <Link
                     key={href}
                     href={href}
+                    data-tour={href === "/conexoes" ? "nav-conexoes" : undefined}
                     className={clsx(
                       "group relative flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition",
                       active ? "bg-white/10 font-medium text-white" : "text-zinc-400 hover:bg-white/5 hover:text-zinc-100",

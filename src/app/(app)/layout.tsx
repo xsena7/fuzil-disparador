@@ -9,13 +9,18 @@ import { BugReportButton } from "@/components/bug-report";
 import { Toaster } from "@/components/toast";
 import { ConfirmHost } from "@/components/confirm-dialog";
 import { Logo } from "@/components/brand";
+import { Tour } from "@/components/tour";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const auth = await requireAuth();
-  const [unread, chatUnread] = await Promise.all([
+  const [unread, chatUnread, me, bms] = await Promise.all([
     prisma.alert.count({ where: { workspaceId: auth.workspace.id, readAt: null, severity: { not: "INFO" } } }),
     prisma.conversation.count({ where: { workspaceId: auth.workspace.id, unread: { gt: 0 } } }),
+    prisma.user.findUnique({ where: { id: auth.user.id }, select: { tourState: true } }),
+    prisma.businessManager.count({ where: { workspaceId: auth.workspace.id } }),
   ]);
+  // Conta nova (sem BM) que ainda não respondeu o convite: pergunta se quer o tour
+  const offerTour = !auth.inspecting && !me?.tourState && bms === 0;
   return (
     <div className="flex min-h-screen">
       <Sidebar workspace={auth.workspace.name} user={auth.user.email} unread={unread} chatUnread={chatUnread} balance={auth.workspace.creditBalance} isSuperAdmin={auth.user.isSuperAdmin} />
@@ -44,6 +49,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <AlertToaster />
       <Toaster />
       <ConfirmHost />
+      <Tour offer={offerTour} />
       <CursorGlow />
       <BugReportButton />
     </div>

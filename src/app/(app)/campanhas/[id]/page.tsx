@@ -68,7 +68,7 @@ export default async function CampaignPage({ params, searchParams }: { params: P
         </div>
       </div>
       <div className="flex flex-col md:flex-row">
-        <nav className="flex shrink-0 gap-1 overflow-x-auto border-b border-zinc-200/70 p-2 md:block md:w-52 md:space-y-1 md:border-b-0 md:border-r md:p-4">
+        <nav data-tour="campaign-steps" className="flex shrink-0 gap-1 overflow-x-auto border-b border-zinc-200/70 p-2 md:block md:w-52 md:space-y-1 md:border-b-0 md:border-r md:p-4">
           {STEPS.map((s, i) => (
             <Link
               key={s.key}

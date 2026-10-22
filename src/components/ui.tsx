@@ -27,7 +27,7 @@ export function Card({ className, ...props }: ComponentProps<"div">) {
 
 export function PageHeader({ title, description, actions }: { title: string; description?: ReactNode; actions?: ReactNode }) {
   return (
-    <div className="mb-8 flex flex-wrap items-end justify-between gap-4 animate-fade-up">
+    <div data-tour="page-header" className="mb-8 flex flex-wrap items-end justify-between gap-4 animate-fade-up">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">{title}</h1>
         {description && <p className="mt-1.5 max-w-3xl text-zinc-500">{description}</p>}

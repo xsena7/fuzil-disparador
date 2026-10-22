@@ -18,6 +18,8 @@ model User {
   passwordHash String
   isSuperAdmin Boolean         @default(false)
   lastLoginAt  DateTime?
+  // Tour de boas-vindas: null = ainda não perguntou; DONE = fez; SKIPPED = não quis
+  tourState    String?
   createdAt    DateTime        @default(now())
   memberships  Membership[]
   sessions     Session[]

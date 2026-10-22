@@ -2,6 +2,16 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.06",
+    date: "22/10/2026",
+    items: [
+      "Tour guiado para contas novas: o Fuzil pergunta se a pessoa quer o tour e mostra, destacando cada parte da tela, do conectar a BM até o primeiro disparo. Dá para refazer em Tutoriais",
+      "Conexões: passo a passo para conectar a BM (pedir acesso ao app do Fuzil, criar o usuário fuzil-api, dar acesso, gerar o token e pegar o ID da WABA), com botão de copiar o ID do app",
+      "Clientes têm o botão verde \"Pedir aprovação no WhatsApp\" para a gente aprovar o acesso ao app rapidinho",
+      "A chave secreta do app do Fuzil entra sozinha também nas BMs que os clientes conectam",
+    ],
+  },
+  {
     version: "2.05",
     date: "22/10/2026",
     items: ["Grupos: a bolinha na frente do nome agora é só a cor que você escolheu. Se o grupo estiver sem número ativo ou sem limite, aparece um aviso escrito do lado"],

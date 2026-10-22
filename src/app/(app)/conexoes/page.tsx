@@ -15,6 +15,8 @@ import { PHONE_REMOVED } from "@/lib/sync";
 import { PasswordInput } from "@/components/password-input";
 import { StatusDot } from "@/components/drawer";
 import { TestWaba } from "./test-waba";
+import { ConnectGuide } from "./connect-guide";
+import { FUZIL_APP_ID, defaultAppSecret, supportWhatsAppLink } from "@/lib/onboarding";
 import {
   connectManualAction,
   deleteWabaAction,
@@ -36,6 +38,8 @@ export default async function ConnectionsPage() {
   const auth = await requireAuth();
   const wsKeys = await prisma.workspace.findUnique({ where: { id: auth.workspace.id }, select: { defaultAppSecretEnc: true } });
   const hasDefaultSecret = Boolean(wsKeys?.defaultAppSecretEnc);
+  // Cliente sem chave própria: a chave padrão do app do Fuzil entra sozinha (campo some)
+  const usesDefaultSecret = hasDefaultSecret || Boolean(await defaultAppSecret(auth.workspace.id));
   const businesses = await prisma.businessManager.findMany({
     where: { workspaceId: auth.workspace.id },
     include: {
@@ -63,9 +67,14 @@ export default async function ConnectionsPage() {
       />
 
       <h2 className="mb-4 text-base font-semibold">Nova conexão</h2>
+      <ConnectGuide
+        appId={FUZIL_APP_ID}
+        open={businesses.length === 0}
+        whatsappUrl={auth.user.isSuperAdmin ? null : supportWhatsAppLink(`Oi! Pedi acesso ao app do Fuzil (ID ${FUZIL_APP_ID}) na minha BM. Pode aprovar? Conta: ${auth.workspace.name}`)}
+      />
       <EmbeddedSignup appId={env.metaAppId()} configId={env.metaConfigId()} graphVersion={env.metaGraphVersion()} />
 
-      <Card className="mt-4 p-5">
+      <Card className="mt-4 p-5" data-tour="connect-form">
         <div className="font-semibold">Configuração manual</div>
         <p className="mt-1 mb-4 text-zinc-500">
           Conecte uma WABA pelo ID com o token do usuário do sistema da sua BM (whatsapp_business_management e whatsapp_business_messaging).
@@ -76,13 +85,13 @@ export default async function ConnectionsPage() {
             <Field label="Token de acesso" hint="System User token com whatsapp_business_management e whatsapp_business_messaging">
               <PasswordInput name="token" placeholder="EAAG..." autoComplete="new-password" data-lpignore="true" data-1p-ignore="true" />
             </Field>
-            {!hasDefaultSecret && (
+            {!usesDefaultSecret && (
               <Field label="Chave secreta do app (opcional)" hint="Configurações do app → Básico. Sem ela, as respostas dessa BM não aparecem no Chat">
                 <PasswordInput name="appSecret" autoComplete="new-password" data-lpignore="true" data-1p-ignore="true" />
               </Field>
             )}
           </div>
-          {hasDefaultSecret && <p className="mt-3 text-xs font-medium text-emerald-700">✓ A chave secreta padrão entra sozinha nessa conexão.</p>}
+          {usesDefaultSecret && <p className="mt-3 text-xs font-medium text-emerald-700">✓ A chave secreta padrão entra sozinha nessa conexão.</p>}
         </ActionForm>
       </Card>
 
@@ -113,6 +122,7 @@ export default async function ConnectionsPage() {
         </details>
       )}
 
+      <div data-tour="connections">
       <h2 className="mt-10 mb-4 text-base font-semibold">Suas conexões</h2>
       {businesses.length === 0 && <Empty>Nenhuma BM conectada ainda. Use uma das opções acima.</Empty>}
 
@@ -310,6 +320,7 @@ export default async function ConnectionsPage() {
           </details>
           );
         })}
+      </div>
       </div>
     </div>
   );
