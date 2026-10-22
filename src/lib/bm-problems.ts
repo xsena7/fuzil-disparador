@@ -7,14 +7,34 @@ import { createAlert } from "./alerts";
  * Só acontece depois do primeiro disparo da BM (uma BM recém-conectada fica onde o cliente colocou).
  */
 export const PROBLEMS_GROUP = "PROBLEMS";
-const GROUP_NAME = "⚠️ BMs com problema";
 
-export async function problemGroup(workspaceId: string) {
-  const g = await prisma.bmGroup.findFirst({ where: { workspaceId, system: PROBLEMS_GROUP } });
+/** Um grupo automático por tipo de problema. O "BMs com problema" fica para o que não se encaixa em nenhum. */
+export const PROBLEM_KINDS = {
+  BANNED: { system: "PROBLEMS_BANNED", name: "🚫 Banidas", color: "red", description: "Número ou conta banida, bloqueada ou restrita pela Meta." },
+  PAYMENT: { system: "PROBLEMS_PAYMENT", name: "💳 Problemas de pagamento", color: "amber", description: "Sem cartão ou com erro no pagamento da conta do WhatsApp." },
+  TEMPLATE: { system: "PROBLEMS_TEMPLATE", name: "📝 Template em análise", color: "sky", description: "Nenhum template de utilidade aprovado (em análise ou faltando)." },
+  QUALITY: { system: "PROBLEMS_QUALITY", name: "📉 Número com qualidade baixa", color: "pink", description: "Qualidade vermelha ou número sinalizado pela Meta." },
+  UNKNOWN: { system: PROBLEMS_GROUP, name: "⚠️ BMs com problema", color: "black", description: "Problemas que o Fuzil não conseguiu identificar (ou colocadas aqui por você)." },
+} as const;
+export type ProblemKind = keyof typeof PROBLEM_KINDS;
+
+export const isProblemSystem = (system?: string | null) => Boolean(system && system.startsWith(PROBLEMS_GROUP));
+const kindOfStored = (k?: string | null): ProblemKind => (k && k in PROBLEM_KINDS ? (k as ProblemKind) : "UNKNOWN");
+
+export async function problemGroup(workspaceId: string, kind: ProblemKind = "UNKNOWN") {
+  const def = PROBLEM_KINDS[kind];
+  const g = await prisma.bmGroup.findFirst({ where: { workspaceId, system: def.system } });
   if (g) return g;
-  return prisma.bmGroup.create({
-    data: { workspaceId, system: PROBLEMS_GROUP, name: GROUP_NAME, description: "O Fuzil coloca aqui sozinho as BMs que deram problema. Elas não entram em campanha." },
-  });
+  return prisma.bmGroup.create({ data: { workspaceId, system: def.system, name: def.name, color: def.color, description: def.description } });
+}
+
+/** Tipo do problema pelo código de erro da Meta (envio ou webhook). */
+export function kindForCode(code: number | null | undefined): ProblemKind {
+  if (code === 131042) return "PAYMENT";
+  if (code === 131031 || code === 368) return "BANNED";
+  if (code === 131048 || code === 131049) return "QUALITY";
+  if (code !== null && code !== undefined && code >= 132000 && code < 133000) return "TEMPLATE";
+  return "UNKNOWN";
 }
 
 /** Como resolver, a partir do código de erro da Meta ou do tipo de problema. */
@@ -32,13 +52,30 @@ export function problemFix(code: number | null | undefined, kind?: string): stri
   return "Veja o detalhe em Conexões e no WhatsApp Manager dessa conta.";
 }
 
-/** Move a BM para "BMs com problema" (se ainda não estiver lá e já tiver disparado alguma vez). */
-export async function flagBusinessProblem(businessId: string, reason: string, fix: string) {
+/**
+ * Move a BM para o grupo do tipo de problema (se já tiver disparado alguma vez).
+ * Se ela já está num grupo de problema e o tipo mudou, troca de grupo sozinha.
+ */
+export async function flagBusinessProblem(businessId: string, reason: string, fix: string, kind: ProblemKind = "UNKNOWN", fromSend = true) {
   const bm = await prisma.businessManager.findUnique({ where: { id: businessId }, include: { groups: { include: { group: true } } } });
   if (!bm || !bm.firstSentAt) return;
-  if (bm.problemAt) return; // já está no grupo de problema
   if (bm.problemIgnored === reason) return; // o cliente marcou esse problema como resolvido
-  const group = await problemGroup(bm.workspaceId);
+  if (bm.problemKind === "MANUAL") return; // colocada à mão: só sai quando o cliente clicar em Resolvido
+  const group = await problemGroup(bm.workspaceId, kind);
+  if (bm.problemAt) {
+    // Já está num grupo de problema: só troca se o tipo mudou
+    if (kindOfStored(bm.problemKind) === kind) {
+      if (bm.problemReason !== reason) await prisma.businessManager.update({ where: { id: businessId }, data: { problemReason: reason, problemFix: fix } });
+      return;
+    }
+    await prisma.$transaction([
+      prisma.bmGroupMember.deleteMany({ where: { businessId, group: { system: { startsWith: PROBLEMS_GROUP } } } }),
+      prisma.bmGroupMember.create({ data: { groupId: group.id, businessId } }),
+      prisma.businessManager.update({ where: { id: businessId }, data: { problemReason: reason, problemFix: fix, problemKind: kind, problemFromSend: fromSend, problemAt: new Date() } }),
+    ]);
+    await createAlert({ workspaceId: bm.workspaceId, type: "BM_PROBLEM", severity: "WARNING", title: `${bm.name} foi para "${group.name}"`, message: `${reason}. Como resolver: ${fix}` });
+    return;
+  }
   const prev = bm.groups.filter((g) => !g.group.system).map((g) => g.groupId);
   await prisma.$transaction([
     prisma.bmGroupMember.deleteMany({ where: { businessId, groupId: { in: prev } } }),
@@ -49,14 +86,14 @@ export async function flagBusinessProblem(businessId: string, reason: string, fi
     }),
     prisma.businessManager.update({
       where: { id: businessId },
-      data: { problemReason: reason, problemFix: fix, problemAt: new Date(), problemPrevGroups: prev },
+      data: { problemReason: reason, problemFix: fix, problemAt: new Date(), problemPrevGroups: prev, problemKind: kind, problemFromSend: fromSend },
     }),
   ]);
   await createAlert({
     workspaceId: bm.workspaceId,
     type: "BM_PROBLEM",
     severity: "CRITICAL",
-    title: `${bm.name} foi para "BMs com problema"`,
+    title: `${bm.name} foi para "${group.name}"`,
     message: `${reason}. Ela saiu dos grupos de disparo. Como resolver: ${fix}`,
   });
 }
@@ -66,18 +103,17 @@ export async function clearIgnoredProblem(businessId: string) {
   await prisma.businessManager.updateMany({ where: { id: businessId, problemIgnored: { not: null }, problemAt: null }, data: { problemIgnored: null } });
 }
 
-/** "Resolvido": devolve a BM aos grupos em que estava. */
-export async function restoreBusiness(businessId: string, workspaceId: string) {
+/** "Resolvido" (ou o problema sumiu): devolve a BM aos grupos em que estava. `remember` = não avisar de novo do mesmo problema. */
+export async function restoreBusiness(businessId: string, workspaceId: string, remember = true) {
   const bm = await prisma.businessManager.findFirst({ where: { id: businessId, workspaceId } });
   if (!bm) return;
-  const group = await problemGroup(workspaceId);
   const prev = await prisma.bmGroup.findMany({ where: { id: { in: bm.problemPrevGroups }, workspaceId, system: null }, select: { id: true } });
   await prisma.$transaction([
-    prisma.bmGroupMember.deleteMany({ where: { businessId, groupId: group.id } }),
+    prisma.bmGroupMember.deleteMany({ where: { businessId, group: { system: { startsWith: PROBLEMS_GROUP } } } }),
     prisma.bmGroupMember.createMany({ data: prev.map((g) => ({ groupId: g.id, businessId })), skipDuplicates: true }),
     prisma.businessManager.update({
       where: { id: businessId },
-      data: { problemIgnored: bm.problemReason, problemReason: null, problemFix: null, problemAt: null, problemPrevGroups: [] },
+      data: { problemIgnored: remember ? bm.problemReason : null, problemReason: null, problemFix: null, problemAt: null, problemPrevGroups: [], problemKind: null, problemFromSend: false },
     }),
   ]);
 }
@@ -98,6 +134,7 @@ export async function checkBusinessAfterSync(wabaRecordId: string) {
   if (!waba) return;
   let reason: string | null = null;
   let fix = "";
+  let kind: ProblemKind = "UNKNOWN";
   const health = (Array.isArray(waba.healthIssues) ? waba.healthIssues : []) as Array<{ text?: string; fix?: string }>;
   // Só erro de acesso de verdade (token/permissão); queda de rede ou instabilidade da Meta não conta
   // Só erro de acesso de verdade (token/permissão/app bloqueado); queda de rede ou instabilidade da Meta não conta
@@ -114,8 +151,14 @@ export async function checkBusinessAfterSync(wabaRecordId: string) {
     reason = `O Fuzil não consegue acessar a WABA ${waba.name}`;
     fix = problemFix(null, "ACCESS");
   } else if (waba.status === "BLOCKED") {
+    const payment = /pag|payment/i.test(health[0]?.text ?? "");
     reason = `A Meta bloqueou o envio na WABA ${waba.name}${health[0]?.text ? `: ${health[0].text}` : ""}`;
-    fix = health[0]?.fix || problemFix(null, /pag|payment/i.test(health[0]?.text ?? "") ? "PAYMENT" : "BANNED");
+    fix = health[0]?.fix || problemFix(null, payment ? "PAYMENT" : "BANNED");
+    kind = payment ? "PAYMENT" : "BANNED";
+  } else if (waba.hasPaymentMethod === false) {
+    reason = `Sem forma de pagamento (cartão) na WABA ${waba.name}`;
+    fix = problemFix(null, "PAYMENT");
+    kind = "PAYMENT";
   } else if (waba.reviewStatus === "REJECTED") {
     reason = `WABA ${waba.name} rejeitada na análise da Meta`;
     fix = problemFix(null, "REVIEW");
@@ -125,19 +168,47 @@ export async function checkBusinessAfterSync(wabaRecordId: string) {
     if (bad) {
       reason = `${BAD_PHONE[bad.status!].label}: ${bad.displayPhoneNumber}`;
       fix = problemFix(null, BAD_PHONE[bad.status!].kind);
+      const k = BAD_PHONE[bad.status!].kind;
+      kind = k === "QUALITY" ? "QUALITY" : k === "REGISTER" ? "UNKNOWN" : "BANNED";
     } else if (red) {
       reason = `Qualidade vermelha no número ${red.displayPhoneNumber}`;
       fix = problemFix(null, "QUALITY");
+      kind = "QUALITY";
+    } else {
+      // Sem nenhum template de utilidade aprovado na BM (em análise ou faltando)
+      const [approved, pending] = await Promise.all([
+        prisma.template.count({ where: { waba: { businessId: waba.businessId }, status: "APPROVED", category: "UTILITY" } }),
+        prisma.template.count({ where: { waba: { businessId: waba.businessId }, status: "PENDING" } }),
+      ]);
+      if (!approved) {
+        reason = pending ? `${pending} template(s) em análise na Meta, nenhum de utilidade aprovado ainda` : "Nenhum template de utilidade aprovado";
+        fix = pending ? "Espere a Meta aprovar (costuma levar de minutos a 24h). A BM volta sozinha para o grupo quando aprovar." : "Crie um template de utilidade (ou ative um Template padrão para essa BM).";
+        kind = "TEMPLATE";
+      }
     }
   }
-  // Foi para "BMs com problema" por falta de acesso e o acesso voltou: volta sozinha para os grupos
-  if (!accessLost) {
-    const bm = await prisma.businessManager.findUnique({ where: { id: waba.businessId }, select: { problemAt: true, problemReason: true, workspaceId: true } });
-    if (bm?.problemAt && bm.problemReason?.startsWith("O Fuzil não consegue acessar a WABA")) {
-      await restoreBusiness(waba.businessId, bm.workspaceId);
-      await prisma.businessManager.update({ where: { id: waba.businessId }, data: { problemIgnored: null } });
-    }
+  // O problema sumiu: volta sozinha para os grupos em que estava.
+  // Se veio de um envio (ex.: pagamento recusado), espera algumas horas sem o problema antes de voltar.
+  if (!reason && !waba.lastSyncError) {
+    const bm = await prisma.businessManager.findUnique({ where: { id: waba.businessId }, select: { problemAt: true, problemKind: true, problemFromSend: true, workspaceId: true } });
+    const settled = bm?.problemAt && (!bm.problemFromSend || Date.now() - bm.problemAt.getTime() > 6 * 3600_000);
+    // Só volta se nenhuma outra conta do WhatsApp dessa BM ainda tem problema
+    const others = settled
+      ? await prisma.whatsAppAccount.count({
+          where: {
+            businessId: waba.businessId,
+            id: { not: waba.id },
+            OR: [
+              { lastSyncError: { not: null } },
+              { status: "BLOCKED" },
+              { hasPaymentMethod: false },
+              { phones: { some: { invalidReason: null, OR: [{ qualityRating: "RED" }, { status: { in: Object.keys(BAD_PHONE) } }] } } },
+            ],
+          },
+        })
+      : 1;
+    if (bm?.problemAt && bm.problemKind !== "MANUAL" && settled && others === 0) await restoreBusiness(waba.businessId, bm.workspaceId, false);
   }
-  if (reason) await flagBusinessProblem(waba.businessId, reason, fix);
+  if (reason) await flagBusinessProblem(waba.businessId, reason, fix, accessLost ? "UNKNOWN" : kind, false);
   else if (!waba.lastSyncError) await clearIgnoredProblem(waba.businessId);
 }

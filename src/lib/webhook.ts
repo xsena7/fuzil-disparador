@@ -8,7 +8,7 @@ import { createAlert } from "./alerts";
 import { onCategoryChanged, onStatusChanged, syncWaba } from "./sync";
 import { metaErrorLabel, SENDER_FATAL_CODES } from "./meta-errors";
 import { addCredits } from "./credits";
-import { flagBusinessProblem, problemFix } from "./bm-problems";
+import { flagBusinessProblem, kindForCode, problemFix } from "./bm-problems";
 import { canonicalWaId, formatPhone } from "./phone";
 import { applyChatStatus, ingestInbound, maybeAutoReply, sendChatMessage } from "./chat";
 
@@ -135,7 +135,7 @@ async function rerouteFailed(
     if (sender) {
       const display = formatPhone(sender.displayPhoneNumber.replace(/\D/g, ""));
       const reason = `${metaErrorLabel(code)} (código ${code})${err?.error_data?.details ? ` — ${err.error_data.details}` : ""}`;
-      await flagBusinessProblem(sender.waba.businessId, `${display}: ${reason}`, problemFix(code)).catch(() => undefined);
+      await flagBusinessProblem(sender.waba.businessId, `${display}: ${reason}`, problemFix(code), kindForCode(code)).catch(() => undefined);
       await createAlert({
         workspaceId: campaign.workspaceId,
         type: "SENDER_REMOVED",

@@ -2,6 +2,15 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.04",
+    date: "22/10/2026",
+    items: [
+      "Grupos de problema separados por tipo, cada um com sua cor: 🚫 Banidas (vermelho), 💳 Problemas de pagamento (amarelo), 📝 Template em análise (azul), 📉 Número com qualidade baixa (rosa) e ⚠️ BMs com problema (preto) para o que o Fuzil não identificar",
+      "O Fuzil move as BMs entre esses grupos sozinho quando o problema muda, e devolve para o grupo de disparo quando o problema some. As colocadas à mão só voltam no Resolvido",
+      "Seus grupos de disparo continuam do jeito que você montar",
+    ],
+  },
+  {
     version: "2.03",
     date: "22/10/2026",
     items: [

@@ -9,7 +9,7 @@ import { Drawer, MetaItem } from "@/components/drawer";
 import { Badge, Empty, Field, Input, PageHeader, Stat } from "@/components/ui";
 import { ActionForm, ConfirmButton } from "@/components/action-form";
 import { deleteGroupAction, restoreBusinessAction, saveGroupAction } from "@/app/actions/groups";
-import { PROBLEMS_GROUP } from "@/lib/bm-problems";
+import { PROBLEM_KINDS, isProblemSystem } from "@/lib/bm-problems";
 import { bmAptidao } from "@/lib/readiness";
 import { StatusDot } from "@/components/drawer";
 import { SendToGroup } from "./send-to-group";
@@ -42,8 +42,10 @@ export default async function GroupsPage() {
     const a = apt.get(id);
     return a?.apta ? <StatusDot tone="green" title="Apta para disparar" /> : <StatusDot tone="red" title={`Falta: ${a?.falta.join(", ") || "conta"}`} />;
   };
-  // O grupo automático "BMs com problema" aparece separado, no topo
-  const problems = groups.find((g) => g.system === PROBLEMS_GROUP);
+  // Grupos automáticos de problema (banidas, pagamento, template, qualidade, desconhecido) aparecem no topo, nessa ordem
+  const problemGroups = Object.values(PROBLEM_KINDS)
+    .map((k) => groups.find((g) => g.system === k.system))
+    .filter((g): g is (typeof groups)[number] => Boolean(g && g.members.length));
   const regular = groups.filter((g) => !g.system);
   const stats = await Promise.all(regular.map((g) => statsForBusinesses(g.members.map((m) => m.businessId))));
   const windows = await bmWindows(businesses.map((b) => b.id));
@@ -79,33 +81,34 @@ export default async function GroupsPage() {
     <div className="mx-auto max-w-6xl">
       <PageHeader title="Grupos de BM" description="Cada campanha dispara por um grupo, distribuindo os envios entre todos os números das BMs do grupo." />
 
-      {problems && problems.members.length > 0 && (
+      {problemGroups.map((problems) => (
         <Drawer
-          className="mb-3 border-red-200"
-          title={problems.name}
-          subtitle="Saíram sozinhas dos grupos de disparo depois de dar problema. Resolva e clique em Resolvido."
-          tone="red"
-          meta={<span className="font-semibold text-red-700">{problems.members.length} BM(s)</span>}
-          bodyClassName="divide-y divide-red-100"
+          key={problems.id}
+          className="mb-3"
+          title={<span className="flex items-center gap-2"><span className={`size-2.5 shrink-0 rounded-full ${groupDot(problems.color)}`} />{problems.name}</span>}
+          subtitle={problems.description ?? "Saíram sozinhas dos grupos de disparo. Voltam sozinhas quando o problema sumir."}
+          meta={<span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1 ${groupTag(problems.color)}`}>{problems.members.length} BM(s)</span>}
+          bodyClassName="divide-y divide-zinc-100"
         >
           {problems.members.map(({ business: b }) => (
             <div key={b.id} className="flex flex-wrap items-start gap-4 px-5 py-4">
               <div className="min-w-0 flex-1">
                 <div className="font-semibold">{b.name}</div>
-                <div className="mt-0.5 text-sm text-red-700">{b.problemReason ?? "Problema detectado"}</div>
+                <div className="mt-0.5 text-sm font-medium text-zinc-800">{b.problemReason ?? "Problema detectado"}</div>
                 {b.problemFix && <div className="mt-1 text-sm text-zinc-600"><b className="text-zinc-800">Como resolver:</b> {b.problemFix}</div>}
-                <div className="mt-1 text-xs text-zinc-400">
+                <div className="mt-1 text-xs text-zinc-500">
                   {b.problemAt ? `Desde ${b.problemAt.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}` : ""}
                   {b.problemPrevGroups.length > 0 && ` · volta para: ${groups.filter((g) => b.problemPrevGroups.includes(g.id)).map((g) => g.name).join(", ") || "—"}`}
+                  {b.problemKind !== "MANUAL" && " · volta sozinha quando o problema sumir"}
                 </div>
               </div>
-              <ConfirmButton action={restoreBusinessAction.bind(null, b.id)} confirm={`Já resolveu o problema da BM ${b.name}? Ela volta para os grupos de disparo.`}>
+              <ConfirmButton action={restoreBusinessAction.bind(null, b.id)} confirm={`Já resolveu o problema da BM ${b.name}?\nEla volta para os grupos de disparo.`}>
                 <CheckCircle2 className="size-4" /> Resolvido
               </ConfirmButton>
             </div>
           ))}
         </Drawer>
-      )}
+      ))}
 
       {regular.length === 0 && <Empty>Nenhum grupo criado.</Empty>}
       <div className="space-y-3">

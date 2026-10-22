@@ -90,7 +90,7 @@ export async function moveBusinessToProblemsAction(businessId: string): Promise<
     prisma.bmGroupMember.upsert({ where: { groupId_businessId: { groupId: group.id, businessId } }, create: { groupId: group.id, businessId }, update: {} }),
     prisma.businessManager.update({
       where: { id: businessId },
-      data: { problemReason: "Colocada aqui por você", problemFix: "Quando estiver tudo certo, clique em Resolvido e ela volta para o grupo em que estava.", problemAt: new Date(), problemPrevGroups: prev },
+      data: { problemReason: "Colocada aqui por você", problemFix: "Quando estiver tudo certo, clique em Resolvido e ela volta para o grupo em que estava.", problemAt: new Date(), problemPrevGroups: prev, problemKind: "MANUAL", problemFromSend: false },
     }),
   ]);
   revalidatePath("/grupos");

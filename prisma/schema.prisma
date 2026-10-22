@@ -150,6 +150,10 @@ model BusinessManager {
   problemAt          DateTime?
   // Grupos em que ela estava antes de ir para "BMs com problema" (para devolver)
   problemPrevGroups  String[]          @default([])
+  // Tipo do problema (define o grupo): BANNED, PAYMENT, TEMPLATE, QUALITY, UNKNOWN ou MANUAL (colocada à mão)
+  problemKind        String?
+  // Detectado num envio (e não na sincronização): só volta sozinha depois de algumas horas sem o problema
+  problemFromSend    Boolean           @default(false)
   // Problema que o cliente marcou como resolvido: não move de novo pelo mesmo motivo até ele sumir
   problemIgnored     String?
   createdAt          DateTime          @default(now())

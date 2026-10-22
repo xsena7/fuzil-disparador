@@ -20,7 +20,7 @@ import { metaErrorLabel, RETRYABLE_CODES, SENDER_FATAL_CODES, TEMPLATE_FATAL_COD
 import { formatPhone } from "./phone";
 import { recordCampaignSends, renderCampaignText } from "./chat";
 import { templateFamily } from "./blueprints";
-import { flagBusinessProblem, problemFix } from "./bm-problems";
+import { flagBusinessProblem, kindForCode, problemFix } from "./bm-problems";
 
 export const TICK_MS = 2000;
 const DEFAULT_RATE = 20; // msgs/s por número
@@ -493,7 +493,7 @@ export async function runCampaignTick(campaignId: string) {
     const sender = plan.senders.find((s) => s.phoneId === phoneId)!;
     // Problema na BM (pagamento, bloqueio, acesso...): ela vai para "BMs com problema"
     if (fatalCodes.has(phoneId))
-      await flagBusinessProblem(sender.businessId, `${sender.display}: ${reason}`, problemFix(fatalCodes.get(phoneId))).catch((e) => console.error("[dispatcher] problema da BM", e));
+      await flagBusinessProblem(sender.businessId, `${sender.display}: ${reason}`, problemFix(fatalCodes.get(phoneId)), kindForCode(fatalCodes.get(phoneId))).catch((e) => console.error("[dispatcher] problema da BM", e));
     await prisma.campaign.update({ where: { id: campaign.id }, data: { excludedSenders: { push: phoneId } } });
     await createAlert({
       workspaceId: campaign.workspaceId,

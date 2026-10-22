@@ -8,6 +8,7 @@ export const GROUP_COLORS = {
   sky: { label: "Azul", dot: "bg-sky-500", tag: "bg-sky-50 text-sky-700 ring-sky-600/20" },
   violet: { label: "Roxo", dot: "bg-violet-500", tag: "bg-violet-50 text-violet-700 ring-violet-600/20" },
   pink: { label: "Rosa", dot: "bg-pink-500", tag: "bg-pink-50 text-pink-700 ring-pink-600/20" },
+  black: { label: "Preto", dot: "bg-zinc-900", tag: "bg-zinc-900 text-white ring-zinc-900/20" },
 } as const;
 
 export type GroupColor = keyof typeof GROUP_COLORS;

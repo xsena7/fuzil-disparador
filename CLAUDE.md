@@ -14,7 +14,7 @@ Produção: VM Oracle grátis, Docker Compose (db, app, worker, caddy). O servid
 - Disparo: `src/lib/dispatcher.ts` (rodízio, créditos, estorno, retry). Créditos: `src/lib/credits.ts`.
 - Meta Graph API: `src/lib/meta.ts`. Sincronização de WABA/números/templates: `src/lib/sync.ts`. Webhook: `src/lib/webhook.ts`.
 - Chat: `src/lib/chat.ts`, `src/app/(app)/chat/`. Templates padrão (com versões numeradas): `src/lib/blueprints.ts`.
-- BMs com problema (grupo automático): `src/lib/bm-problems.ts`. O que falta para disparar: `src/lib/readiness.ts`.
+- BMs com problema (grupos automáticos por tipo: Banidas, Pagamento, Template em análise, Qualidade baixa e desconhecido; entram e saem sozinhas): `src/lib/bm-problems.ts`. O que falta para disparar: `src/lib/readiness.ts`.
 - Aquecimento (landing de vagas + código + funil): `src/lib/funnels.ts`, `src/app/v/[key]/*` (página pública, também em domínio próprio pelo `src/middleware.ts` + on-demand TLS no Caddy), painel em `src/app/(app)/aquecimento/`. Cada passo é uma campanha interna (`Campaign.funnelId`).
 - Links externos (código fixo na variável do botão, para disparar por outra plataforma): site público em `src/app/site/links/` (fuzildisparador.com.br/links), login por WhatsApp = funil kind LINKS (`src/lib/links-login.ts`), `src/app/actions/links.ts`, resolvido em `src/app/r/[token]/route.ts`.
 - Relatório do cliente (métricas + valor + chaves Pix): `src/app/relatorio/report-view.tsx` (logado em `/relatorio/[id]`, público em `/relatorio/p/[token]`, 12h no ar), chaves em `src/lib/pix-keys.ts`, aba em `src/app/(app)/campanhas/[id]/client-report.tsx`.
