@@ -1,4 +1,4 @@
-import { AlertTriangle, CheckCircle2, ChevronRight, RefreshCw, Phone, Trash2 } from "lucide-react";
+import { AlertTriangle, CheckCircle2, ChevronRight, KeyRound, MessagesSquare, RefreshCw, Phone, Trash2 } from "lucide-react";
 import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { env } from "@/lib/env";
@@ -110,7 +110,7 @@ export default async function ConnectionsPage() {
             </summary>
             <div className="border-t border-zinc-100 p-5">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-              <span className="text-xs text-zinc-400">{bm.metaBusinessId ? `BM ID: ${bm.metaBusinessId}` : ""}</span>
+              <span className="text-xs font-medium text-zinc-600">{bm.metaBusinessId ? `BM ID: ${bm.metaBusinessId}` : ""}</span>
               <ConfirmButton
                 action={deleteBusinessAction.bind(null, bm.id)}
                 variant="ghost"
@@ -123,34 +123,36 @@ export default async function ConnectionsPage() {
             {w && <div className="mb-4"><LimitWindow w={w} /></div>}
             <div className="space-y-3">
               {bm.wabas.map((waba) => (
-                <div key={waba.id} className="overflow-hidden rounded-xl border border-zinc-200/80">
-                  <div className="flex flex-wrap items-center gap-3 border-b border-zinc-100 bg-zinc-50/70 px-4 py-2.5">
-                    <span className="font-medium">{waba.name}</span>
+                <div key={waba.id} className="overflow-hidden rounded-2xl border border-zinc-300 bg-zinc-50 shadow-sm">
+                  <div className="flex flex-wrap items-center gap-3 border-b border-zinc-200 bg-white px-4 py-3">
+                    <span className="flex size-8 items-center justify-center rounded-lg bg-emerald-600 text-white"><Phone className="size-4" /></span>
+                    <span className="font-semibold text-zinc-900">{waba.name}</span>
                     <Badge dot={false}>{CONN_LABEL[waba.connectionType]}</Badge>
-                    <span className="text-xs text-zinc-500">WABA: {waba.wabaId}</span>
-                    <span className="text-xs text-zinc-500">{waba._count.templates} templates</span>
+                    <span className="text-xs font-medium text-zinc-600">WABA: {waba.wabaId}</span>
+                    <span className="text-xs font-medium text-zinc-600">{waba._count.templates} templates</span>
                     {!waba.webhookSubscribed && <Badge color="yellow">Webhook não inscrito</Badge>}
                     {waba.lastSyncError && (
                       <Badge color="red">{/api access blocked/i.test(waba.lastSyncError) ? "App da BM bloqueado pela Meta" : `Erro: ${waba.lastSyncError.slice(0, 80)}`}</Badge>
                     )}
-                    <span className="ml-auto text-xs text-zinc-400">
+                    <span className="ml-auto text-xs text-zinc-500">
                       {waba.lastSyncedAt ? `Sincronizado ${waba.lastSyncedAt.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}` : "Nunca sincronizado"}
                     </span>
                     <TestWaba id={waba.id} />
                     <ConfirmButton action={syncWabaAction.bind(null, waba.id)} variant="ghost" className="px-2 py-1"><RefreshCw className="size-4" /></ConfirmButton>
                     <ConfirmButton action={deleteWabaAction.bind(null, waba.id)} variant="ghost" className="px-2 py-1 text-red-600" confirm={`Remover a WABA ${waba.name} do painel? (Nada é apagado na Meta)`}><Trash2 className="size-4" /></ConfirmButton>
                   </div>
+                  <div className="space-y-3 p-3">
                   {(() => {
                     const issues = wabaReadiness({ ...waba, usableTemplates: waba.templates.length });
                     if (!issues.length)
                       return (
-                        <div className="flex items-center gap-2 border-b border-zinc-100 bg-emerald-50/60 px-4 py-2 text-sm text-emerald-700">
+                        <div className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-semibold text-emerald-800">
                           <CheckCircle2 className="size-4" /> Pronta para disparar
                         </div>
                       );
                     const blocked = issues.some((i) => i.block);
                     return (
-                      <div className={`border-b px-4 py-2.5 text-sm ${blocked ? "border-red-100 bg-red-50/70 text-red-800" : "border-amber-100 bg-amber-50/70 text-amber-800"}`}>
+                      <div className={`rounded-xl border px-4 py-3 text-sm ${blocked ? "border-red-200 bg-red-50 text-red-900" : "border-amber-200 bg-amber-50 text-amber-900"}`}>
                         <div className="mb-1 flex items-center gap-2 font-semibold">
                           <AlertTriangle className="size-4" /> {blocked ? "Falta isso para essa conta disparar:" : "Atenção nessa conta:"}
                         </div>
@@ -166,13 +168,16 @@ export default async function ConnectionsPage() {
                     );
                   })()}
                   {waba.connectionType === "MANUAL" && (
-                    <details className="group border-b border-zinc-100">
-                      <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-2.5 text-sm [&::-webkit-details-marker]:hidden">
-                        <ChevronRight className="size-4 text-zinc-400 transition-transform group-open:rotate-90" />
-                        <span className="font-medium">Atualizar token e chave secreta</span>
-                        <span className="text-xs text-zinc-500">o ID da WABA continua o mesmo</span>
+                    <details className="group overflow-hidden rounded-xl border border-orange-200 bg-orange-50">
+                      <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-3 text-sm [&::-webkit-details-marker]:hidden">
+                        <span className="flex size-8 items-center justify-center rounded-lg bg-brand-gradient text-white"><KeyRound className="size-4" /></span>
+                        <span className="flex-1">
+                          <span className="block font-semibold text-zinc-900">Atualizar token e chave secreta</span>
+                          <span className="block text-xs text-zinc-600">Cole o token novo e/ou a chave secreta. O ID da WABA continua o mesmo</span>
+                        </span>
+                        <ChevronRight className="size-4 text-orange-500 transition-transform group-open:rotate-90" />
                       </summary>
-                      <div className="px-4 pb-4">
+                      <div className="border-t border-orange-200 bg-white px-4 py-4">
                         <ActionForm action={updateWabaCredentialsAction.bind(null, waba.id)} submit="Atualizar acesso" variant="secondary">
                           <div className="grid gap-4 md:grid-cols-2">
                             <Field label="Token de acesso novo" hint="Em branco = mantém o atual">
@@ -192,15 +197,15 @@ export default async function ConnectionsPage() {
                     const ok = Boolean(waba.appSecretEnc && last && !rejected);
                     const when = (d: Date) => d.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
                     return (
-                      <details className="group border-b border-zinc-100" open={!ok}>
-                        <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-2.5 text-sm [&::-webkit-details-marker]:hidden">
-                          <StatusDot tone={ok ? "green" : rejected ? "red" : "amber"} />
-                          <span className="font-medium">Receber respostas no Chat</span>
-                          <span className="text-xs text-zinc-500">
+                      <details className={`group overflow-hidden rounded-xl border ${ok ? "border-emerald-200 bg-emerald-50" : rejected ? "border-red-200 bg-red-50" : "border-amber-200 bg-amber-50"}`} open={!ok}>
+                        <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-3 text-sm [&::-webkit-details-marker]:hidden">
+                          <span className={`flex size-8 items-center justify-center rounded-lg text-white ${ok ? "bg-emerald-600" : rejected ? "bg-red-600" : "bg-amber-500"}`}><MessagesSquare className="size-4" /></span>
+                          <span className="font-semibold text-zinc-900">Receber respostas no Chat</span>
+                          <span className="text-xs font-medium text-zinc-600">
                             {ok ? `funcionando · último evento ${when(last!)}` : rejected ? "a Meta está mandando, mas a chave não confere" : !waba.appSecretEnc ? "falta a chave secreta do app dessa BM" : "nenhum evento dessa conta chegou ainda"}
                           </span>
                         </summary>
-                        <div className="space-y-4 px-4 pb-4 text-sm text-zinc-600">
+                        <div className="space-y-4 border-t border-zinc-200 bg-white px-4 py-4 text-sm text-zinc-700">
                           {rejected && (
                             <p className="rounded-lg bg-red-50 px-3 py-2 text-red-700">
                               Última recusa {when(rejected)}: a chave cadastrada não é a do app que está mandando os eventos. Confira se copiou a chave do app certo (o mesmo do token).
@@ -240,14 +245,15 @@ export default async function ConnectionsPage() {
                       </details>
                     );
                   })()}
-                  <div className="divide-y divide-zinc-100">
+                  <div className="divide-y divide-zinc-100 overflow-hidden rounded-xl border border-zinc-200 bg-white">
+                    <div className="bg-zinc-100 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-zinc-600">Números</div>
                     {waba.phones.length === 0 && <div className="px-4 py-3 text-zinc-500">Nenhum número nesta WABA.</div>}
                     {waba.phones.map((p) => (
                       <div key={p.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
                         <div className="flex size-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 ring-1 ring-emerald-600/10"><Phone className="size-4" /></div>
                         <div className="min-w-48">
                           <div className="font-medium">{formatPhone(p.displayPhoneNumber.replace(/\D/g, ""))}</div>
-                          <div className="text-xs text-zinc-500">{p.verifiedName} · Phone ID {p.phoneNumberId}</div>
+                          <div className="text-xs text-zinc-600">{p.verifiedName} · Phone ID {p.phoneNumberId}</div>
                         </div>
                         <QualityBadge q={p.qualityRating} />
                         <PhoneStatusBadge s={p.status} />
@@ -262,6 +268,7 @@ export default async function ConnectionsPage() {
                         </div>
                       </div>
                     ))}
+                  </div>
                   </div>
                 </div>
               ))}

@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.02",
+    date: "22/10/2026",
+    items: ["Conexões: cada conta da BM ficou em blocos separados, com cor, ícone e mais contraste (o que falta para disparar, atualizar token e chave secreta, respostas no Chat e números). O \"Atualizar token e chave secreta\" fica em destaque laranja"],
+  },
+  {
     version: "2.01",
     date: "22/10/2026",
     items: ["Conexões: em cada conta da BM tem \"Atualizar token e chave secreta\". Cola só o que mudou (o ID da WABA continua o mesmo), o Fuzil confere na Meta, liga o webhook de novo e sincroniza na hora"],
