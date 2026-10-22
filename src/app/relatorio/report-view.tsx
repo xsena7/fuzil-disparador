@@ -109,6 +109,23 @@ export async function ReportView({ id, workspaceId, publicView = false, expiresA
 
       <main className="mx-auto max-w-5xl space-y-5 px-5 py-8 sm:px-8">
 
+        {/* Números do disparo (os mesmos do valor e do funil) */}
+        <section className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+          {[
+            { k: "Público", v: r.total, s: "contatos na lista" },
+            { k: "Enviadas", v: r.sent, s: pct(r.sent, r.total) + " do público", hi: true },
+            { k: "Lidas", v: r.read, s: pct(r.read, r.sent) + " das enviadas" },
+            { k: "Cliques", v: r.clicked, s: pct(r.clicked, r.sent) + " das enviadas" },
+            { k: "Respostas", v: r.replied, s: pct(r.replied, r.sent) + " das enviadas" },
+          ].map((x) => (
+            <div key={x.k} className={`report-card rounded-2xl border bg-white p-4 shadow-sm ${x.hi ? "border-orange-200 ring-1 ring-orange-100" : "border-zinc-200"}`}>
+              <div className="text-xs font-medium text-zinc-500">{x.k}</div>
+              <div className={`mt-1 text-2xl font-bold tabular-nums ${x.hi ? "text-brand-gradient" : "text-zinc-900"}`}>{n(x.v)}</div>
+              <div className="mt-0.5 text-[11px] text-zinc-500">{x.s}</div>
+            </div>
+          ))}
+        </section>
+
         {keys.length ? (
           <section className="report-card overflow-hidden rounded-2xl border border-orange-200 bg-white shadow-sm">
             <div className="p-5 sm:p-6">

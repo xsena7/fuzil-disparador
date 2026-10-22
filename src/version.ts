@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "1.97",
+    date: "22/10/2026",
+    items: ["Relatório do cliente: os números do disparo (público, enviadas, lidas, cliques e respostas) voltaram, em cima do valor"],
+  },
+  {
     version: "1.96",
     date: "22/10/2026",
     items: ["Relatório do cliente: ajustar os números fica só para administradores do Fuzil. As outras contas veem o valor a cobrar e o link"],
