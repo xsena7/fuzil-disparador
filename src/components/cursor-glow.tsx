@@ -15,7 +15,7 @@ export function CursorGlow() {
     if (!el) return;
     // Só em computador com mouse, e respeitando quem pediu menos animação
     if (!window.matchMedia("(pointer: fine)").matches || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    let x = -100, y = -100, frame = 0, visible = false, lastTarget: Element | null = null;
+    let x = -100, y = -100, visible = false, lastTarget: Element | null = null;
 
     // A setinha só aparece quando o cursor é a seta normal (na mãozinha de link ou no "I" de texto o brilho some)
     const isArrow = (t: Element) => {
@@ -26,7 +26,6 @@ export function CursorGlow() {
       return ![...t.childNodes].some((n) => n.nodeType === Node.TEXT_NODE && n.textContent?.trim());
     };
     const paint = () => {
-      frame = 0;
       el.style.transform = `translate3d(${x - PAD}px, ${y - PAD}px, 0)`;
       el.style.opacity = visible ? "1" : "0";
     };
@@ -38,7 +37,8 @@ export function CursorGlow() {
         lastTarget = t;
         visible = t ? isArrow(t) : false;
       }
-      if (!frame) frame = requestAnimationFrame(paint);
+      // Move na hora (sem esperar o próximo quadro): esperar o quadro deixava o brilho um tiquinho atrás da setinha
+      paint();
     };
     const leave = () => {
       visible = false;
@@ -49,12 +49,11 @@ export function CursorGlow() {
     return () => {
       window.removeEventListener("pointermove", move);
       document.documentElement.removeEventListener("pointerleave", leave);
-      if (frame) cancelAnimationFrame(frame);
     };
   }, []);
 
   return (
-    <div ref={ref} aria-hidden className="pointer-events-none fixed left-0 top-0 z-[60] opacity-0 transition-opacity duration-150">
+    <div ref={ref} aria-hidden className="pointer-events-none fixed left-0 top-0 z-[60] opacity-0 transition-opacity duration-150 [will-change:transform]">
       <svg width={12.4 + PAD * 2} height={19.6 + PAD * 2} viewBox={`${-PAD} ${-PAD} ${12.4 + PAD * 2} ${19.6 + PAD * 2}`} overflow="visible">
         <defs>
           <filter id="fuzil-cursor-glow" x="-100%" y="-100%" width="300%" height="300%">

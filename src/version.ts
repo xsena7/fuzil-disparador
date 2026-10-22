@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "1.75",
+    date: "22/10/2026",
+    items: ["Painel mais leve: o fundo laranja não usa mais desfoque pesado e o brilho da setinha acompanha o mouse sem atraso"],
+  },
+  {
     version: "1.74",
     date: "22/10/2026",
     items: ["Confirmações (excluir, cancelar, remover...) agora aparecem numa janela do Fuzil no meio da tela, com o botão dizendo exatamente o que vai acontecer"],
