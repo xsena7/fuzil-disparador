@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.05",
+    date: "22/10/2026",
+    items: ["Grupos: a bolinha na frente do nome agora é só a cor que você escolheu. Se o grupo estiver sem número ativo ou sem limite, aparece um aviso escrito do lado"],
+  },
+  {
     version: "2.04",
     date: "22/10/2026",
     items: [

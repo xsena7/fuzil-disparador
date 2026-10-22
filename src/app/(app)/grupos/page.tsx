@@ -120,10 +120,13 @@ export default async function GroupsPage() {
               key={g.id}
               title={<span className="flex items-center gap-2"><span className={`size-2.5 shrink-0 rounded-full ${groupDot(g.color)}`} />{g.name}</span>}
               subtitle={g.description || g.members.map((m) => m.business.name).join(" · ") || "Sem BMs"}
-              tone={tone}
-              toneTitle={tone === "red" ? "Nenhum número ativo" : tone === "amber" ? "Limite esgotado agora" : "Pronto para disparar"}
               meta={
                 <>
+                  {tone !== "green" && (
+                    <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 ${tone === "red" ? "bg-red-50 text-red-700 ring-red-200" : "bg-amber-50 text-amber-700 ring-amber-200"}`}>
+                      {tone === "red" ? "Nenhum número ativo" : "Limite esgotado agora"}
+                    </span>
+                  )}
                   <MetaItem value={g.members.length} label="BMs" />
                   <span className="flex items-center gap-1.5" title="Quantas BMs estão aptas para disparar">
                     <StatusDot tone={g.members.every((m) => apt.get(m.businessId)?.apta) ? "green" : "red"} />
