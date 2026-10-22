@@ -5,7 +5,7 @@ import { friendlyError } from "@/lib/meta-errors";
 import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { encrypt } from "@/lib/crypto";
+import { decrypt, encrypt } from "@/lib/crypto";
 import { configureBmAppWebhook, connectWaba, syncWaba, wabaToken } from "@/lib/sync";
 import { deployBlueprints } from "@/lib/blueprints";
 import { meta } from "@/lib/meta";
@@ -26,7 +26,12 @@ export async function connectManualAction(_: FormState, form: FormData): Promise
   if (!token && !env.metaSystemToken()) return { error: "Informe um token de acesso (ou configure o token do Tech Provider)" };
   try {
     await connectWaba({ workspaceId: auth.workspace.id, wabaId, accessTokenEnc: token ? encrypt(token) : null, connectionType: "MANUAL" });
-    const appSecret = String(form.get("appSecret") ?? "").trim();
+    // Sem chave no formulário: usa a chave secreta padrão da conta (se o admin cadastrou)
+    let appSecret = String(form.get("appSecret") ?? "").trim();
+    if (!appSecret) {
+      const ws = await prisma.workspace.findUnique({ where: { id: auth.workspace.id }, select: { defaultAppSecretEnc: true } });
+      if (ws?.defaultAppSecretEnc) appSecret = decrypt(ws.defaultAppSecretEnc);
+    }
     if (/^[a-f0-9]{32}$/i.test(appSecret)) {
       await prisma.whatsAppAccount.updateMany({ where: { workspaceId: auth.workspace.id, wabaId }, data: { appSecretEnc: encrypt(appSecret) } });
       resetBmSecrets();
@@ -160,6 +165,45 @@ export async function setAppSecretAction(_: FormState, form: FormData): Promise<
   resetBmSecrets();
   revalidatePath("/conexoes");
   return { ok: "Salvo" };
+}
+
+/**
+ * Admin: chave secreta padrão. Toda BM nova conectada manualmente recebe ela sozinha.
+ * Ao trocar, dá para trocar também nas BMs que usam a chave antiga (e o webhook é ligado de novo nelas).
+ */
+export async function saveDefaultAppSecretAction(_: FormState, form: FormData): Promise<FormState> {
+  const auth = await requireAuth();
+  if (!auth.user.isSuperAdmin) return { error: "Só administradores do Fuzil podem definir a chave padrão." };
+  const ws = await prisma.workspace.findUniqueOrThrow({ where: { id: auth.workspace.id }, select: { defaultAppSecretEnc: true } });
+  if (form.get("remove")) {
+    await prisma.workspace.update({ where: { id: auth.workspace.id }, data: { defaultAppSecretEnc: null } });
+    revalidatePath("/conexoes");
+    return { ok: "Chave padrão removida. As próximas BMs voltam a pedir a chave secreta na conexão." };
+  }
+  const appSecret = String(form.get("appSecret") ?? "").trim();
+  if (!/^[a-f0-9]{32}$/i.test(appSecret)) return { error: "A chave secreta do app tem 32 letras e números (Configurações do app → Básico → Chave secreta do app)." };
+  const old = ws.defaultAppSecretEnc ? decrypt(ws.defaultAppSecretEnc) : null;
+  await prisma.workspace.update({ where: { id: auth.workspace.id }, data: { defaultAppSecretEnc: encrypt(appSecret) } });
+  let changed = 0;
+  if (form.get("applyExisting")) {
+    // Troca nas BMs que estavam com a chave antiga (ou sem chave nenhuma)
+    const wabas = await prisma.whatsAppAccount.findMany({ where: { workspaceId: auth.workspace.id, connectionType: "MANUAL" }, select: { id: true, appSecretEnc: true } });
+    for (const w of wabas) {
+      let current: string | null = null;
+      try {
+        current = w.appSecretEnc ? decrypt(w.appSecretEnc) : null;
+      } catch {
+        current = null;
+      }
+      if (current && current !== old) continue; // BM com chave de outro app: não mexe
+      await prisma.whatsAppAccount.update({ where: { id: w.id }, data: { appSecretEnc: encrypt(appSecret) } });
+      await configureBmAppWebhook(w.id, appSecret).catch(() => null);
+      changed++;
+    }
+    resetBmSecrets();
+  }
+  revalidatePath("/conexoes");
+  return { ok: `Chave padrão salva! As próximas BMs conectadas já recebem ela sozinha.${changed ? ` Trocada também em ${changed} conta(s) que usavam a chave antiga.` : ""}` };
 }
 
 /** Troca o token e/ou a chave secreta de uma WABA já conectada (o ID da WABA continua o mesmo). Campo em branco = mantém. */

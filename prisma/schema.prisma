@@ -65,6 +65,8 @@ model Workspace {
   // Cobrança no relatório do cliente: chaves Pix [{ id, key, name, bank }] e valor padrão por mensagem enviada (R$)
   pixKeys             Json?
   reportPrice         Float?
+  // Chave secreta (App Secret) usada sozinha em toda BM nova conectada manualmente (criptografada)
+  defaultAppSecretEnc String?
   createdAt           DateTime            @default(now())
   memberships         Membership[]
   creditTxs           CreditTransaction[]

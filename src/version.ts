@@ -2,6 +2,14 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.03",
+    date: "22/10/2026",
+    items: [
+      "Conexões (administradores do Fuzil): \"Chave secreta padrão\". Você coloca uma vez e toda BM nova conectada recebe ela sozinha (o campo some da conexão manual)",
+      "Ao trocar a chave padrão (ex.: app do Tech Provider), dá para trocar também nas BMs que usam a chave atual. O Fuzil liga o webhook de novo nelas",
+    ],
+  },
+  {
     version: "2.02",
     date: "22/10/2026",
     items: ["Conexões: cada conta da BM ficou em blocos separados, com cor, ícone e mais contraste (o que falta para disparar, atualizar token e chave secreta, respostas no Chat e números). O \"Atualizar token e chave secreta\" fica em destaque laranja"],

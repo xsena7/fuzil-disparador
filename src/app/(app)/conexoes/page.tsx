@@ -23,6 +23,7 @@ import {
   syncAllAction,
   setAppSecretAction,
   updateWabaCredentialsAction,
+  saveDefaultAppSecretAction,
   syncWabaAction,
   togglePhoneAction,
 } from "@/app/actions/connections";
@@ -33,6 +34,8 @@ const CONN_LABEL = { CLOUD_API: "Cloud API", COEXISTENCE: "Coexistência", MANUA
 
 export default async function ConnectionsPage() {
   const auth = await requireAuth();
+  const wsKeys = await prisma.workspace.findUnique({ where: { id: auth.workspace.id }, select: { defaultAppSecretEnc: true } });
+  const hasDefaultSecret = Boolean(wsKeys?.defaultAppSecretEnc);
   const businesses = await prisma.businessManager.findMany({
     where: { workspaceId: auth.workspace.id },
     include: {
@@ -73,12 +76,42 @@ export default async function ConnectionsPage() {
             <Field label="Token de acesso" hint="System User token com whatsapp_business_management e whatsapp_business_messaging">
               <PasswordInput name="token" placeholder="EAAG..." autoComplete="new-password" data-lpignore="true" data-1p-ignore="true" />
             </Field>
-            <Field label="Chave secreta do app (opcional)" hint="Configurações do app → Básico. Sem ela, as respostas dessa BM não aparecem no Chat">
-              <PasswordInput name="appSecret" autoComplete="new-password" data-lpignore="true" data-1p-ignore="true" />
-            </Field>
+            {!hasDefaultSecret && (
+              <Field label="Chave secreta do app (opcional)" hint="Configurações do app → Básico. Sem ela, as respostas dessa BM não aparecem no Chat">
+                <PasswordInput name="appSecret" autoComplete="new-password" data-lpignore="true" data-1p-ignore="true" />
+              </Field>
+            )}
           </div>
+          {hasDefaultSecret && <p className="mt-3 text-xs font-medium text-emerald-700">✓ A chave secreta padrão entra sozinha nessa conexão.</p>}
         </ActionForm>
       </Card>
+
+      {auth.user.isSuperAdmin && (
+        <details className="group mt-4 overflow-hidden rounded-2xl border border-orange-200 bg-orange-50" open={!hasDefaultSecret}>
+          <summary className="flex cursor-pointer list-none items-center gap-3 px-5 py-3.5 [&::-webkit-details-marker]:hidden">
+            <span className="flex size-8 items-center justify-center rounded-lg bg-brand-gradient text-white"><KeyRound className="size-4" /></span>
+            <span className="flex-1">
+              <span className="block font-semibold text-zinc-900">Chave secreta padrão {hasDefaultSecret && <span className="ml-1 text-xs font-medium text-emerald-700">configurada ✓</span>}</span>
+              <span className="block text-xs text-zinc-600">Entra sozinha em toda BM nova que você conectar (só administradores do Fuzil veem isso)</span>
+            </span>
+            <ChevronRight className="size-4 text-orange-500 transition-transform group-open:rotate-90" />
+          </summary>
+          <div className="border-t border-orange-200 bg-white px-5 py-4">
+            <ActionForm action={saveDefaultAppSecretAction} submit={hasDefaultSecret ? "Trocar chave padrão" : "Salvar chave padrão"}>
+              <Field label={hasDefaultSecret ? "Chave secreta nova" : "Chave secreta do app"} hint="developers.facebook.com → app → Configurações do app → Básico → Chave secreta do aplicativo">
+                <PasswordInput name="appSecret" autoComplete="new-password" data-lpignore="true" data-1p-ignore="true" />
+              </Field>
+              {hasDefaultSecret && (
+                <label className="mt-3 flex items-start gap-2 text-sm text-zinc-700">
+                  <input type="checkbox" name="applyExisting" defaultChecked className="mt-0.5" />
+                  <span>Trocar também nas BMs que já usam a chave padrão atual (as que usam a chave de outro app não mudam)</span>
+                </label>
+              )}
+              {!hasDefaultSecret && <input type="hidden" name="applyExisting" value="on" />}
+            </ActionForm>
+          </div>
+        </details>
+      )}
 
       <h2 className="mt-10 mb-4 text-base font-semibold">Suas conexões</h2>
       {businesses.length === 0 && <Empty>Nenhuma BM conectada ainda. Use uma das opções acima.</Empty>}
