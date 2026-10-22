@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import clsx from "clsx";
 import { Clock, RotateCcw } from "lucide-react";
 import { clock, type BmWindow } from "@/lib/limit-windows";
@@ -56,13 +57,14 @@ export function LimitWindow({ w, compact = false }: { w: BmWindow; compact?: boo
 }
 
 /** Versão de uma linha: nome da BM, barra fina, disponível e quando libera. Para listas com muitas BMs. */
-export function LimitRow({ name, w }: { name: string; w: BmWindow }) {
+export function LimitRow({ name, w, tag }: { name: string; w: BmWindow; tag?: ReactNode }) {
   const unlimited = w.limit === Infinity;
   const pct = unlimited || !w.limit ? 0 : Math.min(100, (w.used / w.limit) * 100);
   const full = !unlimited && w.available === 0;
   return (
-    <div className="grid items-center gap-x-4 gap-y-1 px-4 py-2.5 text-sm sm:grid-cols-[minmax(0,14rem)_1fr_auto]">
-      <span className="truncate font-medium">{name}</span>
+    <div className={clsx("grid items-center gap-x-4 gap-y-1 px-4 py-2.5 text-sm", tag ? "sm:grid-cols-[minmax(0,14rem)_minmax(0,13rem)_1fr_auto]" : "sm:grid-cols-[minmax(0,14rem)_1fr_auto]")}>
+      <span className="truncate font-medium" title={name}>{name}</span>
+      {tag && <span className="min-w-0 truncate">{tag}</span>}
       <div className="h-1.5 overflow-hidden rounded-full bg-zinc-200/70">
         <div className={clsx("h-full rounded-full", full ? "bg-rose-500" : pct > 85 ? "bg-amber-400" : "bg-brand-gradient")} style={{ width: `${pct}%` }} />
       </div>

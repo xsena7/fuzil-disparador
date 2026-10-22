@@ -52,8 +52,8 @@ export default async function CampaignsPage() {
     ? await prisma.$queryRaw<Array<{ id: string; total: bigint; sent: bigint; delivered: bigint; read: bigint; clicked: bigint; failed: bigint }>>`
         SELECT "campaignId" AS id, COUNT(*) AS total,
           COUNT(*) FILTER (WHERE "sentAt" IS NOT NULL) AS sent,
-          COUNT(*) FILTER (WHERE "deliveredAt" IS NOT NULL) AS delivered,
-          COUNT(*) FILTER (WHERE "readAt" IS NOT NULL) AS read,
+          COUNT(*) FILTER (WHERE "deliveredAt" IS NOT NULL OR "readAt" IS NOT NULL OR "clickCount" > 0 OR "repliedAt" IS NOT NULL) AS delivered,
+          COUNT(*) FILTER (WHERE "readAt" IS NOT NULL OR "clickCount" > 0 OR "repliedAt" IS NOT NULL) AS read,
           COUNT(*) FILTER (WHERE "clickCount" > 0) AS clicked,
           COUNT(*) FILTER (WHERE status = 'FAILED') AS failed
         FROM "CampaignRecipient" WHERE "campaignId" = ANY(${ids}) GROUP BY "campaignId"`
@@ -86,8 +86,8 @@ export default async function CampaignsPage() {
             <div className="flex flex-wrap items-center gap-1.5 text-xs">
               <Pill label="Enviadas" value={`${s.sent.toLocaleString("pt-BR")}/${s.total.toLocaleString("pt-BR")}`} cls="bg-orange-50 text-orange-800" />
               <Pill label="Entregues" value={pct(s.delivered, s.sent)} cls="bg-emerald-50 text-emerald-800" />
-              <Pill label="Lidas" value={pct(s.read, s.sent)} cls="bg-sky-50 text-sky-800" />
-              <Pill label="Cliques" value={pct(s.clicked, s.sent)} cls="bg-violet-50 text-violet-800" />
+              <Pill label="Lidas" value={pct(s.read, s.delivered)} cls="bg-sky-50 text-sky-800" />
+              <Pill label="Cliques" value={pct(s.clicked, s.delivered)} cls="bg-violet-50 text-violet-800" />
               {s.failed > 0 && <Badge color="red">{s.failed.toLocaleString("pt-BR")} falhas</Badge>}
             </div>
           )}

@@ -4,6 +4,8 @@ import { AlertTriangle, ArrowRight, Building2, Gauge, Info, MousePointerClick, P
 import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { statsForBusinesses } from "@/lib/group-stats";
+import { readyBusinessIds } from "@/lib/readiness";
+import { groupDot, groupTag } from "@/lib/group-colors";
 import { bmWindows } from "@/lib/limit-windows";
 import { LimitRow } from "@/components/limit-card";
 import { formatLimit } from "@/lib/limits";
@@ -18,14 +20,18 @@ export default async function HomePage() {
   const wsId = auth.workspace.id;
   const since = new Date(Date.now() - 86400_000);
   const [businesses, active, recentAlerts, marketing, today] = await Promise.all([
-    prisma.businessManager.findMany({ where: { workspaceId: wsId }, select: { id: true, name: true }, orderBy: { name: "asc" } }),
+    prisma.businessManager.findMany({
+      where: { workspaceId: wsId },
+      select: { id: true, name: true, groups: { select: { group: { select: { id: true, name: true, color: true, system: true } } } } },
+      orderBy: { name: "asc" },
+    }),
     prisma.campaign.findMany({ where: { workspaceId: wsId, funnelId: null, status: { in: ["RUNNING", "SCHEDULED", "PAUSED"] } }, orderBy: { updatedAt: "desc" }, take: 6 }),
     prisma.alert.findMany({ where: { workspaceId: wsId }, orderBy: { createdAt: "desc" }, take: 4 }),
     prisma.template.count({ where: { workspaceId: wsId, category: "MARKETING" } }),
     prisma.$queryRaw<Array<{ sent: bigint; delivered: bigint; read: bigint; clicked: bigint; failed: bigint }>>`
       SELECT COUNT(*) FILTER (WHERE r."sentAt" > ${since}) AS sent,
-        COUNT(*) FILTER (WHERE r."deliveredAt" > ${since}) AS delivered,
-        COUNT(*) FILTER (WHERE r."readAt" > ${since}) AS read,
+        COUNT(*) FILTER (WHERE COALESCE(r."deliveredAt", r."readAt", r."firstClickAt", r."repliedAt") > ${since}) AS delivered,
+        COUNT(*) FILTER (WHERE COALESCE(r."readAt", r."firstClickAt", r."repliedAt") > ${since}) AS read,
         COUNT(*) FILTER (WHERE r."firstClickAt" > ${since}) AS clicked,
         COUNT(*) FILTER (WHERE r."failedAt" > ${since}) AS failed
       FROM "CampaignRecipient" r JOIN "Campaign" c ON c.id = r."campaignId"
@@ -34,13 +40,16 @@ export default async function HomePage() {
   ]);
   const ids = active.map((c) => c.id);
   const bmIds = businesses.map((b) => b.id);
-  const [progress, stats, windows] = await Promise.all([
+  // Disponível para disparo = só as BMs prontas (aptas e fora dos grupos de problema)
+  const ready = await readyBusinessIds({ workspaceId: wsId });
+  const [progress, stats, readyStats, windows] = await Promise.all([
     ids.length
       ? prisma.$queryRaw<Array<{ id: string; total: bigint; done: bigint }>>`
           SELECT "campaignId" AS id, COUNT(*) AS total, COUNT(*) FILTER (WHERE status NOT IN ('PENDING','SENDING')) AS done
           FROM "CampaignRecipient" WHERE "campaignId" = ANY(${ids}) GROUP BY "campaignId"`
       : Promise.resolve([]),
     statsForBusinesses(bmIds),
+    statsForBusinesses([...ready]),
     bmWindows(bmIds),
   ]);
   const progressById = new Map(progress.map((p) => [p.id, p]));
@@ -48,7 +57,7 @@ export default async function HomePage() {
   const n = (v: bigint | number) => Number(v).toLocaleString("pt-BR");
   const q = stats.quality;
   const qTotal = q.GREEN + q.YELLOW + q.RED + q.UNKNOWN || 1;
-  const usedRaw = stats.totalLimit ? Math.min(100, (stats.usedToday / stats.totalLimit) * 100) : 0;
+  const usedRaw = readyStats.totalLimit ? Math.min(100, (readyStats.usedToday / readyStats.totalLimit) * 100) : 0;
   const usedPct = usedRaw < 10 ? Math.round(usedRaw * 10) / 10 : Math.round(usedRaw);
 
   return (
@@ -68,10 +77,10 @@ export default async function HomePage() {
       )}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Stat label="BMs conectadas" value={businesses.length} sub={`${stats.activePhones}/${stats.phones} números ativos`} tone="blue" icon={<Building2 className="size-4" />} />
-        <Stat label="Disponível hoje" value={formatLimit(stats.available)} sub={`de ${formatLimit(stats.totalLimit)} · ${usedPct.toLocaleString("pt-BR")}% usado`} tone="brand" icon={<Gauge className="size-4" />} />
+        <Stat label="BMs conectadas" value={businesses.length} sub={`${ready.size} ${ready.size === 1 ? "pronta" : "prontas"} para disparar`} tone="blue" icon={<Building2 className="size-4" />} />
+        <Stat label="Disponível hoje" value={formatLimit(readyStats.available)} sub={`só das BMs prontas · ${usedPct.toLocaleString("pt-BR")}% usado`} tone="brand" icon={<Gauge className="size-4" />} />
         <Stat label="Enviadas (24h)" value={n(t.sent)} sub={`${pct(Number(t.delivered), Number(t.sent))} entregues · ${pct(Number(t.read), Number(t.delivered))} lidas`} tone="green" icon={<Send className="size-4" />} />
-        <Stat label="Cliques (24h)" value={n(t.clicked)} sub={`${n(t.failed)} falhas no período`} tone="violet" icon={<MousePointerClick className="size-4" />} />
+        <Stat label="Cliques (24h)" value={n(t.clicked)} sub={`${pct(Number(t.clicked), Number(t.delivered))} das entregues clicaram`} tone="violet" icon={<MousePointerClick className="size-4" />} />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
@@ -137,9 +146,24 @@ export default async function HomePage() {
             <Link href="/conexoes" className="text-sm text-zinc-500 hover:text-brand-600">Ver conexões</Link>
           </div>
           <div className="-mx-2 divide-y divide-zinc-100">
-            {businesses.map((b) => {
+            {/* Prontas primeiro; as outras aparecem marcadas, porque não entram no disparo */}
+            {[...businesses].sort((a, b) => Number(ready.has(b.id)) - Number(ready.has(a.id))).map((b) => {
               const w = windows.get(b.id);
-              return w ? <LimitRow key={b.id} name={b.name} w={w} /> : null;
+              // Etiqueta do grupo, na cor do grupo (o grupo oculto de campanha de uma BM só não aparece)
+              const gs = b.groups.map((x) => x.group).filter((g) => !g.system?.startsWith("BM:"));
+              const tag = (
+                <span className="flex flex-wrap gap-1">
+                  {gs.map((g) => (
+                    <span key={g.id} className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 ring-inset ${groupTag(g.color)}`}>
+                      <span className={`size-1.5 rounded-full ${groupDot(g.color)}`} />
+                      {g.name}
+                    </span>
+                  ))}
+                  {!gs.length && <span className="text-xs text-zinc-400">Sem grupo</span>}
+                  {!ready.has(b.id) && !gs.some((g) => g.system) && <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-[11px] font-semibold text-zinc-600">fora do disparo</span>}
+                </span>
+              );
+              return w ? <LimitRow key={b.id} name={b.name} w={w} tag={tag} /> : null;
             })}
           </div>
         </Card>

@@ -16,8 +16,9 @@ export async function campaignMetrics(campaignId: string) {
       COUNT(*) FILTER (WHERE status = 'PENDING') AS pending,
       COUNT(*) FILTER (WHERE status = 'SENDING') AS sending,
       COUNT(*) FILTER (WHERE "sentAt" IS NOT NULL) AS sent,
-      COUNT(*) FILTER (WHERE "deliveredAt" IS NOT NULL) AS delivered,
-      COUNT(*) FILTER (WHERE "readAt" IS NOT NULL) AS read,
+      -- Quem leu, clicou ou respondeu com certeza recebeu (o aviso de entrega/leitura da Meta às vezes não chega)
+      COUNT(*) FILTER (WHERE "deliveredAt" IS NOT NULL OR "readAt" IS NOT NULL OR "clickCount" > 0 OR "repliedAt" IS NOT NULL) AS delivered,
+      COUNT(*) FILTER (WHERE "readAt" IS NOT NULL OR "clickCount" > 0 OR "repliedAt" IS NOT NULL) AS read,
       COUNT(*) FILTER (WHERE status = 'FAILED') AS failed,
       COUNT(*) FILTER (WHERE status = 'SKIPPED') AS skipped,
       COUNT(*) FILTER (WHERE "clickCount" > 0) AS clicked,
@@ -39,8 +40,8 @@ export async function campaignMetrics(campaignId: string) {
   >`
     SELECT p.id, p."displayPhoneNumber" AS display, b.name AS business, p."qualityRating" AS quality,
       COUNT(*) FILTER (WHERE r."sentAt" IS NOT NULL) AS sent,
-      COUNT(*) FILTER (WHERE r."deliveredAt" IS NOT NULL) AS delivered,
-      COUNT(*) FILTER (WHERE r."readAt" IS NOT NULL) AS read,
+      COUNT(*) FILTER (WHERE r."deliveredAt" IS NOT NULL OR r."readAt" IS NOT NULL OR r."clickCount" > 0 OR r."repliedAt" IS NOT NULL) AS delivered,
+      COUNT(*) FILTER (WHERE r."readAt" IS NOT NULL OR r."clickCount" > 0 OR r."repliedAt" IS NOT NULL) AS read,
       COUNT(*) FILTER (WHERE r.status = 'FAILED') AS failed,
       COUNT(*) FILTER (WHERE r."clickCount" > 0) AS clicked,
       COUNT(*) FILTER (WHERE r."repliedAt" IS NOT NULL) AS replied

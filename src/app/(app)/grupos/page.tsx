@@ -47,7 +47,9 @@ export default async function GroupsPage() {
     .map((k) => groups.find((g) => g.system === k.system))
     .filter((g): g is (typeof groups)[number] => Boolean(g && g.members.length));
   const regular = groups.filter((g) => !g.system);
-  const stats = await Promise.all(regular.map((g) => statsForBusinesses(g.members.map((m) => m.businessId))));
+  // Limite e disponível do grupo somam só as BMs prontas para disparar (as outras não entram na campanha)
+  const isReady = (id: string) => Boolean(apt.get(id)?.apta && !businesses.find((b) => b.id === id)?.problemAt);
+  const stats = await Promise.all(regular.map((g) => statsForBusinesses(g.members.map((m) => m.businessId).filter(isReady))));
   const windows = await bmWindows(businesses.map((b) => b.id));
 
   // currentGroupId: no grupo que está sendo editado, não conta como "já está em outro grupo"
@@ -143,7 +145,7 @@ export default async function GroupsPage() {
               }
             >
               <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                <Stat label="Limite total (24h)" value={formatLimit(s.totalLimit)} sub={`${g.members.length} BMs somadas`} />
+                <Stat label="Limite total (24h)" value={formatLimit(s.totalLimit)} sub={`${g.members.filter((m) => isReady(m.businessId)).length} de ${g.members.length} BMs prontas somadas`} />
                 <Stat label="Disponível agora" value={formatLimit(s.available)} sub={`${s.usedToday.toLocaleString("pt-BR")} usados nas últimas 24h`} tone="green" />
                 <Stat label="Números ativos" value={`${s.activePhones}/${s.phones}`} />
                 <Stat label="Qualidade" value={<span className="flex gap-2 text-base"><Badge color="green">{s.quality.GREEN}</Badge><Badge color="yellow">{s.quality.YELLOW}</Badge><Badge color="red">{s.quality.RED}</Badge></span>} />

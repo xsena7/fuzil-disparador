@@ -65,3 +65,22 @@ export function bmAptidao(
   }
   return { apta: false, falta: best ?? [] };
 }
+
+/** IDs das BMs prontas para disparar agora: aptas (cartão, número ativo, template aprovado) e fora dos grupos de problema. */
+export async function readyBusinessIds(where: { workspaceId: string } | { id: { in: string[] } }): Promise<Set<string>> {
+  const { prisma } = await import("./db");
+  const bms = await prisma.businessManager.findMany({
+    where: { ...where, problemAt: null },
+    select: {
+      id: true,
+      wabas: {
+        select: {
+          hasPaymentMethod: true,
+          phones: { select: { enabled: true, invalidReason: true, status: true } },
+          templates: { select: { category: true, status: true } },
+        },
+      },
+    },
+  });
+  return new Set(bms.filter((b) => bmAptidao(b.wabas).apta).map((b) => b.id));
+}

@@ -2,6 +2,17 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.09",
+    date: "22/10/2026",
+    items: [
+      "Início: \"Disponível hoje\" soma só as BMs prontas para disparar (as com problema ou sem cartão/número/template não contam)",
+      "Grupos: limite e disponível de cada grupo também somam só as BMs prontas",
+      "Início: na lista \"Limite de cada BM\" aparece a etiqueta do grupo de cada BM, na cor do grupo, e as prontas vêm primeiro",
+      "Métricas com lógica: quem leu, clicou ou respondeu conta como entregue (e quem clicou ou respondeu conta como lida). Não aparece mais \"1 clique e 0 entregues\"",
+      "Campanhas: lidas e cliques em % das entregues, igual às Métricas",
+    ],
+  },
+  {
     version: "2.08",
     date: "22/10/2026",
     items: ["Conexões: a etiqueta do grupo em cada BM agora tem a mesma cor do grupo (Banidas vermelho, Pagamento amarelo, Template em análise azul, Qualidade baixa rosa, BMs com problema preto e os seus grupos na cor que você escolheu)"],
