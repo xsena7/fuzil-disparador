@@ -74,6 +74,41 @@ export async function deleteWabaAction(id: string) {
   revalidatePath("/conexoes");
 }
 
+/**
+ * Exclui a BM do Fuzil por completo (ex.: foi banida): contas do WhatsApp, números, templates, conversas do chat,
+ * grupos, alertas dela. As campanhas antigas continuam (só perdem o vínculo com os números dela). Nada é apagado na Meta.
+ */
+export async function deleteBusinessAction(businessId: string): Promise<{ ok?: string; error?: string }> {
+  const auth = await requireAuth();
+  if (auth.role === "MEMBER") return { error: "Só donos e admins excluem BMs" };
+  const bm = await prisma.businessManager.findFirst({
+    where: { id: businessId, workspaceId: auth.workspace.id },
+    include: { wabas: { select: { id: true, wabaId: true, name: true } } },
+  });
+  if (!bm) return { error: "BM não encontrada" };
+  const wabaIds = bm.wabas.map((w) => w.id);
+  const running = await prisma.campaign.count({
+    where: { workspaceId: auth.workspace.id, status: "RUNNING", recipients: { some: { status: "SENDING", sender: { wabaId: { in: wabaIds } } } } },
+  });
+  if (running) return { error: "Essa BM está enviando uma campanha agora. Pause a campanha e tente de novo." };
+  await prisma.$transaction([
+    // Alertas que falam dela (pelo nome da BM ou de uma conta dela)
+    prisma.alert.deleteMany({
+      where: {
+        workspaceId: auth.workspace.id,
+        OR: [bm.name, ...bm.wabas.map((w) => w.name), ...bm.wabas.map((w) => w.wabaId)].filter((t) => t && t.length > 3).flatMap((t) => [{ title: { contains: t } }, { message: { contains: t } }]),
+      },
+    }),
+    // Grupo escondido de "disparar só por esta BM"
+    prisma.bmGroup.deleteMany({ where: { workspaceId: auth.workspace.id, system: `BM:${bm.id}` } }),
+    // Apaga em cascata: contas do WhatsApp, números, templates, cópias de templates padrão, conversas e participação em grupos
+    prisma.businessManager.delete({ where: { id: bm.id } }),
+  ]);
+  revalidatePath("/conexoes");
+  revalidatePath("/grupos");
+  return { ok: `"${bm.name}" foi excluída do Fuzil, com as contas, números, templates e conversas dela. Na Meta nada foi apagado.` };
+}
+
 export async function togglePhoneAction(phoneId: string) {
   const auth = await requireAuth();
   const phone = await prisma.phoneNumber.findFirst({ where: { id: phoneId, waba: { workspaceId: auth.workspace.id } } });

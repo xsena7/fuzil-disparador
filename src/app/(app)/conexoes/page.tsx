@@ -18,6 +18,7 @@ import { TestWaba } from "./test-waba";
 import {
   connectManualAction,
   deleteWabaAction,
+  deleteBusinessAction,
   registerPhoneAction,
   syncAllAction,
   setAppSecretAction,
@@ -107,7 +108,17 @@ export default async function ConnectionsPage() {
               </span>
             </summary>
             <div className="border-t border-zinc-100 p-5">
-            {bm.metaBusinessId && <div className="mb-3 text-xs text-zinc-400">BM ID: {bm.metaBusinessId}</div>}
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+              <span className="text-xs text-zinc-400">{bm.metaBusinessId ? `BM ID: ${bm.metaBusinessId}` : ""}</span>
+              <ConfirmButton
+                action={deleteBusinessAction.bind(null, bm.id)}
+                variant="ghost"
+                className="px-2 py-1 text-xs text-red-600"
+                confirm={`Excluir a BM ${bm.name} do Fuzil?\nSomem as contas do WhatsApp, números, templates, conversas do chat e alertas dela, e ela sai de todos os grupos. As campanhas antigas continuam no histórico. Na Meta nada é apagado. Não dá para desfazer.`}
+              >
+                <Trash2 className="size-3.5" /> Excluir BM
+              </ConfirmButton>
+            </div>
             {w && <div className="mb-4"><LimitWindow w={w} /></div>}
             <div className="space-y-3">
               {bm.wabas.map((waba) => (
