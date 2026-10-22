@@ -80,7 +80,8 @@ export function firstName(name?: string | null): string {
 
 export function resolveSource(src: VarSource | undefined, r: RecipientLike): string {
   if (!src) return "";
-  if (src.type === "fixed") return src.value;
+  // Texto fixo pode ter colunas da planilha: "Saldo em aberto: {{var3}}"
+  if (src.type === "fixed") return fillVars(src.value, r);
   const data = (r.data ?? {}) as Record<string, unknown>;
   switch (src.field) {
     case "firstName":
@@ -93,6 +94,8 @@ export function resolveSource(src: VarSource | undefined, r: RecipientLike): str
       return String(data.email ?? "");
     default:
       if (src.field.startsWith("col:")) return String(data[src.field.slice(4)] ?? "");
+      // Primeiro nome tirado de uma coluna (planilha sem a coluna "nome"): "GUILHERME SILVA" vira "Guilherme"
+      if (src.field.startsWith("first:")) return firstName(String(data[src.field.slice(6)] ?? ""));
       return "";
   }
 }
@@ -166,11 +169,20 @@ const normKey = (s: string) => s.trim().toLowerCase().normalize("NFD").replace(/
  * Aceita qualquer coluna da planilha e também {{nome}}, {{primeiro_nome}} e {{telefone}}.
  */
 export function fillUrlVars(url: string, r: { phone: string; name: string | null; data: unknown }) {
-  if (!url.includes("{{")) return url;
+  return fillVars(url, r, true);
+}
+
+/** Troca {{coluna}}, {{nome}}, {{primeiro_nome}} e {{telefone}} pelos dados da pessoa (encode = para usar em link). */
+export function fillVars(text: string, r: { phone: string; name?: string | null; data?: unknown }, encode = false) {
+  if (!text.includes("{{")) return text;
   const data = (r.data && typeof r.data === "object" ? r.data : {}) as Record<string, unknown>;
   const byKey = new Map(Object.entries(data).map(([k, v]) => [normKey(k), String(v ?? "")]));
   byKey.set("nome", byKey.get("nome") ?? r.name ?? "");
   byKey.set("primeiro_nome", firstName(r.name));
   byKey.set("telefone", r.phone);
-  return url.replace(/\{\{\s*([^}]+?)\s*\}\}/g, (_m, k: string) => encodeURIComponent(byKey.get(normKey(k)) ?? ""));
+  return text.replace(/\{\{\s*([^}]+?)\s*\}\}/g, (m, k: string) => {
+    const v = byKey.get(normKey(k));
+    if (v === undefined) return encode ? "" : m;
+    return encode ? encodeURIComponent(v) : v;
+  });
 }

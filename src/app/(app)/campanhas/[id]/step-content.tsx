@@ -30,7 +30,10 @@ function SourceEditor({ label, value, onChange, fields, disabled }: { label: str
           {fields.map((f) => <option key={f.value} value={f.value}>{f.label}</option>)}
         </Select>
       ) : (
-        <Input value={src.value} disabled={disabled} onChange={(e) => onChange({ type: "fixed", value: e.target.value })} placeholder="Texto que todos vão receber" />
+        <>
+          <Input value={src.value} disabled={disabled} onChange={(e) => onChange({ type: "fixed", value: e.target.value })} placeholder="Texto que todos vão receber" />
+          <p className="mt-1 text-[11px] text-zinc-500">Pode misturar com a planilha: ex. <code>Saldo em aberto: {"{{var3}}"}</code></p>
+        </>
       )}
     </Card>
   );
@@ -67,7 +70,11 @@ export function StepContent({
   });
   const [url, setUrl] = useState(buttonUrl);
   const [preview, setPreview] = useState<string | null>(mediaUrl);
-  const fields = [...BASE_FIELDS, ...columns.map((c) => ({ value: `col:${c}`, label: `Planilha: ${c}` }))];
+  const fields = [
+    ...BASE_FIELDS,
+    ...columns.map((c) => ({ value: `col:${c}`, label: `Planilha: ${c.trim()}` })),
+    ...columns.map((c) => ({ value: `first:${c}`, label: `Planilha: primeiro nome de ${c.trim()}` })),
+  ];
   const tracked = shape.urlButtons.find((b) => b.tracked);
   const needsMedia = Boolean(shape.headerFormat && ["IMAGE", "VIDEO", "DOCUMENT"].includes(shape.headerFormat));
 

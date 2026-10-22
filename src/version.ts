@@ -2,6 +2,14 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "1.87",
+    date: "22/10/2026",
+    items: [
+      "Campanhas, variáveis: o texto fixo pode misturar com a planilha (ex.: \"Saldo em aberto: {{var3}}\")",
+      "Campanhas, variáveis: nova opção \"primeiro nome de\" uma coluna, para planilhas que não têm a coluna nome",
+    ],
+  },
+  {
     version: "1.86",
     date: "22/10/2026",
     items: ["Campanhas: o link do botão pode levar dados da planilha. Ex.: https://site.com/?cnpj={{var1}} manda cada pessoa para o link com o CNPJ dela. Na etapa Conteúdo tem os botões das colunas e um exemplo com a 1ª linha"],
