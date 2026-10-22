@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useState, useTransition } from "react";
+import { Fragment, useState, useTransition, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import clsx from "clsx";
 import { ArrowDown, ArrowUp, Hourglass, Loader2, Plus, Send, Trash2, Zap } from "lucide-react";
@@ -8,6 +8,7 @@ import { saveStepsAction } from "@/app/actions/funnels";
 import { LEAD_FIELDS, type FunnelStep, type SendStep } from "@/lib/funnel-types";
 import type { VarSource } from "@/lib/template-utils";
 import { Button } from "@/components/ui";
+import { toast } from "@/components/toast";
 
 export type BlueprintOption = { id: string; name: string; text: string; vars: string[]; ready: string };
 
@@ -67,6 +68,7 @@ export function FlowEditor({ funnelId, initial, blueprints, code, done }: { funn
   const [steps, setSteps] = useState<FunnelStep[]>(initial);
   const [dirty, setDirty] = useState(false);
   const [msg, setMsg] = useState<{ ok?: boolean; text: string } | null>(null);
+  useEffect(() => { if (msg) toast(msg.ok ? "success" : "error", msg.text); }, [msg]);
   const [pending, start] = useTransition();
   const router = useRouter();
   const byId = new Map(blueprints.map((b) => [b.id, b]));
@@ -157,7 +159,7 @@ export function FlowEditor({ funnelId, initial, blueprints, code, done }: { funn
               const res = await saveStepsAction(funnelId, steps);
               if (res.ok) {
                 setDirty(false);
-                setMsg({ ok: true, text: "Funil salvo" });
+                setMsg({ ok: true, text: "Funil salvo! As mudanças já valem para os próximos leads." });
                 router.refresh();
               } else setMsg({ text: res.error ?? "Erro ao salvar" });
             })
@@ -166,7 +168,7 @@ export function FlowEditor({ funnelId, initial, blueprints, code, done }: { funn
           {pending && <Loader2 className="size-4 animate-spin" />} Salvar funil
         </Button>
         {dirty && <span className="text-amber-600">Alterações não salvas</span>}
-        {msg && <span className={msg.ok ? "text-emerald-700" : "text-red-600"}>{msg.text}</span>}
+        {msg && !msg.ok && <span className="text-red-600">{msg.text}</span>}
       </div>
     </div>
   );

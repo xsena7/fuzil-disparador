@@ -110,7 +110,7 @@ export async function createTemplateAction(_: FormState, form: FormData): Promis
     });
     deployBlueprints(auth.workspace.id).catch((e) => console.error("[blueprints]", e));
     revalidatePath("/templates-padrao");
-    return { ok: "Template padrão criado. Ele está sendo enviado para todas as BMs do escopo." };
+    return { ok: "Seu template padrão foi criado! Agora o Fuzil está mandando ele para a Meta aprovar em todas as BMs escolhidas. A aprovação costuma levar de alguns minutos até 24 horas. Acompanhe em Templates padrão." };
   }
 
   const wabas = await prisma.whatsAppAccount.findMany({
@@ -133,7 +133,7 @@ export async function createTemplateAction(_: FormState, form: FormData): Promis
   const ok = results.filter((x) => x.r.ok).length;
   const recat = results.filter((x) => !x.r.ok && x.r.recategorized).map((x) => x.label);
   const errors = results.filter((x) => !x.r.ok && !x.r.recategorized).map((x) => `${x.label}: ${(x.r as { error: string }).error}`);
-  const parts = [`Enviado para análise em ${ok}/${results.length} WABAs.`];
+  const parts = [ok === results.length ? `Seu template foi enviado para a Meta aprovar${results.length > 1 ? ` em ${ok} contas` : ""}. A aprovação costuma levar de alguns minutos até 24 horas. Acompanhe em Templates.` : `Enviado para a Meta aprovar em ${ok} de ${results.length} contas.`];
   if (recat.length) parts.push(`Excluído por vir como marketing em: ${recat.join(", ")}.`);
   if (errors.length) parts.push(`Erros: ${errors.join(" | ")}`);
   return ok === results.length ? { ok: parts.join(" ") } : { error: parts.join(" ") };

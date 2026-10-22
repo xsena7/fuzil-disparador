@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { toast } from "@/components/toast";
+import { useActionState, useState, useEffect } from "react";
 import { Button, Card, Field, Input, Select } from "@/components/ui";
 import type { FormState } from "@/app/actions/auth";
 
@@ -26,6 +27,7 @@ export function StepTemplate({
   scope: "GROUP" | "BM";
 }) {
   const [state, formAction, pending] = useActionState(action, undefined);
+  useEffect(() => { if (state?.error) toast("error", state.error); }, [state]);
   const [group, setGroup] = useState(groupId || groups[0]?.id || "");
   const [tpl, setTpl] = useState(templateKey);
   const options = optionsByGroup[group] ?? [];

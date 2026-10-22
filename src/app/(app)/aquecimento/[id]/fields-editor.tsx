@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, Plus, Trash2 } from "lucide-react";
 import { saveFieldsAction } from "@/app/actions/funnels";
 import type { FormField } from "@/lib/funnel-types";
 import { Button } from "@/components/ui";
+import { toast } from "@/components/toast";
 
 const inp = "rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-sm";
 
@@ -13,6 +14,7 @@ const inp = "rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-sm";
 export function FieldsEditor({ funnelId, initial }: { funnelId: string; initial: FormField[] }) {
   const [fields, setFields] = useState(initial.map((f) => ({ ...f, optionsText: (f.options ?? []).join(", ") })));
   const [msg, setMsg] = useState<{ ok?: boolean; text: string } | null>(null);
+  useEffect(() => { if (msg) toast(msg.ok ? "success" : "error", msg.text); }, [msg]);
   const [pending, start] = useTransition();
   const router = useRouter();
   const patch = (i: number, p: Partial<(typeof fields)[number]>) => {
@@ -53,14 +55,14 @@ export function FieldsEditor({ funnelId, initial }: { funnelId: string; initial:
                 funnelId,
                 fields.map(({ optionsText, ...f }) => ({ ...f, options: optionsText.split(",").map((o) => o.trim()).filter(Boolean) })),
               );
-              setMsg(res.ok ? { ok: true, text: "Perguntas salvas" } : { text: res.error ?? "Erro ao salvar" });
+              setMsg(res.ok ? { ok: true, text: "Perguntas salvas! O formulário do site já mostra as novas perguntas." } : { text: res.error ?? "Erro ao salvar" });
               if (res.ok) router.refresh();
             })
           }
         >
           {pending && <Loader2 className="size-4 animate-spin" />} Salvar perguntas
         </Button>
-        {msg && <span className={msg.ok ? "text-emerald-700" : "text-red-600"}>{msg.text}</span>}
+        {msg && !msg.ok && <span className="text-red-600">{msg.text}</span>}
       </div>
     </div>
   );

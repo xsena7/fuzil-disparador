@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { toast } from "@/components/toast";
+import { useActionState, useState, useEffect } from "react";
 import { Button, Card, Field, Input, Select } from "@/components/ui";
 import { WhatsAppPreview } from "@/components/whatsapp-preview";
 import { renderText, templateShape, type TComponent, type VarSource, type VariableMapping } from "@/lib/template-utils";
@@ -57,6 +58,7 @@ export function StepContent({
   locked: boolean;
 }) {
   const [state, formAction, pending] = useActionState(action, undefined);
+  useEffect(() => { if (state?.error) toast("error", state.error); }, [state]);
   const shape = templateShape(components, redirectDomain);
   const [mapping, setMapping] = useState<VariableMapping>({
     header: shape.headerVars.map((_, i) => initial.header?.[i] ?? { type: "field", field: "firstName" }),

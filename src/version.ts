@@ -2,6 +2,15 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "1.72",
+    date: "22/10/2026",
+    items: [
+      "Avisos novos: tudo que você salva, envia ou testa mostra um aviso no canto direito da tela, explicando em palavras simples o que aconteceu (verde quando deu certo, vermelho quando não deu)",
+      "Ao criar um template, o aviso explica que ele foi para a Meta aprovar e quanto tempo costuma levar",
+      "Fundo do painel com brilho laranja bem clarinho e a logo do Fuzil apagada, em todas as telas",
+    ],
+  },
+  {
     version: "1.71",
     date: "22/10/2026",
     items: ["Templates: novo modelo pronto \"fuzil_utilidade1\" (atualização de pedido com imagem): imagem no cabeçalho, 4 variáveis e botão Detalhes", "O modelo já vem com uma imagem do Fuzil de atualização de pedido (dá para trocar)"],

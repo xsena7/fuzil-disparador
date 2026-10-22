@@ -6,6 +6,7 @@ import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type { FormState } from "@/app/actions/auth";
 import { Button } from "./ui";
+import { toast, toastResult } from "./toast";
 
 /** Formulário genérico com mensagem de erro/sucesso. */
 export function ActionForm({
@@ -26,6 +27,7 @@ export function ActionForm({
   // Atualiza os dados da tela depois de salvar (sem prender o botão em "Aguarde...")
   useEffect(() => {
     if (state?.ok) router.refresh();
+    toastResult(state);
   }, [state, router]);
   return (
     <form action={formAction} className={className}>
@@ -33,7 +35,6 @@ export function ActionForm({
       <div className="mt-4 flex items-center gap-3">
         <Button variant={variant} disabled={pending}>{pending ? "Aguarde..." : submit}</Button>
         {state?.error && <span className="text-red-600">{state.error}</span>}
-        {state?.ok && <span className="text-emerald-700">{state.ok}</span>}
       </div>
     </form>
   );
@@ -48,8 +49,11 @@ export function ConfirmButton({ action, children, confirm, variant = "secondary"
       action={() =>
         start(async () => {
           const r = await action();
-          if (r && typeof r === "object" && "error" in r && r.error) window.alert(String(r.error));
-          else if (r && typeof r === "object" && "ok" in r) router.refresh();
+          if (r && typeof r === "object" && "error" in r && r.error) toast("error", String(r.error));
+          else if (r && typeof r === "object" && "ok" in r) {
+            router.refresh();
+            toastResult(r, "Feito! A tela já foi atualizada.");
+          }
         })
       }
       onSubmit={(e) => {

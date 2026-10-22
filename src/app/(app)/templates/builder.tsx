@@ -5,6 +5,7 @@ import { Plus, Sparkles, Trash2 } from "lucide-react";
 import { createTemplateAction } from "@/app/actions/templates";
 import { extractVars } from "@/lib/template-utils";
 import { TEMPLATE_PRESETS, type TemplatePreset } from "@/lib/template-presets";
+import { toastResult } from "@/components/toast";
 import { Button, Card, Field, Input, Select, Textarea } from "@/components/ui";
 import { WhatsAppPreview } from "@/components/whatsapp-preview";
 
@@ -56,6 +57,7 @@ export function TemplateBuilder({
   }
 
   const [preset, setPreset] = useState<string | null>(null);
+  useEffect(() => toastResult(state), [state]);
   const sampleRef = useRef<HTMLInputElement>(null);
   const [pendingSample, setPendingSample] = useState<string | null>(null);
   // Modelo com imagem pronta: baixa e coloca no campo "Arquivo de exemplo" (dá para trocar)
@@ -249,7 +251,6 @@ export function TemplateBuilder({
         <div className="flex items-center gap-3">
           <Button disabled={pending}>{pending ? "Enviando para a Meta..." : asBlueprint ? "Criar template padrão" : "Enviar para análise"}</Button>
           {state?.error && <span className="text-red-600">{state.error}</span>}
-          {state?.ok && <span className="text-emerald-700">{state.ok}</span>}
         </div>
       </div>
       <div className="lg:sticky lg:top-8 lg:self-start">

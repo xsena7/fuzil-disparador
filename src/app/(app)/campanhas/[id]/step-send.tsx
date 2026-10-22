@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useMemo, useState } from "react";
+import { toast } from "@/components/toast";
+import { useActionState, useMemo, useState, useEffect } from "react";
 import { Button, Field, Input } from "@/components/ui";
 import type { FormState } from "@/app/actions/auth";
 
@@ -42,6 +43,7 @@ export function StepSendForm({
   capacity: number | null;
 }) {
   const [state, formAction, busy] = useActionState(action, undefined);
+  useEffect(() => { if (state?.error) toast("error", state.error); }, [state]);
   const [schedule, setSchedule] = useState(false);
   const [iso, setIso] = useState("");
   const [total, setTotal] = useState(defaultTotal ?? 30);

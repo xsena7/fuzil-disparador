@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronRight, Loader2, Plus, Trash2 } from "lucide-react";
 import { saveJobsAction } from "@/app/actions/funnels";
 import type { Job } from "@/lib/funnel-types";
 import { Button } from "@/components/ui";
+import { toast } from "@/components/toast";
 
 const inp = "w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm";
 type Row = Job & { reqText: string };
@@ -15,6 +16,7 @@ export function JobsEditor({ funnelId, initial }: { funnelId: string; initial: J
   const [jobs, setJobs] = useState<Row[]>(initial.map((j) => ({ ...j, reqText: j.requirements.join("\n") })));
   const [openIdx, setOpenIdx] = useState<number | null>(null);
   const [msg, setMsg] = useState<{ ok?: boolean; text: string } | null>(null);
+  useEffect(() => { if (msg) toast(msg.ok ? "success" : "error", msg.text); }, [msg]);
   const [pending, start] = useTransition();
   const router = useRouter();
   const patch = (i: number, p: Partial<Row>) => {
@@ -75,14 +77,14 @@ export function JobsEditor({ funnelId, initial }: { funnelId: string; initial: J
                 funnelId,
                 jobs.map(({ reqText, ...j }) => ({ ...j, requirements: reqText.split("\n").map((r) => r.trim()).filter(Boolean) })),
               );
-              setMsg(res.ok ? { ok: true, text: "Vagas salvas" } : { text: res.error ?? "Erro ao salvar" });
+              setMsg(res.ok ? { ok: true, text: "Vagas salvas! O site já mostra as vagas novas." } : { text: res.error ?? "Erro ao salvar" });
               if (res.ok) router.refresh();
             })
           }
         >
           {pending && <Loader2 className="size-4 animate-spin" />} Salvar vagas
         </Button>
-        {msg && <span className={msg.ok ? "text-emerald-700" : "text-red-600"}>{msg.text}</span>}
+        {msg && !msg.ok && <span className="text-red-600">{msg.text}</span>}
       </div>
     </div>
   );

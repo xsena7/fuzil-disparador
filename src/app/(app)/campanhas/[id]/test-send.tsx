@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
+import { toast } from "@/components/toast";
 import { Check, Copy, Loader2 } from "lucide-react";
 import { testCampaignSendAction } from "@/app/actions/campaigns";
 import { Button, Input } from "@/components/ui";
@@ -9,6 +10,10 @@ import { Button, Input } from "@/components/ui";
 export function TestSend({ campaignId }: { campaignId: string }) {
   const [state, action, pending] = useActionState(testCampaignSendAction.bind(null, campaignId), undefined);
   const [copied, setCopied] = useState(false);
+  useEffect(() => {
+    if (state?.ok) toast("success", "Mensagem de teste enviada! Confira no WhatsApp do número que você digitou.");
+    else if (state?.error) toast("error", "A Meta não aceitou a mensagem de teste. Os detalhes estão logo abaixo do botão.");
+  }, [state]);
   const copy = async () => {
     if (!state?.raw) return;
     await navigator.clipboard.writeText(state.raw);

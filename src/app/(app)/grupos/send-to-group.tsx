@@ -1,13 +1,15 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { Loader2, Send } from "lucide-react";
 import { addBusinessToGroupAction } from "@/app/actions/groups";
+import { toast } from "@/components/toast";
 
 /** Move a BM para outro grupo (ela sai do grupo em que estava: uma BM só fica em um grupo de disparo). */
 export function SendToGroup({ businessId, groups }: { businessId: string; groups: Array<{ id: string; name: string; color?: string | null }> }) {
   const [target, setTarget] = useState("");
   const [msg, setMsg] = useState<{ ok?: boolean; text: string } | null>(null);
+  useEffect(() => { if (msg) toast(msg.ok ? "success" : "error", msg.text); }, [msg]);
   const [pending, start] = useTransition();
   if (!groups.length) return null;
   return (
@@ -34,7 +36,7 @@ export function SendToGroup({ businessId, groups }: { businessId: string; groups
       >
         {pending ? <Loader2 className="size-3 animate-spin" /> : <Send className="size-3" />} Enviar
       </button>
-      {msg && <span className={msg.ok ? "text-emerald-700" : "text-red-600"}>{msg.text}</span>}
+      {msg && !msg.ok && <span className="text-red-600">{msg.text}</span>}
     </div>
   );
 }

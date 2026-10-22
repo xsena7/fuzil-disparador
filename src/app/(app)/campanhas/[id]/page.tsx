@@ -18,7 +18,6 @@ import {
 import { ActionForm } from "@/components/action-form";
 import { Zap } from "lucide-react";
 import { StepTemplate, type TemplateOption } from "./step-template";
-import { Logo } from "@/components/brand";
 import { StepContent } from "./step-content";
 import { StepAudience, type AudienceStats } from "./step-audience";
 import { StepSendForm } from "./step-send";
@@ -49,12 +48,6 @@ export default async function CampaignPage({ params, searchParams }: { params: P
 
   return (
     <div className="relative -mx-10 -my-9 min-h-screen overflow-hidden">
-      {/* Fundo: logo bem clara e brilho laranja, só enfeite */}
-      <div aria-hidden className="pointer-events-none absolute inset-0 -z-0">
-        <div className="absolute -left-24 top-24 size-[460px] rounded-full bg-orange-400/15 blur-[110px]" />
-        <div className="absolute -right-20 bottom-10 size-[380px] rounded-full bg-rose-500/10 blur-[110px]" />
-        <Logo className="absolute bottom-16 right-10 w-[min(620px,80%)] opacity-[.05]" />
-      </div>
       <div className="relative">
       <div className="sticky top-0 z-10 flex flex-wrap items-center gap-3 border-b border-zinc-200/70 bg-white/85 px-6 py-3 backdrop-blur">
         <Link href="/campanhas" className="rounded-full border border-zinc-200 p-1.5 hover:bg-zinc-50"><ArrowLeft className="size-4" /></Link>
