@@ -79,6 +79,7 @@ export async function ClientReportStep({ campaignId, workspaceId, canAdjust = fa
         <p className="mb-4 text-sm text-zinc-500">
           Se a Meta cobrou diferente do que o Fuzil contou (ex.: conta banida no meio do disparo), ajuste aqui. O valor cobrado usa as <b>Enviadas</b>, e o funil do relatório (inclusive o que aparece ao passar o mouse) usa todos estes números. As Métricas continuam mostrando os números reais.
         </p>
+        <p className="mb-4 rounded-lg bg-zinc-50 px-3 py-2 text-xs text-zinc-600">Os números precisam fechar: <b>Público ≥ Enviadas ≥ Lidas ≥ Clicaram</b>, e <b>Responderam ≤ Lidas</b>.</p>
         <ActionForm action={saveReportNumbersAction.bind(null, campaignId)} submit="Salvar números" variant="secondary">
           <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-5">
             {REPORT_FIELDS.map((f) => (

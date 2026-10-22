@@ -6,6 +6,7 @@ import { requireAuth } from "@/lib/auth";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import type { FormState } from "./auth";
+import type { ReportKey } from "@/lib/report-numbers";
 
 /** "0,25", "R$ 0,25" ou "0.25" → 0.25. Vazio → null. */
 function parsePrice(raw: FormDataEntryValue | null): number | null | "erro" {
@@ -95,7 +96,7 @@ export async function saveReportNumbersAction(id: string, _: FormState, form: Fo
   const c = await ownCampaign(id);
   // Ajustar números do relatório é só para administradores do Fuzil
   if (!(await requireAuth()).user.isSuperAdmin) return { error: "Só administradores do Fuzil podem ajustar os números do relatório." };
-  const { REPORT_FIELDS, realReportNumbers } = await import("@/lib/report-numbers");
+  const { REPORT_FIELDS, realReportNumbers, checkLogic } = await import("@/lib/report-numbers");
   const real = await realReportNumbers(c.id);
   const v: Record<string, number> = {};
   for (const { key, label } of REPORT_FIELDS) {
@@ -104,10 +105,8 @@ export async function saveReportNumbersAction(id: string, _: FormState, form: Fo
     if (!Number.isFinite(n) || n < 0 || n > 10_000_000) return { error: `Número inválido em ${label}` };
     v[key] = n;
   }
-  if (v.sent > v.total) return { error: "Enviadas não pode ser maior que o Público." };
-  for (const k of ["read", "clicked", "replied"] as const)
-    if (v[k] > v.sent) return { error: `${REPORT_FIELDS.find((f) => f.key === k)!.label} não pode ser maior que Enviadas.` };
-  if (v.clicked < 0 || v.replied < 0) return { error: "Número inválido." };
+  const wrong = checkLogic(v as Record<ReportKey, number>);
+  if (wrong) return { error: wrong };
   // Igual aos reais: não guarda nada (o relatório volta a seguir os números de verdade)
   const same = REPORT_FIELDS.every(({ key }) => v[key] === real[key]);
   await prisma.campaign.update({ where: { id: c.id }, data: { reportOverrides: same ? Prisma.DbNull : v } });

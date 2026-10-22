@@ -28,13 +28,18 @@ export async function realReportNumbers(campaignId: string): Promise<Omit<Report
   const st = (k: string) => byStatus.find((x) => x.status === k)?._count ?? 0;
   const a = agg[0];
   const total = byStatus.reduce((s, x) => s + x._count, 0);
+  const clicked = Number(a?.clicked ?? 0);
+  const replied = Number(a?.replied ?? 0);
+  // Quem clicou ou respondeu leu (mesmo com a confirmação de leitura desligada no celular dela)
+  const read = Math.max(Number(a?.read ?? 0), clicked, replied);
+  const sent = Math.max(Number(a?.sent ?? 0), read);
   return {
-    total,
-    sent: Number(a?.sent ?? 0),
-    read: Number(a?.read ?? 0),
-    clicked: Number(a?.clicked ?? 0),
+    total: Math.max(total, sent),
+    sent,
+    read,
+    clicked,
     clicks: Number(a?.clicks ?? 0),
-    replied: Number(a?.replied ?? 0),
+    replied,
     failed: Math.max(0, st("FAILED") - noWa),
     noWa,
     pending: st("PENDING") + st("SENDING") + st("SKIPPED"),
@@ -58,6 +63,11 @@ export async function reportNumbers(campaignId: string, overrides: unknown): Pro
   const o = parseOverrides(overrides);
   if (!Object.keys(o).length) return { ...real, adjusted: false };
   const n = { ...real, ...o };
+  // Garante a lógica mesmo se algum ajuste antigo não fechava (corta de cima para baixo)
+  n.sent = Math.min(n.sent, n.total);
+  n.read = Math.min(n.read, n.sent);
+  n.clicked = Math.min(n.clicked, n.read);
+  n.replied = Math.min(n.replied, n.read);
   return {
     ...n,
     // Cliques totais acompanham quem clicou quando o número foi ajustado
@@ -66,4 +76,13 @@ export async function reportNumbers(campaignId: string, overrides: unknown): Pro
     pending: Math.max(0, n.total - n.sent),
     adjusted: true,
   };
+}
+
+/** A lógica dos números: Público ≥ Enviadas ≥ Lidas ≥ Clicaram, e Responderam ≤ Lidas. Devolve o erro em português. */
+export function checkLogic(v: Record<ReportKey, number>): string | null {
+  if (v.sent > v.total) return `Enviadas (${v.sent}) não pode ser maior que o Público (${v.total}).`;
+  if (v.read > v.sent) return `Lidas (${v.read}) não pode ser maior que Enviadas (${v.sent}).`;
+  if (v.clicked > v.read) return `Clicaram (${v.clicked}) não pode ser maior que Lidas (${v.read}): quem clicou leu a mensagem.`;
+  if (v.replied > v.read) return `Responderam (${v.replied}) não pode ser maior que Lidas (${v.read}): quem respondeu leu a mensagem.`;
+  return null;
 }

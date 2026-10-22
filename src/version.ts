@@ -2,6 +2,14 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "1.98",
+    date: "22/10/2026",
+    items: [
+      "Relatório do cliente: os números sempre fecham. Público ≥ Enviadas ≥ Lidas ≥ Clicaram, e Responderam ≤ Lidas. Ao ajustar, o Fuzil não deixa salvar número sem lógica",
+      "Quem clicou ou respondeu conta como lida, mesmo que o celular da pessoa não mande a confirmação de leitura",
+    ],
+  },
+  {
     version: "1.97",
     date: "22/10/2026",
     items: ["Relatório do cliente: os números do disparo (público, enviadas, lidas, cliques e respostas) voltaram, em cima do valor"],
