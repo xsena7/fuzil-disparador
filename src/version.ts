@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.10",
+    date: "22/10/2026",
+    items: ["Novo grupo automático 📱 Sem número (amarelo, igual ao de pagamento): BMs sem nenhum número conectado para disparar vão para lá sozinhas e voltam para o grupo de disparo quando o número for registrado"],
+  },
+  {
     version: "2.09",
     date: "22/10/2026",
     items: [

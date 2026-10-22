@@ -12,6 +12,7 @@ export const PROBLEMS_GROUP = "PROBLEMS";
 export const PROBLEM_KINDS = {
   BANNED: { system: "PROBLEMS_BANNED", name: "🚫 Banidas", color: "red", description: "Número ou conta banida, bloqueada ou restrita pela Meta." },
   PAYMENT: { system: "PROBLEMS_PAYMENT", name: "💳 Problemas de pagamento", color: "amber", description: "Sem cartão ou com erro no pagamento da conta do WhatsApp." },
+  NO_PHONE: { system: "PROBLEMS_NOPHONE", name: "📱 Sem número", color: "amber", description: "Nenhum número registrado e conectado para disparar (sem número, só número de teste ou desconectado)." },
   TEMPLATE: { system: "PROBLEMS_TEMPLATE", name: "📝 Template em análise", color: "sky", description: "Nenhum template de utilidade aprovado (em análise ou faltando)." },
   QUALITY: { system: "PROBLEMS_QUALITY", name: "📉 Número com qualidade baixa", color: "pink", description: "Qualidade vermelha ou número sinalizado pela Meta." },
   UNKNOWN: { system: PROBLEMS_GROUP, name: "⚠️ BMs com problema", color: "black", description: "Problemas que o Fuzil não conseguiu identificar (ou colocadas aqui por você)." },
@@ -31,6 +32,7 @@ export async function problemGroup(workspaceId: string, kind: ProblemKind = "UNK
 /** Tipo do problema pelo código de erro da Meta (envio ou webhook). */
 export function kindForCode(code: number | null | undefined): ProblemKind {
   if (code === 131042) return "PAYMENT";
+  if (code === 131045) return "NO_PHONE";
   if (code === 131031 || code === 368) return "BANNED";
   if (code === 131048 || code === 131049) return "QUALITY";
   if (code !== null && code !== undefined && code >= 132000 && code < 133000) return "TEMPLATE";
@@ -162,6 +164,16 @@ export async function checkBusinessAfterSync(wabaRecordId: string) {
   } else if (waba.reviewStatus === "REJECTED") {
     reason = `WABA ${waba.name} rejeitada na análise da Meta`;
     fix = problemFix(null, "REVIEW");
+  } else if (!waba.phones.some((p) => p.status === "CONNECTED" || (p.status && BAD_PHONE[p.status] && BAD_PHONE[p.status].kind !== "REGISTER"))) {
+    // Sem número de verdade conectado. Só conta se nenhuma outra conta da BM tem número pronto (BM com uma WABA vazia a mais não é problema)
+    const otherReady = await prisma.phoneNumber.count({
+      where: { waba: { businessId: waba.businessId }, wabaId: { not: waba.id }, invalidReason: null, enabled: true, status: "CONNECTED" },
+    });
+    if (!otherReady) {
+      reason = waba.phones.length ? `Nenhum número conectado na WABA ${waba.name} (precisa registrar)` : `Nenhum número na WABA ${waba.name}`;
+      fix = waba.phones.length ? problemFix(null, "REGISTER") : "Adicione um número real nessa conta do WhatsApp (no WhatsApp Manager) e registre ele em Conexões.";
+      kind = "NO_PHONE";
+    }
   } else {
     const bad = waba.phones.find((p) => p.status && BAD_PHONE[p.status]);
     const red = waba.phones.find((p) => p.qualityRating === "RED");
@@ -169,7 +181,7 @@ export async function checkBusinessAfterSync(wabaRecordId: string) {
       reason = `${BAD_PHONE[bad.status!].label}: ${bad.displayPhoneNumber}`;
       fix = problemFix(null, BAD_PHONE[bad.status!].kind);
       const k = BAD_PHONE[bad.status!].kind;
-      kind = k === "QUALITY" ? "QUALITY" : k === "REGISTER" ? "UNKNOWN" : "BANNED";
+      kind = k === "QUALITY" ? "QUALITY" : k === "REGISTER" ? "NO_PHONE" : "BANNED";
     } else if (red) {
       reason = `Qualidade vermelha no número ${red.displayPhoneNumber}`;
       fix = problemFix(null, "QUALITY");
