@@ -183,7 +183,7 @@ async function ContentStep({ campaignId, locked }: { campaignId: string; locked:
     where: { workspaceId: campaign.workspaceId, name: { in: family }, language: campaign.templateLanguage!, status: "APPROVED", category: "UTILITY" },
   });
   if (!tpl) return <p className="text-red-600">Nenhuma cópia aprovada de utilidade desse template foi encontrada.</p>;
-  const sample = await prisma.campaignRecipient.findFirst({ where: { campaignId }, orderBy: { createdAt: "asc" } });
+  const sample = await prisma.campaignRecipient.findFirst({ where: { campaignId }, orderBy: [{ position: "asc" }, { createdAt: "asc" }] });
   const stats = campaign.audienceStats as unknown as { headers?: string[] } | null;
   return (
     <StepContent
@@ -201,7 +201,7 @@ async function ContentStep({ campaignId, locked }: { campaignId: string; locked:
 }
 
 async function AudienceStep({ campaignId, fileName, stats, locked }: { campaignId: string; fileName: string | null; stats: AudienceStats | null; locked: boolean }) {
-  const preview = await prisma.campaignRecipient.findMany({ where: { campaignId }, take: 10, orderBy: { createdAt: "asc" } });
+  const preview = await prisma.campaignRecipient.findMany({ where: { campaignId }, take: 10, orderBy: [{ position: "asc" }, { createdAt: "asc" }] });
   return (
     <div className="space-y-6">
       <StepAudience campaignId={campaignId} fileName={fileName} stats={stats} locked={locked} />

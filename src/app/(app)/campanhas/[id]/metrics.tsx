@@ -25,7 +25,8 @@ export async function Metrics({ campaignId }: { campaignId: string }) {
   const recipients = await prisma.campaignRecipient.findMany({
     where: { campaignId },
     select: { phone: true, status: true, errorTitle: true, sentAt: true, sender: { select: { displayPhoneNumber: true } } },
-    orderBy: [{ status: "asc" }, { phone: "asc" }],
+    // Mesma ordem da planilha
+    orderBy: [{ position: "asc" }, { createdAt: "asc" }],
     take: 300,
   });
   const t = m.totals;

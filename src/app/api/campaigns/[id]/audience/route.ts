@@ -56,7 +56,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   for (let i = 0; i < sendable.length; i += 5000) {
     const chunk = sendable.slice(i, i + 5000);
     await prisma.campaignRecipient.createMany({
-      data: chunk.map((r) => ({ campaignId: id, phone: r.phone, name: r.name, data: r.data as Prisma.InputJsonValue, clickToken: shortToken() })),
+      // position = linha na planilha: a prévia e o disparo seguem a mesma ordem
+      data: chunk.map((r, j) => ({ campaignId: id, phone: r.phone, name: r.name, data: r.data as Prisma.InputJsonValue, clickToken: shortToken(), position: i + j + 1 })),
       skipDuplicates: true,
     });
     await prisma.contact.createMany({

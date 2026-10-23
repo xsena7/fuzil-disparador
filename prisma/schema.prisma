@@ -423,6 +423,8 @@ model CampaignRecipient {
   phone           String
   name            String?
   data            Json // linha da planilha (para variáveis)
+  // Linha na planilha (1, 2, 3...): a prévia e o disparo seguem essa ordem
+  position        Int             @default(0)
   status          RecipientStatus @default(PENDING)
   senderId        String?
   wamid           String?         @unique

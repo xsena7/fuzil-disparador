@@ -147,16 +147,18 @@ export async function planSenders(
 /** Reserva destinatários pendentes de forma segura (vários workers não pegam o mesmo). */
 async function claimRecipients(campaignId: string, limit: number): Promise<CampaignRecipient[]> {
   if (limit <= 0) return [];
-  return prisma.$queryRaw<CampaignRecipient[]>`
+  // Na ordem da planilha (position); o UPDATE devolve sem ordem garantida, então ordena de novo
+  const rows = await prisma.$queryRaw<CampaignRecipient[]>`
     UPDATE "CampaignRecipient" SET status = 'SENDING', "queuedAt" = NOW(), attempts = attempts + 1
     WHERE id IN (
       SELECT id FROM "CampaignRecipient"
       WHERE "campaignId" = ${campaignId} AND status = 'PENDING' AND ("retryAt" IS NULL OR "retryAt" <= NOW())
-      ORDER BY "createdAt", id
+      ORDER BY position, "createdAt", id
       LIMIT ${limit}
       FOR UPDATE SKIP LOCKED
     )
     RETURNING *`;
+  return rows.sort((a, b) => a.position - b.position || a.createdAt.getTime() - b.createdAt.getTime() || a.id.localeCompare(b.id));
 }
 
 async function releaseRecipients(ids: string[]) {

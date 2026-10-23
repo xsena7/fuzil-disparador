@@ -19,7 +19,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const rows = await prisma.campaignRecipient.findMany({
     where: { campaignId: id, ...(filter ? { status: filter as never } : {}) },
     include: { sender: { include: { waba: { include: { business: true } } } } },
-    orderBy: { createdAt: "asc" },
+    orderBy: [{ position: "asc" }, { createdAt: "asc" }],
   });
   const fmt = (d: Date | null) => (d ? d.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" }) : "");
   const csv = Papa.unparse(

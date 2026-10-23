@@ -308,7 +308,7 @@ export async function testCampaignSendAction(id: string, _: { ok?: string; error
   const { env } = await import("@/lib/env");
   const { meta, MetaError } = await import("@/lib/meta");
   // Igual ao disparo: variáveis ligadas em Conteúdo, preenchidas com a 1ª linha da planilha (só o número é o seu)
-  const first = await prisma.campaignRecipient.findFirst({ where: { campaignId: c.id }, orderBy: { createdAt: "asc" }, select: { name: true, data: true } });
+  const first = await prisma.campaignRecipient.findFirst({ where: { campaignId: c.id }, orderBy: [{ position: "asc" }, { createdAt: "asc" }], select: { name: true, data: true } });
   const components = buildSendComponents(sender.template.components, (c.variableMapping ?? {}) as import("@/lib/template-utils").VariableMapping, { phone, name: first?.name ?? "Teste", data: (first?.data ?? {}) as Record<string, unknown> }, {
     redirectDomain: env.redirectDomain(),
     clickToken: "teste",

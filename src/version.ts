@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.26",
+    date: "23/10/2026",
+    items: ["Campanha: a lista de números, o disparo, as métricas e o CSV seguem exatamente a ordem da planilha (vale para planilhas subidas a partir de agora)"],
+  },
+  {
     version: "2.25",
     date: "23/10/2026",
     items: ["Campanha: o teste de envio sai preenchido igual ao disparo (variáveis do Conteúdo com os dados da 1ª linha da planilha)"],
