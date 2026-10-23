@@ -307,7 +307,9 @@ export async function testCampaignSendAction(id: string, _: { ok?: string; error
   const { buildSendComponents } = await import("@/lib/template-utils");
   const { env } = await import("@/lib/env");
   const { meta, MetaError } = await import("@/lib/meta");
-  const components = buildSendComponents(sender.template.components, {}, { phone, name: "Teste", data: {} }, {
+  // Igual ao disparo: variáveis ligadas em Conteúdo, preenchidas com a 1ª linha da planilha (só o número é o seu)
+  const first = await prisma.campaignRecipient.findFirst({ where: { campaignId: c.id }, orderBy: { createdAt: "asc" }, select: { name: true, data: true } });
+  const components = buildSendComponents(sender.template.components, (c.variableMapping ?? {}) as import("@/lib/template-utils").VariableMapping, { phone, name: first?.name ?? "Teste", data: (first?.data ?? {}) as Record<string, unknown> }, {
     redirectDomain: env.redirectDomain(),
     clickToken: "teste",
     headerMediaUrl: c.headerMediaUrl,
@@ -326,7 +328,7 @@ export async function testCampaignSendAction(id: string, _: { ok?: string; error
   };
   try {
     const res = await meta.sendTemplate(sender.token, sender.phoneNumberId, phone, { name: sender.template.name, language: sender.template.language, components });
-    return { ok: `Mensagem aceita pela Meta (${used}).`, raw: JSON.stringify(res, null, 2) };
+    return { ok: `Mensagem aceita pela Meta (${used}).${first ? " Preenchida com a 1ª linha da planilha." : " Suba a planilha na Audiência para o teste sair preenchido com os dados dela."}`, raw: JSON.stringify(res, null, 2) };
   } catch (err) {
     if (err instanceof MetaError) {
       // A qual WABA o número pertence de verdade (o 132001 com template aprovado quase sempre é número de outra WABA)

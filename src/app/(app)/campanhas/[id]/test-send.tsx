@@ -23,7 +23,7 @@ export function TestSend({ campaignId }: { campaignId: string }) {
   return (
     <form action={action} className="mt-8 max-w-xl rounded-xl border border-dashed border-zinc-300 p-4">
       <div className="mb-2 font-medium">Teste de envio (1 mensagem)</div>
-      <p className="mb-3 text-xs text-zinc-500">Manda só uma mensagem com o template desta campanha para o número que você digitar, sem disparar a lista.</p>
+      <p className="mb-3 text-xs text-zinc-500">Manda só uma mensagem para o número que você digitar, sem disparar a lista. Sai preenchida igual ao disparo, com os dados da 1ª linha da planilha.</p>
       <div className="flex flex-wrap items-center gap-2">
         <Input name="phone" placeholder="11 99999-8888" className="max-w-56" />
         <Button variant="secondary" disabled={pending}>
