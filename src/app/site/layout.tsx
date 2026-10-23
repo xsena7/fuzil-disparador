@@ -9,7 +9,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const c = company();
   return {
     title: "Fuzil Disparador · Disparos pela API oficial do WhatsApp",
-    description: "Plataforma para empresas enviarem mensagens em escala pela API oficial do WhatsApp Business (Cloud API), com gestão de várias contas, métricas e controle de qualidade.",
+    description: "Dispare pela API oficial do WhatsApp somando o limite de várias BMs, com rodízio automático de números, templates padrão em todas as contas e relatório ao vivo.",
     metadataBase: new URL(c.siteUrl),
     // Um código por BM (dá para colar vários, separados por vírgula ou espaço)
     ...(c.domainVerification ? { other: { "facebook-domain-verification": c.domainVerification.split(/[\s,;]+/).filter(Boolean) } } : {}),
@@ -24,9 +24,10 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
         <div className="mx-auto flex max-w-6xl items-center gap-6 px-5 py-3">
           <Link href="/" className="w-28 shrink-0"><Logo className="w-full" /></Link>
           <nav className="ml-auto hidden items-center gap-6 text-sm text-zinc-300 md:flex">
-            <a href="/#recursos" className="hover:text-white">Recursos</a>
+            <a href="/#recursos" className="hover:text-white">Diferenciais</a>
+            <a href="/#comparar" className="hover:text-white">Lado a lado</a>
             <a href="/#como-funciona" className="hover:text-white">Como funciona</a>
-            <a href="/#contato" className="hover:text-white">Contato</a>
+            <a href="/#contato" className="hover:text-white">Testes</a>
           </nav>
           <a href={`${c.appUrl}/login`} className="ml-auto rounded-xl bg-brand-gradient px-4 py-2 text-sm font-medium text-white shadow-sm md:ml-0">Entrar</a>
         </div>
@@ -52,7 +53,7 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
             <div className="mb-3 font-medium text-zinc-200">Plataforma</div>
             <ul className="space-y-2">
               <li><a href={`${c.appUrl}/login`} className="hover:text-white">Entrar no painel</a></li>
-              <li><a href="/#recursos" className="hover:text-white">Recursos</a></li>
+              <li><a href="/#recursos" className="hover:text-white">Diferenciais</a></li>
               <li><a href="/#contato" className="hover:text-white">Contato</a></li>
             </ul>
           </div>

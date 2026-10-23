@@ -1,66 +1,185 @@
-import { BarChart3, Bell, CheckCircle2, Layers, Link2, ShieldCheck, Sparkles, Zap } from "lucide-react";
-import { Logo } from "@/components/brand";
+import { ArrowRight, BarChart3, CheckCircle2, Coins, FileText, Layers, Link2, MessagesSquare, RefreshCw, Repeat, ShieldCheck, Sparkles, Zap } from "lucide-react";
 import { company } from "@/lib/company";
+import { SUPPORT_WHATSAPP } from "@/lib/onboarding";
 
-const FEATURES = [
-  { icon: Layers, title: "Várias contas, um disparo só", text: "Conecte quantas contas do WhatsApp Business precisar e agrupe-as. Cada campanha distribui os envios entre todos os números do grupo, respeitando o limite de cada conta." },
-  { icon: ShieldCheck, title: "Proteção dos seus números", text: "A plataforma acompanha a qualidade de cada número em tempo real, tira do envio os que estão em risco e respeita automaticamente quem pede para sair." },
-  { icon: Sparkles, title: "Modelos padronizados", text: "Crie um modelo de mensagem uma vez e ele é cadastrado em todas as suas contas, inclusive nas que você conectar depois." },
-  { icon: Link2, title: "Links com contagem de cliques", text: "Cada destinatário recebe um link único. Você vê quem clicou, sem contar robôs de pré-visualização." },
-  { icon: BarChart3, title: "Métricas completas", text: "Enviadas, entregues, lidas, cliques, respostas, descadastros e falhas por motivo, por campanha e por número. Exportação em planilha." },
-  { icon: Bell, title: "Alertas de qualidade e limite", text: "Aviso imediato quando a qualidade de um número cai, quando o limite diário é atingido ou quando um modelo muda de categoria." },
+// Diferenciais: o que o Fuzil faz sozinho e as plataformas tradicionais deixam na mão de quem opera
+const DIFFS = [
+  {
+    icon: Layers,
+    title: "Some o limite de várias BMs",
+    text: "Junte quantas BMs quiser num grupo. O Fuzil soma o limite diário de todas e mostra quanto ainda dá para disparar hoje, só das que estão prontas.",
+    tag: "Ex.: 2 mil + 10 mil + 2 mil = 14 mil por dia",
+  },
+  {
+    icon: Repeat,
+    title: "Uma campanha, vários números",
+    text: "A campanha dispara pelo grupo inteiro e alterna sozinha entre os números de todas as BMs, respeitando o limite e a velocidade de cada um.",
+    tag: "Rodízio automático",
+  },
+  {
+    icon: Sparkles,
+    title: "Template padrão em todas as BMs",
+    text: "Crie o modelo uma vez e ele é cadastrado em todas as BMs, inclusive nas que você conectar depois. Rejeitou ou virou marketing? O Fuzil reenvia sozinho com um nome novo.",
+    tag: "Cria uma vez, vale para todas",
+  },
+  {
+    icon: ShieldCheck,
+    title: "BM com problema sai sozinha",
+    text: "Sem cartão, sem número, template em análise, qualidade baixa ou bloqueio: a BM sai do disparo e vai para o grupo do problema, com o motivo e como resolver. Resolveu, ela volta sozinha.",
+    tag: "A campanha não para",
+  },
+  {
+    icon: Coins,
+    title: "Falhou, o crédito volta",
+    text: "Cada mensagem que não sai (número sem WhatsApp, erro da Meta, limite) tem o crédito estornado automaticamente. Você só paga pelo que foi enviado.",
+    tag: "Estorno automático",
+  },
+  {
+    icon: BarChart3,
+    title: "Relatório ao vivo para o seu cliente",
+    text: "Mande um link do relatório da campanha que atualiza ao vivo, com enviadas, lidas, cliques e respostas. Ideal para quem dispara para outras empresas.",
+    tag: "Link público por 12 horas",
+  },
+];
+
+const MORE = [
+  { icon: FileText, title: "Variáveis direto da planilha", text: "Ligue cada variável do template a uma coluna da planilha e veja a prévia exatamente como a pessoa vai receber." },
+  { icon: Link2, title: "Cliques de verdade", text: "Cada pessoa recebe um link único. Você vê quem clicou, sem contar robôs de pré-visualização." },
+  { icon: MessagesSquare, title: "Chat e resposta automática", text: "As respostas de todos os números caem num chat só, com resposta automática configurável por campanha." },
+  { icon: RefreshCw, title: "Qualidade e limite ao vivo", text: "Qualidade, status e limite de cada número atualizados o tempo todo, com alertas na hora em que algo muda." },
+];
+
+const COMPARE: Array<[string, string, string]> = [
+  ["Limite diário", "Uma BM por vez", "Soma de todas as BMs do grupo"],
+  ["Números na campanha", "Escolhe um número", "Rodízio automático entre todos"],
+  ["Templates em várias BMs", "Cadastro manual em cada uma", "Cria uma vez, sobe em todas"],
+  ["Template rejeitado", "Você refaz na mão", "Reenvio automático com nome novo"],
+  ["BM com problema", "Você tira e recoloca na mão", "Sai sozinha e volta quando resolver"],
+  ["Mensagem que falhou", "Nem sempre volta", "Crédito estornado na hora"],
 ];
 
 const STEPS = [
-  { title: "Conecte suas contas", text: "Pelo cadastro oficial da Meta (Embedded Signup), em poucos cliques, sem compartilhar senhas." },
-  { title: "Crie o modelo de mensagem", text: "Monte o modelo com pré-visualização igual ao WhatsApp e envie para aprovação da Meta." },
-  { title: "Suba sua lista e dispare", text: "Importe a planilha dos seus clientes, revise e envie agora ou agende. Acompanhe tudo em tempo real." },
+  { title: "Libere o app do Fuzil na sua BM", text: "Peça acesso ao app do Fuzil, crie o usuário do sistema e gere o token. O passo a passo fica dentro do painel." },
+  { title: "Monte o grupo e o template", text: "Junte as BMs num grupo. O template padrão sobe sozinho em todas e você acompanha a aprovação da Meta." },
+  { title: "Suba a planilha e dispare", text: "Ligue as variáveis às colunas, confira a prévia e dispare. O Fuzil distribui os envios e mostra tudo ao vivo." },
 ];
 
 export default function SitePage() {
   const c = company();
-  const whatsapp = c.phone.replace(/\D/g, "");
+  const whatsapp = c.phone.replace(/\D/g, "") || SUPPORT_WHATSAPP;
+  const wa = `https://wa.me/${whatsapp}?text=${encodeURIComponent("Oi! Quero participar dos testes do Fuzil Disparador.")}`;
   return (
     <>
       <section className="relative overflow-hidden bg-ink text-white">
         <div className="pointer-events-none absolute -left-40 -top-40 size-[560px] rounded-full bg-orange-500/20 blur-3xl" />
         <div className="pointer-events-none absolute -bottom-56 -right-40 size-[560px] rounded-full bg-rose-600/20 blur-3xl" />
-        <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-5 py-20 md:grid-cols-[1.2fr_1fr] md:py-28">
+        <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-5 py-20 md:grid-cols-[1.15fr_1fr] md:py-28">
           <div>
-            <div className="mb-5 inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-medium text-orange-200">
-              <Zap className="size-3.5" /> API oficial do WhatsApp Business
+            <div className="mb-5 flex flex-wrap gap-2">
+              <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-medium text-orange-200">
+                <Zap className="size-3.5" /> API oficial do WhatsApp Business
+              </span>
+              <span className="inline-flex items-center gap-2 rounded-full bg-emerald-500/15 px-3 py-1 text-xs font-medium text-emerald-300 ring-1 ring-emerald-400/30">
+                <span className="size-1.5 rounded-full bg-emerald-400" /> Em testes fechados
+              </span>
             </div>
             <h1 className="text-4xl font-semibold leading-tight tracking-tight md:text-5xl">
-              Mensagens pela API oficial em escala, <span className="bg-brand-gradient bg-clip-text text-transparent">com controle total</span>.
+              Várias BMs, <span className="bg-brand-gradient bg-clip-text text-transparent">um disparo só</span>.
             </h1>
             <p className="mt-5 max-w-xl text-lg text-zinc-300">
-              O {c.brand} é uma plataforma para empresas gerenciarem suas contas do WhatsApp Business e enviarem mensagens para seus clientes em grande volume pela Cloud API oficial do WhatsApp.
+              O {c.brand} soma o limite de todas as suas BMs, alterna sozinho entre os números e cuida dos templates em todas as contas. Você sobe a planilha e acompanha tudo ao vivo, pela API oficial do WhatsApp.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <a href="#contato" className="rounded-xl bg-brand-gradient px-5 py-3 font-medium text-white shadow-lg shadow-orange-500/20">Quero usar</a>
-              <a href={`${c.appUrl}/login`} className="rounded-xl bg-white/10 px-5 py-3 font-medium text-white ring-1 ring-white/15 hover:bg-white/15">Já sou cliente</a>
+              <a href={wa} className="inline-flex items-center gap-2 rounded-xl bg-brand-gradient px-5 py-3 font-medium text-white shadow-lg shadow-orange-500/20">
+                Quero participar dos testes <ArrowRight className="size-4" />
+              </a>
+              <a href={`${c.appUrl}/login`} className="rounded-xl bg-white/10 px-5 py-3 font-medium text-white ring-1 ring-white/15 hover:bg-white/15">Já tenho acesso</a>
             </div>
           </div>
+
+          {/* Exemplo do painel: grupo somando o limite de 3 BMs e o rodízio dos números */}
           <div className="hidden md:block">
-            <div className="rounded-3xl bg-white/5 p-8 ring-1 ring-white/10">
-              <Logo className="w-full" />
-              <ul className="mt-8 space-y-3 text-zinc-300">
-                {["Distribuição entre várias contas e números", "Proteção automática da qualidade dos números", "Cliques, leituras e respostas em tempo real"].map((t) => (
-                  <li key={t} className="flex items-center gap-3"><CheckCircle2 className="size-5 shrink-0 text-orange-400" /> {t}</li>
+            <div className="rounded-3xl bg-white/5 p-6 ring-1 ring-white/10">
+              <div className="mb-4 flex items-center justify-between">
+                <span className="text-sm font-semibold">Grupo Disparos</span>
+                <span className="rounded-full bg-emerald-500/15 px-2.5 py-0.5 text-xs font-semibold text-emerald-300">3 BMs prontas</span>
+              </div>
+              <div className="space-y-2.5">
+                {[
+                  ["BM Loja Centro", "10 mil/dia", 72],
+                  ["BM Loja Norte", "2 mil/dia", 40],
+                  ["BM Atacado", "2 mil/dia", 55],
+                ].map(([name, limit, pct]) => (
+                  <div key={name as string} className="rounded-xl bg-white/5 px-4 py-3 ring-1 ring-white/10">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="flex items-center gap-2"><span className="size-2 rounded-full bg-emerald-400" />{name}</span>
+                      <span className="text-zinc-400">{limit}</span>
+                    </div>
+                    <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10">
+                      <div className="h-full rounded-full bg-brand-gradient" style={{ width: `${pct}%` }} />
+                    </div>
+                  </div>
                 ))}
-              </ul>
+              </div>
+              <div className="mt-4 flex items-end justify-between rounded-2xl bg-brand-gradient p-4">
+                <div>
+                  <div className="text-xs font-medium text-white/80">Limite somado</div>
+                  <div className="text-3xl font-bold tabular-nums">14.000</div>
+                </div>
+                <div className="text-right text-xs text-white/85">
+                  <div className="flex items-center justify-end gap-1"><Repeat className="size-3.5" /> rodízio entre 6 números</div>
+                  <div className="mt-1">mensagens por dia</div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
       <section id="recursos" className="mx-auto max-w-6xl scroll-mt-20 px-5 py-20">
-        <h2 className="text-3xl font-semibold tracking-tight text-zinc-900">Recursos</h2>
-        <p className="mt-2 max-w-2xl text-zinc-500">Tudo o que sua operação precisa para enviar mensagens em escala com segurança e qualidade.</p>
+        <div className="mb-3 text-sm font-semibold uppercase tracking-wider text-orange-600">Diferenciais</div>
+        <h2 className="text-3xl font-semibold tracking-tight text-zinc-900">O que o Fuzil faz sozinho</h2>
+        <p className="mt-2 max-w-2xl text-zinc-500">Nas plataformas tradicionais, cada conta é uma ilha e o trabalho repetitivo fica com você. No Fuzil, as BMs trabalham juntas.</p>
         <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {FEATURES.map((f) => (
-            <div key={f.title} className="rounded-2xl border border-zinc-200/80 bg-white p-6 shadow-soft">
-              <span className="mb-4 flex size-11 items-center justify-center rounded-xl bg-brand-50 text-brand-600"><f.icon className="size-5" /></span>
+          {DIFFS.map((f) => (
+            <div key={f.title} className="group relative overflow-hidden rounded-2xl border border-zinc-200/80 bg-white p-6 shadow-soft transition hover:-translate-y-0.5 hover:shadow-lift">
+              <span className="absolute inset-x-0 top-0 h-1 bg-brand-gradient opacity-0 transition group-hover:opacity-100" />
+              <span className="mb-4 flex size-11 items-center justify-center rounded-xl bg-brand-gradient text-white shadow-md shadow-orange-500/25"><f.icon className="size-5" /></span>
+              <div className="text-lg font-semibold text-zinc-900">{f.title}</div>
+              <p className="mt-1.5 text-sm leading-relaxed text-zinc-600">{f.text}</p>
+              <span className="mt-4 inline-block rounded-full bg-orange-50 px-3 py-1 text-xs font-semibold text-orange-700 ring-1 ring-orange-200">{f.tag}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section id="comparar" className="scroll-mt-20 bg-zinc-50">
+        <div className="mx-auto max-w-5xl px-5 py-20">
+          <h2 className="text-3xl font-semibold tracking-tight text-zinc-900">Lado a lado</h2>
+          <p className="mt-2 max-w-2xl text-zinc-500">Como costuma ser nas plataformas tradicionais de disparo e como é no {c.brand}.</p>
+          <div className="mt-8 overflow-hidden rounded-2xl bg-white shadow-soft ring-1 ring-zinc-200/70">
+            <div className="grid grid-cols-[1.1fr_1fr_1.2fr] border-b border-zinc-200 bg-zinc-100 px-5 py-3 text-xs font-semibold uppercase tracking-wide text-zinc-600">
+              <span />
+              <span>Tradicional</span>
+              <span className="text-orange-700">{c.brand}</span>
+            </div>
+            {COMPARE.map(([what, old, ours]) => (
+              <div key={what} className="grid grid-cols-[1.1fr_1fr_1.2fr] items-center gap-3 border-b border-zinc-100 px-5 py-4 text-sm last:border-0">
+                <span className="font-semibold text-zinc-900">{what}</span>
+                <span className="text-zinc-500">{old}</span>
+                <span className="flex items-start gap-2 font-medium text-zinc-900"><CheckCircle2 className="mt-0.5 size-4 shrink-0 text-emerald-600" /> {ours}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-6xl px-5 py-20">
+        <h2 className="text-3xl font-semibold tracking-tight text-zinc-900">E mais</h2>
+        <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          {MORE.map((f) => (
+            <div key={f.title} className="rounded-2xl border border-zinc-200/80 bg-white p-5 shadow-soft">
+              <span className="mb-3 flex size-10 items-center justify-center rounded-xl bg-brand-50 text-brand-600"><f.icon className="size-5" /></span>
               <div className="font-semibold text-zinc-900">{f.title}</div>
               <p className="mt-1.5 text-sm text-zinc-500">{f.text}</p>
             </div>
@@ -90,12 +209,16 @@ export default function SitePage() {
         <div className="relative overflow-hidden rounded-3xl bg-ink p-10 text-white">
           <div className="pointer-events-none absolute -right-20 -top-24 size-80 rounded-full bg-orange-500/25 blur-3xl" />
           <div className="relative">
-            <h2 className="text-3xl font-semibold tracking-tight">Fale com a gente</h2>
-            <p className="mt-2 max-w-xl text-zinc-300">Conte o volume de mensagens da sua empresa e montamos o acesso para você.</p>
+            <span className="inline-flex items-center gap-2 rounded-full bg-emerald-500/15 px-3 py-1 text-xs font-medium text-emerald-300 ring-1 ring-emerald-400/30">
+              <span className="size-1.5 rounded-full bg-emerald-400" /> Vagas limitadas
+            </span>
+            <h2 className="mt-4 text-3xl font-semibold tracking-tight">Estamos em testes fechados</h2>
+            <p className="mt-2 max-w-xl text-zinc-300">O {c.brand} ainda não está aberto ao público. Conte como é a sua operação e a gente avisa quando tiver uma vaga nos testes.</p>
             <div className="mt-6 flex flex-wrap gap-3">
-              {whatsapp && <a href={`https://wa.me/${whatsapp}`} className="rounded-xl bg-brand-gradient px-5 py-3 font-medium">WhatsApp {c.phone}</a>}
+              <a href={wa} className="inline-flex items-center gap-2 rounded-xl bg-brand-gradient px-5 py-3 font-medium">
+                Quero participar dos testes <ArrowRight className="size-4" />
+              </a>
               {c.email && <a href={`mailto:${c.email}`} className="rounded-xl bg-white/10 px-5 py-3 font-medium ring-1 ring-white/15 hover:bg-white/15">{c.email}</a>}
-              {!whatsapp && !c.email && <span className="text-zinc-400">Contato em breve.</span>}
             </div>
           </div>
         </div>

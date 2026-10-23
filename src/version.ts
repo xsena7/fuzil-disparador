@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.27",
+    date: "23/10/2026",
+    items: ["Site: landing nova com os diferenciais do Fuzil (soma de limite das BMs, rodízio de números, template padrão em todas as BMs, BM com problema saindo sozinha, estorno e relatório ao vivo), comparação lado a lado e aviso de testes fechados"],
+  },
+  {
     version: "2.26",
     date: "23/10/2026",
     items: ["Campanha: a lista de números, o disparo, as métricas e o CSV seguem exatamente a ordem da planilha (vale para planilhas subidas a partir de agora)"],
