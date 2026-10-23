@@ -25,10 +25,10 @@ export function UserActions({
   const [pending, start] = useTransition();
   const [msg, setMsg] = useState<{ text: string; link?: string; error?: boolean } | null>(null);
   const router = useRouter();
-  const btn = "inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-xs font-medium hover:bg-zinc-50 disabled:opacity-40";
+  const btn = "inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-xs font-medium hover:bg-zinc-50 disabled:opacity-40";
   return (
     <div className="flex flex-col items-end gap-1.5">
-      <div className="flex gap-1.5">
+      <div className="flex flex-wrap justify-end gap-1.5">
         {canAdmin && (
           <button
             className={isAdmin ? btn : `${btn} border-orange-200 bg-orange-50 text-orange-800 hover:bg-orange-100`}

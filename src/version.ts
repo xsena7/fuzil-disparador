@@ -6,6 +6,7 @@ export const CHANGELOG: Array<{ version: string; date: string; items: string[] }
     date: "23/10/2026",
     items: [
       "Admin: etiqueta \"Dono do Fuzil\" no seu nome e \"Admin do Fuzil\" em quem é administrador",
+      "Admin: usuários de cada conta organizados (nome e etiquetas em cima, e-mail, último acesso e botões embaixo)",
       "Admin: botão \"Dar administrador\" / \"Tirar administrador\" em cada usuário (só o dono vê). Quem vira administrador ganha o funil do gerador de links e os modelos de aquecimento na conta dele",
     ],
   },

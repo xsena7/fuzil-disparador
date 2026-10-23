@@ -166,20 +166,23 @@ export function AccountsPanel({ accounts, selfId, ownerId = null }: { accounts: 
                           <div className="rounded-xl border border-zinc-200 bg-white">
                             <div className="border-b border-zinc-100 px-4 py-2.5 text-xs font-medium uppercase tracking-wide text-zinc-400">Usuários</div>
                             {a.users.map((u) => (
-                              <div key={u.id} className="flex flex-wrap items-center gap-3 border-b border-zinc-100 px-4 py-2.5 last:border-0">
-                                <div className="min-w-0 flex-1">
-                                  <div className="font-medium">
-                                    {u.name} <span className="text-xs font-normal text-zinc-500">· {u.role === "OWNER" ? "dono da conta" : u.role === "ADMIN" ? "admin da conta" : "membro"}</span>
+                              <div key={u.id} className="space-y-2.5 border-b border-zinc-100 px-4 py-3 last:border-0">
+                                <div className="min-w-0">
+                                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                                    <span className="font-semibold text-zinc-900">{u.name}</span>
+                                    <span className="whitespace-nowrap text-xs text-zinc-500">{u.role === "OWNER" ? "dono da conta" : u.role === "ADMIN" ? "admin da conta" : "membro"}</span>
                                     {u.id === ownerId ? (
-                                      <span className="ml-1.5 rounded-full bg-brand-gradient px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">Dono do Fuzil</span>
+                                      <span className="whitespace-nowrap rounded-full bg-brand-gradient px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">Dono do Fuzil</span>
                                     ) : u.isSuperAdmin ? (
-                                      <span className="ml-1.5 rounded-full bg-zinc-900 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">Admin do Fuzil</span>
+                                      <span className="whitespace-nowrap rounded-full bg-zinc-900 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">Admin do Fuzil</span>
                                     ) : null}
                                   </div>
-                                  <div className="text-xs text-zinc-500">{u.email}</div>
+                                  <div className="truncate text-xs text-zinc-500">{u.email}</div>
                                 </div>
-                                {u.lastLoginAt ? <span className="text-xs text-zinc-500">Último acesso {dateTime(u.lastLoginAt)}</span> : <Badge color="yellow">Convite pendente</Badge>}
-                                <UserActions id={u.id} email={u.email} isSelf={u.id === selfId} canAdmin={isOwner && u.id !== ownerId} isAdmin={u.isSuperAdmin} name={u.name} />
+                                <div className="flex flex-wrap items-start justify-between gap-2">
+                                  {u.lastLoginAt ? <span className="pt-1.5 text-xs text-zinc-500">Último acesso {dateTime(u.lastLoginAt)}</span> : <Badge color="yellow">Convite pendente</Badge>}
+                                  <UserActions id={u.id} email={u.email} isSelf={u.id === selfId} canAdmin={isOwner && u.id !== ownerId} isAdmin={u.isSuperAdmin} name={u.name} />
+                                </div>
                               </div>
                             ))}
                             {a.users.length === 0 && <div className="px-4 py-3 text-xs text-zinc-400">Nenhum usuário</div>}
