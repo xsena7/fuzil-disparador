@@ -2,6 +2,14 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.30",
+    date: "23/10/2026",
+    items: [
+      "Conexões: Verificar todas confere cada conta igual ao Testar conexão (token e avisos da Meta), sincroniza e devolve na hora para os grupos de antes as BMs que estavam com problema e agora estão ok (as colocadas à mão continuam esperando o Resolvido)",
+      "Conexões: conta com a chave secreta de um app antigo passa a usar sozinha a chave padrão do app do Fuzil quando o token é dele",
+    ],
+  },
+  {
     version: "2.29",
     date: "23/10/2026",
     items: [

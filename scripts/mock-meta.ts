@@ -93,7 +93,7 @@ createServer(async (req, res) => {
 
   const waba = wabas[id];
   if (waba && !edge && req.method === "GET") {
-    return json(res, 200, { id, name: waba.name, currency: "USD", timezone_id: "1", account_review_status: "APPROVED", owner_business_info: waba.business, health_status: { can_send_message: "AVAILABLE" } });
+    return json(res, 200, { id, name: waba.name, currency: "USD", timezone_id: "1", account_review_status: "APPROVED", primary_funding_id: "mock-cartao", owner_business_info: waba.business, health_status: { can_send_message: "AVAILABLE" } });
   }
   if (waba && edge === "phone_numbers") return json(res, 200, { data: waba.phones });
   if (waba && edge === "subscribed_apps") return json(res, 200, { success: true });

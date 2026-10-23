@@ -85,11 +85,39 @@ export async function syncAllAction() {
   const auth = await requireAuth();
   const wabas = await prisma.whatsAppAccount.findMany({ where: { workspaceId: auth.workspace.id }, select: { id: true } });
   // 4 por vez, para não estourar o limite de chamadas da Meta com muitas BMs
-  for (let i = 0; i < wabas.length; i += 4) await Promise.allSettled(wabas.slice(i, i + 4).map((w) => syncWaba(w.id)));
+  // Em cada conta: confere o token e os avisos da Meta (igual ao Testar conexão) e sincroniza
+  const check = async (id: string) => {
+    const w = await prisma.whatsAppAccount.findUnique({ where: { id } });
+    if (!w) return;
+    try {
+      await checkWebhookChain(w, wabaToken(w));
+    } catch {
+      // sem token ou a Meta não respondeu: a sincronização mostra o erro
+    }
+    await syncWaba(id);
+  };
+  for (let i = 0; i < wabas.length; i += 4) await Promise.allSettled(wabas.slice(i, i + 4).map((w) => check(w.id)));
+  // BM que estava num grupo de problema e agora está tudo certo volta na hora para os grupos de antes
+  // (as colocadas à mão continuam esperando o "Resolvido")
+  const { restoreBusiness } = await import("@/lib/bm-problems");
+  const flagged = await prisma.businessManager.findMany({
+    where: { workspaceId: auth.workspace.id, problemAt: { not: null }, NOT: { problemKind: "MANUAL" } },
+    include: { wabas: { include: { phones: { where: { invalidReason: null } }, templates: { select: { category: true, status: true } } } } },
+  });
+  const { bmAptidao } = await import("@/lib/readiness");
+  let back = 0;
+  for (const bm of flagged) {
+    const bad = bm.wabas.some((w) => w.lastSyncError || w.status === "BLOCKED" || w.hasPaymentMethod === false || w.phones.some((p) => p.qualityRating === "RED" || ["BANNED", "RESTRICTED", "FLAGGED"].includes(p.status ?? "")));
+    if (!bad && bmAptidao(bm.wabas).apta) {
+      await restoreBusiness(bm.id, auth.workspace.id, false);
+      back++;
+    }
+  }
   revalidatePath("/conexoes");
   revalidatePath("/templates");
   revalidatePath("/grupos");
   revalidatePath("/");
+  return { ok: `Verifiquei ${wabas.length} conta(s) do WhatsApp na Meta${back ? ` e ${back} BM(s) voltaram para os grupos de disparo` : ""}.` };
 }
 
 export async function deleteWabaAction(id: string) {
@@ -284,13 +312,29 @@ async function checkWebhookChain(waba: { id: string; wabaId: string; appSecretEn
   }
 
   // 2) O app manda os avisos para o Fuzil, com o campo "messages"?
-  const secret = waba.appSecretEnc ? decrypt(waba.appSecretEnc) : await defaultAppSecret(waba.workspaceId);
-  if (!secret) return `Avisos da Meta: ${fixed.length ? `${fixed.join(" e ")}. ` : ""}não consigo conferir o webhook do app sem a chave secreta.`;
+  // Tenta a chave guardada na conta e a chave padrão (conta que trocou para o token do app do Fuzil ainda tem a chave do app antigo)
+  const own = waba.appSecretEnc ? decrypt(waba.appSecretEnc) : null;
+  const fallback = await defaultAppSecret(waba.workspaceId);
+  const candidates = [...new Set([own, fallback].filter((x): x is string => Boolean(x)))];
+  if (!candidates.length) return `Avisos da Meta: ${fixed.length ? `${fixed.join(" e ")}. ` : ""}não consigo conferir o webhook do app sem a chave secreta.`;
   let app: { callback_url?: string; active?: boolean; fields?: Array<{ name: string }> } | undefined;
-  try {
-    app = ((await meta.appSubscriptions(appId, secret)).data ?? []).find((d) => d.object === "whatsapp_business_account");
-  } catch (e) {
-    return `Avisos da Meta: a chave secreta não é do app que gerou o token (${e instanceof Error ? e.message : String(e)}).`;
+  let secret: string | null = null;
+  let lastErr = "";
+  for (const c of candidates) {
+    try {
+      app = ((await meta.appSubscriptions(appId, c)).data ?? []).find((d) => d.object === "whatsapp_business_account");
+      secret = c;
+      break;
+    } catch (e) {
+      lastErr = e instanceof Error ? e.message : String(e);
+    }
+  }
+  if (!secret) return `Avisos da Meta: nenhuma chave secreta cadastrada é do app que gerou o token (${lastErr}). O dono do Fuzil precisa cadastrar a chave desse app.`;
+  if (secret !== own) {
+    // A chave que serve é a padrão: guarda nessa conta (os avisos dela passam a ser aceitos)
+    await prisma.whatsAppAccount.update({ where: { id: waba.id }, data: { appSecretEnc: encrypt(secret) } });
+    resetBmSecrets();
+    fixed.push("troquei a chave secreta dessa conta pela do app do token");
   }
   const hasMessages = app?.fields?.some((f) => f.name === "messages");
   if (!app || !app.active || !hasMessages || (app.callback_url && !app.callback_url.startsWith(env.appUrl()))) {
@@ -299,9 +343,12 @@ async function checkWebhookChain(waba: { id: string; wabaId: string; appSecretEn
     fixed.push("liguei o webhook do app no Fuzil (com entregas, leituras e respostas)");
   }
   return fixed.length
-    ? `Avisos da Meta: estavam desligados, ${fixed.join(" e ")}. Os próximos envios já devem mostrar entregue/lida.`
+    ? `Avisos da Meta: ${fixed.join(", ")}. Os próximos envios já devem mostrar entregue/lida.`
     : "Avisos da Meta: tudo ligado (conta inscrita no app e webhook apontando para o Fuzil).";
 }
+
+/** O texto dos avisos indica problema que o Fuzil não conseguiu resolver sozinho? */
+const hooksFailed = (t: string) => /nenhuma chave|não consigo|não consegui|precisa estar em https/i.test(t);
 
 export async function testWabaAction(id: string): Promise<{ ok?: boolean; text: string }> {
   const waba = await ownWaba(id);
@@ -317,7 +364,7 @@ export async function testWabaAction(id: string): Promise<{ ok?: boolean; text: 
     const info = await meta.getWaba(token, waba.wabaId);
     const hooks = await checkWebhookChain(waba, token).catch((e) => `Não consegui conferir os avisos da Meta: ${e instanceof Error ? e.message : String(e)}`);
     return {
-      ok: true,
+      ok: !hooksFailed(hooks),
       text: `A Meta reconhece a conta "${info.name}" e o token tem acesso a ela.${info.account_review_status ? ` Status de análise: ${info.account_review_status}.` : ""} ${hooks}`,
     };
   } catch (err) {
