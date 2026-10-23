@@ -25,6 +25,8 @@ import { flagBusinessProblem, kindForCode, problemFix } from "./bm-problems";
 export const TICK_MS = 2000;
 const DEFAULT_RATE = 20; // msgs/s por número
 const MAX_ATTEMPTS = 3;
+const PHONE_STATUS_PT: Record<string, string> = { BANNED: "Número banido", RESTRICTED: "Número restrito", FLAGGED: "Número sinalizado pela Meta", DISCONNECTED: "Número desconectado", DELETED: "Número apagado", RATE_LIMITED: "Número limitado pela Meta", PENDING: "Número não registrado", UNVERIFIED: "Número não verificado" };
+const TEMPLATE_STATUS_PT: Record<string, string> = { PENDING: "em análise", REJECTED: "rejeitado", PAUSED: "pausado pela Meta", DISABLED: "desativado pela Meta", IN_APPEAL: "em recurso" };
 const BAD_PHONE_STATUS = new Set(["BANNED", "RESTRICTED", "FLAGGED", "DISCONNECTED", "DELETED", "UNVERIFIED"]);
 
 export type Sender = {
@@ -110,13 +112,14 @@ export async function planSenders(
       for (const phone of waba.phones) {
         const display = formatPhone(phone.displayPhoneNumber.replace(/\D/g, ""));
         const skip = (reason: string) => plan.skipped.push({ display, reason });
-        if (phone.invalidReason) { skip(phone.invalidReason); continue; }
+        // Número removido da Meta ou de teste não é número de verdade: nem aparece na lista de fora
+        if (phone.invalidReason) continue;
         if (!phone.enabled) { skip("Número desativado no rodízio"); continue; }
         if (campaign.excludedSenders.includes(phone.id)) { skip("Retirado desta campanha por erro"); continue; }
-        if (phone.status && BAD_PHONE_STATUS.has(phone.status)) { skip(`Status ${phone.status}`); continue; }
+        if (phone.status && BAD_PHONE_STATUS.has(phone.status)) { skip(PHONE_STATUS_PT[phone.status] ?? `Status ${phone.status}`); continue; }
         if (campaign.skipRedQuality && phone.qualityRating === "RED") { skip("Qualidade vermelha"); continue; }
         if (!tpl) { skip("Template não existe nesta WABA"); continue; }
-        if (tpl.status !== "APPROVED") { skip(`Template ${tpl.status}`); continue; }
+        if (tpl.status !== "APPROVED") { skip(`Template ${TEMPLATE_STATUS_PT[tpl.status] ?? tpl.status}`); continue; }
         if (tpl.category !== category) { skip(`Template recategorizado para ${tpl.category}`); continue; }
         let token: string;
         try {

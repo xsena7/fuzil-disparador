@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.11",
+    date: "23/10/2026",
+    items: ["Campanha → Envio: números removidos da Meta (ou de teste) não aparecem mais em \"Fora desta campanha\", e os motivos aparecem em português (ex.: Template em análise)"],
+  },
+  {
     version: "2.10",
     date: "22/10/2026",
     items: [
