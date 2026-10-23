@@ -332,6 +332,11 @@ export async function testCampaignSendAction(id: string, _: { ok?: string; error
         return `erro ao consultar: ${e instanceof Error ? e.message : String(e)}`;
       }
     };
+    // Variável vazia a Meta recusa (às vezes com o erro genérico 135000): avisa antes qual é
+    const empty = (components as Array<{ type: string; parameters?: Array<{ type: string; text?: string }> }>).flatMap((comp) =>
+      (comp.parameters ?? []).map((p, i) => (p.type === "text" && !String(p.text ?? "").trim() ? `${comp.type === "body" ? "do texto" : `do ${comp.type}`} {{${i + 1}}}` : null)).filter(Boolean),
+    );
+    if (empty.length) return { error: `A variável ${empty.join(", ")} ficou vazia (a 1ª linha da planilha não tem esse dado ou ela não foi ligada em Conteúdo). Preencha e teste de novo.` };
     try {
       const res = await meta.sendTemplate(sender.token, sender.phoneNumberId, phone, { name: sender.template.name, language: sender.template.language, components });
       return { ok: `Mensagem aceita pela Meta (${used}).${first ? " Preenchida com a 1ª linha da planilha." : " Suba a planilha na Audiência para o teste sair preenchido com os dados dela."}`, raw: JSON.stringify(res, null, 2) };
@@ -355,7 +360,26 @@ export async function testCampaignSendAction(id: string, _: { ok?: string; error
             return `erro ao consultar: ${e instanceof Error ? e.message : String(e)}`;
           }
         };
-        const diag = { waba: wabaRec?.wabaId, phoneNumberId: sender.phoneNumberId, meta_error: { message: err.message, code: err.code, subcode: err.subcode, httpStatus: err.httpStatus, details: err.details }, token_ve_o_template: await lookup(), numero: await owner() };
+        // A imagem/vídeo do cabeçalho abre de fora? (a Meta baixa pelo link; se não abrir, recusa)
+        const media = async () => {
+          if (!c.headerMediaUrl) return "sem mídia no cabeçalho";
+          if (!/^https:\/\//.test(c.headerMediaUrl)) return { link: c.headerMediaUrl, problema: "o link não é https: a Meta não baixa" };
+          try {
+            const r = await fetch(c.headerMediaUrl, { method: "GET", signal: AbortSignal.timeout(15_000) });
+            return { link: c.headerMediaUrl, http: r.status, tipo: r.headers.get("content-type"), tamanho: r.headers.get("content-length") };
+          } catch (e) {
+            return { link: c.headerMediaUrl, problema: `não abriu: ${e instanceof Error ? e.message : String(e)}` };
+          }
+        };
+        const diag = {
+          waba: wabaRec?.wabaId,
+          phoneNumberId: sender.phoneNumberId,
+          meta_error: { message: err.message, code: err.code, subcode: err.subcode, httpStatus: err.httpStatus, details: err.details },
+          enviado_para_meta: components,
+          imagem_do_cabecalho: await media(),
+          token_ve_o_template: await lookup(),
+          numero: await owner(),
+        };
         const own = typeof diag.numero === "object" ? diag.numero : null;
         // A Meta diz que a conta ou o número foi banido/bloqueado: tira a BM do disparo na hora (vai para Banidas)
         const banned = own && (own.status === "BANNED" || own.entidades.some((e) => e.entity_type === "WABA" && e.can_send_message === "BLOCKED"));
@@ -371,8 +395,12 @@ export async function testCampaignSendAction(id: string, _: { ok?: string; error
             banned: true,
           };
         }
+        const img = diag.imagem_do_cabecalho;
+        const imgBad = typeof img === "object" && ("problema" in img || ("http" in img && img.http !== 200));
         const hint =
-          own && own.mesma_waba_do_template === false
+          imgBad
+            ? " A imagem do cabeçalho não abre de fora (veja \"imagem_do_cabecalho\" abaixo): suba a imagem de novo em Conteúdo."
+            : own && own.mesma_waba_do_template === false
             ? ` O número ${sender.display} está na WABA ${own.waba_do_numero}, mas o template está na WABA ${wabaRec?.wabaId}. Clique em "Puxar da Meta" em Conexões para o Fuzil corrigir.`
             : own && own.pode_enviar && own.pode_enviar !== "AVAILABLE"
               ? ` A Meta diz que esse número não pode enviar agora (${own.pode_enviar}). Veja o motivo em "entidades" abaixo.`

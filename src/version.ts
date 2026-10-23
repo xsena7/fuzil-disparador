@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.34",
+    date: "23/10/2026",
+    items: ["Teste de envio: avisa antes se alguma variável ficou vazia, e quando a Meta recusa mostra o que foi enviado e se a imagem do cabeçalho abre de fora"],
+  },
+  {
     version: "2.33",
     date: "23/10/2026",
     items: ["Conexões: o Testar conexão mostra as permissões do token e diz qual está faltando para enviar (ex.: whatsapp_business_messaging) ou se a conta do WhatsApp não foi liberada para ele"],
