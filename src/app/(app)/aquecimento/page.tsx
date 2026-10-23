@@ -20,6 +20,7 @@ export default async function WarmupPage() {
     prisma.bmGroup.findMany({ where: { workspaceId: ws, system: null }, orderBy: { name: "asc" } }),
     prisma.lead.groupBy({ by: ["funnelId", "status"], where: { workspaceId: ws }, _count: true }),
   ]);
+  const adminWs = (await prisma.membership.count({ where: { workspaceId: ws, user: { isSuperAdmin: true } } })) > 0;
   const models = (await funnelModels(ws)).map((m) => ({ id: m.id, name: m.workspaceId === ws ? `${m.name} (seu)` : m.name }));
   const count = (id: string, status?: string) => counts.filter((c) => c.funnelId === id && (!status || c.status === status)).reduce((a, c) => a + c._count, 0);
 
@@ -65,7 +66,7 @@ export default async function WarmupPage() {
       <Drawer title="Novo funil" subtitle="Leva 10 segundos. Os templates já vêm prontos" open={!funnels.length}>
         {groups.length ? (
           <ActionForm action={createFunnelAction} submit="Criar funil">
-            <NewFunnelFields models={models} groups={groups.map((g) => ({ id: g.id, name: g.name }))} canLinks={auth.user.isSuperAdmin && !auth.inspecting} linksExists={funnels.some((f) => f.kind === "LINKS")} />
+            <NewFunnelFields models={models} groups={groups.map((g) => ({ id: g.id, name: g.name }))} canLinks={auth.user.isSuperAdmin && adminWs} linksExists={funnels.some((f) => f.kind === "LINKS")} />
           </ActionForm>
         ) : (
           <p className="text-zinc-500">

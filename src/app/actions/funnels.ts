@@ -25,8 +25,10 @@ export async function createFunnelAction(_: FormState, form: FormData): Promise<
   const name = String(form.get("name") ?? "").trim();
   const kind = form.get("kind") === "LINKS" ? "LINKS" : "JOBS";
   if (kind === "LINKS") {
-    if (!auth.user.isSuperAdmin || auth.inspecting) return { error: "Só o dono da plataforma cria o funil do gerador de links, na conta dele" };
-    if (await prisma.funnel.findFirst({ where: { kind: "LINKS" }, select: { id: true } })) return { error: "Já existe um funil do gerador de links. Abra ele na lista acima." };
+    // Só em conta de administrador do Fuzil (o login do site reparte as pessoas entre esses funis)
+    const adminWs = await prisma.membership.count({ where: { workspaceId: auth.workspace.id, user: { isSuperAdmin: true } } });
+    if (!auth.user.isSuperAdmin || !adminWs) return { error: "Só contas de administradores do Fuzil têm o funil do gerador de links" };
+    if (await prisma.funnel.findFirst({ where: { kind: "LINKS", workspaceId: auth.workspace.id }, select: { id: true } })) return { error: "Essa conta já tem um funil do gerador de links. Abra ele na lista acima." };
     const group = await prisma.bmGroup.findFirst({ where: { id: String(form.get("groupId") ?? ""), workspaceId: auth.workspace.id, system: null } });
     if (!group) return { error: "Escolha o grupo de BM que vai disparar" };
     const { createLinksFunnel } = await import("@/lib/links-login");

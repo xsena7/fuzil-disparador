@@ -9,7 +9,7 @@ import { trackedUrlBase } from "@/lib/env";
 import { normalizePhone } from "@/lib/phone";
 import { clientIp, tooMany } from "@/lib/rate-limit";
 import { CODE_COOLDOWN_S, hashCode, MAX_CODE_ATTEMPTS, MAX_CODE_SENDS, advanceLead, sendCode } from "@/lib/funnels";
-import { createLinksFunnel, endLinksSession, linksAuth, linksFunnel, startLinksSession } from "@/lib/links-login";
+import { createLinksFunnel, endLinksSession, linksAuth, linksFunnelFor, startLinksSession } from "@/lib/links-login";
 import type { FormState } from "./auth";
 
 const ALPHABET = "abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -21,12 +21,12 @@ export type LoginState = { step?: "phone" | "name" | "code"; phone?: string; err
 
 /** Passo 1: número (e o nome, no primeiro acesso). Manda o código pelo WhatsApp. */
 export async function requestLinksCodeAction(_: LoginState, form: FormData): Promise<LoginState> {
-  const funnel = await linksFunnel();
-  if (!funnel || funnel.status !== "ACTIVE") return { error: "O login está fora do ar agora. Tente de novo em alguns minutos." };
   const ip = await clientIp();
   if (tooMany(`lk:code:${ip}`, 15, 15 * 60_000)) return { error: "Muitos pedidos de código. Espere alguns minutos." };
   const phone = normalizePhone(String(form.get("phone") ?? ""));
   if (!phone) return { error: "WhatsApp inválido. Digite com DDD, ex.: (11) 99999-8888." };
+  const funnel = await linksFunnelFor(phone);
+  if (!funnel || funnel.status !== "ACTIVE") return { error: "O login está fora do ar agora. Tente de novo em alguns minutos." };
   const name = String(form.get("name") ?? "").replace(/\s+/g, " ").trim().slice(0, 80);
 
   let lead = await prisma.lead.findUnique({ where: { funnelId_phone: { funnelId: funnel.id, phone } } });
@@ -54,8 +54,8 @@ export async function requestLinksCodeAction(_: LoginState, form: FormData): Pro
 
 /** Passo 2: confere o código e abre o login (salvo neste navegador, neste IP). */
 export async function verifyLinksCodeAction(_: LoginState, form: FormData): Promise<LoginState> {
-  const funnel = await linksFunnel();
   const phone = normalizePhone(String(form.get("phone") ?? ""));
+  const funnel = phone ? await linksFunnelFor(phone) : null;
   if (!funnel || !phone) return { error: "Recarregue a página e tente de novo." };
   if (tooMany(`lk:ver:${phone}`, 15, 10 * 60_000)) return { step: "code", phone, error: "Muitas tentativas. Espere alguns minutos." };
   const lead = await prisma.lead.findUnique({ where: { funnelId_phone: { funnelId: funnel.id, phone } } });
@@ -82,8 +82,8 @@ export async function verifyLinksCodeAction(_: LoginState, form: FormData): Prom
 export async function resendLinksCodeAction(phoneRaw: string): Promise<{ ok?: true; error?: string }> {
   const form = new FormData();
   form.set("phone", phoneRaw);
-  const funnel = await linksFunnel();
   const phone = normalizePhone(phoneRaw);
+  const funnel = phone ? await linksFunnelFor(phone) : null;
   const lead = funnel && phone ? await prisma.lead.findUnique({ where: { funnelId_phone: { funnelId: funnel.id, phone } } }) : null;
   if (lead?.lastCodeAt && Date.now() - lead.lastCodeAt.getTime() < CODE_COOLDOWN_S * 1000) return { error: "Espere um minutinho antes de pedir outro código." };
   const r = await requestLinksCodeAction(undefined, form);
@@ -153,7 +153,8 @@ export async function setupLinksLoginAction(_: FormState, form: FormData): Promi
   const groupId = String(form.get("groupId") ?? "");
   const group = await prisma.bmGroup.findFirst({ where: { id: groupId, workspaceId: auth.workspace.id, system: null } });
   if (!group) return { error: "Escolha um grupo de BM." };
-  const existing = await linksFunnel();
+  // O funil do login desta conta (cada conta de administrador tem o seu)
+  const existing = await prisma.funnel.findFirst({ where: { kind: "LINKS", workspaceId: auth.workspace.id } });
   if (existing) {
     await prisma.funnel.update({ where: { id: existing.id }, data: { groupId } });
     await prisma.templateBlueprint.updateMany({ where: { id: { in: [existing.codeBlueprintId, existing.loginBlueprintId].filter((x): x is string => Boolean(x)) } }, data: { groupId } });

@@ -33,7 +33,7 @@ export default async function AdminPage() {
     platformDiscordHooks(),
   ]);
   const extLinks = await prisma.externalLink.findMany({ orderBy: { createdAt: "desc" }, take: 200, include: { lead: { select: { name: true, phone: true } } } });
-  const linksFunnel = await prisma.funnel.findFirst({ where: { kind: "LINKS" }, select: { id: true, status: true } });
+  const linksFunnel = await prisma.funnel.findFirst({ where: { kind: "LINKS", workspaceId: auth.workspace.id }, select: { id: true, status: true } });
   const bugs = await prisma.bugReport.findMany({ orderBy: [{ status: "asc" }, { createdAt: "desc" }], take: 50 });
   const openBugs = bugs.filter((b) => b.status === "OPEN").length;
   const discordHooks = (hooks ?? {}) as Record<string, string>;

@@ -15,9 +15,27 @@ const NEW_VISIT_MS = 30 * 60_000;
 
 const sha = (v: string) => createHash("sha256").update(v).digest("hex");
 
-/** O funil do login do gerador de links (um só na plataforma). */
-export function linksFunnel() {
-  return prisma.funnel.findFirst({ where: { kind: "LINKS" }, orderBy: { createdAt: "asc" } });
+/** Um funil do login do gerador de links que esteja no ar (para saber se o site está funcionando). */
+export async function linksFunnel() {
+  return (
+    (await prisma.funnel.findFirst({ where: { kind: "LINKS", status: "ACTIVE" }, orderBy: { createdAt: "asc" } })) ??
+    prisma.funnel.findFirst({ where: { kind: "LINKS" }, orderBy: { createdAt: "asc" } })
+  );
+}
+
+/**
+ * Funil do login para esse WhatsApp. Cada conta de administrador pode ter o seu (cada um aquece o grupo dele):
+ * quem já entrou fica sempre no mesmo; quem é novo vai para o funil no ar com menos gente nas últimas 24h.
+ */
+export async function linksFunnelFor(phone: string) {
+  const lead = await prisma.lead.findFirst({ where: { phone, funnel: { kind: "LINKS" } }, include: { funnel: true }, orderBy: { createdAt: "asc" } });
+  if (lead) return lead.funnel;
+  const active = await prisma.funnel.findMany({ where: { kind: "LINKS", status: "ACTIVE" }, select: { id: true } });
+  if (active.length <= 1) return linksFunnel();
+  const recent = await prisma.lead.groupBy({ by: ["funnelId"], where: { funnelId: { in: active.map((f) => f.id) }, createdAt: { gt: new Date(Date.now() - 86400_000) } }, _count: true });
+  const load = (id: string) => recent.find((r) => r.funnelId === id)?._count ?? 0;
+  const pick = [...active].sort((a, b) => load(a.id) - load(b.id))[0];
+  return prisma.funnel.findUnique({ where: { id: pick.id } });
 }
 
 /** Cria o funil do login com os 3 templates padrão (código, aviso de novo acesso e boas-vindas) no grupo escolhido. */
