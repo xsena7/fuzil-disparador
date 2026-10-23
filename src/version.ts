@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.35",
+    date: "23/10/2026",
+    items: ["Campanha: dá para trocar o nome no lápis ao lado do nome, no topo. O relatório do cliente (inclusive o link público) mostra o nome novo na hora"],
+  },
+  {
     version: "2.34",
     date: "23/10/2026",
     items: ["Teste de envio: avisa antes se alguma variável ficou vazia, e quando a Meta recusa mostra o que foi enviado e se a imagem do cabeçalho abre de fora"],

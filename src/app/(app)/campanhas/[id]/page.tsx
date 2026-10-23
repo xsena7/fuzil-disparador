@@ -22,6 +22,7 @@ import { StepContent } from "./step-content";
 import { StepAudience, type AudienceStats } from "./step-audience";
 import { StepSendForm } from "./step-send";
 import { TestSend } from "./test-send";
+import { CampaignName } from "./campaign-name";
 import { Metrics } from "./metrics";
 import { ClientReportStep } from "./client-report";
 import { AutoRefresh } from "./auto-refresh";
@@ -54,7 +55,7 @@ export default async function CampaignPage({ params, searchParams }: { params: P
       <div className="relative">
       <div className="sticky top-0 z-10 flex flex-wrap items-center gap-3 border-b border-zinc-200/70 bg-white/85 px-6 py-3 backdrop-blur">
         <Link href="/campanhas" className="rounded-full border border-zinc-200 p-1.5 hover:bg-zinc-50"><ArrowLeft className="size-4" /></Link>
-        <div className="font-semibold">{campaign.name}</div>
+        <CampaignName id={campaign.id} name={campaign.name} />
         <CampaignStatusBadge s={campaign.status} />
         {campaign.pausedReason && <span className="text-xs text-amber-700">{campaign.pausedReason}</span>}
         {campaign.scheduledAt && campaign.status === "SCHEDULED" && <Badge color="blue" dot={false}>Agendada para {campaign.scheduledAt.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}</Badge>}

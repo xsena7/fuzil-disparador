@@ -228,6 +228,18 @@ export async function createFolderAndMoveAction(campaignId: string, name: string
   revalidatePath("/campanhas");
 }
 
+/** Troca o nome da campanha (em qualquer situação). O relatório do cliente mostra o nome novo na hora. */
+export async function renameCampaignAction(id: string, name: string): Promise<{ ok?: true; error?: string }> {
+  const { c } = await ownCampaign(id);
+  const clean = String(name ?? "").replace(/\s+/g, " ").trim().slice(0, 120);
+  if (!clean) return { error: "Dê um nome para a campanha" };
+  await prisma.campaign.update({ where: { id: c.id }, data: { name: clean } });
+  revalidatePath(`/campanhas/${c.id}`);
+  revalidatePath("/campanhas");
+  revalidatePath(`/relatorio/${c.id}`);
+  return { ok: true };
+}
+
 export async function renameFolderAction(folderId: string, name: string) {
   const auth = await requireAuth();
   const clean = name.trim().slice(0, 60);
