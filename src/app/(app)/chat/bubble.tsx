@@ -19,7 +19,7 @@ export type ChatMsg = {
   campaignId: string | null;
   createdAt: string;
   /** Disparo: como o template chegou (imagem do cabeçalho, rodapé e botões) */
-  layout?: { headerKind: string | null; headerUrl: string | null; headerName: string | null; headerText: string | null; footer: string | null; buttons: string[] };
+  layout?: { headerKind: string | null; headerUrl: string | null; headerName: string | null; headerText: string | null; footer: string | null; buttons: Array<{ text: string; url: string | null }> };
 };
 
 function TemplateHeader({ l }: { l: NonNullable<ChatMsg["layout"]> }) {
@@ -138,9 +138,16 @@ export function Bubble({ m, campaignName }: { m: ChatMsg; campaignName?: string 
         {m.status === "failed" && m.error && <div className={clsx("mt-1 text-[11px]", agent ? "text-white" : "text-rose-600")}>Não enviada: {m.error}</div>}
         {m.layout && m.layout.buttons.length > 0 && (
           <div className="-mx-3.5 -mb-2 mt-2 divide-y divide-orange-200/70 border-t border-orange-200/70">
-            {m.layout.buttons.map((b, i) => (
-              <div key={i} className="py-2 text-center text-[13px] font-medium text-sky-600">{b}</div>
-            ))}
+            {m.layout.buttons.map((b, i) =>
+              b.url ? (
+                // Abre o mesmo link que a pessoa recebeu, sem contar como clique dela
+                <a key={i} href={b.url} target="_blank" rel="noreferrer" title="Abre o link do disparo (não conta como clique)" className="block py-2 text-center text-[13px] font-medium text-sky-600 hover:bg-orange-100/40 hover:underline">
+                  {b.text}
+                </a>
+              ) : (
+                <div key={i} className="py-2 text-center text-[13px] font-medium text-sky-600">{b.text}</div>
+              ),
+            )}
           </div>
         )}
       </div>

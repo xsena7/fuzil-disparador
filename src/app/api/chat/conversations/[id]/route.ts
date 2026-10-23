@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { getActiveAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { windowOpen, WINDOW_MS } from "@/lib/chat";
-import type { TComponent } from "@/lib/template-utils";
+import { isTrackedUrl, type TComponent } from "@/lib/template-utils";
+import { env } from "@/lib/env";
 
 export const dynamic = "force-dynamic";
 
@@ -34,8 +35,13 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 
   // Disparos: imagem do cabeçalho, rodapé e botões do template, para aparecer como o cliente recebeu
   const campaignIds = [...new Set(messages.filter((m) => m.source === "CAMPAIGN" && m.campaignId).map((m) => m.campaignId!))];
-  const layouts = new Map<string, { headerKind: string | null; headerUrl: string | null; headerName: string | null; headerText: string | null; footer: string | null; buttons: string[] }>();
+  type Btn = { text: string; url: string | null };
+  const layouts = new Map<string, { headerKind: string | null; headerUrl: string | null; headerName: string | null; headerText: string | null; footer: string | null; buttons: Btn[] }>();
   if (campaignIds.length) {
+    // Código do link de cada disparo para esse contato: o botão abre o mesmo destino que ele recebeu (sem contar clique)
+    const recips = await prisma.campaignRecipient.findMany({ where: { campaignId: { in: campaignIds }, phone: conv.contactPhone }, select: { campaignId: true, clickToken: true } });
+    const tokenOf = new Map(recips.map((r) => [r.campaignId, r.clickToken]));
+    const dom = env.redirectDomain().replace(/^https?:\/\//, "").replace(/\/$/, "");
     const camps = await prisma.campaign.findMany({
       where: { id: { in: campaignIds }, workspaceId: auth.workspace.id },
       select: { id: true, templateName: true, templateLanguage: true, headerMediaUrl: true, headerMediaType: true, headerMediaName: true },
@@ -56,7 +62,18 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
         headerName: c.headerMediaName,
         headerText: format === "TEXT" ? header?.text ?? null : null,
         footer: comps.find((x) => x.type === "FOOTER")?.text ?? null,
-        buttons: comps.filter((x) => x.type === "BUTTONS").flatMap((x) => x.buttons ?? []).map((b) => b.text),
+        buttons: comps
+          .filter((x) => x.type === "BUTTONS")
+          .flatMap((x) => x.buttons ?? [])
+          .map((b) => {
+            if (b.type !== "URL" || !b.url) return { text: b.text, url: null };
+            if (isTrackedUrl(b.url, env.redirectDomain())) {
+              const t = tokenOf.get(c.id);
+              // Só códigos de planilha (9 letras/números); os do aquecimento usam outro formato
+              return { text: b.text, url: t && /^[A-Za-z0-9]{9}$/.test(t) ? `https://${dom}/tst${t}` : null };
+            }
+            return { text: b.text, url: b.url.includes("{{") ? null : b.url };
+          }),
       });
     }
   }
