@@ -7,7 +7,6 @@ import { formatPhone } from "@/lib/phone";
 import { Badge, Card, Empty, Field, Input, PageHeader } from "@/components/ui";
 import { PhoneStatusBadge, QualityBadge } from "@/components/status";
 import { ActionForm, ConfirmButton } from "@/components/action-form";
-import { EmbeddedSignup } from "@/components/embedded-signup";
 import { LimitWindow } from "@/components/limit-card";
 import { bmWindows } from "@/lib/limit-windows";
 import { wabaReadiness } from "@/lib/readiness";
@@ -74,19 +73,14 @@ export default async function ConnectionsPage() {
         admin={auth.user.isSuperAdmin}
         whatsappUrl={supportWhatsAppLink(`Oi! Pedi acesso ao app do Fuzil (ID ${FUZIL_APP_ID}) na minha BM. Pode aprovar? Conta: ${auth.workspace.name}`)}
       />
-      <EmbeddedSignup appId={env.metaAppId()} configId={env.metaConfigId()} graphVersion={env.metaGraphVersion()} />
-
       <Card className="mt-4 p-5" data-tour="connect-form">
-        <div className="font-semibold">Configuração manual</div>
+        <div className="font-semibold">Conectar BM</div>
         <p className="mt-1 mb-4 text-zinc-500">
-          Cole o token do usuário do sistema da sua BM (whatsapp_business_management e whatsapp_business_messaging). O Fuzil acha as contas do WhatsApp sozinho.
+          Cole o token do usuário do sistema da sua BM. O Fuzil acha sozinho as contas do WhatsApp que ele acessa e conecta todas.
         </p>
-        <ActionForm action={connectManualAction} submit="Conectar WABA">
+        <ActionForm action={connectManualAction} submit="Conectar">
           <div className="grid gap-4 md:grid-cols-2">
-            <Field label="ID da WABA (opcional)" hint="Pode deixar em branco: o Fuzil acha pelo token e conecta todas as contas que o usuário do sistema acessa">
-              <Input name="wabaId" placeholder="Em branco = achar pelo token" autoComplete="off" inputMode="numeric" />
-            </Field>
-            <Field label="Token de acesso" hint="System User token com whatsapp_business_management e whatsapp_business_messaging">
+            <Field label="Token de acesso" hint="Token do usuário do sistema fuzil-api com as 3 permissões: whatsapp_business_messaging, whatsapp_business_management e business_management">
               <PasswordInput name="token" placeholder="EAAG..." autoComplete="new-password" data-lpignore="true" data-1p-ignore="true" />
             </Field>
             {!usesDefaultSecret && (

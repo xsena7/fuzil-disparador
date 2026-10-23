@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.13",
+    date: "23/10/2026",
+    items: ["Conexões: ficou só o campo do token (saíram os botões Cloud API / Coexistência e o campo ID da WABA). Cola o token, clica em Conectar e o Fuzil acha e conecta todas as contas do WhatsApp", "As 3 permissões do token aparecem certinho: whatsapp_business_messaging, whatsapp_business_management e business_management"],
+  },
+  {
     version: "2.12",
     date: "23/10/2026",
     items: [

@@ -86,7 +86,7 @@ export function ConnectGuide({ appId, whatsappUrl, open, admin }: { appId: strin
     },
     {
       title: "Cole o token aqui embaixo e conecte",
-      body: "Cole só o token em Configuração manual e clique em Conectar WABA. O Fuzil acha sozinho as contas do WhatsApp que o fuzil-api acessa e conecta todas. Pronto!",
+      body: "Cole o token em Conectar BM e clique em Conectar. O Fuzil acha sozinho as contas do WhatsApp que o fuzil-api acessa e conecta todas. Pronto!",
     },
   ];
 

@@ -23,16 +23,14 @@ export async function connectManualAction(_: FormState, form: FormData): Promise
   const token = String(form.get("token") ?? "").trim();
   if (typedId && !/^\d+$/.test(typedId)) return { error: "O ID da WABA tem só números (ou deixe em branco que o Fuzil acha pelo token)" };
   // O token do Tech Provider tem acesso às WABAs de todos os clientes: só o admin da plataforma pode usar sem token
-  if (!token && !auth.user.isSuperAdmin) return { error: "Cole o token de acesso da WABA (token do usuário do sistema da sua BM)." };
-  if (!token && !env.metaSystemToken()) return { error: "Informe um token de acesso (ou configure o token do Tech Provider)" };
-  if (!token && !typedId) return { error: "Sem token, informe o ID da WABA" };
+  if (!token) return { error: "Cole o token de acesso (token do usuário do sistema fuzil-api da sua BM)." };
 
   // Sem ID: o Fuzil descobre pelo token quais contas do WhatsApp o usuário do sistema acessa e conecta todas
   let ids = typedId ? [typedId] : [];
   if (!ids.length) {
     ids = await meta.wabaIdsOfSystemToken(token).catch(() => []);
     if (!ids.length)
-      return { error: "Não achei nenhuma conta do WhatsApp nesse token. Confira se o usuário do sistema fuzil-api tem a conta do WhatsApp em Atribuir ativos e gere o token de novo (ou cole o ID da WABA)." };
+      return { error: "Não achei nenhuma conta do WhatsApp nesse token. Confira se o usuário do sistema fuzil-api tem a conta do WhatsApp em Atribuir ativos e gere o token de novo." };
   }
 
   let appSecret = String(form.get("appSecret") ?? "").trim();
@@ -278,7 +276,7 @@ export async function testWabaAction(id: string): Promise<{ ok?: boolean; text: 
       if (/api access blocked/i.test(err.message))
         return { text: "A Meta bloqueou o app dessa BM (API access blocked), e ela não dispara assim. Entre em developers.facebook.com com a conta dona do app e conclua a verificação que a Meta pedir (código no e-mail/celular ou identidade). Depois, clique em Testar conexão de novo." };
       if (err.code === 190) return { text: "O token expirou ou foi revogado. Gere um token novo (System User, sem validade) e conecte de novo." };
-      if (err.code === 10 || err.code === 200) return { text: "O token não tem permissão para essa conta. Gere um token com o app dessa BM e as permissões whatsapp_business_management e whatsapp_business_messaging." };
+      if (err.code === 10 || err.code === 200) return { text: "O token não tem permissão para essa conta. Gere o token do fuzil-api de novo, com o app do Fuzil e as 3 permissões: whatsapp_business_messaging, whatsapp_business_management e business_management." };
       return { text: `A Meta respondeu com erro: ${err.message}` };
     }
     return { text: "Não consegui falar com a Meta agora. Tente de novo em instantes." };
