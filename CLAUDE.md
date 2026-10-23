@@ -8,7 +8,7 @@ SaaS para gerenciar BMs do WhatsApp e disparar templates de utilidade em escala 
 
 ## Stack
 Next.js 15 (App Router, server actions, `useActionState`) · Prisma 6 + Postgres · Tailwind 4 · worker em `src/worker/index.ts` (empacotado com esbuild em `dist/worker.mjs`).
-Produção: VM Oracle grátis, Docker Compose (db, app, worker, caddy). O servidor puxa a branch `claude/fuzil-disparador-bm-manager-cfasqv` a cada 5 min (`deploy/auto-update.sh`) e remonta tudo.
+Produção: VM Oracle grátis, Docker Compose (db, app, worker, caddy). O servidor puxa a branch `claude/fuzil-disparador-bm-manager-cfasqv` a cada 1 min (`deploy/auto-update.sh`) e remonta tudo.
 
 ## Onde fica cada coisa
 - Disparo: `src/lib/dispatcher.ts` (rodízio, créditos, estorno, retry). Créditos: `src/lib/credits.ts`.
