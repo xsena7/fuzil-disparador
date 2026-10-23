@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.28",
+    date: "23/10/2026",
+    items: ["Campanha: o botão do teste de envio abre o link da campanha (antes dava \"link não encontrado\"). Sai com os dados da 1ª linha da planilha e não conta como clique"],
+  },
+  {
     version: "2.27",
     date: "23/10/2026",
     items: ["Site: landing nova com os diferenciais do Fuzil (soma de limite das BMs, rodízio de números, template padrão em todas as BMs, BM com problema saindo sozinha, estorno e relatório ao vivo), comparação lado a lado e aviso de testes fechados"],

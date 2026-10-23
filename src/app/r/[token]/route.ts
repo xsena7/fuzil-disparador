@@ -16,6 +16,18 @@ export async function GET(req: Request, { params }: { params: Promise<{ token: s
   const ip = (req.headers.get("x-forwarded-for") ?? "").split(",")[0].trim() || req.headers.get("x-real-ip") || null;
   const isBot = !ua || BOT_UA.test(ua);
 
+  // Teste de envio: vai para o link da campanha (com os dados da 1ª linha) sem contar clique.
+  // t_<código secreto da 1ª linha> ou, sem planilha, t_c_<campanha> (aí sem dados de ninguém)
+  if (!recipient && token.startsWith("t_")) {
+    const row = token.startsWith("t_c_")
+      ? null
+      : await prisma.campaignRecipient.findUnique({ where: { clickToken: token.slice(2) }, select: { phone: true, name: true, data: true, campaignId: true } });
+    const campaignId = row?.campaignId ?? (token.startsWith("t_c_") ? token.slice(4) : null);
+    const campaign = campaignId ? await prisma.campaign.findUnique({ where: { id: campaignId }, select: { buttonUrl: true } }) : null;
+    if (!campaign?.buttonUrl) return new Response("Link não encontrado", { status: 404 });
+    const target = fillUrlVars(campaign.buttonUrl, row ?? { phone: "", name: null, data: {} });
+    return /^https?:\/\//i.test(target) ? Response.redirect(target, 302) : new Response("Link não encontrado", { status: 404 });
+  }
   // Não é de campanha do Fuzil: pode ser um link para outra plataforma (código fixo na variável do botão)
   if (!recipient) {
     const link = await prisma.externalLink.findUnique({ where: { code: token }, select: { id: true, url: true } });
