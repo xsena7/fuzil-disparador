@@ -350,6 +350,35 @@ async function checkWebhookChain(waba: { id: string; wabaId: string; appSecretEn
 /** O texto dos avisos indica problema que o Fuzil não conseguiu resolver sozinho? */
 const hooksFailed = (t: string) => /nenhuma chave|não consigo|não consegui|precisa estar em https/i.test(t);
 
+/** Permissões do token (debug_token com o token do app): diz qual falta para enviar por essa conta. */
+async function checkTokenScopes(waba: { wabaId: string; appSecretEnc: string | null; workspaceId: string }, token: string): Promise<{ ok: boolean; text: string } | null> {
+  const appId = await meta.appIdOf(token).catch(() => null);
+  if (!appId) return null;
+  const secrets = [...new Set([waba.appSecretEnc ? decrypt(waba.appSecretEnc) : null, await defaultAppSecret(waba.workspaceId)].filter((x): x is string => Boolean(x)))];
+  for (const secret of secrets) {
+    const url = new URL(`${env.metaGraphUrl()}/${env.metaGraphVersion()}/debug_token`);
+    url.searchParams.set("input_token", token);
+    url.searchParams.set("access_token", `${appId}|${secret}`);
+    const json = (await fetch(url, { signal: AbortSignal.timeout(20_000) }).then((r) => r.json()).catch(() => null)) as {
+      data?: { scopes?: string[]; granular_scopes?: Array<{ scope: string; target_ids?: string[] }>; error?: unknown };
+      error?: unknown;
+    } | null;
+    if (!json?.data || json.error) continue;
+    const scopes = json.data.scopes ?? [];
+    const need = ["whatsapp_business_messaging", "whatsapp_business_management", "business_management"];
+    const missing = need.filter((n) => !scopes.includes(n));
+    // Com a lista de contas: a conta do WhatsApp tem que estar liberada para enviar
+    const msg = json.data.granular_scopes?.find((g) => g.scope === "whatsapp_business_messaging");
+    const notThisWaba = msg?.target_ids?.length && !msg.target_ids.includes(waba.wabaId);
+    if (missing.length)
+      return { ok: false, text: `Permissões do token: falta ${missing.join(", ")}. Gere o token do fuzil-api de novo marcando as 3 permissões e cole em Atualizar token.` };
+    if (notThisWaba)
+      return { ok: false, text: "Permissões do token: o token pode enviar mensagens, mas não por essa conta do WhatsApp. No fuzil-api, em Atribuir ativos, dê Controle total nessa conta e gere o token de novo." };
+    return { ok: true, text: "Permissões do token: as 3 certinhas." };
+  }
+  return null;
+}
+
 export async function testWabaAction(id: string): Promise<{ ok?: boolean; text: string }> {
   const waba = await ownWaba(id);
   const { wabaToken } = await import("@/lib/sync");
@@ -362,10 +391,11 @@ export async function testWabaAction(id: string): Promise<{ ok?: boolean; text: 
   }
   try {
     const info = await meta.getWaba(token, waba.wabaId);
+    const scopes = await checkTokenScopes(waba, token).catch(() => null);
     const hooks = await checkWebhookChain(waba, token).catch((e) => `Não consegui conferir os avisos da Meta: ${e instanceof Error ? e.message : String(e)}`);
     return {
-      ok: !hooksFailed(hooks),
-      text: `A Meta reconhece a conta "${info.name}" e o token tem acesso a ela.${info.account_review_status ? ` Status de análise: ${info.account_review_status}.` : ""} ${hooks}`,
+      ok: !hooksFailed(hooks) && scopes?.ok !== false,
+      text: `A Meta reconhece a conta "${info.name}" e o token tem acesso a ela.${info.account_review_status ? ` Status de análise: ${info.account_review_status}.` : ""}${scopes ? ` ${scopes.text}` : ""} ${hooks}`,
     };
   } catch (err) {
     if (err instanceof MetaError) {

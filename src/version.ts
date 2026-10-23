@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.33",
+    date: "23/10/2026",
+    items: ["Conexões: o Testar conexão mostra as permissões do token e diz qual está faltando para enviar (ex.: whatsapp_business_messaging) ou se a conta do WhatsApp não foi liberada para ele"],
+  },
+  {
     version: "2.32",
     date: "23/10/2026",
     items: ["Chat: o botão de link das mensagens de disparo agora é clicável e abre o mesmo link que a pessoa recebeu (não conta como clique dela)"],
