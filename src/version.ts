@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.18",
+    date: "23/10/2026",
+    items: ["Conexões: o campo ID da WABA voltou (a Meta não lista as contas pelo token do usuário do sistema). Passo a passo, tour e tutoriais atualizados com onde achar o ID"],
+  },
+  {
     version: "2.17",
     date: "23/10/2026",
     items: ["Conexões: quando a Meta não lista as contas do WhatsApp no token (comum em usuário do sistema), o Fuzil procura pelas BMs que o token acessa. Se ainda não achar, mostra o que a Meta respondeu"],

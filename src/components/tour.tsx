@@ -35,8 +35,8 @@ const STEPS: Step[] = [
   {
     path: "/conexoes",
     target: "connect-form",
-    title: "Cole o token",
-    body: "Cole o token gerado e clique em Conectar. O Fuzil acha sozinho as contas do WhatsApp pelo token, confere tudo na Meta e já puxa seus números.",
+    title: "Cole o ID da WABA e o token",
+    body: "Cole o ID da conta do WhatsApp e o token gerado, e clique em Conectar. O Fuzil confere tudo na Meta e já puxa seus números.",
   },
   {
     path: "/conexoes",

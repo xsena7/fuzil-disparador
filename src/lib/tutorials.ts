@@ -32,7 +32,7 @@ export const TUTORIALS: Tutorial[] = [
       {
         kind: "steps",
         items: [
-          "Conexões: conecte suas BMs (Business Managers) do WhatsApp. É só pedir acesso ao app do Fuzil, gerar o token do usuário do sistema e colar (veja o tutorial \"Conectar pelo token\").",
+          "Conexões: conecte suas BMs (Business Managers) do WhatsApp. É só pedir acesso ao app do Fuzil, gerar o token do usuário do sistema e colar com o ID da WABA (veja o tutorial \"Conectar pelo token\").",
           "Grupos de BM: junte as BMs em um grupo. A campanha dispara pelo grupo, usando todos os números dele.",
           "Templates: crie (ou puxe) um template de Utilidade e espere a Meta aprovar.",
           "Saldo: confira se a conta tem créditos. Cada mensagem enviada consome créditos.",
@@ -60,11 +60,11 @@ export const TUTORIALS: Tutorial[] = [
         kind: "steps",
         items: [
           "Na sua BM, peça acesso ao app do Fuzil, crie o usuário do sistema fuzil-api, dê acesso a ele e gere o token (passo a passo no tutorial \"Conectar pelo token\" e em Conexões → Como conectar sua BM).",
-          "Em Conexões → Conectar BM, cole o token e clique em Conectar.",
-          "O Fuzil acha sozinho as contas do WhatsApp que o token acessa e conecta todas. Em alguns segundos a BM aparece na lista.",
+          "Em Conexões → Conectar BM, cole o ID da WABA e o token e clique em Conectar.",
+          "Em alguns segundos a BM aparece na lista, com os números e templates dela.",
         ],
       },
-      { kind: "tip", text: "O jeito mais fácil é pelo token: libere o app do Fuzil na sua BM, gere o token do usuário do sistema e cole em Conexões. Veja o tutorial \"Conectar pelo token (app do Fuzil)\"." },
+      { kind: "tip", text: "Passo a passo completo (pedir acesso ao app do Fuzil, criar o fuzil-api, gerar o token e pegar o ID da WABA): veja o tutorial \"Conectar pelo token (app do Fuzil)\"." },
       { kind: "text", text: "A tela de Conexões tem \"Nova conexão\" em cima e as BMs embaixo, em gavetas: a última conectada fica sempre no topo. A bolinha da gaveta mostra o estado de cada BM sem precisar abrir: verde (tudo certo), amarela (atenção) ou vermelha (algo impede o disparo)." },
       {
         kind: "steps",
@@ -91,12 +91,12 @@ export const TUTORIALS: Tutorial[] = [
   {
     slug: "conexao-manual",
     title: "Conectar pelo token (app do Fuzil)",
-    summary: "O jeito mais fácil: libera o app do Fuzil na sua BM, gera um token e cola. Só isso.",
+    summary: "Libera o app do Fuzil na sua BM, gera o token e cola com o ID da WABA.",
     icon: "key",
     href: "/conexoes",
     minutes: 5,
     blocks: [
-      { kind: "text", text: "Você não precisa criar app nenhum nem procurar o ID da WABA. É só liberar o app do Fuzil na sua BM, criar um usuário do sistema e colar o token dele no Fuzil. O Fuzil acha sozinho todas as contas do WhatsApp que esse usuário acessa e conecta todas de uma vez." },
+      { kind: "text", text: "Você não precisa criar app nenhum. É só liberar o app do Fuzil na sua BM, criar um usuário do sistema, gerar o token dele e colar no Fuzil junto com o ID da conta do WhatsApp (WABA)." },
       {
         kind: "steps",
         items: [
@@ -105,12 +105,13 @@ export const TUTORIALS: Tutorial[] = [
           "Crie o usuário do sistema: Usuários → Usuários do sistema → Adicionar. Nome fuzil-api, função Administrador.",
           "Dê acesso ao usuário: no fuzil-api, clique nos 3 pontinhos (⋯) à direita → Atribuir ativos (Assign assets). Marque o app do Fuzil e a sua conta do WhatsApp, as duas com Controle total.",
           "Gere o token: no fuzil-api, clique em Gerar token (Generate token), escolha o app do Fuzil, validade Nunca e marque whatsapp_business_messaging, whatsapp_business_management e business_management. Copie o token (a Meta só mostra uma vez).",
-          "No Fuzil, em Conexões → Conectar BM: cole o token e clique em Conectar. Pronto!",
+          "Pegue o ID da WABA: Contas → Contas do WhatsApp (Accounts → WhatsApp accounts) e clique na sua conta. O número em ID é o ID da WABA.",
+          "No Fuzil, em Conexões → Conectar BM: cole o ID da WABA e o token e clique em Conectar. Pronto!",
         ],
       },
-      { kind: "tip", text: "Tem mais de uma conta do WhatsApp na BM? Dê acesso a todas no Atribuir ativos e cole o token uma vez só: o Fuzil conecta todas." },
+      { kind: "tip", text: "Tem mais de uma conta do WhatsApp na BM? Dê acesso a todas no Atribuir ativos e conecte uma por vez, com o ID de cada uma (o mesmo token serve para todas)." },
       { kind: "warn", text: "Nunca mande o token em chat, print ou e-mail. Cole direto no Fuzil: ele guarda criptografado." },
-      { kind: "text", text: "\"Não achei nenhuma conta do WhatsApp nesse token\"? Confira se a conta do WhatsApp está marcada no Atribuir ativos do fuzil-api e gere o token de novo depois de marcar (token antigo não enxerga o ativo novo)." },
+      { kind: "text", text: "Deu erro de permissão? Confira se a conta do WhatsApp está marcada no Atribuir ativos do fuzil-api e gere o token de novo depois de marcar (token antigo não enxerga o ativo novo)." },
       { kind: "text", text: "As respostas dos clientes aparecem no Chat sozinhas: a chave secreta do app do Fuzil já entra automática na conexão." },
     ],
   },
