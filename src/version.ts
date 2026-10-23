@@ -2,6 +2,15 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.12",
+    date: "23/10/2026",
+    items: [
+      "Conexões: não precisa mais do ID da WABA. Cola só o token do usuário do sistema e o Fuzil acha sozinho as contas do WhatsApp que ele acessa e conecta todas",
+      "Se quiser conectar só uma conta, ainda dá para colar o ID da WABA",
+      "Tutoriais e passo a passo de Conexões atualizados com o jeito novo: pedir acesso ao app do Fuzil, criar o fuzil-api, Atribuir ativos (Assign assets), gerar o token e colar",
+    ],
+  },
+  {
     version: "2.11",
     date: "23/10/2026",
     items: ["Campanha → Envio: números removidos da Meta (ou de teste) não aparecem mais em \"Fora desta campanha\", e os motivos aparecem em português (ex.: Template em análise)"],

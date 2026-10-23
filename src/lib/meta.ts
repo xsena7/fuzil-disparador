@@ -321,6 +321,33 @@ export const meta = {
   // Embedded Signup
   // -------------------------------------------------------------------------
 
+  /**
+   * Contas do WhatsApp (WABAs) que um token de usuário do sistema enxerga, para conectar sem digitar o ID.
+   * 1) as permissões do próprio token (debug_token); 2) as BMs do usuário → contas próprias e de clientes.
+   */
+  async wabaIdsOfSystemToken(token: string): Promise<string[]> {
+    const ids = new Set<string>();
+    try {
+      const dbg = await graph<{ data?: { granular_scopes?: Array<{ scope: string; target_ids?: string[] }> } }>(token, "GET", "debug_token", { query: { input_token: token } });
+      for (const s of dbg.data?.granular_scopes ?? []) if (s.scope === "whatsapp_business_management") for (const t of s.target_ids ?? []) ids.add(t);
+    } catch {
+      // segue para o outro jeito
+    }
+    if (ids.size) return [...ids];
+    try {
+      const bms = await graph<{ data: Array<{ id: string }> }>(token, "GET", "me/businesses", { query: { fields: "id", limit: 50 } });
+      for (const b of bms.data ?? []) {
+        for (const edge of ["owned_whatsapp_business_accounts", "client_whatsapp_business_accounts"]) {
+          const r = await graph<{ data: Array<{ id: string }> }>(token, "GET", `${b.id}/${edge}`, { query: { fields: "id", limit: 100 } }).catch(() => ({ data: [] }));
+          for (const w of r.data ?? []) ids.add(w.id);
+        }
+      }
+    } catch {
+      // sem permissão de business_management: não dá para descobrir
+    }
+    return [...ids];
+  },
+
   /** WABAs liberadas para um token (usado quando o evento do cadastro não trouxe o waba_id). */
   async wabaIdsFromToken(token: string): Promise<string[]> {
     const url = new URL(`${env.metaGraphUrl()}/${env.metaGraphVersion()}/debug_token`);

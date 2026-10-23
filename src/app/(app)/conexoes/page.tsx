@@ -79,11 +79,13 @@ export default async function ConnectionsPage() {
       <Card className="mt-4 p-5" data-tour="connect-form">
         <div className="font-semibold">Configuração manual</div>
         <p className="mt-1 mb-4 text-zinc-500">
-          Conecte uma WABA pelo ID com o token do usuário do sistema da sua BM (whatsapp_business_management e whatsapp_business_messaging).
+          Cole o token do usuário do sistema da sua BM (whatsapp_business_management e whatsapp_business_messaging). O Fuzil acha as contas do WhatsApp sozinho.
         </p>
         <ActionForm action={connectManualAction} submit="Conectar WABA">
           <div className="grid gap-4 md:grid-cols-2">
-            <Field label="ID da WABA"><Input name="wabaId" placeholder="1673861331112475" required autoComplete="off" inputMode="numeric" /></Field>
+            <Field label="ID da WABA (opcional)" hint="Pode deixar em branco: o Fuzil acha pelo token e conecta todas as contas que o usuário do sistema acessa">
+              <Input name="wabaId" placeholder="Em branco = achar pelo token" autoComplete="off" inputMode="numeric" />
+            </Field>
             <Field label="Token de acesso" hint="System User token com whatsapp_business_management e whatsapp_business_messaging">
               <PasswordInput name="token" placeholder="EAAG..." autoComplete="new-password" data-lpignore="true" data-1p-ignore="true" />
             </Field>

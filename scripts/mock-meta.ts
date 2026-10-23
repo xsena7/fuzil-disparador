@@ -40,6 +40,13 @@ const wabas: Record<string, { name: string; business: { id: string; name: string
     ],
     templates: [{ id: "t3", name: "atualizacao_pedido", language: "pt_BR", category: "UTILITY", status: "APPROVED", components: IMAGE_TRACKED }],
   },
+  // Conta livre para testar conexão só pelo token (token "mock-waba-1003")
+  "1003": {
+    name: "WABA Nova",
+    business: { id: "9003", name: "BM Nova" },
+    phones: [{ id: "5005", display_phone_number: "+55 21 93000-1234", verified_name: "Nova", quality_rating: "GREEN", whatsapp_business_manager_messaging_limit: "TIER_250", status: "CONNECTED", name_status: "APPROVED", throughput: { level: "STANDARD" } }],
+    templates: [],
+  },
 };
 
 let msgSeq = 0;
@@ -66,6 +73,12 @@ createServer(async (req, res) => {
     return res.end(Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==", "base64"));
   }
   if (id === "oauth") return json(res, 200, { access_token: "mock-business-token" });
+  // Token de usuário do sistema: "mock-waba-1002" enxerga só a WABA 1002; os outros enxergam todas
+  if (id === "debug_token") {
+    const t = url.searchParams.get("input_token") ?? "";
+    const target_ids = t.startsWith("mock-waba-") ? [t.slice(10)] : Object.keys(wabas);
+    return json(res, 200, { data: { app_id: "1810134293359501", is_valid: true, granular_scopes: [{ scope: "whatsapp_business_management", target_ids }, { scope: "whatsapp_business_messaging", target_ids }] } });
+  }
   // Higienização: POST /{phone-id}/contacts (números com final par têm WhatsApp)
   if (edge === "contacts" && req.method === "POST") {
     const contacts = (body.contacts ?? []).map((c: string) => ({ input: c, status: Number(c.slice(-1)) % 2 === 0 ? "valid" : "invalid", wa_id: c }));

@@ -19,29 +19,46 @@ const errMsg = friendlyError;
 export async function connectManualAction(_: FormState, form: FormData): Promise<FormState> {
   const auth = await requireAuth();
   if (auth.role === "MEMBER" && !auth.user.isSuperAdmin) return { error: "Só o dono ou um admin da conta pode conectar BMs." };
-  const wabaId = String(form.get("wabaId") ?? "").trim();
+  const typedId = String(form.get("wabaId") ?? "").trim();
   const token = String(form.get("token") ?? "").trim();
-  if (!/^\d+$/.test(wabaId)) return { error: "Informe o ID da WABA (só números)" };
+  if (typedId && !/^\d+$/.test(typedId)) return { error: "O ID da WABA tem só números (ou deixe em branco que o Fuzil acha pelo token)" };
   // O token do Tech Provider tem acesso às WABAs de todos os clientes: só o admin da plataforma pode usar sem token
   if (!token && !auth.user.isSuperAdmin) return { error: "Cole o token de acesso da WABA (token do usuário do sistema da sua BM)." };
   if (!token && !env.metaSystemToken()) return { error: "Informe um token de acesso (ou configure o token do Tech Provider)" };
-  try {
-    await connectWaba({ workspaceId: auth.workspace.id, wabaId, accessTokenEnc: token ? encrypt(token) : null, connectionType: "MANUAL" });
-    // Sem chave no formulário: usa a chave secreta padrão da conta (se o admin cadastrou)
-    let appSecret = String(form.get("appSecret") ?? "").trim();
-    if (!appSecret) appSecret = (await defaultAppSecret(auth.workspace.id)) ?? "";
-    if (/^[a-f0-9]{32}$/i.test(appSecret)) {
-      await prisma.whatsAppAccount.updateMany({ where: { workspaceId: auth.workspace.id, wabaId }, data: { appSecretEnc: encrypt(appSecret) } });
-      resetBmSecrets();
-      const saved = await prisma.whatsAppAccount.findFirst({ where: { workspaceId: auth.workspace.id, wabaId }, select: { id: true } });
-      if (saved) await configureBmAppWebhook(saved.id, appSecret);
-    }
-    deployBlueprints(auth.workspace.id).catch(() => undefined);
-  } catch (err) {
-    return { error: `Não foi possível conectar: ${errMsg(err)}` };
+  if (!token && !typedId) return { error: "Sem token, informe o ID da WABA" };
+
+  // Sem ID: o Fuzil descobre pelo token quais contas do WhatsApp o usuário do sistema acessa e conecta todas
+  let ids = typedId ? [typedId] : [];
+  if (!ids.length) {
+    ids = await meta.wabaIdsOfSystemToken(token).catch(() => []);
+    if (!ids.length)
+      return { error: "Não achei nenhuma conta do WhatsApp nesse token. Confira se o usuário do sistema fuzil-api tem a conta do WhatsApp em Atribuir ativos e gere o token de novo (ou cole o ID da WABA)." };
   }
+
+  let appSecret = String(form.get("appSecret") ?? "").trim();
+  // Sem chave no formulário: usa a chave secreta padrão (da conta ou a do app do Fuzil)
+  if (!appSecret) appSecret = (await defaultAppSecret(auth.workspace.id)) ?? "";
+  const ok: string[] = [];
+  const failed: string[] = [];
+  for (const wabaId of ids) {
+    try {
+      await connectWaba({ workspaceId: auth.workspace.id, wabaId, accessTokenEnc: token ? encrypt(token) : null, connectionType: "MANUAL" });
+      if (/^[a-f0-9]{32}$/i.test(appSecret)) {
+        await prisma.whatsAppAccount.updateMany({ where: { workspaceId: auth.workspace.id, wabaId }, data: { appSecretEnc: encrypt(appSecret) } });
+        resetBmSecrets();
+        const saved = await prisma.whatsAppAccount.findFirst({ where: { workspaceId: auth.workspace.id, wabaId }, select: { id: true } });
+        if (saved) await configureBmAppWebhook(saved.id, appSecret);
+      }
+      ok.push(wabaId);
+    } catch (err) {
+      failed.push(`${wabaId}: ${errMsg(err)}`);
+    }
+  }
+  if (ok.length) deployBlueprints(auth.workspace.id).catch(() => undefined);
   revalidatePath("/conexoes");
-  return { ok: "WABA conectada e sincronizada" };
+  if (!ok.length) return { error: `Não foi possível conectar: ${failed.join(" · ")}` };
+  if (typedId) return { ok: "WABA conectada e sincronizada" };
+  return { ok: `${ok.length} conta(s) do WhatsApp achada(s) pelo token e conectada(s)${failed.length ? `. Não deu em ${failed.length}: ${failed.join(" · ")}` : ""}` };
 }
 
 async function ownWaba(id: string) {

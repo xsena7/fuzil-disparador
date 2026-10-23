@@ -31,7 +31,7 @@ export function ConnectGuide({ appId, whatsappUrl, open, admin }: { appId: strin
       title: "Peça acesso ao app do Fuzil",
       body: (
         <>
-          Na sua BM: <Path>Configurações do negócio → Contas → Apps → Adicionar → Solicitar acesso a um ID do app</Path>. Cole o ID{" "}
+          Na sua BM: <Path>Configurações do negócio → Contas → Apps → Adicionar → Solicitar acesso a um ID do app</Path> (em inglês: Request access to an app ID). Cole o ID{" "}
           <CopyChip value={appId} label="ID do app" /> e envie.
         </>
       ),
@@ -69,8 +69,8 @@ export function ConnectGuide({ appId, whatsappUrl, open, admin }: { appId: strin
       title: "Dê acesso ao usuário",
       body: (
         <>
-          No <Path>fuzil-api</Path>, clique em <Path>Atribuir ativos</Path>: em <Path>Apps</Path> marque o app do Fuzil com <Path>Controle total</Path>. Depois, de
-          novo em <Path>Atribuir ativos</Path>: em <Path>Contas do WhatsApp</Path> marque a sua conta com <Path>Controle total</Path>.
+          No <Path>fuzil-api</Path>, clique nos <Path>3 pontinhos (⋯) à direita → Atribuir ativos</Path> (em inglês: Assign assets). Em <Path>Apps</Path> marque o app do
+          Fuzil e em <Path>Contas do WhatsApp</Path> marque a sua conta, as duas com <Path>Controle total</Path>.
         </>
       ),
     },
@@ -78,23 +78,15 @@ export function ConnectGuide({ appId, whatsappUrl, open, admin }: { appId: strin
       title: "Gere o token",
       body: (
         <>
-          No <Path>fuzil-api</Path>, clique em <Path>Gerar token</Path>, escolha o app do Fuzil, validade <Path>Nunca</Path> e marque{" "}
+          No <Path>fuzil-api</Path>, clique em <Path>Gerar token</Path> (Generate token), escolha o app do Fuzil, validade <Path>Nunca</Path> e marque{" "}
           <code className="rounded bg-zinc-100 px-1 text-xs">whatsapp_business_messaging</code>, <code className="rounded bg-zinc-100 px-1 text-xs">whatsapp_business_management</code> e{" "}
           <code className="rounded bg-zinc-100 px-1 text-xs">business_management</code>. Copie o token (a Meta só mostra uma vez).
         </>
       ),
     },
     {
-      title: "Pegue o ID da WABA",
-      body: (
-        <>
-          <Path>Contas → Contas do WhatsApp</Path> e clique na sua conta: o número em <Path>ID</Path> é o ID da WABA.
-        </>
-      ),
-    },
-    {
-      title: "Cole aqui embaixo e conecte",
-      body: "Cole o ID da WABA e o token em Configuração manual e clique em Conectar WABA. Pronto!",
+      title: "Cole o token aqui embaixo e conecte",
+      body: "Cole só o token em Configuração manual e clique em Conectar WABA. O Fuzil acha sozinho as contas do WhatsApp que o fuzil-api acessa e conecta todas. Pronto!",
     },
   ];
 
