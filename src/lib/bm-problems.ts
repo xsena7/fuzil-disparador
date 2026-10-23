@@ -18,7 +18,8 @@ export const PROBLEM_KINDS = {
   UNKNOWN: { system: PROBLEMS_GROUP, name: "⚠️ BMs com problema", color: "black", description: "Problemas que o Fuzil não conseguiu identificar (ou colocadas aqui por você)." },
 } as const;
 export type ProblemKind = keyof typeof PROBLEM_KINDS;
-const SETUP_KINDS: ProblemKind[] = ["NO_PHONE", "PAYMENT", "TEMPLATE"];
+// Mudam a BM de grupo mesmo se ela nunca disparou (impedem o disparo de qualquer jeito)
+const SETUP_KINDS: ProblemKind[] = ["NO_PHONE", "PAYMENT", "TEMPLATE", "BANNED"];
 
 export const isProblemSystem = (system?: string | null) => Boolean(system && system.startsWith(PROBLEMS_GROUP));
 const kindOfStored = (k?: string | null): ProblemKind => (k && k in PROBLEM_KINDS ? (k as ProblemKind) : "UNKNOWN");

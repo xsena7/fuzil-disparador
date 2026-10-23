@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.31",
+    date: "23/10/2026",
+    items: ["Campanha: se o teste de envio pega uma BM que a Meta baniu, o Fuzil tira ela do disparo na hora e manda para 🚫 Banidas (o próximo teste sai por outra BM)"],
+  },
+  {
     version: "2.30",
     date: "23/10/2026",
     items: [

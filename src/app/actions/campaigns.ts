@@ -353,6 +353,19 @@ export async function testCampaignSendAction(id: string, _: { ok?: string; error
       };
       const diag = { waba: wabaRec?.wabaId, phoneNumberId: sender.phoneNumberId, meta_error: { message: err.message, code: err.code, subcode: err.subcode, httpStatus: err.httpStatus, details: err.details }, token_ve_o_template: await lookup(), numero: await owner() };
       const own = typeof diag.numero === "object" ? diag.numero : null;
+      // A Meta diz que a conta ou o número foi banido/bloqueado: tira a BM do disparo na hora (vai para Banidas)
+      const banned = own && (own.status === "BANNED" || own.entidades.some((e) => e.entity_type === "WABA" && e.can_send_message === "BLOCKED"));
+      if (banned) {
+        const why = own.entidades.flatMap((e) => ((e as { errors?: Array<{ error_description?: string }> }).errors ?? []).map((x) => x.error_description)).find((t) => /ban|block|restrict/i.test(t ?? "")) ?? "conta ou número bloqueado pela Meta";
+        await prisma.phoneNumber.update({ where: { id: sender.phoneId }, data: { status: own.status ?? "BANNED" } }).catch(() => undefined);
+        await prisma.whatsAppAccount.update({ where: { id: sender.wabaId }, data: { status: "BLOCKED" } }).catch(() => undefined);
+        const { flagBusinessProblem, problemFix } = await import("@/lib/bm-problems");
+        await flagBusinessProblem(sender.businessId, `A Meta baniu/bloqueou ${sender.businessName}: ${why}`, problemFix(null, "BANNED"), "BANNED", true).catch(() => undefined);
+        return {
+          error: `A Meta baniu essa BM (${sender.businessName}): ${why}. Tirei ela do disparo e mandei para o grupo 🚫 Banidas. Teste de novo: vai sair por outra BM do grupo.`,
+          raw: JSON.stringify(diag, null, 2),
+        };
+      }
       const hint =
         own && own.mesma_waba_do_template === false
           ? ` O número ${sender.display} está na WABA ${own.waba_do_numero}, mas o template está na WABA ${wabaRec?.wabaId}. Clique em "Puxar da Meta" em Conexões para o Fuzil corrigir.`
