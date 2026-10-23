@@ -111,8 +111,18 @@ export async function deployBlueprints(workspaceId?: string) {
 
       let name = dep?.currentName ?? bp.name;
       let version = dep?.version ?? 1;
-      // Queimou o nome (virou marketing) ou o texto foi editado depois de rejeitar: sobe com o próximo nome
-      const burned = dep?.status === "RECATEGORIZED_DELETED" || dep?.status === "RETRY";
+      // Rejeitado: apaga o rejeitado na Meta e sobe de novo com o próximo nome (até MAX_VERSIONS)
+      const rejected = dep?.status === "REJECTED" && version < MAX_VERSIONS;
+      if (rejected) {
+        try {
+          await meta.deleteTemplate(wabaToken(waba), waba.wabaId, name);
+        } catch (e) {
+          console.error("[blueprints] apagar rejeitado", name, e);
+        }
+        await prisma.template.deleteMany({ where: { wabaId: waba.id, name, language: bp.language } });
+      }
+      // Queimou o nome (virou marketing, rejeitou) ou o texto foi editado depois de rejeitar: sobe com o próximo nome
+      const burned = rejected || dep?.status === "RECATEGORIZED_DELETED" || dep?.status === "RETRY";
       if (burned) {
         // O nome queimou nessa WABA: tenta o próximo número (pulando nomes que já existem nela)
         if (version >= MAX_VERSIONS) continue;

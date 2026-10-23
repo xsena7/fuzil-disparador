@@ -4,7 +4,10 @@ export const CHANGELOG: Array<{ version: string; date: string; items: string[] }
   {
     version: "2.23",
     date: "23/10/2026",
-    items: ["Gerador de links: texto novo do aviso de novo acesso (o antigo era rejeitado). O Fuzil troca sozinho em todos os funis e reenvia para a Meta onde foi rejeitado"],
+    items: [
+      "Templates padrão: quando a Meta rejeita, o Fuzil apaga o rejeitado e manda de novo sozinho com o próximo nome (_2, _3...), até 10 tentativas por conta",
+      "Gerador de links: texto novo do aviso de novo acesso (o antigo era rejeitado). O Fuzil troca sozinho em todos os funis e reenvia para a Meta onde foi rejeitado",
+    ],
   },
   {
     version: "2.22",
