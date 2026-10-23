@@ -3,10 +3,25 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { confirmDialog } from "@/components/confirm-dialog";
-import { Copy, Mail, Trash2 } from "lucide-react";
-import { adminDeleteUserAction, adminResendInviteAction } from "@/app/actions/misc";
+import { Copy, Mail, Shield, ShieldOff, Trash2 } from "lucide-react";
+import { adminDeleteUserAction, adminResendInviteAction, adminSetSuperAdminAction } from "@/app/actions/misc";
 
-export function UserActions({ id, email, isSelf }: { id: string; email: string; isSelf: boolean }) {
+export function UserActions({
+  id,
+  email,
+  isSelf,
+  canAdmin = false,
+  isAdmin = false,
+  name = email,
+}: {
+  id: string;
+  email: string;
+  isSelf: boolean;
+  /** Só o dono do Fuzil vê o botão de dar/tirar administrador */
+  canAdmin?: boolean;
+  isAdmin?: boolean;
+  name?: string;
+}) {
   const [pending, start] = useTransition();
   const [msg, setMsg] = useState<{ text: string; link?: string; error?: boolean } | null>(null);
   const router = useRouter();
@@ -14,6 +29,25 @@ export function UserActions({ id, email, isSelf }: { id: string; email: string; 
   return (
     <div className="flex flex-col items-end gap-1.5">
       <div className="flex gap-1.5">
+        {canAdmin && (
+          <button
+            className={isAdmin ? btn : `${btn} border-orange-200 bg-orange-50 text-orange-800 hover:bg-orange-100`}
+            disabled={pending}
+            onClick={async () => {
+              const ask = isAdmin
+                ? `Tirar o administrador de ${name}?\nEle deixa de ver o Admin da plataforma e os recursos de administrador.`
+                : `Dar administrador do Fuzil para ${name}?\nEle passa a ver o Admin da plataforma, entrar nas contas dos clientes e usar os recursos de administrador (como o funil do gerador de links).`;
+              if (!(await confirmDialog(ask))) return;
+              start(async () => {
+                const r = await adminSetSuperAdminAction(id, !isAdmin);
+                setMsg(r.error ? { text: r.error, error: true } : { text: r.ok! });
+                router.refresh();
+              });
+            }}
+          >
+            {isAdmin ? <ShieldOff className="size-3.5" /> : <Shield className="size-3.5" />} {isAdmin ? "Tirar administrador" : "Dar administrador"}
+          </button>
+        )}
         <button
           className={btn}
           disabled={pending}

@@ -2,6 +2,14 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.21",
+    date: "23/10/2026",
+    items: [
+      "Admin: etiqueta \"Dono do Fuzil\" no seu nome e \"Admin do Fuzil\" em quem é administrador",
+      "Admin: botão \"Dar administrador\" / \"Tirar administrador\" em cada usuário (só o dono vê). Quem vira administrador ganha o funil do gerador de links e os modelos de aquecimento na conta dele",
+    ],
+  },
+  {
     version: "2.20",
     date: "23/10/2026",
     items: ["Conexões: a Chave secreta padrão aparece só para o dono do Fuzil, na conta dele (clientes e outros administradores não veem)"],

@@ -48,7 +48,8 @@ type Dialog =
   | { kind: "credits" | "price" | "rename" | "block" | "delete"; account: AccountRow }
   | { kind: "link"; account: AccountRow; text: string; link?: string };
 
-export function AccountsPanel({ accounts, selfId }: { accounts: AccountRow[]; selfId: string }) {
+export function AccountsPanel({ accounts, selfId, ownerId = null }: { accounts: AccountRow[]; selfId: string; ownerId?: string | null }) {
+  const isOwner = selfId === ownerId;
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<"all" | "active" | "blocked">("all");
   const [page, setPage] = useState(0);
@@ -138,7 +139,10 @@ export function AccountsPanel({ accounts, selfId }: { accounts: AccountRow[]; se
                       </div>
                     </td>
                     <td className="px-3 py-3">
-                      <div>{a.owner?.name ?? "—"}</div>
+                      <div>
+                        {a.owner?.name ?? "—"}
+                        {a.users.some((u) => u.id === ownerId && u.email === a.owner?.email) && <span className="ml-1.5 rounded-full bg-brand-gradient px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">Dono</span>}
+                      </div>
                       <div className="text-xs text-zinc-500">{a.owner?.email}</div>
                     </td>
                     <td className="px-3 py-3">{a.blocked ? <Badge color="red">Bloqueada</Badge> : <Badge color="green">Ativa</Badge>}</td>
@@ -165,12 +169,17 @@ export function AccountsPanel({ accounts, selfId }: { accounts: AccountRow[]; se
                               <div key={u.id} className="flex flex-wrap items-center gap-3 border-b border-zinc-100 px-4 py-2.5 last:border-0">
                                 <div className="min-w-0 flex-1">
                                   <div className="font-medium">
-                                    {u.name} <span className="text-xs font-normal text-zinc-500">· {u.role === "OWNER" ? "dono" : u.role === "ADMIN" ? "admin" : "membro"}</span>
+                                    {u.name} <span className="text-xs font-normal text-zinc-500">· {u.role === "OWNER" ? "dono da conta" : u.role === "ADMIN" ? "admin da conta" : "membro"}</span>
+                                    {u.id === ownerId ? (
+                                      <span className="ml-1.5 rounded-full bg-brand-gradient px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">Dono do Fuzil</span>
+                                    ) : u.isSuperAdmin ? (
+                                      <span className="ml-1.5 rounded-full bg-zinc-900 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">Admin do Fuzil</span>
+                                    ) : null}
                                   </div>
                                   <div className="text-xs text-zinc-500">{u.email}</div>
                                 </div>
                                 {u.lastLoginAt ? <span className="text-xs text-zinc-500">Último acesso {dateTime(u.lastLoginAt)}</span> : <Badge color="yellow">Convite pendente</Badge>}
-                                <UserActions id={u.id} email={u.email} isSelf={u.id === selfId} />
+                                <UserActions id={u.id} email={u.email} isSelf={u.id === selfId} canAdmin={isOwner && u.id !== ownerId} isAdmin={u.isSuperAdmin} name={u.name} />
                               </div>
                             ))}
                             {a.users.length === 0 && <div className="px-4 py-3 text-xs text-zinc-400">Nenhum usuário</div>}

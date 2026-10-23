@@ -1,6 +1,7 @@
 import { requireSuperAdmin } from "@/lib/auth";
 import { UserActions } from "./user-actions";
 import { AccountsPanel } from "./accounts-panel";
+import { platformOwnerId } from "@/lib/onboarding";
 import { listAccounts } from "@/lib/admin-accounts";
 import { prisma } from "@/lib/db";
 import { Field, Input, PageHeader, Table, Td } from "@/components/ui";
@@ -27,6 +28,8 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminPage() {
   const auth = await requireSuperAdmin();
+  // Dono do Fuzil: o primeiro administrador (ganha a etiqueta e é o único que dá ou tira administrador)
+  const ownerId = await platformOwnerId();
   const [accounts, orphans, hooks] = await Promise.all([
     listAccounts(auth.user.id),
     prisma.user.findMany({ where: { memberships: { none: {} } }, orderBy: { createdAt: "desc" } }),
@@ -45,7 +48,7 @@ export default async function AdminPage() {
   return (
     <div className="mx-auto max-w-6xl space-y-3">
       <PageHeader title="Admin da plataforma" description="Contas de clientes, integrações e logs." actions={<LinkButton href="/admin/logs" variant="secondary"><ScrollText className="size-4" /> Logs do sistema</LinkButton>} />
-      <AccountsPanel accounts={accounts} selfId={auth.user.id} />
+      <AccountsPanel accounts={accounts} selfId={auth.user.id} ownerId={ownerId} />
 
       <Drawer
         className="scroll-mt-4"

@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db";
-import { decrypt } from "@/lib/crypto";
+import { decrypt, encrypt } from "@/lib/crypto";
 
 // App do Fuzil que os clientes pedem acesso na BM deles (o ID de app é público)
 export const FUZIL_APP_ID = "1810134293359501";
@@ -25,8 +25,26 @@ export async function defaultAppSecret(workspaceId: string): Promise<string | nu
   return platform?.defaultAppSecretEnc ? decrypt(platform.defaultAppSecretEnc) : null;
 }
 
-/** Dono da plataforma: o primeiro administrador do Fuzil (quem instalou). Só ele mexe na chave secreta padrão. */
-export async function isPlatformOwner(userId: string): Promise<boolean> {
+/**
+ * Dono da plataforma: o primeiro administrador do Fuzil (quem instalou). Fica gravado na primeira vez,
+ * então dar administrador para outra pessoa nunca troca o dono. Só ele mexe na chave padrão e dá administrador.
+ */
+export async function platformOwnerId(): Promise<string | null> {
+  // Guardado criptografado, igual aos outros ajustes da plataforma
+  const saved = await prisma.platformSetting.findUnique({ where: { key: "PLATFORM_OWNER_ID" } });
+  let id: string | null = null;
+  try {
+    id = saved ? decrypt(saved.value) : null;
+  } catch {
+    id = null;
+  }
+  if (id && (await prisma.user.count({ where: { id } }))) return id;
   const first = await prisma.user.findFirst({ where: { isSuperAdmin: true }, orderBy: { createdAt: "asc" }, select: { id: true } });
-  return first?.id === userId;
+  if (!first) return null;
+  await prisma.platformSetting.upsert({ where: { key: "PLATFORM_OWNER_ID" }, create: { key: "PLATFORM_OWNER_ID", value: encrypt(first.id) }, update: { value: encrypt(first.id) } });
+  return first.id;
+}
+
+export async function isPlatformOwner(userId: string): Promise<boolean> {
+  return (await platformOwnerId()) === userId;
 }

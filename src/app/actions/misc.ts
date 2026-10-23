@@ -217,6 +217,19 @@ export async function adminResendInviteAction(userId: string): Promise<{ ok?: st
   return sent ? { ok: `Convite reenviado para ${user.email}`, link } : { ok: "E-mail não configurado. Copie o link e envie para a pessoa.", link };
 }
 
+/** Dono do Fuzil dá ou tira o acesso de administrador da plataforma de um usuário. */
+export async function adminSetSuperAdminAction(userId: string, on: boolean): Promise<{ ok?: string; error?: string }> {
+  const auth = await requireSuperAdmin();
+  const { isPlatformOwner } = await import("@/lib/onboarding");
+  if (!(await isPlatformOwner(auth.user.id))) return { error: "Só o dono do Fuzil dá ou tira administrador." };
+  if (userId === auth.user.id) return { error: "Você é o dono: não dá para tirar o seu próprio acesso." };
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) return { error: "Usuário não encontrado" };
+  await prisma.user.update({ where: { id: userId }, data: { isSuperAdmin: on } });
+  revalidatePath("/admin");
+  return { ok: on ? `${user.name} agora é administrador do Fuzil.` : `${user.name} não é mais administrador do Fuzil.` };
+}
+
 export async function adminDeleteUserAction(userId: string): Promise<{ ok?: string; error?: string }> {
   const auth = await requireSuperAdmin();
   if (userId === auth.user.id) return { error: "Você não pode excluir o seu próprio usuário." };
