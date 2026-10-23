@@ -5,7 +5,9 @@ import { canonicalWaId, normalizePhone } from "./phone";
 test("adiciona DDI 55 em números brasileiros", () => {
   assert.equal(normalizePhone("21983557616"), "5521983557616");
   assert.equal(normalizePhone("(11) 98788-8187"), "5511987888187");
-  assert.equal(normalizePhone("9985182459"), "559985182459");
+  assert.equal(normalizePhone("9985182459"), "5599985182459"); // celular sem o 9 ganha o 9
+  assert.equal(normalizePhone("(62) 9479-0340"), "5562994790340");
+  assert.equal(normalizePhone("1133334444"), "551133334444"); // fixo continua igual
 });
 
 test("respeita DDI informado em coluna separada", () => {

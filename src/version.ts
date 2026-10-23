@@ -6,7 +6,7 @@ export const CHANGELOG: Array<{ version: string; date: string; items: string[] }
     date: "23/10/2026",
     items: [
       "Campanha: o teste de envio tenta os números do grupo até um enviar (antes usava sempre o primeiro)",
-      "Teste de envio aceita o número de qualquer jeito: com ou sem 55, com ou sem o 9, com espaço, traço ou parênteses",
+      "Números sempre no formato do WhatsApp em todo o Fuzil (planilha, teste, login do gerador de links): sem 55 ganha o 55, celular sem o 9 ganha o 9. O teste de envio aceita o número de qualquer jeito",
       "Se pegar uma BM que a Meta baniu, o Fuzil tira ela do disparo na hora, manda para 🚫 Banidas e segue para outra BM",
     ],
   },

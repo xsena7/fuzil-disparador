@@ -23,7 +23,8 @@ export function normalizePhone(raw: string, defaultCountry = "55", countryCode?:
     const ddd = Number(national.slice(0, 2));
     if (ddd < 11 || ddd > 99) return null;
     if (national.length === 11 && national[2] !== "9") return null;
-    return digits;
+    // Sempre no formato do WhatsApp: celular sem o 9 na frente ganha o 9 (fixo continua igual)
+    return canonicalWaId(digits);
   }
 
   if (digits.length < 8 || digits.length > 15) return null;

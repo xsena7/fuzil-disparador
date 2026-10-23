@@ -300,9 +300,7 @@ export async function testCampaignSendAction(id: string, _: { ok?: string; error
   const { c } = await ownCampaign(id);
   // Aceita o número de qualquer jeito: com ou sem 55, com ou sem o 9, com espaços, traços e parênteses
   const { normalizePhone } = await import("@/lib/phone");
-  let phone = normalizePhone(String(form.get("phone") ?? "")) ?? "";
-  // Celular brasileiro sem o 9 na frente (DDD + 8 números começando com 6 a 9): coloca o 9
-  if (/^55\d{2}[6-9]\d{7}$/.test(phone)) phone = `${phone.slice(0, 4)}9${phone.slice(4)}`;
+  const phone = normalizePhone(String(form.get("phone") ?? "")) ?? "";
   if (!phone) return { error: "Não reconheci esse número. Digite com DDD (ex.: 11 99999-8888)." };
   if (!c.templateName || !c.templateLanguage) return { error: "Escolha o template na etapa Template primeiro" };
   const plan = await planSenders({ ...c, skipRedQuality: false, excludedSenders: [] });
