@@ -37,7 +37,7 @@ const DIFFS = [
   {
     icon: BarChart3,
     title: "Relatório ao vivo para o seu cliente",
-    text: "Mande um link do relatório da campanha que atualiza ao vivo, com enviadas, lidas, cliques e respostas. Ideal para quem dispara para outras empresas.",
+    text: "Mande um link do relatório da campanha que atualiza ao vivo, com enviadas, lidas, cliques e respostas.",
     tag: "Link público por 12 horas",
   },
 ];
