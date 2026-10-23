@@ -12,7 +12,7 @@ import { meta } from "@/lib/meta";
 import { env } from "@/lib/env";
 import type { FormState } from "./auth";
 import { resetBmSecrets } from "@/lib/webhook";
-import { FUZIL_APP_ID, defaultAppSecret } from "@/lib/onboarding";
+import { FUZIL_APP_ID, defaultAppSecret, isPlatformOwner } from "@/lib/onboarding";
 
 const errMsg = friendlyError;
 
@@ -193,7 +193,7 @@ export async function setAppSecretAction(_: FormState, form: FormData): Promise<
  */
 export async function saveDefaultAppSecretAction(_: FormState, form: FormData): Promise<FormState> {
   const auth = await requireAuth();
-  if (!auth.user.isSuperAdmin) return { error: "Só administradores do Fuzil podem definir a chave padrão." };
+  if (!auth.user.isSuperAdmin || auth.inspecting || !(await isPlatformOwner(auth.user.id))) return { error: "Só o dono do Fuzil pode definir a chave padrão." };
   const ws = await prisma.workspace.findUniqueOrThrow({ where: { id: auth.workspace.id }, select: { defaultAppSecretEnc: true } });
   if (form.get("remove")) {
     await prisma.workspace.update({ where: { id: auth.workspace.id }, data: { defaultAppSecretEnc: null } });

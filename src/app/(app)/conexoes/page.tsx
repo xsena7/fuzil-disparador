@@ -16,7 +16,7 @@ import { StatusDot } from "@/components/drawer";
 import { TestWaba } from "./test-waba";
 import { groupDot, groupTag } from "@/lib/group-colors";
 import { ConnectGuide } from "./connect-guide";
-import { FUZIL_APP_ID, defaultAppSecret, supportWhatsAppLink } from "@/lib/onboarding";
+import { FUZIL_APP_ID, defaultAppSecret, isPlatformOwner, supportWhatsAppLink } from "@/lib/onboarding";
 import {
   connectManualAction,
   deleteWabaAction,
@@ -40,6 +40,8 @@ export default async function ConnectionsPage() {
   const hasDefaultSecret = Boolean(wsKeys?.defaultAppSecretEnc);
   // Cliente sem chave própria: a chave padrão do app do Fuzil entra sozinha (campo some)
   const usesDefaultSecret = hasDefaultSecret || Boolean(await defaultAppSecret(auth.workspace.id));
+  // Chave secreta padrão: só o dono da plataforma vê, e só na conta dele (nem outros administradores)
+  const showDefaultSecret = !auth.inspecting && (await isPlatformOwner(auth.user.id));
   const businesses = await prisma.businessManager.findMany({
     where: { workspaceId: auth.workspace.id },
     include: {
@@ -96,13 +98,13 @@ export default async function ConnectionsPage() {
         </ActionForm>
       </Card>
 
-      {auth.user.isSuperAdmin && (
+      {showDefaultSecret && (
         <details className="group mt-4 overflow-hidden rounded-2xl border border-orange-200 bg-orange-50" open={!hasDefaultSecret}>
           <summary className="flex cursor-pointer list-none items-center gap-3 px-5 py-3.5 [&::-webkit-details-marker]:hidden">
             <span className="flex size-8 items-center justify-center rounded-lg bg-brand-gradient text-white"><KeyRound className="size-4" /></span>
             <span className="flex-1">
               <span className="block font-semibold text-zinc-900">Chave secreta padrão {hasDefaultSecret && <span className="ml-1 text-xs font-medium text-emerald-700">configurada ✓</span>}</span>
-              <span className="block text-xs text-zinc-600">Entra sozinha em toda BM nova que você conectar (só administradores do Fuzil veem isso)</span>
+              <span className="block text-xs text-zinc-600">Entra sozinha em toda BM nova que você conectar (só você, dono do Fuzil, vê isso)</span>
             </span>
             <ChevronRight className="size-4 text-orange-500 transition-transform group-open:rotate-90" />
           </summary>

@@ -24,3 +24,9 @@ export async function defaultAppSecret(workspaceId: string): Promise<string | nu
   });
   return platform?.defaultAppSecretEnc ? decrypt(platform.defaultAppSecretEnc) : null;
 }
+
+/** Dono da plataforma: o primeiro administrador do Fuzil (quem instalou). Só ele mexe na chave secreta padrão. */
+export async function isPlatformOwner(userId: string): Promise<boolean> {
+  const first = await prisma.user.findFirst({ where: { isSuperAdmin: true }, orderBy: { createdAt: "asc" }, select: { id: true } });
+  return first?.id === userId;
+}

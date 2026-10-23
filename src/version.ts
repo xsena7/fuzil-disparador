@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.20",
+    date: "23/10/2026",
+    items: ["Conexões: a Chave secreta padrão aparece só para o dono do Fuzil, na conta dele (clientes e outros administradores não veem)"],
+  },
+  {
     version: "2.19",
     date: "23/10/2026",
     items: ["Atualizações chegam mais rápido: o servidor confere a cada 1 minuto (antes 5) e monta o site na metade do tempo"],
