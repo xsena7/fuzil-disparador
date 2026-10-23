@@ -328,50 +328,57 @@ export const meta = {
    * `why` = o motivo que a Meta deu, quando não achou nada.
    */
   async wabaIdsOfSystemToken(token: string, appSecrets: Record<string, string> = {}): Promise<{ ids: string[]; why?: string }> {
+    type Debug = { data?: { granular_scopes?: Array<{ scope: string; target_ids?: string[] }>; scopes?: string[]; error?: { message?: string } }; error?: { message?: string } };
     const ids = new Set<string>();
+    const businesses = new Set<string>();
     const errors: string[] = [];
-    const scopes = (d: { data?: { granular_scopes?: Array<{ scope: string; target_ids?: string[] }>; error?: { message?: string } } }) => {
-      for (const s of d.data?.granular_scopes ?? []) if (s.scope === "whatsapp_business_management") for (const t of s.target_ids ?? []) ids.add(t);
-    };
+    const seen: string[] = [];
+    const errText = (e: unknown) => (e instanceof Error ? e.message : String(e));
     const debug = async (accessToken: string) => {
       const url = new URL(`${env.metaGraphUrl()}/${env.metaGraphVersion()}/debug_token`);
       url.searchParams.set("input_token", token);
       url.searchParams.set("access_token", accessToken);
       const res = await fetch(url, { signal: AbortSignal.timeout(20_000) });
-      const json = (await res.json().catch(() => ({}))) as { data?: { granular_scopes?: Array<{ scope: string; target_ids?: string[] }>; error?: { message?: string } }; error?: { message?: string } };
+      const json = (await res.json().catch(() => ({}))) as Debug;
       if (json.error?.message) errors.push(json.error.message);
       if (json.data?.error?.message) errors.push(json.data.error.message);
-      scopes(json);
+      for (const s of json.data?.granular_scopes ?? []) {
+        seen.push(`${s.scope}${s.target_ids?.length ? `(${s.target_ids.length})` : ""}`);
+        // Contas do WhatsApp liberadas direto no token
+        if (s.scope.startsWith("whatsapp_business")) for (const t of s.target_ids ?? []) ids.add(t);
+        // BMs liberadas (com business_management): as contas do WhatsApp saem delas
+        if (s.scope === "business_management") for (const t of s.target_ids ?? []) businesses.add(t);
+      }
+      return json.data;
     };
-    // 1) Com o token do app que gerou o token do cliente (o app do Fuzil)
+    // 1) Com o token do app que gerou o token do cliente (o app do Fuzil), depois com o próprio token
     const appId = await graph<{ id: string }>(token, "GET", "app", { query: { fields: "id" } })
       .then((a) => a.id)
       .catch((e) => {
-        errors.push(e instanceof Error ? e.message : String(e));
+        errors.push(errText(e));
         return null;
       });
     const secret = appId ? appSecrets[appId] ?? (appId === env.metaAppId() ? env.metaAppSecret() : "") : "";
-    if (appId && secret) await debug(`${appId}|${secret}`).catch((e) => errors.push(String(e)));
-    // 2) Com o próprio token
-    if (!ids.size) await debug(token).catch((e) => errors.push(String(e)));
-    // 3) Pelas BMs do usuário do sistema
-    if (!ids.size) {
-      try {
-        const bms = await graph<{ data: Array<{ id: string }> }>(token, "GET", "me/businesses", { query: { fields: "id", limit: 50 } });
-        for (const b of bms.data ?? []) {
-          for (const edge of ["owned_whatsapp_business_accounts", "client_whatsapp_business_accounts"]) {
-            const r = await graph<{ data: Array<{ id: string }> }>(token, "GET", `${b.id}/${edge}`, { query: { fields: "id", limit: 100 } }).catch((e) => {
-              errors.push(e instanceof Error ? e.message : String(e));
-              return { data: [] };
-            });
-            for (const w of r.data ?? []) ids.add(w.id);
-          }
-        }
-      } catch (e) {
-        errors.push(e instanceof Error ? e.message : String(e));
+    let data = appId && secret ? await debug(`${appId}|${secret}`).catch((e) => void errors.push(errText(e))) : undefined;
+    if (!data?.granular_scopes?.length) data = await debug(token).catch((e) => void errors.push(errText(e)));
+    if (ids.size) return { ids: [...ids] };
+
+    // 2) A Meta não listou as contas (token do usuário do sistema costuma vir sem a lista): pega as BMs e as contas delas
+    await graph<{ data: Array<{ id: string }> }>(token, "GET", "me/businesses", { query: { fields: "id", limit: 50 } })
+      .then((r) => r.data?.forEach((b) => businesses.add(b.id)))
+      .catch((e) => errors.push(errText(e)));
+    for (const b of businesses) {
+      for (const edge of ["owned_whatsapp_business_accounts", "client_whatsapp_business_accounts"]) {
+        const r = await graph<{ data: Array<{ id: string }> }>(token, "GET", `${b}/${edge}`, { query: { fields: "id", limit: 100 } }).catch((e) => {
+          errors.push(errText(e));
+          return { data: [] };
+        });
+        for (const w of r.data ?? []) ids.add(w.id);
       }
     }
-    return { ids: [...ids], why: ids.size ? undefined : errors[0] };
+    if (ids.size) return { ids: [...ids] };
+    const why = errors[0] ?? (seen.length ? `a Meta não listou nenhuma conta (permissões do token: ${seen.join(", ")}${businesses.size ? `; BMs: ${businesses.size}` : ""})` : "a Meta não devolveu as permissões do token");
+    return { ids: [], why };
   },
 
   /** WABAs liberadas para um token (usado quando o evento do cadastro não trouxe o waba_id). */
