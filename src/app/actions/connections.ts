@@ -262,6 +262,47 @@ export async function updateWabaCredentialsAction(id: string, _: FormState, form
 }
 
 /** Testa o token guardado dessa WABA na Meta e devolve uma explicação em português (sem mostrar o token). */
+/**
+ * Confere o caminho dos avisos da Meta (entregue, lida, resposta, falha) e conserta o que der:
+ * a WABA inscrita no app do token e o webhook do app apontando para o Fuzil com o campo "messages".
+ */
+async function checkWebhookChain(waba: { id: string; wabaId: string; appSecretEnc: string | null; workspaceId: string }, token: string): Promise<string> {
+  const { meta } = await import("@/lib/meta");
+  const { WEBHOOK_FIELDS } = await import("@/lib/sync");
+  const url = `${env.appUrl()}/api/webhook`;
+  const appId = await meta.appIdOf(token);
+  const fixed: string[] = [];
+
+  // 1) A conta do WhatsApp está inscrita no app que gerou o token?
+  const subs = await meta.subscribedApps(token, waba.wabaId);
+  const list = subs.data ?? [];
+  const inscrita = list.some((a) => a.whatsapp_business_api_data?.id === appId);
+  if (!inscrita || !list.some((a) => a.whatsapp_business_api_data?.id === appId && a.override_callback_uri === url)) {
+    await meta.subscribeApp(token, waba.wabaId, env.metaVerifyToken() ? { callbackUrl: url, verifyToken: env.metaVerifyToken() } : undefined);
+    await prisma.whatsAppAccount.update({ where: { id: waba.id }, data: { webhookSubscribed: true } });
+    fixed.push("liguei a conta do WhatsApp no app");
+  }
+
+  // 2) O app manda os avisos para o Fuzil, com o campo "messages"?
+  const secret = waba.appSecretEnc ? decrypt(waba.appSecretEnc) : await defaultAppSecret(waba.workspaceId);
+  if (!secret) return `Avisos da Meta: ${fixed.length ? `${fixed.join(" e ")}. ` : ""}não consigo conferir o webhook do app sem a chave secreta.`;
+  let app: { callback_url?: string; active?: boolean; fields?: Array<{ name: string }> } | undefined;
+  try {
+    app = ((await meta.appSubscriptions(appId, secret)).data ?? []).find((d) => d.object === "whatsapp_business_account");
+  } catch (e) {
+    return `Avisos da Meta: a chave secreta não é do app que gerou o token (${e instanceof Error ? e.message : String(e)}).`;
+  }
+  const hasMessages = app?.fields?.some((f) => f.name === "messages");
+  if (!app || !app.active || !hasMessages || (app.callback_url && !app.callback_url.startsWith(env.appUrl()))) {
+    if (!env.appUrl().startsWith("https://") || !env.metaVerifyToken()) return "Avisos da Meta: o webhook do app não está ligado e o painel precisa estar em https com o token de verificação para ligar.";
+    await meta.setAppWebhook(appId, secret, url, env.metaVerifyToken(), WEBHOOK_FIELDS);
+    fixed.push("liguei o webhook do app no Fuzil (com entregas, leituras e respostas)");
+  }
+  return fixed.length
+    ? `Avisos da Meta: estavam desligados, ${fixed.join(" e ")}. Os próximos envios já devem mostrar entregue/lida.`
+    : "Avisos da Meta: tudo ligado (conta inscrita no app e webhook apontando para o Fuzil).";
+}
+
 export async function testWabaAction(id: string): Promise<{ ok?: boolean; text: string }> {
   const waba = await ownWaba(id);
   const { wabaToken } = await import("@/lib/sync");
@@ -274,9 +315,10 @@ export async function testWabaAction(id: string): Promise<{ ok?: boolean; text: 
   }
   try {
     const info = await meta.getWaba(token, waba.wabaId);
+    const hooks = await checkWebhookChain(waba, token).catch((e) => `Não consegui conferir os avisos da Meta: ${e instanceof Error ? e.message : String(e)}`);
     return {
       ok: true,
-      text: `A Meta reconhece a conta "${info.name}" e o token tem acesso a ela.${info.account_review_status ? ` Status de análise: ${info.account_review_status}.` : ""}`,
+      text: `A Meta reconhece a conta "${info.name}" e o token tem acesso a ela.${info.account_review_status ? ` Status de análise: ${info.account_review_status}.` : ""} ${hooks}`,
     };
   } catch (err) {
     if (err instanceof MetaError) {

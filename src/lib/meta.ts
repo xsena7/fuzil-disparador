@@ -164,6 +164,16 @@ export const meta = {
     });
   },
 
+  /** Apps inscritos na WABA (quem recebe os avisos dela). */
+  subscribedApps(token: string, wabaId: string) {
+    return graph<{ data: Array<{ whatsapp_business_api_data?: { id?: string; name?: string }; override_callback_uri?: string }> }>(token, "GET", `${wabaId}/subscribed_apps`);
+  },
+
+  /** Webhook configurado no app (endereço e campos), com o token do próprio app. */
+  appSubscriptions(appId: string, appSecret: string) {
+    return graph<{ data: Array<{ object: string; callback_url?: string; active?: boolean; fields?: Array<{ name: string }> }> }>(`${appId}|${appSecret}`, "GET", `${appId}/subscriptions`);
+  },
+
   /** Id do app dono do token (conexão manual usa o app da própria BM). */
   appIdOf(token: string) {
     return graph<{ id: string }>(token, "GET", "app", { query: { fields: "id" } }).then((a) => a.id);

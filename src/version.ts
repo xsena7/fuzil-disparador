@@ -2,6 +2,14 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.29",
+    date: "23/10/2026",
+    items: [
+      "Conexões: o Testar conexão agora confere se os avisos da Meta (entregue, lida, resposta, falha) estão chegando e liga sozinho o que estiver desligado",
+      "Correção: ao conectar com o token do app do Fuzil, o webhook do app também é ligado (antes era pulado e as entregas não apareciam)",
+    ],
+  },
+  {
     version: "2.28",
     date: "23/10/2026",
     items: ["Campanha: o botão do teste de envio abre o link da campanha (antes dava \"link não encontrado\"). Sai com os dados da 1ª linha da planilha e não conta como clique"],

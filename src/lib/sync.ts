@@ -375,7 +375,7 @@ export async function ensureWebhook(wabaRecordId: string) {
   }
 }
 
-const WEBHOOK_FIELDS = [
+export const WEBHOOK_FIELDS = [
   "messages",
   "message_template_status_update",
   "template_category_update",
@@ -394,8 +394,8 @@ export async function configureBmAppWebhook(wabaRecordId: string, appSecret: str
   if (!env.appUrl().startsWith("https://") || !env.metaVerifyToken()) return "o painel precisa estar em https com o token de verificação configurado";
   try {
     const appId = await meta.appIdOf(wabaToken(waba));
-    // App do próprio Fuzil já tem o webhook configurado pelo admin
-    if (appId !== env.metaAppId()) await meta.setAppWebhook(appId, appSecret, `${env.appUrl()}/api/webhook`, env.metaVerifyToken(), WEBHOOK_FIELDS);
+    // Liga o webhook do app (inclusive o app do Fuzil): sem isso a Meta não manda entregue/lida/resposta
+    await meta.setAppWebhook(appId, appSecret, `${env.appUrl()}/api/webhook`, env.metaVerifyToken(), WEBHOOK_FIELDS);
   } catch (err) {
     return err instanceof Error ? err.message : String(err);
   }
