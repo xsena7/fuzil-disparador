@@ -17,12 +17,14 @@ export async function GET(req: Request, { params }: { params: Promise<{ token: s
   const isBot = !ua || BOT_UA.test(ua);
 
   // Teste de envio: vai para o link da campanha (com os dados da 1ª linha) sem contar clique.
-  // t_<código secreto da 1ª linha> ou, sem planilha, t_c_<campanha> (aí sem dados de ninguém)
-  if (!recipient && token.startsWith("t_")) {
-    const row = token.startsWith("t_c_")
-      ? null
-      : await prisma.campaignRecipient.findUnique({ where: { clickToken: token.slice(2) }, select: { phone: true, name: true, data: true, campaignId: true } });
-    const campaignId = row?.campaignId ?? (token.startsWith("t_c_") ? token.slice(4) : null);
+  // tst<código secreto da 1ª linha, 9 letras> ou, sem planilha, tstc<campanha> (aí sem dados de ninguém)
+  const testRow = !recipient && /^tst[A-Za-z0-9]{9}$/.test(token);
+  const testCampaign = !recipient && !testRow && /^tstc[a-z0-9]{20,28}$/.test(token);
+  if (testRow || testCampaign) {
+    const row = testRow
+      ? await prisma.campaignRecipient.findUnique({ where: { clickToken: token.slice(3) }, select: { phone: true, name: true, data: true, campaignId: true } })
+      : null;
+    const campaignId = row?.campaignId ?? (testCampaign ? token.slice(4) : null);
     const campaign = campaignId ? await prisma.campaign.findUnique({ where: { id: campaignId }, select: { buttonUrl: true } }) : null;
     if (!campaign?.buttonUrl) return new Response("Link não encontrado", { status: 404 });
     const target = fillUrlVars(campaign.buttonUrl, row ?? { phone: "", name: null, data: {} });

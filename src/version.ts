@@ -5,6 +5,7 @@ export const CHANGELOG: Array<{ version: string; date: string; items: string[] }
     version: "2.29",
     date: "23/10/2026",
     items: [
+      "Correção: o botão do teste de envio abre o link certo também pelo domínio curto dos links",
       "Conexões: o Testar conexão agora confere se os avisos da Meta (entregue, lida, resposta, falha) estão chegando e liga sozinho o que estiver desligado",
       "Correção: ao conectar com o token do app do Fuzil, o webhook do app também é ligado (antes era pulado e as entregas não apareciam)",
     ],

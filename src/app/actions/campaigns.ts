@@ -312,8 +312,8 @@ export async function testCampaignSendAction(id: string, _: { ok?: string; error
   const components = buildSendComponents(sender.template.components, (c.variableMapping ?? {}) as import("@/lib/template-utils").VariableMapping, { phone, name: first?.name ?? "Teste", data: (first?.data ?? {}) as Record<string, unknown> }, {
     redirectDomain: env.redirectDomain(),
     // Link de teste: abre o mesmo destino do disparo (com a 1ª linha da planilha) sem contar clique
-    // (t_ + código secreto da 1ª linha; sem planilha, t_c_ + campanha, sem dados)
-    clickToken: first ? `t_${first.clickToken}` : `t_c_${c.id}`,
+    // (tst + código secreto da 1ª linha; sem planilha, tstc + campanha, sem dados). Só letras e números: o domínio curto dos links não aceita outros
+    clickToken: first ? `tst${first.clickToken}` : `tstc${c.id}`,
     headerMediaUrl: c.headerMediaUrl,
     headerMediaName: c.headerMediaName,
   });
