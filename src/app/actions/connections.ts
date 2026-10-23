@@ -26,7 +26,8 @@ export async function connectManualAction(_: FormState, form: FormData): Promise
   if (!token) return { error: "Cole o token de acesso (token do usuário do sistema fuzil-api da sua BM)." };
 
   // Sem ID: o Fuzil descobre pelo token quais contas do WhatsApp o usuário do sistema acessa e conecta todas
-  let appSecret = String(form.get("appSecret") ?? "").trim();
+  // Chave no formulário só vale para o dono do Fuzil; os outros sempre usam a chave padrão
+  let appSecret = (await isPlatformOwner(auth.user.id)) ? String(form.get("appSecret") ?? "").trim() : "";
   // Sem chave no formulário: usa a chave secreta padrão (da conta ou a do app do Fuzil)
   if (!appSecret) appSecret = (await defaultAppSecret(auth.workspace.id)) ?? "";
 
@@ -169,6 +170,7 @@ export async function updateBusinessAction(businessId: string, form: FormData) {
 export async function setAppSecretAction(_: FormState, form: FormData): Promise<FormState> {
   const waba = await ownWaba(String(form.get("id") ?? "")).catch(() => null);
   if (!waba) return { error: "WABA não encontrada" };
+  if (!(await isPlatformOwner((await requireAuth()).user.id))) return { error: "Só o dono do Fuzil troca a chave secreta." };
   const appSecret = String(form.get("appSecret") ?? "").trim();
   if (form.get("remove")) {
     await prisma.whatsAppAccount.update({ where: { id: waba.id }, data: { appSecretEnc: null } });
@@ -231,8 +233,10 @@ export async function updateWabaCredentialsAction(id: string, _: FormState, form
   const waba = await ownWaba(id).catch(() => null);
   if (!waba) return { error: "Conta não encontrada" };
   const token = String(form.get("token") ?? "").trim();
-  const appSecret = String(form.get("appSecret") ?? "").trim();
-  if (!token && !appSecret) return { error: "Cole o token novo, a chave secreta nova, ou os dois." };
+  // Chave secreta: só o dono do Fuzil troca (os outros nem veem o campo)
+  const owner = await isPlatformOwner((await requireAuth()).user.id);
+  const appSecret = owner ? String(form.get("appSecret") ?? "").trim() : "";
+  if (!token && !appSecret) return { error: owner ? "Cole o token novo, a chave secreta nova, ou os dois." : "Cole o token novo." };
   if (appSecret && !/^[a-f0-9]{32}$/i.test(appSecret)) return { error: "A chave secreta do app tem 32 letras e números (Configurações do app → Básico → Chave secreta do app)." };
   const { meta } = await import("@/lib/meta");
   if (token) {

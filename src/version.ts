@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.24",
+    date: "23/10/2026",
+    items: ["Conexões: chave secreta só aparece para o dono do Fuzil (o bloco \"Receber respostas no Chat\" e o campo de chave em \"Atualizar token\"). Clientes e administradores usam a chave padrão sozinhos e só trocam o token"],
+  },
+  {
     version: "2.23",
     date: "23/10/2026",
     items: [

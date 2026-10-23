@@ -41,7 +41,9 @@ export default async function ConnectionsPage() {
   // Cliente sem chave própria: a chave padrão do app do Fuzil entra sozinha (campo some)
   const usesDefaultSecret = hasDefaultSecret || Boolean(await defaultAppSecret(auth.workspace.id));
   // Chave secreta padrão: só o dono da plataforma vê, e só na conta dele (nem outros administradores)
-  const showDefaultSecret = !auth.inspecting && (await isPlatformOwner(auth.user.id));
+  const isOwner = await isPlatformOwner(auth.user.id);
+  const showDefaultSecret = !auth.inspecting && isOwner;
+  // Chaves secretas (de cada conta): só o dono do Fuzil vê e troca. Clientes e administradores usam a chave padrão sozinhos
   const businesses = await prisma.businessManager.findMany({
     where: { workspaceId: auth.workspace.id },
     include: {
@@ -88,7 +90,7 @@ export default async function ConnectionsPage() {
             <Field label="Token de acesso" hint="Token do usuário do sistema fuzil-api com as 3 permissões: whatsapp_business_messaging, whatsapp_business_management e business_management">
               <PasswordInput name="token" placeholder="EAAG..." autoComplete="new-password" data-lpignore="true" data-1p-ignore="true" />
             </Field>
-            {!usesDefaultSecret && (
+            {!usesDefaultSecret && isOwner && (
               <Field label="Chave secreta do app (opcional)" hint="Configurações do app → Básico. Sem ela, as respostas dessa BM não aparecem no Chat">
                 <PasswordInput name="appSecret" autoComplete="new-password" data-lpignore="true" data-1p-ignore="true" />
               </Field>
@@ -230,8 +232,8 @@ export default async function ConnectionsPage() {
                       <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-3 text-sm [&::-webkit-details-marker]:hidden">
                         <span className="flex size-8 items-center justify-center rounded-lg bg-brand-gradient text-white"><KeyRound className="size-4" /></span>
                         <span className="flex-1">
-                          <span className="block font-semibold text-zinc-900">Atualizar token e chave secreta</span>
-                          <span className="block text-xs text-zinc-600">Cole o token novo e/ou a chave secreta. O ID da WABA continua o mesmo</span>
+                          <span className="block font-semibold text-zinc-900">{isOwner ? "Atualizar token e chave secreta" : "Atualizar token"}</span>
+                          <span className="block text-xs text-zinc-600">{isOwner ? "Cole o token novo e/ou a chave secreta." : "Cole o token novo."} O ID da WABA continua o mesmo</span>
                         </span>
                         <ChevronRight className="size-4 text-orange-500 transition-transform group-open:rotate-90" />
                       </summary>
@@ -241,15 +243,17 @@ export default async function ConnectionsPage() {
                             <Field label="Token de acesso novo" hint="Em branco = mantém o atual">
                               <PasswordInput name="token" placeholder="EAAG..." autoComplete="off" />
                             </Field>
-                            <Field label="Chave secreta do app nova" hint={waba.appSecretEnc ? "Configurada ✓ · em branco = mantém a atual" : "Em branco = continua sem"}>
-                              <PasswordInput name="appSecret" autoComplete="off" />
-                            </Field>
+                            {isOwner && (
+                              <Field label="Chave secreta do app nova" hint={waba.appSecretEnc ? "Configurada ✓ · em branco = mantém a atual" : "Em branco = continua sem"}>
+                                <PasswordInput name="appSecret" autoComplete="off" />
+                              </Field>
+                            )}
                           </div>
                         </ActionForm>
                       </div>
                     </details>
                   )}
-                  {waba.connectionType === "MANUAL" && (() => {
+                  {waba.connectionType === "MANUAL" && isOwner && (() => {
                     const last = waba.webhookLastAt;
                     const rejected = waba.webhookRejectedAt && (!last || waba.webhookRejectedAt > last) ? waba.webhookRejectedAt : null;
                     const ok = Boolean(waba.appSecretEnc && last && !rejected);
