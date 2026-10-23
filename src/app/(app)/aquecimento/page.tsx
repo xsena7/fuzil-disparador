@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ChevronRight, Flame } from "lucide-react";
 import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { funnelPage, funnelUrl } from "@/lib/funnels";
+import { funnelModels, funnelPage, funnelUrl } from "@/lib/funnels";
 import { StatusDot, MetaItem, Drawer } from "@/components/drawer";
 import { Empty, PageHeader } from "@/components/ui";
 import { ActionForm } from "@/components/action-form";
@@ -20,6 +20,7 @@ export default async function WarmupPage() {
     prisma.bmGroup.findMany({ where: { workspaceId: ws, system: null }, orderBy: { name: "asc" } }),
     prisma.lead.groupBy({ by: ["funnelId", "status"], where: { workspaceId: ws }, _count: true }),
   ]);
+  const models = (await funnelModels(ws)).map((m) => ({ id: m.id, name: m.workspaceId === ws ? `${m.name} (seu)` : m.name }));
   const count = (id: string, status?: string) => counts.filter((c) => c.funnelId === id && (!status || c.status === status)).reduce((a, c) => a + c._count, 0);
 
   return (
@@ -64,7 +65,7 @@ export default async function WarmupPage() {
       <Drawer title="Novo funil" subtitle="Leva 10 segundos. Os templates já vêm prontos" open={!funnels.length}>
         {groups.length ? (
           <ActionForm action={createFunnelAction} submit="Criar funil">
-            <NewFunnelFields groups={groups.map((g) => ({ id: g.id, name: g.name }))} canLinks={auth.user.isSuperAdmin && !auth.inspecting} linksExists={funnels.some((f) => f.kind === "LINKS")} />
+            <NewFunnelFields models={models} groups={groups.map((g) => ({ id: g.id, name: g.name }))} canLinks={auth.user.isSuperAdmin && !auth.inspecting} linksExists={funnels.some((f) => f.kind === "LINKS")} />
           </ActionForm>
         ) : (
           <p className="text-zinc-500">

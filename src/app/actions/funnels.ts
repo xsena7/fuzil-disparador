@@ -8,7 +8,7 @@ import { prisma } from "@/lib/db";
 import { deployBlueprints } from "@/lib/blueprints";
 import { friendlyError } from "@/lib/meta-errors";
 import { encrypt } from "@/lib/crypto";
-import { createFunnel, funnelPage, setFunnelStatus, slugify, type FormField, type FunnelStep, type Job } from "@/lib/funnels";
+import { createFunnel, createFunnelFromModel, funnelPage, setFunnelStatus, slugify, type FormField, type FunnelStep, type Job } from "@/lib/funnels";
 import type { FormState } from "./auth";
 
 async function ownFunnel(id: string) {
@@ -44,7 +44,11 @@ export async function createFunnelAction(_: FormState, form: FormData): Promise<
   if (await prisma.funnel.findUnique({ where: { slug } })) return { error: "Esse endereço já está em uso, escolha outro" };
   let id: string;
   try {
-    id = (await createFunnel(auth.workspace.id, { name, slug, groupId, jobTitle: jobTitle || undefined })).id;
+    // "Começar de": modelo pronto (funil de um administrador do Fuzil) ou o padrão
+    const modelId = String(form.get("modelId") ?? "");
+    id = modelId
+      ? (await createFunnelFromModel(auth.workspace.id, modelId, { name, slug, groupId })).id
+      : (await createFunnel(auth.workspace.id, { name, slug, groupId, jobTitle: jobTitle || undefined })).id;
   } catch (err) {
     return { error: friendlyError(err) };
   }

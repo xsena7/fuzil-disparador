@@ -213,6 +213,68 @@ export async function createFunnel(workspaceId: string, input: { name: string; s
   });
 }
 
+/** Funis de vagas que servem de modelo: os das contas dos administradores do Fuzil (e os da própria conta). */
+export async function funnelModels(workspaceId: string) {
+  return prisma.funnel.findMany({
+    where: { kind: "JOBS", OR: [{ workspaceId }, { workspace: { memberships: { some: { user: { isSuperAdmin: true } } } } }] },
+    select: { id: true, name: true, workspaceId: true },
+    orderBy: { createdAt: "asc" },
+  });
+}
+
+/**
+ * Cria um funil igual ao modelo: mesma página, vagas, perguntas, passos, horários e textos dos templates.
+ * Os templates viram novos (com o prefixo do funil novo) e sobem nas BMs do grupo escolhido.
+ */
+export async function createFunnelFromModel(workspaceId: string, modelId: string, input: { name: string; slug: string; groupId: string }) {
+  const allowed = await funnelModels(workspaceId);
+  if (!allowed.some((m) => m.id === modelId)) throw new Error("Modelo não encontrado");
+  const model = await prisma.funnel.findUniqueOrThrow({ where: { id: modelId } });
+  const steps = funnelSteps(model);
+  const ids = [model.codeBlueprintId, model.doneBlueprintId, ...steps.map((st) => (st.type === "send" ? st.blueprintId : null))].filter((x): x is string => Boolean(x));
+  const bps = await prisma.templateBlueprint.findMany({ where: { id: { in: [...new Set(ids)] }, workspaceId: model.workspaceId } });
+  const prefix = await templatePrefix(workspaceId, input.slug);
+  const map = new Map<string, string>();
+  const usedNames = new Set<string>();
+  for (const bp of bps) {
+    // Mesmo final do nome do modelo (ex.: _inscricao), com o prefixo do funil novo
+    let name = `${prefix}_${bp.name.split("_").pop() || "msg"}`.slice(0, 500);
+    for (let i = 2; usedNames.has(name); i++) name = `${prefix}_${bp.name.split("_").pop()}${i}`;
+    usedNames.add(name);
+    const created = await prisma.templateBlueprint.create({
+      data: {
+        workspaceId,
+        groupId: input.groupId,
+        name,
+        language: bp.language,
+        category: bp.category,
+        components: bp.components as Prisma.InputJsonValue,
+        headerSamplePath: bp.headerSamplePath,
+        headerSampleMime: bp.headerSampleMime,
+      },
+    });
+    map.set(bp.id, created.id);
+  }
+  const newSteps = steps
+    .map((st) => (st.type === "send" ? (map.has(st.blueprintId) ? { ...st, id: newId(), blueprintId: map.get(st.blueprintId)! } : null) : { ...st, id: newId() }))
+    .filter((st): st is FunnelStep => Boolean(st));
+  return prisma.funnel.create({
+    data: {
+      workspaceId,
+      name: input.name,
+      slug: input.slug,
+      groupId: input.groupId,
+      page: model.page as Prisma.InputJsonValue,
+      formFields: model.formFields as Prisma.InputJsonValue,
+      steps: newSteps as unknown as Prisma.InputJsonValue,
+      codeBlueprintId: model.codeBlueprintId ? map.get(model.codeBlueprintId) ?? null : null,
+      doneBlueprintId: model.doneBlueprintId ? map.get(model.doneBlueprintId) ?? null : null,
+      sendFrom: model.sendFrom,
+      sendTo: model.sendTo,
+    },
+  });
+}
+
 export const funnelPage = (f: Pick<Funnel, "page">): FunnelPage => {
   const p = { ...DEFAULT_PAGE, ...((f.page ?? {}) as Partial<FunnelPage>) };
   return { ...p, jobs: Array.isArray(p.jobs) ? p.jobs : [] };

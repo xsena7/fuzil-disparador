@@ -10,9 +10,11 @@ import { Toaster } from "@/components/toast";
 import { ConfirmHost } from "@/components/confirm-dialog";
 import { Logo } from "@/components/brand";
 import { Tour } from "@/components/tour";
+import { ensureDefaultGroups } from "@/lib/default-groups";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const auth = await requireAuth();
+  await ensureDefaultGroups(auth.workspace.id).catch(() => undefined);
   const [unread, chatUnread, me, bms] = await Promise.all([
     prisma.alert.count({ where: { workspaceId: auth.workspace.id, readAt: null, severity: { not: "INFO" } } }),
     prisma.conversation.count({ where: { workspaceId: auth.workspace.id, unread: { gt: 0 } } }),

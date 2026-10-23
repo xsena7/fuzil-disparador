@@ -2,6 +2,15 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.14",
+    date: "23/10/2026",
+    items: [
+      "Aquecimento: modelos prontos de funil. No Novo funil é só clicar no modelo e escolher o grupo: o Fuzil copia página, vagas, perguntas, mensagens e timers iguais aos funis dos administradores do Fuzil e já manda os templates para as BMs do grupo",
+      "Toda conta ganha de padrão os grupos Aquecimento (laranja) e Prontas para disparo (verde), além dos grupos automáticos de problema",
+      "No Novo funil, o grupo Aquecimento já vem escolhido",
+    ],
+  },
+  {
     version: "2.13",
     date: "23/10/2026",
     items: ["Conexões: ficou só o campo do token (saíram os botões Cloud API / Coexistência e o campo ID da WABA). Cola o token, clica em Conectar e o Fuzil acha e conecta todas as contas do WhatsApp", "As 3 permissões do token aparecem certinho: whatsapp_business_messaging, whatsapp_business_management e business_management"],

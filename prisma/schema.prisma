@@ -69,6 +69,8 @@ model Workspace {
   reportPrice         Float?
   // Chave secreta (App Secret) usada sozinha em toda BM nova conectada manualmente (criptografada)
   defaultAppSecretEnc String?
+  // Quando o Fuzil criou os grupos padrão da conta (Aquecimento e Prontas para disparo)
+  defaultGroupsAt     DateTime?
   createdAt           DateTime            @default(now())
   memberships         Membership[]
   creditTxs           CreditTransaction[]
