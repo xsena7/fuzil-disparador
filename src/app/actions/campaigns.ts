@@ -298,82 +298,106 @@ export async function saveAutoReplyAction(campaignId: string, _: FormState, form
 /** Manda UMA mensagem de teste com o template da campanha (pelo primeiro número apto) e mostra a resposta da Meta. */
 export async function testCampaignSendAction(id: string, _: { ok?: string; error?: string; raw?: string } | undefined, form: FormData): Promise<{ ok?: string; error?: string; raw?: string }> {
   const { c } = await ownCampaign(id);
-  const phone = String(form.get("phone") ?? "").replace(/\D/g, "");
-  if (phone.length < 10) return { error: "Digite o número com DDD (ex.: 11 99999-8888)" };
+  // Aceita o número de qualquer jeito: com ou sem 55, com ou sem o 9, com espaços, traços e parênteses
+  const { normalizePhone } = await import("@/lib/phone");
+  let phone = normalizePhone(String(form.get("phone") ?? "")) ?? "";
+  // Celular brasileiro sem o 9 na frente (DDD + 8 números começando com 6 a 9): coloca o 9
+  if (/^55\d{2}[6-9]\d{7}$/.test(phone)) phone = `${phone.slice(0, 4)}9${phone.slice(4)}`;
+  if (!phone) return { error: "Não reconheci esse número. Digite com DDD (ex.: 11 99999-8888)." };
   if (!c.templateName || !c.templateLanguage) return { error: "Escolha o template na etapa Template primeiro" };
   const plan = await planSenders({ ...c, skipRedQuality: false, excludedSenders: [] });
-  const sender = plan.senders[0];
-  if (!sender) return { error: "Nenhum número apto com esse template. Veja a etapa Template." };
-  const { buildSendComponents } = await import("@/lib/template-utils");
-  const { env } = await import("@/lib/env");
-  const { meta, MetaError } = await import("@/lib/meta");
-  // Igual ao disparo: variáveis ligadas em Conteúdo, preenchidas com a 1ª linha da planilha (só o número é o seu)
-  const first = await prisma.campaignRecipient.findFirst({ where: { campaignId: c.id }, orderBy: [{ position: "asc" }, { createdAt: "asc" }], select: { name: true, data: true, clickToken: true } });
-  const components = buildSendComponents(sender.template.components, (c.variableMapping ?? {}) as import("@/lib/template-utils").VariableMapping, { phone, name: first?.name ?? "Teste", data: (first?.data ?? {}) as Record<string, unknown> }, {
-    redirectDomain: env.redirectDomain(),
-    // Link de teste: abre o mesmo destino do disparo (com a 1ª linha da planilha) sem contar clique
-    // (tst + código secreto da 1ª linha; sem planilha, tstc + campanha, sem dados). Só letras e números: o domínio curto dos links não aceita outros
-    clickToken: first ? `tst${first.clickToken}` : `tstc${c.id}`,
-    headerMediaUrl: c.headerMediaUrl,
-    headerMediaName: c.headerMediaName,
-  });
-  const used = `${sender.display} · ${sender.template.name} · ${sender.template.language}`;
-  const wabaRec = await prisma.whatsAppAccount.findUnique({ where: { id: sender.wabaId }, select: { wabaId: true } });
-  // Diagnóstico: o mesmo token vê o template nessa WABA? (o que a Meta devolve para esse nome)
-  const lookup = async () => {
+  if (!plan.senders.length) return { error: "Nenhum número apto com esse template. Veja a etapa Template." };
+  type Sender = (typeof plan.senders)[number];
+  type Result = { ok?: string; error?: string; raw?: string; banned?: boolean };
+  const tryOne = async (sender: Sender): Promise<Result> => {
+    const { buildSendComponents } = await import("@/lib/template-utils");
+    const { env } = await import("@/lib/env");
+    const { meta, MetaError } = await import("@/lib/meta");
+    // Igual ao disparo: variáveis ligadas em Conteúdo, preenchidas com a 1ª linha da planilha (só o número é o seu)
+    const first = await prisma.campaignRecipient.findFirst({ where: { campaignId: c.id }, orderBy: [{ position: "asc" }, { createdAt: "asc" }], select: { name: true, data: true, clickToken: true } });
+    const components = buildSendComponents(sender.template.components, (c.variableMapping ?? {}) as import("@/lib/template-utils").VariableMapping, { phone, name: first?.name ?? "Teste", data: (first?.data ?? {}) as Record<string, unknown> }, {
+      redirectDomain: env.redirectDomain(),
+      // Link de teste: abre o mesmo destino do disparo (com a 1ª linha da planilha) sem contar clique
+      // (tst + código secreto da 1ª linha; sem planilha, tstc + campanha, sem dados). Só letras e números: o domínio curto dos links não aceita outros
+      clickToken: first ? `tst${first.clickToken}` : `tstc${c.id}`,
+      headerMediaUrl: c.headerMediaUrl,
+      headerMediaName: c.headerMediaName,
+    });
+    const used = `${sender.display} · ${sender.template.name} · ${sender.template.language}`;
+    const wabaRec = await prisma.whatsAppAccount.findUnique({ where: { id: sender.wabaId }, select: { wabaId: true } });
+    // Diagnóstico: o mesmo token vê o template nessa WABA? (o que a Meta devolve para esse nome)
+    const lookup = async () => {
+      try {
+        const found = await meta.findTemplates(sender.token, wabaRec?.wabaId ?? "", sender.template.name);
+        return found.data.length ? found.data : "nenhum template com esse nome visível para este token";
+      } catch (e) {
+        return `erro ao consultar: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    };
     try {
-      const found = await meta.findTemplates(sender.token, wabaRec?.wabaId ?? "", sender.template.name);
-      return found.data.length ? found.data : "nenhum template com esse nome visível para este token";
-    } catch (e) {
-      return `erro ao consultar: ${e instanceof Error ? e.message : String(e)}`;
+      const res = await meta.sendTemplate(sender.token, sender.phoneNumberId, phone, { name: sender.template.name, language: sender.template.language, components });
+      return { ok: `Mensagem aceita pela Meta (${used}).${first ? " Preenchida com a 1ª linha da planilha." : " Suba a planilha na Audiência para o teste sair preenchido com os dados dela."}`, raw: JSON.stringify(res, null, 2) };
+    } catch (err) {
+      if (err instanceof MetaError) {
+        // A qual WABA o número pertence de verdade (o 132001 com template aprovado quase sempre é número de outra WABA)
+        const owner = async () => {
+          try {
+            const h = await meta.phoneHealth(sender.token, sender.phoneNumberId);
+            const ents = h.health_status?.entities ?? [];
+            const realWaba = ents.find((e) => e.entity_type === "WABA")?.id ?? null;
+            return {
+              waba_do_numero: realWaba,
+              mesma_waba_do_template: realWaba ? realWaba === wabaRec?.wabaId : "a Meta não informou",
+              pode_enviar: h.health_status?.can_send_message,
+              status: h.status,
+              plataforma: h.platform_type,
+              entidades: ents,
+            };
+          } catch (e) {
+            return `erro ao consultar: ${e instanceof Error ? e.message : String(e)}`;
+          }
+        };
+        const diag = { waba: wabaRec?.wabaId, phoneNumberId: sender.phoneNumberId, meta_error: { message: err.message, code: err.code, subcode: err.subcode, httpStatus: err.httpStatus, details: err.details }, token_ve_o_template: await lookup(), numero: await owner() };
+        const own = typeof diag.numero === "object" ? diag.numero : null;
+        // A Meta diz que a conta ou o número foi banido/bloqueado: tira a BM do disparo na hora (vai para Banidas)
+        const banned = own && (own.status === "BANNED" || own.entidades.some((e) => e.entity_type === "WABA" && e.can_send_message === "BLOCKED"));
+        if (banned) {
+          const why = own.entidades.flatMap((e) => ((e as { errors?: Array<{ error_description?: string }> }).errors ?? []).map((x) => x.error_description)).find((t) => /ban|block|restrict/i.test(t ?? "")) ?? "conta ou número bloqueado pela Meta";
+          await prisma.phoneNumber.update({ where: { id: sender.phoneId }, data: { status: own.status ?? "BANNED" } }).catch(() => undefined);
+          await prisma.whatsAppAccount.update({ where: { id: sender.wabaId }, data: { status: "BLOCKED" } }).catch(() => undefined);
+          const { flagBusinessProblem, problemFix } = await import("@/lib/bm-problems");
+          await flagBusinessProblem(sender.businessId, `A Meta baniu/bloqueou ${sender.businessName}: ${why}`, problemFix(null, "BANNED"), "BANNED", true).catch(() => undefined);
+          return {
+            error: `A Meta baniu essa BM (${sender.businessName}): ${why}. Tirei ela do disparo e mandei para o grupo 🚫 Banidas.`,
+            raw: JSON.stringify(diag, null, 2),
+            banned: true,
+          };
+        }
+        const hint =
+          own && own.mesma_waba_do_template === false
+            ? ` O número ${sender.display} está na WABA ${own.waba_do_numero}, mas o template está na WABA ${wabaRec?.wabaId}. Clique em "Puxar da Meta" em Conexões para o Fuzil corrigir.`
+            : own && own.pode_enviar && own.pode_enviar !== "AVAILABLE"
+              ? ` A Meta diz que esse número não pode enviar agora (${own.pode_enviar}). Veja o motivo em "entidades" abaixo.`
+              : "";
+        return { error: `A Meta recusou (${used}).${hint}`, raw: JSON.stringify(diag, null, 2) };
+      }
+      return { error: `Erro inesperado (${used}): ${err instanceof Error ? err.message : String(err)}` };
     }
   };
-  try {
-    const res = await meta.sendTemplate(sender.token, sender.phoneNumberId, phone, { name: sender.template.name, language: sender.template.language, components });
-    return { ok: `Mensagem aceita pela Meta (${used}).${first ? " Preenchida com a 1ª linha da planilha." : " Suba a planilha na Audiência para o teste sair preenchido com os dados dela."}`, raw: JSON.stringify(res, null, 2) };
-  } catch (err) {
-    if (err instanceof MetaError) {
-      // A qual WABA o número pertence de verdade (o 132001 com template aprovado quase sempre é número de outra WABA)
-      const owner = async () => {
-        try {
-          const h = await meta.phoneHealth(sender.token, sender.phoneNumberId);
-          const ents = h.health_status?.entities ?? [];
-          const realWaba = ents.find((e) => e.entity_type === "WABA")?.id ?? null;
-          return {
-            waba_do_numero: realWaba,
-            mesma_waba_do_template: realWaba ? realWaba === wabaRec?.wabaId : "a Meta não informou",
-            pode_enviar: h.health_status?.can_send_message,
-            status: h.status,
-            plataforma: h.platform_type,
-            entidades: ents,
-          };
-        } catch (e) {
-          return `erro ao consultar: ${e instanceof Error ? e.message : String(e)}`;
-        }
-      };
-      const diag = { waba: wabaRec?.wabaId, phoneNumberId: sender.phoneNumberId, meta_error: { message: err.message, code: err.code, subcode: err.subcode, httpStatus: err.httpStatus, details: err.details }, token_ve_o_template: await lookup(), numero: await owner() };
-      const own = typeof diag.numero === "object" ? diag.numero : null;
-      // A Meta diz que a conta ou o número foi banido/bloqueado: tira a BM do disparo na hora (vai para Banidas)
-      const banned = own && (own.status === "BANNED" || own.entidades.some((e) => e.entity_type === "WABA" && e.can_send_message === "BLOCKED"));
-      if (banned) {
-        const why = own.entidades.flatMap((e) => ((e as { errors?: Array<{ error_description?: string }> }).errors ?? []).map((x) => x.error_description)).find((t) => /ban|block|restrict/i.test(t ?? "")) ?? "conta ou número bloqueado pela Meta";
-        await prisma.phoneNumber.update({ where: { id: sender.phoneId }, data: { status: own.status ?? "BANNED" } }).catch(() => undefined);
-        await prisma.whatsAppAccount.update({ where: { id: sender.wabaId }, data: { status: "BLOCKED" } }).catch(() => undefined);
-        const { flagBusinessProblem, problemFix } = await import("@/lib/bm-problems");
-        await flagBusinessProblem(sender.businessId, `A Meta baniu/bloqueou ${sender.businessName}: ${why}`, problemFix(null, "BANNED"), "BANNED", true).catch(() => undefined);
-        return {
-          error: `A Meta baniu essa BM (${sender.businessName}): ${why}. Tirei ela do disparo e mandei para o grupo 🚫 Banidas. Teste de novo: vai sair por outra BM do grupo.`,
-          raw: JSON.stringify(diag, null, 2),
-        };
-      }
-      const hint =
-        own && own.mesma_waba_do_template === false
-          ? ` O número ${sender.display} está na WABA ${own.waba_do_numero}, mas o template está na WABA ${wabaRec?.wabaId}. Clique em "Puxar da Meta" em Conexões para o Fuzil corrigir.`
-          : own && own.pode_enviar && own.pode_enviar !== "AVAILABLE"
-            ? ` A Meta diz que esse número não pode enviar agora (${own.pode_enviar}). Veja o motivo em "entidades" abaixo.`
-            : "";
-      return { error: `A Meta recusou (${used}).${hint}`, raw: JSON.stringify(diag, null, 2) };
-    }
-    return { error: `Erro inesperado (${used}): ${err instanceof Error ? err.message : String(err)}` };
+  // Tenta os números do grupo até um enviar (BM banida sai do disparo e o teste segue para a próxima)
+  const order = [...plan.senders].sort(() => Math.random() - 0.5);
+  const tried: string[] = [];
+  let last: Result | null = null;
+  const bannedBms = new Set<string>();
+  for (const sender of order) {
+    if (bannedBms.has(sender.businessId)) continue; // outra BM banida: nem tenta os outros números dela
+    if (tried.length >= 8) break;
+    const r = await tryOne(sender);
+    if (r.banned) bannedBms.add(sender.businessId);
+    if (r.ok) return { ok: tried.length ? `${r.ok} Antes tentei ${tried.join(", ")}, que a Meta recusou.` : r.ok, raw: r.raw };
+    tried.push(`${sender.display} (${sender.businessName})`);
+    last = r;
+    if (!r.banned && tried.length >= 3) break;
   }
+  return { error: last?.error ?? "A Meta recusou.", raw: last?.raw };
 }

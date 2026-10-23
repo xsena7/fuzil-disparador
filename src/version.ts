@@ -4,7 +4,11 @@ export const CHANGELOG: Array<{ version: string; date: string; items: string[] }
   {
     version: "2.31",
     date: "23/10/2026",
-    items: ["Campanha: se o teste de envio pega uma BM que a Meta baniu, o Fuzil tira ela do disparo na hora e manda para 🚫 Banidas (o próximo teste sai por outra BM)"],
+    items: [
+      "Campanha: o teste de envio tenta os números do grupo até um enviar (antes usava sempre o primeiro)",
+      "Teste de envio aceita o número de qualquer jeito: com ou sem 55, com ou sem o 9, com espaço, traço ou parênteses",
+      "Se pegar uma BM que a Meta baniu, o Fuzil tira ela do disparo na hora, manda para 🚫 Banidas e segue para outra BM",
+    ],
   },
   {
     version: "2.30",
