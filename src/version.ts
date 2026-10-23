@@ -6,6 +6,7 @@ export const CHANGELOG: Array<{ version: string; date: string; items: string[] }
     date: "22/10/2026",
     items: [
       "Conexões: botão \"Verificar todas\" do lado de Suas conexões (confere todas as BMs na Meta de uma vez) e o botão de cada conta agora se chama \"Verificar\"",
+      "Grupos: os grupos automáticos (Banidas, Pagamento, Sem número, Template em análise, Qualidade baixa e BMs com problema) aparecem sempre, mesmo vazios",
       "Correção: BMs que nunca dispararam também vão sozinhas para 📱 Sem número, 💳 Problemas de pagamento e 📝 Template em análise (antes só mudavam de grupo depois do primeiro disparo, e uma BM sem número nunca dispara)",
       "Novo grupo automático 📱 Sem número (amarelo, igual ao de pagamento): BMs sem nenhum número conectado para disparar vão para lá sozinhas e voltam para o grupo de disparo quando o número for registrado",
     ],

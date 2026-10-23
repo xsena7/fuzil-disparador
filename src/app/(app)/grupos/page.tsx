@@ -43,9 +43,11 @@ export default async function GroupsPage() {
     return a?.apta ? <StatusDot tone="green" title="Apta para disparar" /> : <StatusDot tone="red" title={`Falta: ${a?.falta.join(", ") || "conta"}`} />;
   };
   // Grupos automáticos de problema (banidas, pagamento, template, qualidade, desconhecido) aparecem no topo, nessa ordem
-  const problemGroups = Object.values(PROBLEM_KINDS)
-    .map((k) => groups.find((g) => g.system === k.system))
-    .filter((g): g is (typeof groups)[number] => Boolean(g && g.members.length));
+  // Aparecem sempre (mesmo vazios); o grupo é criado de verdade quando a primeira BM entra nele
+  const problemGroups = Object.values(PROBLEM_KINDS).map((k) => {
+    const g = groups.find((x) => x.system === k.system);
+    return { id: g?.id ?? k.system, name: g?.name ?? k.name, color: g?.color ?? k.color, description: g?.description ?? k.description, members: g?.members ?? [] };
+  });
   const regular = groups.filter((g) => !g.system);
   // Limite e disponível do grupo somam só as BMs prontas para disparar (as outras não entram na campanha)
   const isReady = (id: string) => Boolean(apt.get(id)?.apta && !businesses.find((b) => b.id === id)?.problemAt);
@@ -93,6 +95,7 @@ export default async function GroupsPage() {
           meta={<span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1 ${groupTag(problems.color)}`}>{problems.members.length} BM(s)</span>}
           bodyClassName="divide-y divide-zinc-100"
         >
+          {problems.members.length === 0 && <div className="px-5 py-4 text-sm text-zinc-500">Nenhuma BM aqui agora. Se alguma tiver esse problema, o Fuzil coloca ela aqui sozinho.</div>}
           {problems.members.map(({ business: b }) => (
             <div key={b.id} className="flex flex-wrap items-start gap-4 px-5 py-4">
               <div className="min-w-0 flex-1">
