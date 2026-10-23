@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.22",
+    date: "23/10/2026",
+    items: ["Templates: passar o mouse no nome mostra a prévia num balão por cima da tela, sem abrir espaço na lista"],
+  },
+  {
     version: "2.21",
     date: "23/10/2026",
     items: [

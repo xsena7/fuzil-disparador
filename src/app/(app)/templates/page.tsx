@@ -102,8 +102,8 @@ export default async function TemplatesPage({ searchParams }: { searchParams: Pr
           const mkt = list.filter((t) => t.category === "MARKETING").length;
           const lastSent = list.reduce<Date | null>((a, t) => (t.submittedAt && (!a || t.submittedAt > a) ? t.submittedAt : a), null);
           return (
-            <details key={w.id} open={Boolean(q) && shown.length <= 3} className="group overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm">
-              <summary className="flex cursor-pointer list-none flex-wrap items-center gap-3 px-4 py-3 hover:bg-zinc-50 [&::-webkit-details-marker]:hidden">
+            <details key={w.id} open={Boolean(q) && shown.length <= 3} className="group rounded-2xl border border-zinc-200 bg-white shadow-sm">
+              <summary className="flex cursor-pointer list-none flex-wrap items-center gap-3 rounded-2xl px-4 py-3 hover:bg-zinc-50 group-open:rounded-b-none [&::-webkit-details-marker]:hidden">
                 <ChevronRight className="size-4 shrink-0 text-zinc-400 transition-transform group-open:rotate-90" />
                 <span className="min-w-0 flex-1">
                   <span className="block truncate font-semibold">{w.business.name}</span>
@@ -126,9 +126,10 @@ export default async function TemplatesPage({ searchParams }: { searchParams: Pr
                     <div key={t.id} className="flex flex-wrap items-start gap-3 px-4 py-3">
                       <div className="min-w-56 flex-1">
                         <div className="flex flex-wrap items-center gap-2">
-                          <span className="group/tip flex flex-col items-start font-medium">
+                          <span className="group/tip relative font-medium">
                             <span className="cursor-help border-b border-dotted border-zinc-400">{t.name}</span>
-                            <span className="hidden group-hover/tip:block mt-2 w-80 max-w-full rounded-2xl bg-[#efe7dd] p-3 font-normal shadow-md ring-1 ring-black/10">
+                            {/* Prévia flutuando por cima da tela (não empurra a lista) */}
+                            <span className="pointer-events-none absolute left-0 top-full z-40 mt-2 hidden w-80 max-w-[85vw] rounded-2xl bg-[#efe7dd] p-3 font-normal shadow-2xl ring-1 ring-black/10 group-hover/tip:block">
                               <span className="mb-2 block text-center text-[10px] uppercase tracking-wide text-zinc-500">Como a pessoa recebe</span>
                               <span className="block rounded-lg rounded-tl-none bg-white p-2.5 text-[13px] leading-snug text-[#111] shadow-sm">
                                 {(t.components as unknown as TComponent[]).map((c, i) => {
