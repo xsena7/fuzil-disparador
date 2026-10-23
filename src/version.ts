@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.19",
+    date: "23/10/2026",
+    items: ["Atualizações chegam mais rápido: o servidor confere a cada 1 minuto (antes 5) e monta o site na metade do tempo"],
+  },
+  {
     version: "2.18",
     date: "23/10/2026",
     items: ["Conexões: o campo ID da WABA voltou (a Meta não lista as contas pelo token do usuário do sistema). Passo a passo, tour e tutoriais atualizados com onde achar o ID"],

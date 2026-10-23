@@ -2,10 +2,12 @@ FROM node:22-slim
 RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN npm ci
+# Guarda o cache do npm entre atualizações (só baixa de novo o que mudou)
+RUN --mount=type=cache,target=/root/.npm npm ci
 COPY . .
-# Painel + worker já empacotado em JavaScript (o worker não precisa mais do tsx traduzindo o código na hora)
-RUN npm run build && npm run build:worker
+# Painel + worker já empacotado em JavaScript (o worker não precisa mais do tsx traduzindo o código na hora).
+# FAST_BUILD pula tipos e lint (já conferidos antes de subir) e o cache do Next guarda o que não mudou: atualiza bem mais rápido
+RUN --mount=type=cache,target=/app/.next/cache FAST_BUILD=1 npm run build && npm run build:worker
 ENV NODE_ENV=production
 EXPOSE 3000
 # Sem npx: ele deixa um processo do npm parado na memória o tempo todo

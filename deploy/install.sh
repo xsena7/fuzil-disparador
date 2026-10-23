@@ -67,11 +67,11 @@ fi
 git rev-parse --short HEAD > VERSION
 docker compose up -d --build
 
-# Backup diario (4h) e atualizacao automatica (a cada 5 min, se houver versao nova)
+# Backup diario (4h) e atualizacao automatica (a cada 1 min, se houver versao nova)
 chmod +x deploy/*.sh
 cat > /etc/cron.d/fuzil <<CRON
 0 4 * * * root ${DIR}/deploy/backup.sh >> /var/log/fuzil-backup.log 2>&1
-*/5 * * * * root flock -n /tmp/fuzil-update.lock ${DIR}/deploy/auto-update.sh ${BRANCH} >> /var/log/fuzil-update.log 2>&1
+* * * * * root flock -n /tmp/fuzil-update.lock ${DIR}/deploy/auto-update.sh ${BRANCH} >> /var/log/fuzil-update.log 2>&1
 CRON
 
 echo "FUZIL DISPARADOR instalado. Aponte o DNS de ${APP_DOMAIN} e ${LINK_DOMAIN} para o IP desta VM."
