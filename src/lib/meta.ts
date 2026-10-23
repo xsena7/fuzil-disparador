@@ -323,29 +323,55 @@ export const meta = {
 
   /**
    * Contas do WhatsApp (WABAs) que um token de usuário do sistema enxerga, para conectar sem digitar o ID.
-   * 1) as permissões do próprio token (debug_token); 2) as BMs do usuário → contas próprias e de clientes.
+   * 1) debug_token com o token do app do Fuzil (app_id|chave secreta): é o jeito que a Meta responde para token de outra BM;
+   * 2) debug_token com o próprio token; 3) BMs do usuário → contas próprias e de clientes.
+   * `why` = o motivo que a Meta deu, quando não achou nada.
    */
-  async wabaIdsOfSystemToken(token: string): Promise<string[]> {
+  async wabaIdsOfSystemToken(token: string, appSecrets: Record<string, string> = {}): Promise<{ ids: string[]; why?: string }> {
     const ids = new Set<string>();
-    try {
-      const dbg = await graph<{ data?: { granular_scopes?: Array<{ scope: string; target_ids?: string[] }> } }>(token, "GET", "debug_token", { query: { input_token: token } });
-      for (const s of dbg.data?.granular_scopes ?? []) if (s.scope === "whatsapp_business_management") for (const t of s.target_ids ?? []) ids.add(t);
-    } catch {
-      // segue para o outro jeito
-    }
-    if (ids.size) return [...ids];
-    try {
-      const bms = await graph<{ data: Array<{ id: string }> }>(token, "GET", "me/businesses", { query: { fields: "id", limit: 50 } });
-      for (const b of bms.data ?? []) {
-        for (const edge of ["owned_whatsapp_business_accounts", "client_whatsapp_business_accounts"]) {
-          const r = await graph<{ data: Array<{ id: string }> }>(token, "GET", `${b.id}/${edge}`, { query: { fields: "id", limit: 100 } }).catch(() => ({ data: [] }));
-          for (const w of r.data ?? []) ids.add(w.id);
+    const errors: string[] = [];
+    const scopes = (d: { data?: { granular_scopes?: Array<{ scope: string; target_ids?: string[] }>; error?: { message?: string } } }) => {
+      for (const s of d.data?.granular_scopes ?? []) if (s.scope === "whatsapp_business_management") for (const t of s.target_ids ?? []) ids.add(t);
+    };
+    const debug = async (accessToken: string) => {
+      const url = new URL(`${env.metaGraphUrl()}/${env.metaGraphVersion()}/debug_token`);
+      url.searchParams.set("input_token", token);
+      url.searchParams.set("access_token", accessToken);
+      const res = await fetch(url, { signal: AbortSignal.timeout(20_000) });
+      const json = (await res.json().catch(() => ({}))) as { data?: { granular_scopes?: Array<{ scope: string; target_ids?: string[] }>; error?: { message?: string } }; error?: { message?: string } };
+      if (json.error?.message) errors.push(json.error.message);
+      if (json.data?.error?.message) errors.push(json.data.error.message);
+      scopes(json);
+    };
+    // 1) Com o token do app que gerou o token do cliente (o app do Fuzil)
+    const appId = await graph<{ id: string }>(token, "GET", "app", { query: { fields: "id" } })
+      .then((a) => a.id)
+      .catch((e) => {
+        errors.push(e instanceof Error ? e.message : String(e));
+        return null;
+      });
+    const secret = appId ? appSecrets[appId] ?? (appId === env.metaAppId() ? env.metaAppSecret() : "") : "";
+    if (appId && secret) await debug(`${appId}|${secret}`).catch((e) => errors.push(String(e)));
+    // 2) Com o próprio token
+    if (!ids.size) await debug(token).catch((e) => errors.push(String(e)));
+    // 3) Pelas BMs do usuário do sistema
+    if (!ids.size) {
+      try {
+        const bms = await graph<{ data: Array<{ id: string }> }>(token, "GET", "me/businesses", { query: { fields: "id", limit: 50 } });
+        for (const b of bms.data ?? []) {
+          for (const edge of ["owned_whatsapp_business_accounts", "client_whatsapp_business_accounts"]) {
+            const r = await graph<{ data: Array<{ id: string }> }>(token, "GET", `${b.id}/${edge}`, { query: { fields: "id", limit: 100 } }).catch((e) => {
+              errors.push(e instanceof Error ? e.message : String(e));
+              return { data: [] };
+            });
+            for (const w of r.data ?? []) ids.add(w.id);
+          }
         }
+      } catch (e) {
+        errors.push(e instanceof Error ? e.message : String(e));
       }
-    } catch {
-      // sem permissão de business_management: não dá para descobrir
     }
-    return [...ids];
+    return { ids: [...ids], why: ids.size ? undefined : errors[0] };
   },
 
   /** WABAs liberadas para um token (usado quando o evento do cadastro não trouxe o waba_id). */

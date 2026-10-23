@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.15",
+    date: "23/10/2026",
+    items: ["Conexões: o Fuzil agora pergunta à Meta pelo app do Fuzil quais contas do WhatsApp o token acessa (com token de BM de cliente a Meta só responde assim). Se não achar, mostra o motivo que a Meta deu"],
+  },
+  {
     version: "2.14",
     date: "23/10/2026",
     items: [

@@ -12,7 +12,7 @@ import { meta } from "@/lib/meta";
 import { env } from "@/lib/env";
 import type { FormState } from "./auth";
 import { resetBmSecrets } from "@/lib/webhook";
-import { defaultAppSecret } from "@/lib/onboarding";
+import { FUZIL_APP_ID, defaultAppSecret } from "@/lib/onboarding";
 
 const errMsg = friendlyError;
 
@@ -26,16 +26,20 @@ export async function connectManualAction(_: FormState, form: FormData): Promise
   if (!token) return { error: "Cole o token de acesso (token do usuário do sistema fuzil-api da sua BM)." };
 
   // Sem ID: o Fuzil descobre pelo token quais contas do WhatsApp o usuário do sistema acessa e conecta todas
-  let ids = typedId ? [typedId] : [];
-  if (!ids.length) {
-    ids = await meta.wabaIdsOfSystemToken(token).catch(() => []);
-    if (!ids.length)
-      return { error: "Não achei nenhuma conta do WhatsApp nesse token. Confira se o usuário do sistema fuzil-api tem a conta do WhatsApp em Atribuir ativos e gere o token de novo." };
-  }
-
   let appSecret = String(form.get("appSecret") ?? "").trim();
   // Sem chave no formulário: usa a chave secreta padrão (da conta ou a do app do Fuzil)
   if (!appSecret) appSecret = (await defaultAppSecret(auth.workspace.id)) ?? "";
+
+  let ids = typedId ? [typedId] : [];
+  if (!ids.length) {
+    // A chave do app do Fuzil deixa perguntar à Meta quais contas o token do cliente acessa
+    const found = await meta.wabaIdsOfSystemToken(token, appSecret ? { [FUZIL_APP_ID]: appSecret } : {}).catch((e) => ({ ids: [] as string[], why: String(e) }));
+    ids = found.ids;
+    if (!ids.length)
+      return {
+        error: `Não achei nenhuma conta do WhatsApp nesse token. Confira se o fuzil-api tem a conta do WhatsApp em Atribuir ativos e gere o token de novo depois disso (token antigo não enxerga ativo novo).${found.why ? ` Resposta da Meta: ${found.why}` : ""}`,
+      };
+  }
   const ok: string[] = [];
   const failed: string[] = [];
   for (const wabaId of ids) {
