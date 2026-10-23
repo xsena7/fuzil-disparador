@@ -17,11 +17,13 @@ export const LINKS_TEMPLATES = {
     prefix: "fzlinks_acesso",
     category: "UTILITY",
     components: [
+      // Aviso de conta (utilidade): diz o serviço e o fato, sem tom de oferta nem de código de login (o texto antigo era rejeitado)
       {
         type: "BODY",
-        text: "Novo acesso à sua conta do gerador de links em {{1}}.\n\nFoi você? Toque em um dos botões abaixo para confirmar. Se não reconhece este acesso, toque em \"Não fui eu\" e desconectamos todos os aparelhos.",
-        example: { body_text: [["22/10 às 14:32"]] },
+        text: "Registramos um novo acesso à sua conta no Gerador de Links Fuzil em {{1}}.\n\nSe foi você, toque em \"Fui eu\". Se você não reconhece este acesso, toque em \"Não fui eu\" para encerrarmos todas as sessões da sua conta.",
+        example: { body_text: [["23/10 às 14:32"]] },
       },
+      { type: "FOOTER", text: "Aviso automático da sua conta" },
       { type: "BUTTONS", buttons: [{ type: "QUICK_REPLY", text: "Fui eu" }, { type: "QUICK_REPLY", text: "Não fui eu" }] },
     ],
   },
@@ -61,8 +63,20 @@ export async function ensureLinksBlueprints() {
         const created = await makeLinksBlueprint(f.workspaceId, f.groupId, kind);
         await prisma.funnel.update({ where: { id: f.id }, data: { [field]: created.id } });
         console.log(`[links] template ${kind} recriado no funil ${f.id}`);
-      } else if (!bp.active || bp.groupId !== f.groupId) {
-        await prisma.templateBlueprint.update({ where: { id: bp.id }, data: { active: true, groupId: f.groupId } });
+      } else {
+        if (!bp.active || bp.groupId !== f.groupId) await prisma.templateBlueprint.update({ where: { id: bp.id }, data: { active: true, groupId: f.groupId } });
+        // Texto do aviso mudou (o antigo era rejeitado): troca e reenvia com o próximo nome onde não aprovou
+        const want = LINKS_TEMPLATES[kind].components as unknown as Array<{ type: string; text?: string }>;
+        const have = bp.components as unknown as Array<{ type: string; text?: string }>;
+        const bodyOf = (c: Array<{ type: string; text?: string }>) => c.find((x) => x.type === "BODY")?.text ?? "";
+        if (kind === "login" && bodyOf(want) !== bodyOf(have)) {
+          await prisma.templateBlueprint.update({ where: { id: bp.id }, data: { components: want as unknown as Prisma.InputJsonValue } });
+          const r = await prisma.templateDeployment.updateMany({
+            where: { blueprintId: bp.id, status: { in: ["REJECTED", "ERROR", "MARKETING_ON_CREATE"] } },
+            data: { status: "RETRY", attempts: 0, error: null },
+          });
+          console.log(`[links] texto do aviso de acesso atualizado no funil ${f.id} (${r.count} reenvio(s))`);
+        }
       }
     }
   }

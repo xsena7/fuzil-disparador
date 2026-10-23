@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.23",
+    date: "23/10/2026",
+    items: ["Gerador de links: texto novo do aviso de novo acesso (o antigo era rejeitado). O Fuzil troca sozinho em todos os funis e reenvia para a Meta onde foi rejeitado"],
+  },
+  {
     version: "2.22",
     date: "23/10/2026",
     items: ["Templates: passar o mouse no nome mostra a prévia num balão por cima da tela, sem abrir espaço na lista"],
