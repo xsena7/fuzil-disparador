@@ -10,26 +10,38 @@ export function celebrate(title: string, text?: string) {
   if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT, { detail: { title, text } }));
 }
 
-/** "Plim-plim" de vitória gerado pelo navegador (sem arquivo de áudio). */
+/**
+ * "Subiu de nível" no estilo videogame 8 bits (onda quadrada, notas rápidas subindo e um acorde final).
+ * Melodia própria do Fuzil, gerada pelo navegador (sem arquivo de áudio).
+ */
 function playChime() {
   try {
     const Ctx = window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
     const ctx = new Ctx();
-    const notes = [523.25, 659.25, 783.99, 1046.5]; // dó, mi, sol, dó
-    notes.forEach((f, i) => {
-      const t = ctx.currentTime + i * 0.11;
+    const master = ctx.createGain();
+    master.gain.value = 0.12;
+    master.connect(ctx.destination);
+    const note = (freq: number, start: number, dur: number, slideTo?: number) => {
+      const t = ctx.currentTime + start;
       const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = "triangle";
-      osc.frequency.value = f;
-      gain.gain.setValueAtTime(0.0001, t);
-      gain.gain.exponentialRampToValueAtTime(0.22, t + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.0001, t + (i === notes.length - 1 ? 0.9 : 0.3));
-      osc.connect(gain).connect(ctx.destination);
+      const g = ctx.createGain();
+      osc.type = "square";
+      osc.frequency.setValueAtTime(freq, t);
+      if (slideTo) osc.frequency.exponentialRampToValueAtTime(slideTo, t + dur);
+      g.gain.setValueAtTime(1, t);
+      g.gain.setValueAtTime(1, t + dur * 0.85);
+      g.gain.linearRampToValueAtTime(0, t + dur);
+      osc.connect(g).connect(master);
       osc.start(t);
-      osc.stop(t + 1);
-    });
-    setTimeout(() => ctx.close().catch(() => undefined), 2000);
+      osc.stop(t + dur + 0.02);
+    };
+    // Escadinha rápida subindo (sol, si, ré, sol, si) e um "tchan" final com brilho subindo
+    const steps = [392, 493.88, 587.33, 783.99, 987.77];
+    steps.forEach((f, i) => note(f, i * 0.075, 0.07));
+    note(1174.66, steps.length * 0.075, 0.12);
+    note(1567.98, steps.length * 0.075 + 0.13, 0.32, 2093);
+    note(783.99, steps.length * 0.075 + 0.13, 0.32);
+    setTimeout(() => ctx.close().catch(() => undefined), 1800);
   } catch {
     // sem som (navegador bloqueou): fica só a animação
   }

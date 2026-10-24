@@ -4,7 +4,7 @@ export const CHANGELOG: Array<{ version: string; date: string; items: string[] }
   {
     version: "2.38",
     date: "24/10/2026",
-    items: ["Conexões: comemoração com confete e som quando uma BM é conectada 🎉"],
+    items: ["Conexões: comemoração com confete e som de \"subiu de nível\" estilo videogame 8 bits quando uma BM é conectada 🎉"],
   },
   {
     version: "2.37",
