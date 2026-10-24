@@ -3,8 +3,8 @@
 import { useActionState, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import clsx from "clsx";
-import { ArrowDownLeft, ArrowLeftRight, ArrowUpRight, Paperclip } from "lucide-react";
-import { addFinanceEntryAction, deleteFinanceEntryAction } from "@/app/actions/finance";
+import { ArrowDownLeft, ArrowLeftRight, ArrowUpRight, Check, Copy, Paperclip } from "lucide-react";
+import { addFinanceEntryAction, deleteFinanceEntryAction, savePixKeyAction } from "@/app/actions/finance";
 import { FINANCE_CATEGORIES, type FinanceKind } from "@/lib/finance";
 import { Button, Field, Input, Select } from "@/components/ui";
 import { toast, toastResult } from "@/components/toast";
@@ -108,7 +108,7 @@ export function DeleteEntry({ id }: { id: string }) {
 }
 
 /** "Já fiz o Pix": anota o acerto com o valor certinho (só para quem deve), com o comprovante do Pix se quiser. */
-export function SettleButton({ amount, toUserId, toName }: { amount: string; toUserId: string; toName: string }) {
+export function SettleButton({ amount, toUserId, toName, pixKey }: { amount: string; toUserId: string; toName: string; pixKey: string | null }) {
   const [open, setOpen] = useState(false);
   const [state, action, pending] = useActionState(addFinanceEntryAction, undefined);
   const router = useRouter();
@@ -121,15 +121,19 @@ export function SettleButton({ amount, toUserId, toName }: { amount: string; toU
   }, [state, router]);
   if (!open)
     return (
-      <button type="button" onClick={() => setOpen(true)} className="rounded-xl bg-white px-4 py-2 text-sm font-semibold text-zinc-900 shadow-sm hover:bg-orange-50">
-        Já fiz o Pix
-      </button>
+      <div className="flex flex-wrap items-center gap-2">
+        {pixKey ? <CopyPix pixKey={pixKey} name={toName} /> : <span className="text-xs text-zinc-400">{toName} ainda não cadastrou a chave Pix</span>}
+        <button type="button" onClick={() => setOpen(true)} className="rounded-xl bg-white px-4 py-2 text-sm font-semibold text-zinc-900 shadow-sm hover:bg-orange-50">
+          Já fiz o Pix
+        </button>
+      </div>
     );
   return (
     <form action={action} className="w-full max-w-sm space-y-3 rounded-2xl bg-white p-4 text-zinc-800 shadow-lg">
       <input type="hidden" name="kind" value="SETTLEMENT" />
       <input type="hidden" name="amount" value={amount} />
       <input type="hidden" name="toUserId" value={toUserId} />
+      <input type="hidden" name="fromButton" value="1" />
       <div className="text-sm">
         Confirmar o Pix de <b>R$ {amount}</b> para <b>{toName}</b>? O saldo zera.
       </div>
@@ -142,6 +146,44 @@ export function SettleButton({ amount, toUserId, toName }: { amount: string; toU
         <button type="button" onClick={() => setOpen(false)} className="rounded-xl px-3 py-2 text-sm text-zinc-600 hover:bg-zinc-100">Cancelar</button>
         {state?.error && <span className="text-xs text-red-600">{state.error}</span>}
       </div>
+    </form>
+  );
+}
+
+/** Copiar a chave Pix do sócio que vai receber. */
+export function CopyPix({ pixKey, name }: { pixKey: string; name: string }) {
+  const [done, setDone] = useState(false);
+  return (
+    <button
+      type="button"
+      onClick={async () => {
+        await navigator.clipboard.writeText(pixKey);
+        setDone(true);
+        toast("success", `Chave Pix de ${name} copiada!`);
+        setTimeout(() => setDone(false), 1800);
+      }}
+      className="inline-flex items-center gap-2 rounded-xl bg-brand-gradient px-4 py-2 text-sm font-semibold text-white shadow-md shadow-orange-500/30 hover:brightness-110"
+      title={pixKey}
+    >
+      {done ? <Check className="size-4" /> : <Copy className="size-4" />} Copiar chave Pix de {name}
+    </button>
+  );
+}
+
+/** "Minha chave Pix": cada sócio cadastra a própria (fica só no banco do servidor). */
+export function PixKeyForm({ current }: { current: string | null }) {
+  const [state, action, pending] = useActionState(savePixKeyAction, undefined);
+  const router = useRouter();
+  useEffect(() => {
+    toastResult(state);
+    if (state?.ok) router.refresh();
+  }, [state, router]);
+  return (
+    <form action={action} className="flex flex-wrap items-end gap-2">
+      <Field label="Minha chave Pix" hint="O outro sócio copia ela quando tiver que te passar algo">
+        <Input name="pixKey" defaultValue={current ?? ""} placeholder="E-mail, CPF, celular ou chave aleatória" className="w-80 max-w-full" maxLength={140} />
+      </Field>
+      <Button variant="secondary" disabled={pending}>{pending ? "Salvando..." : "Salvar"}</Button>
     </form>
   );
 }

@@ -1,11 +1,12 @@
 import { readFile } from "node:fs/promises";
 import { getActiveAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { isFinancePartner } from "@/lib/finance-partners";
 
 /** Comprovante do financeiro: só abre para os sócios (administradores do Fuzil) logados. */
 export async function GET(_: Request, { params }: { params: Promise<{ id: string }> }) {
   const auth = await getActiveAuth();
-  if (!auth?.user.isSuperAdmin) return new Response("Not found", { status: 404 });
+  if (!auth || !(await isFinancePartner(auth.user.id))) return new Response("Not found", { status: 404 });
   const { id } = await params;
   const e = await prisma.financeEntry.findUnique({ where: { id }, select: { attachmentPath: true, attachmentMime: true, attachmentName: true } });
   if (!e?.attachmentPath) return new Response("Not found", { status: 404 });

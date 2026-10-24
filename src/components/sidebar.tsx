@@ -42,12 +42,14 @@ const sections = [
   },
 ];
 
-export function Sidebar({ workspace, user, unread, chatUnread = 0, balance, isSuperAdmin }: { workspace: string; user: string; unread: number; chatUnread?: number; balance: number; isSuperAdmin: boolean }) {
+export function Sidebar({ workspace, user, unread, chatUnread = 0, balance, isSuperAdmin, financePartner = false }: { workspace: string; user: string; unread: number; chatUnread?: number; balance: number; isSuperAdmin: boolean; financePartner?: boolean }) {
   const path = usePathname();
   // No celular o menu fica escondido e abre pelo botão ☰; fecha sozinho ao trocar de página
   const [open, setOpen] = useState(false);
   useEffect(() => setOpen(false), [path]);
-  const all = isSuperAdmin ? [...sections, { title: "Plataforma", items: [{ href: "/admin", label: "Admin", icon: Shield }, { href: "/financeiro", label: "Financeiro", icon: Wallet }] }] : sections;
+  // Financeiro: só para os sócios (fixos no banco)
+  const platform = [...(isSuperAdmin ? [{ href: "/admin", label: "Admin", icon: Shield }] : []), ...(financePartner ? [{ href: "/financeiro", label: "Financeiro", icon: Wallet }] : [])];
+  const all = platform.length ? [...sections, { title: "Plataforma", items: platform }] : sections;
   return (
     <>
     <div className="fixed inset-x-0 top-0 z-40 flex h-14 items-center gap-3 bg-ink px-4 md:hidden">

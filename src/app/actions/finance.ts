@@ -3,12 +3,11 @@
 import { mkdir, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { revalidatePath } from "next/cache";
-import { requireSuperAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { env } from "@/lib/env";
 import { shortToken } from "@/lib/crypto";
-import { FINANCE_CATEGORIES, parseMoney, type FinanceKind } from "@/lib/finance";
-import { financePartners } from "@/lib/finance-partners";
+import { FINANCE_CATEGORIES, parseMoney, settle, type FinanceKind } from "@/lib/finance";
+import { financePartners, requireFinancePartner } from "@/lib/finance-partners";
 import type { FormState } from "./auth";
 
 // Comprovantes ficam numa pasta separada, fora do /media público: só abrem pela rota dos sócios
@@ -16,7 +15,7 @@ const ATTACH: Record<string, string> = { "image/jpeg": "jpg", "image/png": "png"
 const MAX_ATTACH = 10 * 1024 * 1024;
 
 export async function addFinanceEntryAction(_: FormState, form: FormData): Promise<FormState> {
-  const auth = await requireSuperAdmin();
+  const auth = await requireFinancePartner();
   const kind = String(form.get("kind") ?? "") as FinanceKind;
   if (!["EXPENSE", "INCOME", "SETTLEMENT"].includes(kind)) return { error: "Escolha se é despesa, entrada ou acerto" };
   const amountCents = parseMoney(String(form.get("amount") ?? ""));
@@ -32,6 +31,7 @@ export async function addFinanceEntryAction(_: FormState, form: FormData): Promi
     const to = others.find((p) => p.id === toUserId);
     if (!to) return { error: "Escolha para quem você passou o Pix" };
     if (!description) description = `Pix de acerto para ${to.name}`;
+
   } else {
     if (!description) return { error: "Escreva a descrição (ex.: Compra de 5 BMs)" };
     const c = String(form.get("category") ?? "");
@@ -51,15 +51,33 @@ export async function addFinanceEntryAction(_: FormState, form: FormData): Promi
     attachment = { attachmentPath: full, attachmentName: file.name.slice(0, 120), attachmentMime: file.type };
   }
 
-  // Data e hora: sempre o momento em que foi anotado
-  await prisma.financeEntry.create({ data: { kind, description, amountCents, category, userId: auth.user.id, toUserId, ...(attachment ?? {}) } });
+  // Uma anotação de cada vez (trava no banco): dois cliques ao mesmo tempo nunca gravam o acerto em dobro
+  const partnerIds = (await financePartners()).map((p) => p.id);
+  const fromButton = kind === "SETTLEMENT" && form.get("fromButton") === "1";
+  const result = await prisma.$transaction(async (tx) => {
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(727274)`;
+    // Botão "Já fiz o Pix": só anota se ainda deve esse valor (clique duplo ou outra aba não anotam em dobro)
+    if (fromButton) {
+      const lines = await tx.financeEntry.findMany({ select: { kind: true, amountCents: true, userId: true, toUserId: true } });
+      const owed = settle(lines.map((l) => ({ ...l, kind: l.kind as FinanceKind })), partnerIds).transfers.find((t) => t.from === auth.user.id && t.to === toUserId)?.amountCents ?? 0;
+      if (owed <= 0) return { error: "Esse acerto já foi anotado: não há nada a passar agora." };
+      if (amountCents > owed) return { error: `O valor mudou: agora o acerto é de ${(owed / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}. Atualize a página.` };
+    }
+    // Data e hora: sempre o momento em que foi anotado
+    await tx.financeEntry.create({ data: { kind, description, amountCents, category, userId: auth.user.id, toUserId, ...(attachment ?? {}) } });
+    return null;
+  });
+  if (result?.error) {
+    if (attachment) await unlink(attachment.attachmentPath).catch(() => undefined);
+    return result;
+  }
   revalidatePath("/financeiro");
   return { ok: kind === "SETTLEMENT" ? "Acerto anotado!" : kind === "EXPENSE" ? "Despesa anotada!" : "Entrada anotada!" };
 }
 
 /** Só quem anotou pode apagar (ninguém edita). */
 export async function deleteFinanceEntryAction(id: string): Promise<{ ok?: string; error?: string }> {
-  const auth = await requireSuperAdmin();
+  const auth = await requireFinancePartner();
   const e = await prisma.financeEntry.findUnique({ where: { id } });
   if (!e) return { error: "Anotação não encontrada" };
   if (e.userId !== auth.user.id) return { error: "Só quem anotou pode apagar." };
@@ -67,4 +85,13 @@ export async function deleteFinanceEntryAction(id: string): Promise<{ ok?: strin
   if (e.attachmentPath) await unlink(e.attachmentPath).catch(() => undefined);
   revalidatePath("/financeiro");
   return { ok: "Anotação apagada" };
+}
+
+/** Chave Pix do próprio sócio (o outro vê o botão de copiar quando precisar passar). */
+export async function savePixKeyAction(_: FormState, form: FormData): Promise<FormState> {
+  const auth = await requireFinancePartner();
+  const key = String(form.get("pixKey") ?? "").trim().slice(0, 140);
+  await prisma.user.update({ where: { id: auth.user.id }, data: { pixKey: key || null } });
+  revalidatePath("/financeiro");
+  return { ok: key ? "Chave Pix salva!" : "Chave Pix apagada" };
 }

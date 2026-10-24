@@ -2,6 +2,14 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.37",
+    date: "24/10/2026",
+    items: [
+      "Financeiro: cada sócio cadastra a própria chave Pix e, na hora do acerto, aparece o botão \"Copiar chave Pix\" do outro",
+      "Financeiro mais seguro: os sócios ficam fixos (dar administrador para alguém não muda a divisão nem o histórico), valor com ponto de milhar lido certo (1.234 = mil duzentos e trinta e quatro) e o acerto nunca é anotado em dobro (clique duplo, duas abas ou os dois clicando juntos)",
+    ],
+  },
+  {
     version: "2.36",
     date: "24/10/2026",
     items: [

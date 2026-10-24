@@ -1,12 +1,11 @@
 import Link from "next/link";
 import clsx from "clsx";
 import { ArrowDownLeft, ArrowLeftRight, ArrowUpRight, CheckCircle2, Paperclip, Wallet } from "lucide-react";
-import { requireSuperAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { FINANCE_CATEGORIES, brl, settle, type FinanceKind } from "@/lib/finance";
-import { financePartners } from "@/lib/finance-partners";
+import { financePartners, requireFinancePartner } from "@/lib/finance-partners";
 import { Card, Empty, PageHeader, Stat } from "@/components/ui";
-import { DeleteEntry, FinanceForm, SettleButton } from "./finance-form";
+import { DeleteEntry, FinanceForm, PixKeyForm, SettleButton } from "./finance-form";
 
 export const dynamic = "force-dynamic";
 
@@ -26,7 +25,7 @@ const first = (name: string) => name.split(" ")[0];
 
 /** Financeiro dos sócios: despesas, entradas e quem passa quanto para quem (partes iguais). Só para os administradores do Fuzil. */
 export default async function FinancePage({ searchParams }: { searchParams: Promise<{ mes?: string; cat?: string }> }) {
-  const auth = await requireSuperAdmin();
+  const auth = await requireFinancePartner();
   const sp = await searchParams;
   const [partners, entries] = await Promise.all([
     financePartners(),
@@ -90,7 +89,7 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
           {all.transfers
             .filter((t) => t.from === auth.user.id)
             .map((t) => (
-              <SettleButton key={t.to} amount={(t.amountCents / 100).toFixed(2).replace(".", ",")} toUserId={t.to} toName={nm(t.to)} />
+              <SettleButton key={t.to} amount={(t.amountCents / 100).toFixed(2).replace(".", ",")} toUserId={t.to} toName={nm(t.to)} pixKey={partners.find((p) => p.id === t.to)?.pixKey ?? null} />
             ))}
         </div>
         <div className="relative mt-5 grid gap-3 sm:grid-cols-2">
@@ -108,6 +107,13 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
             ))}
         </div>
       </div>
+
+      <Card className="flex flex-wrap items-center justify-between gap-4 p-5">
+        <div className="text-sm text-zinc-600">
+          <b className="text-zinc-900">Sócios:</b> {partners.map((p) => first(p.name)).join(" e ")} · divisão em partes iguais
+        </div>
+        <PixKeyForm current={partners.find((p) => p.id === auth.user.id)?.pixKey ?? null} />
+      </Card>
 
       <Card className="p-5">
         <div className="mb-4 font-semibold">Nova anotação</div>

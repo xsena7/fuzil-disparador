@@ -37,7 +37,8 @@ export function settle(lines: FinanceLine[], partnerIds: string[]): { profit: nu
   const share = profit / n;
   for (const p of all) {
     p.holding = p.received - p.paid - p.sent + p.got;
-    p.diff = Math.round(p.holding - share);
+    // Em centavos inteiros; meio centavo (lucro ímpar) arredonda para baixo de quem deve (nunca cobra a mais)
+    p.diff = Math.trunc(p.holding - share);
   }
   // Quem tem a mais passa para quem tem a menos (com 2 sócios é um Pix só)
   const debtors = all.filter((p) => p.diff > 0).map((p) => ({ id: p.userId, left: p.diff }));
@@ -56,14 +57,32 @@ export function settle(lines: FinanceLine[], partnerIds: string[]): { profit: nu
   return { profit, share: Math.round(share), partners: all, transfers };
 }
 
-/** "1.234,56", "1234.56", "300" → centavos. */
+/**
+ * Valor em reais → centavos, no jeito brasileiro: "1.234,56", "1.234", "300", "12,5" e também "1234.56".
+ * Ponto seguido de exatamente 3 números é separador de milhar ("1.234" = mil duzentos e trinta e quatro).
+ * Qualquer coisa estranha (letras, dois separadores de centavos, mais de 2 casas) é recusada: nunca adivinha.
+ */
 export function parseMoney(raw: string): number | null {
-  let v = String(raw ?? "").replace(/[R$\s]/g, "");
-  if (!v) return null;
-  if (v.includes(",")) v = v.replace(/\./g, "").replace(",", ".");
-  const n = Number(v);
-  if (!Number.isFinite(n) || n <= 0) return null;
-  return Math.round(n * 100);
+  const v = String(raw ?? "").replace(/R\$|\s/g, "");
+  if (!v || !/^[\d.,]+$/.test(v)) return null;
+  let int: string;
+  let dec = "";
+  if (v.includes(",")) {
+    // Vírgula = centavos; pontos antes dela = milhar (em grupos de 3)
+    if (v.split(",").length !== 2) return null;
+    [int, dec] = v.split(",");
+    if (!/^\d{1,3}(\.\d{3})*$|^\d+$/.test(int)) return null;
+    int = int.replace(/\./g, "");
+  } else if (/^\d{1,3}(\.\d{3})+$/.test(v)) {
+    int = v.replace(/\./g, ""); // 1.234 ou 1.234.567
+  } else if (/^\d+\.\d{1,2}$/.test(v)) {
+    [int, dec] = v.split("."); // 1234.5 / 1234.56 (jeito americano)
+  } else if (/^\d+$/.test(v)) {
+    int = v;
+  } else return null;
+  if (dec.length > 2 || !/^\d*$/.test(dec)) return null;
+  const cents = Number(int) * 100 + Number((dec + "00").slice(0, 2));
+  return Number.isSafeInteger(cents) && cents > 0 ? cents : null;
 }
 
 export const brl = (cents: number) => (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });

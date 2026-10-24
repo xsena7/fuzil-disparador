@@ -235,6 +235,9 @@ export async function adminDeleteUserAction(userId: string): Promise<{ ok?: stri
   if (userId === auth.user.id) return { error: "Você não pode excluir o seu próprio usuário." };
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user) return { error: "Usuário não encontrado" };
+  // Sócio com anotações no Financeiro não é excluído (o histórico do acerto não pode sumir)
+  if (await prisma.financeEntry.count({ where: { OR: [{ userId }, { toUserId: userId }] } }))
+    return { error: `${user.name} tem anotações no Financeiro e não pode ser excluído (o histórico do acerto não pode sumir).` };
   await prisma.user.delete({ where: { id: userId } });
   revalidatePath("/admin");
   return { ok: `${user.email} excluído` };

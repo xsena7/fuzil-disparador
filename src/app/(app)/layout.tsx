@@ -18,14 +18,14 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const [unread, chatUnread, me, bms] = await Promise.all([
     prisma.alert.count({ where: { workspaceId: auth.workspace.id, readAt: null, severity: { not: "INFO" } } }),
     prisma.conversation.count({ where: { workspaceId: auth.workspace.id, unread: { gt: 0 } } }),
-    prisma.user.findUnique({ where: { id: auth.user.id }, select: { tourState: true } }),
+    prisma.user.findUnique({ where: { id: auth.user.id }, select: { tourState: true, financePartner: true } }),
     prisma.businessManager.count({ where: { workspaceId: auth.workspace.id } }),
   ]);
   // Conta nova (sem BM) que ainda não respondeu o convite: pergunta se quer o tour
   const offerTour = !auth.inspecting && !me?.tourState && bms === 0;
   return (
     <div className="flex min-h-screen">
-      <Sidebar workspace={auth.workspace.name} user={auth.user.email} unread={unread} chatUnread={chatUnread} balance={auth.workspace.creditBalance} isSuperAdmin={auth.user.isSuperAdmin} />
+      <Sidebar workspace={auth.workspace.name} user={auth.user.email} unread={unread} chatUnread={chatUnread} balance={auth.workspace.creditBalance} isSuperAdmin={auth.user.isSuperAdmin} financePartner={Boolean(me?.financePartner)} />
       {/* Fundo de todas as telas: brilho laranja bem clarinho e a logo do Fuzil apagada (só enfeite) */}
       <div aria-hidden className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
         {/* Degradês simples (sem filtro de desfoque, que deixava o mouse pesado) */}

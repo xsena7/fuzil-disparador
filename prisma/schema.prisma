@@ -24,6 +24,10 @@ model User {
   memberships  Membership[]
   sessions     Session[]
   tokens       PasswordToken[]
+  // Sócio do financeiro (divisão em partes iguais). Fica fixo: dar administrador para alguém não muda a divisão
+  financePartner  Boolean        @default(false)
+  // Chave Pix do sócio (para o outro copiar na hora do acerto)
+  pixKey          String?
   financeEntries  FinanceEntry[] @relation("FinanceUser")
   financeReceived FinanceEntry[] @relation("FinanceTo")
 }
