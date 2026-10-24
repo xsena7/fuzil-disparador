@@ -24,6 +24,8 @@ model User {
   memberships  Membership[]
   sessions     Session[]
   tokens       PasswordToken[]
+  financeEntries  FinanceEntry[] @relation("FinanceUser")
+  financeReceived FinanceEntry[] @relation("FinanceTo")
 }
 
 enum TokenPurpose {
@@ -819,4 +821,26 @@ model LinkSession {
   lead       Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
 
   @@index([leadId])
+}
+
+// Financeiro dos sócios (administradores do Fuzil), dividido em partes iguais. Não é de uma conta de cliente.
+model FinanceEntry {
+  id             String    @id @default(cuid())
+  // EXPENSE = pagou uma despesa; INCOME = recebeu na conta dele; SETTLEMENT = passou Pix para o outro sócio (acerto)
+  kind           String
+  description    String
+  amountCents    Int
+  category       String?
+  // Quem anotou: quem pagou a despesa, recebeu a entrada ou fez o Pix do acerto
+  userId         String
+  // Acerto: quem recebeu o Pix
+  toUserId       String?
+  attachmentPath String?
+  attachmentName String?
+  attachmentMime String?
+  createdAt      DateTime  @default(now())
+  user           User      @relation("FinanceUser", fields: [userId], references: [id], onDelete: Restrict)
+  toUser         User?     @relation("FinanceTo", fields: [toUserId], references: [id], onDelete: Restrict)
+
+  @@index([createdAt])
 }

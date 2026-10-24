@@ -2,6 +2,15 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.36",
+    date: "24/10/2026",
+    items: [
+      "Financeiro (só os sócios, administradores do Fuzil): anote despesas, entradas e acertos com descrição, valor, categoria e comprovante. Quem anota é quem pagou ou recebeu, e a data é a da hora",
+      "O Fuzil soma tudo, divide meio a meio e mostra quem passa quanto para quem. Quem deve tem o botão \"Já fiz o Pix\" (com opção de anexar o comprovante do Pix), que anota o acerto e zera o saldo",
+      "Visão por mês, filtro por categoria (Perfil, Automação, SMS, Captcha, Disparo, Venda BM, Sem categoria) e despesas por categoria. Só quem anotou pode apagar, ninguém edita",
+    ],
+  },
+  {
     version: "2.35",
     date: "23/10/2026",
     items: ["Campanha: dá para trocar o nome no lápis ao lado do nome, no topo. O relatório do cliente (inclusive o link público) mostra o nome novo na hora"],
