@@ -10,6 +10,7 @@ import { Toaster } from "@/components/toast";
 import { ConfirmHost } from "@/components/confirm-dialog";
 import { Logo } from "@/components/brand";
 import { Tour } from "@/components/tour";
+import { CelebrationHost } from "@/components/celebration";
 import { ensureDefaultGroups } from "@/lib/default-groups";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -51,6 +52,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <AlertToaster />
       <Toaster />
       <ConfirmHost />
+      <CelebrationHost />
       <Tour offer={offerTour} />
       <CursorGlow />
       <BugReportButton />

@@ -8,6 +8,7 @@ import type { FormState } from "@/app/actions/auth";
 import { Button } from "./ui";
 import { toast, toastResult } from "./toast";
 import { confirmDialog } from "./confirm-dialog";
+import { celebrate } from "./celebration";
 
 /** Formulário genérico com mensagem de erro/sucesso. */
 export function ActionForm({
@@ -16,20 +17,24 @@ export function ActionForm({
   submit,
   className,
   variant = "primary",
+  celebrateOk,
 }: {
   action: (state: FormState, form: FormData) => Promise<FormState>;
   children?: ReactNode;
   submit: string;
   className?: string;
   variant?: "primary" | "secondary" | "danger";
+  /** Título da comemoração (confete + som) quando der certo */
+  celebrateOk?: string;
 }) {
   const [state, formAction, pending] = useActionState(action, undefined);
   const router = useRouter();
   // Atualiza os dados da tela depois de salvar (sem prender o botão em "Aguarde...")
   useEffect(() => {
     if (state?.ok) router.refresh();
-    toastResult(state);
-  }, [state, router]);
+    if (state?.ok && celebrateOk) celebrate(celebrateOk, typeof state.ok === "string" ? state.ok : undefined);
+    else toastResult(state);
+  }, [state, router, celebrateOk]);
   return (
     <form action={formAction} className={className}>
       {children}

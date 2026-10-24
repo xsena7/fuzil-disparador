@@ -82,7 +82,7 @@ export default async function ConnectionsPage() {
         <p className="mt-1 mb-4 text-zinc-500">
           Cole o ID da conta do WhatsApp (WABA) e o token do usuário do sistema fuzil-api da sua BM.
         </p>
-        <ActionForm action={connectManualAction} submit="Conectar">
+        <ActionForm action={connectManualAction} submit="Conectar" celebrateOk="BM conectada! 🎉">
           <div className="grid gap-4 md:grid-cols-2">
             <Field label="ID da WABA" hint="Na BM: Contas → Contas do WhatsApp (WhatsApp accounts) → clique na conta: o número em ID">
               <Input name="wabaId" placeholder="1673861331112475" required autoComplete="off" inputMode="numeric" />

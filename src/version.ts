@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.38",
+    date: "24/10/2026",
+    items: ["Conexões: comemoração com confete e som quando uma BM é conectada 🎉"],
+  },
+  {
     version: "2.37",
     date: "24/10/2026",
     items: [
