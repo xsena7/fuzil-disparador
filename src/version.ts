@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.50",
+    date: "25/10/2026",
+    items: ["Grupos: 🚫 Banidas só recebe BM realmente banida pela Meta (erro 141014 ou número banido/restrito). Bloqueio de envio por pagamento deixou de ser tratado como banimento"],
+  },
+  {
     version: "2.49",
     date: "25/10/2026",
     items: ["Grupos: a conta banida pela Meta (erro \"The WABA is banned\") agora é detectada no Verificar todas e a BM vai para 🚫 Banidas"],

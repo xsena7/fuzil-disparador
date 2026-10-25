@@ -43,8 +43,8 @@ export async function syncWaba(wabaRecordId: string) {
       (e.errors ?? []).map((er) => ({ entity: e.entity_type ?? "", id: e.id ?? "", code: er.error_code ?? null, text: er.error_description ?? "", fix: er.possible_solution ?? "" })),
     );
     // Conta banida: a Meta marca na saúde da WABA (erro 141014 "The WABA is banned" ou entidade WABA bloqueada)
-    const bannedWaba = healthIssues.some((h) => h.code === 141014 || /WABA is banned/i.test(h.text)) ||
-      (info.health_status?.entities ?? []).some((e) => e.entity_type === "WABA" && e.can_send_message === "BLOCKED" && (e.errors ?? []).length > 0);
+    // Só o erro 141014 ("The WABA is banned") conta como banimento. Pagamento/outros bloqueios NÃO são banimento
+    const bannedWaba = healthIssues.some((h) => h.code === 141014);
     await prisma.whatsAppAccount.update({
       where: { id: waba.id },
       data: {
