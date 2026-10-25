@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.49",
+    date: "25/10/2026",
+    items: ["Grupos: a conta banida pela Meta (erro \"The WABA is banned\") agora é detectada no Verificar todas e a BM vai para 🚫 Banidas"],
+  },
+  {
     version: "2.48",
     date: "25/10/2026",
     items: ["Grupos: 🚫 Banidas é prioridade máxima. Se uma BM for banida (número ou conta) em qualquer outro processo, ela sai de qualquer grupo, inclusive dos colocados à mão, e vai para Banidas"],

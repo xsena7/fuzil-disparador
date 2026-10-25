@@ -42,6 +42,9 @@ export async function syncWaba(wabaRecordId: string) {
     const healthIssues = (info.health_status?.entities ?? []).flatMap((e) =>
       (e.errors ?? []).map((er) => ({ entity: e.entity_type ?? "", id: e.id ?? "", code: er.error_code ?? null, text: er.error_description ?? "", fix: er.possible_solution ?? "" })),
     );
+    // Conta banida: a Meta marca na saúde da WABA (erro 141014 "The WABA is banned" ou entidade WABA bloqueada)
+    const bannedWaba = healthIssues.some((h) => h.code === 141014 || /WABA is banned/i.test(h.text)) ||
+      (info.health_status?.entities ?? []).some((e) => e.entity_type === "WABA" && e.can_send_message === "BLOCKED" && (e.errors ?? []).length > 0);
     await prisma.whatsAppAccount.update({
       where: { id: waba.id },
       data: {
@@ -49,7 +52,7 @@ export async function syncWaba(wabaRecordId: string) {
         currency: info.currency,
         timezoneId: info.timezone_id,
         reviewStatus: info.account_review_status,
-        status: info.health_status?.can_send_message ?? waba.status,
+        status: bannedWaba ? "BLOCKED" : info.health_status?.can_send_message ?? waba.status,
         ...(hasPaymentMethod !== null ? { hasPaymentMethod } : {}),
         healthIssues,
       },

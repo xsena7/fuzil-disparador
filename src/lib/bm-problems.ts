@@ -237,7 +237,8 @@ export async function checkBusinessAfterSync(wabaRecordId: string) {
   // Banimento é prioridade máxima: vai para Banidas mesmo que a BM esteja em outro grupo de problema
   // (ou tenha sido colocada à mão: Banidas é a única exceção ao "só sai no Resolvido")
   const banned = waba.phones.find((p) => p.status === "BANNED" || p.status === "RESTRICTED");
-  const accountBanned = waba.status === "BLOCKED";
+  const healthBanned = (Array.isArray(waba.healthIssues) ? (waba.healthIssues as Array<{ code?: number | null; text?: string }>) : []).some((h) => h.code === 141014 || /WABA is banned|banid/i.test(h.text ?? ""));
+  const accountBanned = waba.status === "BLOCKED" || healthBanned;
   if (banned || accountBanned) {
     reason = banned
       ? `${banned.status === "BANNED" ? "Número banido" : "Número restrito"}: ${banned.displayPhoneNumber}`
