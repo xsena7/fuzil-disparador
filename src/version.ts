@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.45",
+    date: "25/10/2026",
+    items: ["Grupos: BM com template em análise vai para 📝 Template em análise mesmo que já tenha outro template aprovado. Ao aprovar, confere cartão e número sozinha"],
+  },
+  {
     version: "2.44",
     date: "25/10/2026",
     items: ["Grupos: template em análise agora é a prioridade (a BM vai primeiro para 📝 Template em análise). Quando o template é aprovado, o Fuzil confere cartão e número: se faltar algo, a BM vai para 💳 Problemas de pagamento ou 📱 Sem número; se estiver tudo certo, volta para as prontas para disparo"],
