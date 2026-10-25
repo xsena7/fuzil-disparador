@@ -6,7 +6,7 @@ import { Loader2, RefreshCw } from "lucide-react";
 import { Button } from "./ui";
 import { toast } from "./toast";
 import { startLoadingTick } from "./celebration";
-import { finishVerifyAction, verifyOneWabaAction, verifyWabaIdsAction } from "@/app/actions/connections";
+import { finishVerifyAction, verifyWabaIdsAction, verifyWabasAction } from "@/app/actions/connections";
 
 /** Verifica todas as contas uma por vez, com carregamento no meio da tela, a % e um som de carregamento. */
 export function VerifyAllButton({ children, className }: { children: ReactNode; className?: string }) {
@@ -20,11 +20,10 @@ export function VerifyAllButton({ children, className }: { children: ReactNode; 
     try {
       const ids = await verifyWabaIdsAction();
       setRun({ done: 0, total: ids.length });
-      // 4 por vez, para não estourar o limite de chamadas da Meta com muitas BMs
-      for (let i = 0; i < ids.length; i += 4) {
-        await Promise.allSettled(
-          ids.slice(i, i + 4).map((id) => verifyOneWabaAction(id).finally(() => setRun((r) => (r ? { ...r, done: r.done + 1 } : r)))),
-        );
+      // Lotes de 6 contas: cada lote roda em paralelo no servidor e a % anda de lote em lote
+      for (let i = 0; i < ids.length; i += 6) {
+        const n = await verifyWabasAction(ids.slice(i, i + 6));
+        setRun((r) => (r ? { ...r, done: r.done + n } : r));
       }
       const r = await finishVerifyAction();
       toast("success", r.ok);

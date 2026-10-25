@@ -88,17 +88,22 @@ export async function verifyWabaIdsAction() {
   return wabas.map((w) => w.id);
 }
 
-/** Confere uma conta: token e avisos da Meta (igual ao Testar conexão), depois sincroniza. */
-export async function verifyOneWabaAction(id: string) {
+/** Confere um lote de contas em paralelo (token e avisos da Meta, igual ao Testar conexão, depois sincroniza).
+ *  O navegador manda os lotes em sequência, para mostrar a % andando. */
+export async function verifyWabasAction(ids: string[]) {
   const auth = await requireAuth();
-  const w = await prisma.whatsAppAccount.findFirst({ where: { id, workspaceId: auth.workspace.id } });
-  if (!w) return;
-  try {
-    await checkWebhookChain(w, wabaToken(w));
-  } catch {
-    // sem token ou a Meta não respondeu: a sincronização mostra o erro
-  }
-  await syncWaba(id);
+  const wabas = await prisma.whatsAppAccount.findMany({ where: { id: { in: ids }, workspaceId: auth.workspace.id } });
+  await Promise.allSettled(
+    wabas.map(async (w) => {
+      try {
+        await checkWebhookChain(w, wabaToken(w));
+      } catch {
+        // sem token ou a Meta não respondeu: a sincronização mostra o erro
+      }
+      await syncWaba(w.id);
+    }),
+  );
+  return wabas.length;
 }
 
 /** Último passo do "Verificar todas": devolve às BMs saudáveis os grupos de antes. */
@@ -115,8 +120,8 @@ export async function finishVerifyAction() {
 export async function syncAllAction() {
   const auth = await requireAuth();
   const wabas = await prisma.whatsAppAccount.findMany({ where: { workspaceId: auth.workspace.id }, select: { id: true } });
-  // 4 por vez, para não estourar o limite de chamadas da Meta com muitas BMs
-  for (let i = 0; i < wabas.length; i += 4) await Promise.allSettled(wabas.slice(i, i + 4).map((w) => verifyOneWabaAction(w.id)));
+  // Em lotes de 6, para não estourar o limite de chamadas da Meta com muitas BMs
+  for (let i = 0; i < wabas.length; i += 6) await verifyWabasAction(wabas.slice(i, i + 6).map((w) => w.id));
   const back = await restoreHealthyBms(auth.workspace.id);
   revalidatePath("/conexoes");
   revalidatePath("/templates");
