@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.41",
+    date: "25/10/2026",
+    items: ["Conexões: ao conectar BM pelo botão Cloud API / Coexistência, aparece a comemoração com confete e som, e ela fica na tela até você clicar (pra fechar e conectar a próxima)"],
+  },
+  {
     version: "2.40",
     date: "25/10/2026",
     items: ["Conexões: volta o botão Conectar Cloud API / Coexistência (app verificado). BMs que já estão conectadas pelo app antigo não são trocadas: continuam com o token e a chave delas"],

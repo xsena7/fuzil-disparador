@@ -6,8 +6,8 @@ import { CheckCircle2 } from "lucide-react";
 const EVENT = "fuzil:celebrate";
 
 /** Dispara a comemoração (confete + som). Ex.: celebrate("BM conectada!", "Já pode disparar por ela"). */
-export function celebrate(title: string, text?: string) {
-  if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT, { detail: { title, text } }));
+export function celebrate(title: string, text?: string, opts: { sticky?: boolean } = {}) {
+  if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT, { detail: { title, text, sticky: opts.sticky } }));
 }
 
 /**
@@ -50,10 +50,10 @@ function playChime() {
 const COLORS = ["#ff8a1f", "#ef2d56", "#fbbf24", "#10b981", "#38bdf8", "#a78bfa"];
 
 export function CelebrationHost() {
-  const [show, setShow] = useState<{ title: string; text?: string; key: number } | null>(null);
+  const [show, setShow] = useState<{ title: string; text?: string; sticky?: boolean; key: number } | null>(null);
   useEffect(() => {
     const on = (e: Event) => {
-      const d = (e as CustomEvent).detail as { title: string; text?: string };
+      const d = (e as CustomEvent).detail as { title: string; text?: string; sticky?: boolean };
       setShow({ ...d, key: Date.now() });
       playChime();
     };
@@ -62,6 +62,8 @@ export function CelebrationHost() {
   }, []);
   useEffect(() => {
     if (!show) return;
+    // Comemoração "sticky" (conexão concluída) fica até o clique, como uma tela de carregamento concluído
+    if (show.sticky) return;
     const t = setTimeout(() => setShow(null), 3600);
     return () => clearTimeout(t);
   }, [show]);
@@ -77,6 +79,7 @@ export function CelebrationHost() {
   }));
   return (
     <div key={show.key} className="fixed inset-0 z-[80] flex cursor-pointer items-center justify-center" onClick={() => setShow(null)} style={{ animation: "dialog-fade .2s ease-out" }}>
+      {show.sticky && <div className="absolute bottom-6 left-0 right-0 text-center text-sm text-white/80">Clique em qualquer lugar para continuar</div>}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         {pieces.map((p, i) => (
           <span

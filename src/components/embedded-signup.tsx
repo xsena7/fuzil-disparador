@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Smartphone, Zap } from "lucide-react";
 import { Button, Card } from "./ui";
+import { celebrate } from "./celebration";
 
 declare global {
   interface Window {
@@ -79,6 +80,7 @@ export function EmbeddedSignup({ appId, configId, graphVersion }: { appId: strin
           if (!res.ok) setMsg({ error: json.error ?? "Falha ao conectar" });
           else {
             setMsg({ ok: "Conectado! Números e templates sincronizados." });
+            celebrate("BM conectada! 🎉", "Números e templates sincronizados", { sticky: true });
             router.refresh();
           }
         })();
