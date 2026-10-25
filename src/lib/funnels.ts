@@ -441,7 +441,8 @@ export async function runFunnels() {
     where: {
       funnelId: { not: null },
       status: "PAUSED",
-      NOT: { pausedReason: FUNNEL_PAUSED },
+      // Pausa do funil ou pausa à mão: fica pausada até alguém retomar
+      pausedReason: { notIn: [FUNNEL_PAUSED, "Pausada manualmente"] },
       updatedAt: { lt: new Date(Date.now() - 5 * 60_000) },
       funnel: { status: "ACTIVE" },
     },

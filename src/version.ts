@@ -2,6 +2,14 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.39",
+    date: "25/10/2026",
+    items: [
+      "Aquecimento: sem BM apta, a campanha do funil não fica mais pausando e voltando sem parar. Ela continua ligada como \"Aguardando BM apta\", manda sozinha quando alguma BM ficar pronta e avisa no máximo uma vez por dia",
+      "Correção: campanha do aquecimento pausada à mão continua pausada (antes voltava sozinha em 5 minutos)",
+    ],
+  },
+  {
     version: "2.38",
     date: "24/10/2026",
     items: ["Conexões: comemoração com confete e som de \"subiu de nível\" estilo videogame 8 bits quando uma BM é conectada 🎉"],
