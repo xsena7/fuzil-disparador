@@ -12,8 +12,8 @@ export const PROBLEMS_GROUP = "PROBLEMS";
 export const PROBLEM_KINDS = {
   BANNED: { system: "PROBLEMS_BANNED", name: "🚫 Banidas", color: "red", description: "Número ou conta banida, bloqueada ou restrita pela Meta." },
   TEMPLATE: { system: "PROBLEMS_TEMPLATE", name: "📝 Template em análise", color: "sky", description: "Nenhum template de utilidade aprovado (em análise ou faltando)." },
-  PAYMENT: { system: "PROBLEMS_PAYMENT", name: "💳 Problemas de pagamento", color: "amber", description: "Sem cartão ou com erro no pagamento da conta do WhatsApp." },
   NO_PHONE: { system: "PROBLEMS_NOPHONE", name: "📱 Sem número", color: "amber", description: "Nenhum número registrado e conectado para disparar (sem número, só número de teste ou desconectado)." },
+  PAYMENT: { system: "PROBLEMS_PAYMENT", name: "💳 Problemas de pagamento", color: "amber", description: "Sem cartão ou com erro no pagamento da conta do WhatsApp." },
   QUALITY: { system: "PROBLEMS_QUALITY", name: "📉 Número com qualidade baixa", color: "pink", description: "Qualidade vermelha ou número sinalizado pela Meta." },
   UNKNOWN: { system: PROBLEMS_GROUP, name: "⚠️ BMs com problema", color: "black", description: "Problemas que o Fuzil não conseguiu identificar (ou colocadas aqui por você)." },
 } as const;
@@ -176,14 +176,6 @@ export async function checkBusinessAfterSync(wabaRecordId: string) {
     reason = pendingTemplates ? `${pendingTemplates} template(s) em análise na Meta` : "Nenhum template de utilidade aprovado";
     fix = pendingTemplates ? "Espere a Meta aprovar (costuma levar de minutos a 24h). A BM volta sozinha para o grupo quando aprovar." : "Crie um template de utilidade (ou ative um Template padrão para essa BM).";
     kind = "TEMPLATE";
-  } else if (waba.hasPaymentMethod === false) {
-    // Prioridade 2: sem cartão
-    reason = `Sem forma de pagamento (cartão) na WABA ${waba.name}`;
-    fix = problemFix(null, "PAYMENT");
-    kind = "PAYMENT";
-  } else if (waba.reviewStatus === "REJECTED") {
-    reason = `WABA ${waba.name} rejeitada na análise da Meta`;
-    fix = problemFix(null, "REVIEW");
   } else if (!waba.phones.some((p) => p.status === "CONNECTED" || (p.status && BAD_PHONE[p.status] && BAD_PHONE[p.status].kind !== "REGISTER"))) {
     // Sem número de verdade conectado. Só conta se nenhuma outra conta da BM tem número pronto (BM com uma WABA vazia a mais não é problema)
     const otherReady = await prisma.phoneNumber.count({
@@ -194,6 +186,14 @@ export async function checkBusinessAfterSync(wabaRecordId: string) {
       fix = waba.phones.length ? problemFix(null, "REGISTER") : "Adicione um número real nessa conta do WhatsApp (no WhatsApp Manager) e registre ele em Conexões.";
       kind = "NO_PHONE";
     }
+  } else if (waba.hasPaymentMethod === false) {
+    // Prioridade 2: sem cartão (depois do número)
+    reason = `Sem forma de pagamento (cartão) na WABA ${waba.name}`;
+    fix = problemFix(null, "PAYMENT");
+    kind = "PAYMENT";
+  } else if (waba.reviewStatus === "REJECTED") {
+    reason = `WABA ${waba.name} rejeitada na análise da Meta`;
+    fix = problemFix(null, "REVIEW");
   } else {
     const bad = waba.phones.find((p) => p.status && BAD_PHONE[p.status]);
     const red = waba.phones.find((p) => p.qualityRating === "RED");

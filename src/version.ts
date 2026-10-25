@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.55",
+    date: "25/10/2026",
+    items: ["Grupos: 📱 Sem número agora vem antes de 💳 Problemas de pagamento, na checagem e na ordem da tela (banidas > template > sem número > pagamento > qualidade > desconhecido)"],
+  },
+  {
     version: "2.54",
     date: "25/10/2026",
     items: ["Grupos automáticos na ordem certa: 🚫 Banidas, 📝 Template em análise, 💳 Problemas de pagamento, 📱 Sem número, 📉 Qualidade baixa e ⚠️ BMs com problema"],
