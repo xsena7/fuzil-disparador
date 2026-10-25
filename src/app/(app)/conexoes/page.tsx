@@ -15,6 +15,7 @@ import { PasswordInput } from "@/components/password-input";
 import { StatusDot } from "@/components/drawer";
 import { TestWaba } from "./test-waba";
 import { EmbeddedSignup } from "@/components/embedded-signup";
+import { VerifyAllButton } from "@/components/verify-all-button";
 import { groupDot, groupTag } from "@/lib/group-colors";
 import { ConnectGuide } from "./connect-guide";
 import { FUZIL_APP_ID, defaultAppSecret, isPlatformOwner, supportWhatsAppLink } from "@/lib/onboarding";
@@ -68,7 +69,7 @@ export default async function ConnectionsPage() {
       <PageHeader
         title="Conexões"
         description="BMs, WABAs e números conectados. Qualidade e limite são atualizados automaticamente a cada 10 minutos e pelos webhooks da Meta."
-        actions={<ConfirmButton action={syncAllAction}><RefreshCw className="size-4" /> Sincronizar tudo</ConfirmButton>}
+        actions={<VerifyAllButton>Sincronizar tudo</VerifyAllButton>}
       />
 
       <h2 className="mb-4 text-base font-semibold">Nova conexão</h2>
@@ -134,9 +135,7 @@ export default async function ConnectionsPage() {
       <div className="mt-10 mb-4 flex flex-wrap items-center gap-3">
         <h2 className="text-base font-semibold">Suas conexões</h2>
         {businesses.length > 0 && (
-          <ConfirmButton action={syncAllAction} className="px-3 py-1.5 text-xs">
-            <RefreshCw className="size-3.5" /> Verificar todas
-          </ConfirmButton>
+          <VerifyAllButton className="px-3 py-1.5 text-xs">Verificar todas</VerifyAllButton>
         )}
       </div>
       {businesses.length === 0 && <Empty>Nenhuma BM conectada ainda. Use uma das opções acima.</Empty>}

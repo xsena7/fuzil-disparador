@@ -49,6 +49,35 @@ function playChime() {
   }
 }
 
+/** Som de carregamento: bipes curtos e baixinhos enquanto a tarefa roda. Devolve a função que para. */
+export function startLoadingTick() {
+  try {
+    const Ctx = window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    const ctx = new Ctx();
+    void ctx.resume?.().catch(() => undefined);
+    const beep = () => {
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      osc.type = "square";
+      osc.frequency.value = 880;
+      g.gain.setValueAtTime(0.05, ctx.currentTime);
+      g.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.04);
+      osc.connect(g).connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.05);
+    };
+    beep();
+    const timer = window.setInterval(beep, 450);
+    return () => {
+      window.clearInterval(timer);
+      void ctx.close().catch(() => undefined);
+    };
+  } catch {
+    // sem som: fica só o carregamento na tela
+    return () => undefined;
+  }
+}
+
 /** "Game over" estilo 8 bits (notas descendo e um tombo final): usado quando a conexão falha. */
 export function playFailChime() {
   try {

@@ -81,27 +81,56 @@ export async function syncWabaAction(id: string) {
   revalidatePath("/conexoes");
 }
 
+/** Ids das contas do WhatsApp do workspace, para o painel verificar uma por vez (com progresso). */
+export async function verifyWabaIdsAction() {
+  const auth = await requireAuth();
+  const wabas = await prisma.whatsAppAccount.findMany({ where: { workspaceId: auth.workspace.id }, select: { id: true } });
+  return wabas.map((w) => w.id);
+}
+
+/** Confere uma conta: token e avisos da Meta (igual ao Testar conexão), depois sincroniza. */
+export async function verifyOneWabaAction(id: string) {
+  const auth = await requireAuth();
+  const w = await prisma.whatsAppAccount.findFirst({ where: { id, workspaceId: auth.workspace.id } });
+  if (!w) return;
+  try {
+    await checkWebhookChain(w, wabaToken(w));
+  } catch {
+    // sem token ou a Meta não respondeu: a sincronização mostra o erro
+  }
+  await syncWaba(id);
+}
+
+/** Último passo do "Verificar todas": devolve às BMs saudáveis os grupos de antes. */
+export async function finishVerifyAction() {
+  const auth = await requireAuth();
+  const back = await restoreHealthyBms(auth.workspace.id);
+  revalidatePath("/conexoes");
+  revalidatePath("/templates");
+  revalidatePath("/grupos");
+  revalidatePath("/");
+  return { ok: `Verifiquei as contas do WhatsApp na Meta${back ? ` e ${back} BM(s) voltaram para os grupos de disparo` : ""}.` };
+}
+
 export async function syncAllAction() {
   const auth = await requireAuth();
   const wabas = await prisma.whatsAppAccount.findMany({ where: { workspaceId: auth.workspace.id }, select: { id: true } });
   // 4 por vez, para não estourar o limite de chamadas da Meta com muitas BMs
-  // Em cada conta: confere o token e os avisos da Meta (igual ao Testar conexão) e sincroniza
-  const check = async (id: string) => {
-    const w = await prisma.whatsAppAccount.findUnique({ where: { id } });
-    if (!w) return;
-    try {
-      await checkWebhookChain(w, wabaToken(w));
-    } catch {
-      // sem token ou a Meta não respondeu: a sincronização mostra o erro
-    }
-    await syncWaba(id);
-  };
-  for (let i = 0; i < wabas.length; i += 4) await Promise.allSettled(wabas.slice(i, i + 4).map((w) => check(w.id)));
-  // BM que estava num grupo de problema e agora está tudo certo volta na hora para os grupos de antes
-  // (as colocadas à mão continuam esperando o "Resolvido")
+  for (let i = 0; i < wabas.length; i += 4) await Promise.allSettled(wabas.slice(i, i + 4).map((w) => verifyOneWabaAction(w.id)));
+  const back = await restoreHealthyBms(auth.workspace.id);
+  revalidatePath("/conexoes");
+  revalidatePath("/templates");
+  revalidatePath("/grupos");
+  revalidatePath("/");
+  return { ok: `Verifiquei ${wabas.length} conta(s) do WhatsApp na Meta${back ? ` e ${back} BM(s) voltaram para os grupos de disparo` : ""}.` };
+}
+
+/** BM que estava num grupo de problema e agora está tudo certo volta na hora para os grupos de antes.
+ *  As colocadas à mão continuam esperando o "Resolvido". */
+async function restoreHealthyBms(workspaceId: string) {
   const { restoreBusiness } = await import("@/lib/bm-problems");
   const flagged = await prisma.businessManager.findMany({
-    where: { workspaceId: auth.workspace.id, problemAt: { not: null }, NOT: { problemKind: "MANUAL" } },
+    where: { workspaceId, problemAt: { not: null }, NOT: { problemKind: "MANUAL" } },
     include: { wabas: { include: { phones: { where: { invalidReason: null } }, templates: { select: { category: true, status: true } } } } },
   });
   const { bmAptidao } = await import("@/lib/readiness");
@@ -109,15 +138,11 @@ export async function syncAllAction() {
   for (const bm of flagged) {
     const bad = bm.wabas.some((w) => w.lastSyncError || w.status === "BLOCKED" || w.hasPaymentMethod === false || w.phones.some((p) => p.qualityRating === "RED" || ["BANNED", "RESTRICTED", "FLAGGED"].includes(p.status ?? "")));
     if (!bad && bmAptidao(bm.wabas).apta) {
-      await restoreBusiness(bm.id, auth.workspace.id, false);
+      await restoreBusiness(bm.id, workspaceId, false);
       back++;
     }
   }
-  revalidatePath("/conexoes");
-  revalidatePath("/templates");
-  revalidatePath("/grupos");
-  revalidatePath("/");
-  return { ok: `Verifiquei ${wabas.length} conta(s) do WhatsApp na Meta${back ? ` e ${back} BM(s) voltaram para os grupos de disparo` : ""}.` };
+  return back;
 }
 
 export async function deleteWabaAction(id: string) {

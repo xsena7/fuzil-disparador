@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.62",
+    date: "25/10/2026",
+    items: ["Conexões: \"Verificar todas\" (e \"Sincronizar tudo\") mostra um carregamento no meio da tela com a % de contas verificadas e um som de carregamento, até terminar"],
+  },
+  {
     version: "2.61",
     date: "25/10/2026",
     items: ["Conexões: a gaveta \"Receber respostas no Chat\" começa sempre fechada (o estado aparece na linha de resumo)"],
