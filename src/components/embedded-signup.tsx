@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, Smartphone, Zap } from "lucide-react";
 import { Button, Card } from "./ui";
-import { celebrate } from "./celebration";
+import { celebrate, playFailChime } from "./celebration";
 
 declare global {
   interface Window {
@@ -44,7 +44,11 @@ export function EmbeddedSignup({ appId, configId, graphVersion }: { appId: strin
         if (data?.type === "WA_EMBEDDED_SIGNUP") {
           if (String(data.event).startsWith("FINISH")) session.current = data.data ?? {};
           if (data.event === "CANCEL") setMsg({ error: `Cadastro cancelado${data.data?.current_step ? ` na etapa ${data.data.current_step}` : ""}` });
-          if (data.event === "ERROR") setMsg({ error: data.data?.error_message ?? "Erro no cadastro da Meta" });
+          if (data.event === "ERROR") {
+            setMsg({ error: data.data?.error_message ?? "Erro no cadastro da Meta" });
+            setBusy(null);
+            playFailChime();
+          }
         }
       } catch {
         /* mensagens que não são do signup */
@@ -65,6 +69,7 @@ export function EmbeddedSignup({ appId, configId, graphVersion }: { appId: strin
         if (!code) {
           setBusy(null);
           setMsg({ error: "Login com a Meta não foi concluído" });
+          playFailChime();
           return;
         }
         // O evento com waba_id pode chegar logo depois do callback: espera até 6s por ele
@@ -77,8 +82,10 @@ export function EmbeddedSignup({ appId, configId, graphVersion }: { appId: strin
           });
           const json = await res.json();
           setBusy(null);
-          if (!res.ok) setMsg({ error: json.error ?? "Falha ao conectar" });
-          else {
+          if (!res.ok) {
+            setMsg({ error: json.error ?? "Falha ao conectar" });
+            playFailChime();
+          } else {
             setMsg({ ok: "Conectado! Números e templates sincronizados." });
             celebrate("BM conectada! 🎉", "Números e templates sincronizados", { sticky: true });
             router.refresh();

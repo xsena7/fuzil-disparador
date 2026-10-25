@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.57",
+    date: "25/10/2026",
+    items: ["Conexões: se a conexão pelo botão falhar, toca o som de \"game over\" de videogame (e a tela libera)"],
+  },
+  {
     version: "2.56",
     date: "25/10/2026",
     items: ["Conexões: enquanto a BM está conectando pelo botão, a tela fica travada com um carregamento (\"Conectando sua BM...\"), e só libera quando termina"],

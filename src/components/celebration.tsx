@@ -47,6 +47,45 @@ function playChime() {
   }
 }
 
+/** "Game over" estilo 8 bits (notas descendo e um tombo final): usado quando a conexão falha. */
+export function playFailChime() {
+  try {
+    const Ctx = window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    const ctx = new Ctx();
+    const master = ctx.createGain();
+    master.gain.value = 0.12;
+    master.connect(ctx.destination);
+    const steps = [659.25, 587.33, 523.25, 466.16, 392];
+    steps.forEach((f, i) => {
+      const t = ctx.currentTime + i * 0.16;
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      osc.type = "square";
+      osc.frequency.setValueAtTime(f, t);
+      g.gain.setValueAtTime(1, t);
+      g.gain.linearRampToValueAtTime(0, t + 0.15);
+      osc.connect(g).connect(master);
+      osc.start(t);
+      osc.stop(t + 0.16);
+    });
+    // Tombo final: a nota cai bem grave
+    const t = ctx.currentTime + steps.length * 0.16;
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.type = "square";
+    osc.frequency.setValueAtTime(330, t);
+    osc.frequency.exponentialRampToValueAtTime(55, t + 0.9);
+    g.gain.setValueAtTime(1, t);
+    g.gain.linearRampToValueAtTime(0, t + 0.9);
+    osc.connect(g).connect(master);
+    osc.start(t);
+    osc.stop(t + 0.95);
+    setTimeout(() => ctx.close().catch(() => undefined), 2500);
+  } catch {
+    // sem som
+  }
+}
+
 const COLORS = ["#ff8a1f", "#ef2d56", "#fbbf24", "#10b981", "#38bdf8", "#a78bfa"];
 
 export function CelebrationHost() {
