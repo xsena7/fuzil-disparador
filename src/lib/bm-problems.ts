@@ -35,7 +35,8 @@ export async function problemGroup(workspaceId: string, kind: ProblemKind = "UNK
 export function kindForCode(code: number | null | undefined): ProblemKind {
   if (code === 131042) return "PAYMENT";
   if (code === 131045) return "NO_PHONE";
-  if (code === 131031 || code === 368) return "BANNED";
+  // 131031 sozinho não prova bloqueio da conta (a Meta usa o código em outros casos): banida só pelo 141014 ou status do número
+  if (code === 368) return "BANNED";
   if (code === 131048 || code === 131049) return "QUALITY";
   if (code !== null && code !== undefined && code >= 132000 && code < 133000) return "TEMPLATE";
   return "UNKNOWN";
@@ -44,7 +45,8 @@ export function kindForCode(code: number | null | undefined): ProblemKind {
 /** Como resolver, a partir do código de erro da Meta ou do tipo de problema. */
 export function problemFix(code: number | null | undefined, kind?: string): string {
   if (code === 131042 || kind === "PAYMENT") return "Abra o WhatsApp Manager dessa conta → Configurações de pagamento e adicione ou atualize o cartão.";
-  if (code === 131031 || kind === "BANNED") return "A Meta bloqueou a conta/número. No WhatsApp Manager → Visão geral da conta, veja o motivo e peça revisão (recurso).";
+  if (code === 131031) return "A Meta recusou o envio sem dar motivo de bloqueio. Confira o número e o pagamento no WhatsApp Manager e teste de novo.";
+  if (kind === "BANNED") return "A Meta bloqueou a conta/número. No WhatsApp Manager → Visão geral da conta, veja o motivo e peça revisão (recurso).";
   if (code === 368 || kind === "RESTRICTED") return "Restrição temporária por política. Espere o prazo informado no WhatsApp Manager e revise os templates antes de voltar.";
   if (code === 131048 || kind === "QUALITY") return "Qualidade baixa: deixe essa BM descansar alguns dias e revise o texto do template (muita gente bloqueando/denunciando).";
   if (kind === "APP_BLOCKED")

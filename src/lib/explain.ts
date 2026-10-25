@@ -26,7 +26,7 @@ const META_CODES: Record<number, Explanation> = {
   4: { urgency: "INFO", meaning: "Muitas chamadas para a Meta ao mesmo tempo.", action: "Nada. O Fuzil espera e tenta de novo sozinho." },
   130429: { urgency: "INFO", meaning: "O número atingiu a velocidade máxima de envio por segundo.", action: "Nada. O Fuzil reduz o ritmo e tenta de novo. Se acontecer sempre, diminua a velocidade da campanha." },
   131026: { urgency: "INFO", meaning: "A pessoa não recebeu: não tem WhatsApp, bloqueou o número ou está com o app desatualizado.", action: "Nada. É normal em toda lista; se passar de 20%, a base está ruim/antiga." },
-  131031: { urgency: "URGENTE", meaning: "A conta do WhatsApp dessa BM foi bloqueada ou restringida pela Meta.", action: "Tire essa BM dos grupos de disparo e veja o motivo no Gerenciador do WhatsApp. Dá para pedir revisão por lá." },
+  131031: { urgency: "URGENTE", meaning: "A Meta recusou o envio dessa BM, sem dizer que a conta foi bloqueada.", action: "Confira o número registrado e a forma de pagamento no Gerenciador do WhatsApp e teste de novo. Se a Meta mostrar um bloqueio no Gerenciador, aí sim tire a BM dos grupos de disparo. Dá para pedir revisão por lá." },
   131042: { urgency: "URGENTE", meaning: "Problema de pagamento: a BM está sem forma de pagamento válida ou com fatura em aberto.", action: "Entre no Gerenciador do WhatsApp dessa BM → Pagamentos e regularize o cartão/fatura." },
   131045: { urgency: "URGENTE", meaning: "O número não está registrado direito na API.", action: "Reconecte o número em Conexões (pode pedir o PIN de 6 dígitos)." },
   131047: { urgency: "INFO", meaning: "Tentou mandar mensagem livre fora da janela de 24h.", action: "Nada. Só templates podem ser enviados fora da janela." },

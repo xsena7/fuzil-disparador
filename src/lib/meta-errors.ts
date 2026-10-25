@@ -19,7 +19,7 @@ const ERRORS: Record<number, string> = {
   131016: "Serviço indisponível",
   131021: "Remetente e destinatário iguais",
   131026: "Não entregue (sem WhatsApp, bloqueou o número ou app desatualizado)",
-  131031: "Conta bloqueada/restrita",
+  131031: "A Meta recusou o envio (conta/número sem permissão para disparar)",
   131042: "Problema de pagamento na WABA",
   131045: "Número não registrado corretamente",
   131047: "Fora da janela de 24h",
