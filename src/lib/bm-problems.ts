@@ -60,13 +60,14 @@ export function problemFix(code: number | null | undefined, kind?: string): stri
  * Move a BM para o grupo do tipo de problema (se já tiver disparado alguma vez, ou se o problema impede o primeiro disparo).
  * Se ela já está num grupo de problema e o tipo mudou, troca de grupo sozinha.
  */
-export async function flagBusinessProblem(businessId: string, reason: string, fix: string, kind: ProblemKind = "UNKNOWN", fromSend = true) {
+export async function flagBusinessProblem(businessId: string, reason: string, fix: string, kind: ProblemKind = "UNKNOWN", fromSend = true, force = false) {
   const bm = await prisma.businessManager.findUnique({ where: { id: businessId }, include: { groups: { include: { group: true } } } });
   if (!bm) return;
   // BM que nunca disparou só muda de grupo se o problema impede o primeiro disparo (sem número, sem cartão, sem template)
   if (!bm.firstSentAt && !SETUP_KINDS.includes(kind)) return;
   if (bm.problemIgnored === reason) return; // o cliente marcou esse problema como resolvido
-  if (bm.problemKind === "MANUAL") return; // colocada à mão: só sai quando o cliente clicar em Resolvido
+  // colocada à mão: só sai quando o cliente clicar em Resolvido (banimento é a exceção: vai para Banidas mesmo assim)
+  if (bm.problemKind === "MANUAL" && !(force && kind === "BANNED")) return;
   const group = await problemGroup(bm.workspaceId, kind);
   if (bm.problemAt) {
     // Já está num grupo de problema: só troca se o tipo mudou
@@ -233,6 +234,17 @@ export async function checkBusinessAfterSync(wabaRecordId: string) {
       : 1;
     if (bm?.problemAt && bm.problemKind !== "MANUAL" && settled && others === 0) await restoreBusiness(waba.businessId, bm.workspaceId, false);
   }
-  if (reason) await flagBusinessProblem(waba.businessId, reason, fix, accessLost ? "UNKNOWN" : kind, false);
+  // Banimento é prioridade máxima: vai para Banidas mesmo que a BM esteja em outro grupo de problema
+  // (ou tenha sido colocada à mão: Banidas é a única exceção ao "só sai no Resolvido")
+  const banned = waba.phones.find((p) => p.status === "BANNED" || p.status === "RESTRICTED");
+  const accountBanned = waba.status === "BLOCKED";
+  if (banned || accountBanned) {
+    reason = banned
+      ? `${banned.status === "BANNED" ? "Número banido" : "Número restrito"}: ${banned.displayPhoneNumber}`
+      : `A Meta bloqueou o envio na WABA ${waba.name}`;
+    fix = problemFix(null, banned?.status === "RESTRICTED" ? "RESTRICTED" : "BANNED");
+    kind = "BANNED";
+  }
+  if (reason) await flagBusinessProblem(waba.businessId, reason, fix, accessLost && kind !== "BANNED" ? "UNKNOWN" : kind, false, true);
   else if (!waba.lastSyncError) await clearIgnoredProblem(waba.businessId);
 }

@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.48",
+    date: "25/10/2026",
+    items: ["Grupos: 🚫 Banidas é prioridade máxima. Se uma BM for banida (número ou conta) em qualquer outro processo, ela sai de qualquer grupo, inclusive dos colocados à mão, e vai para Banidas"],
+  },
+  {
     version: "2.47",
     date: "25/10/2026",
     items: ["Grupos: número banido ou restrito volta a ir para 🚫 Banidas (antes a prioridade de template tirava a BM desse grupo)"],
