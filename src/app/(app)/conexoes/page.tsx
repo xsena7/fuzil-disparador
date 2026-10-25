@@ -14,6 +14,7 @@ import { PHONE_REMOVED } from "@/lib/sync";
 import { PasswordInput } from "@/components/password-input";
 import { StatusDot } from "@/components/drawer";
 import { TestWaba } from "./test-waba";
+import { EmbeddedSignup } from "@/components/embedded-signup";
 import { groupDot, groupTag } from "@/lib/group-colors";
 import { ConnectGuide } from "./connect-guide";
 import { FUZIL_APP_ID, defaultAppSecret, isPlatformOwner, supportWhatsAppLink } from "@/lib/onboarding";
@@ -77,6 +78,8 @@ export default async function ConnectionsPage() {
         admin={auth.user.isSuperAdmin}
         whatsappUrl={supportWhatsAppLink(`Oi! Pedi acesso ao app do Fuzil (ID ${FUZIL_APP_ID}) na minha BM. Pode aprovar? Conta: ${auth.workspace.name}`)}
       />
+      <EmbeddedSignup appId={env.metaAppId()} configId={env.metaConfigId()} graphVersion={env.metaGraphVersion()} />
+
       <Card className="mt-4 p-5" data-tour="connect-form">
         <div className="font-semibold">Conectar BM</div>
         <p className="mt-1 mb-4 text-zinc-500">

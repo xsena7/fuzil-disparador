@@ -1,3 +1,4 @@
+import { resetBmSecrets } from "@/lib/webhook";
 import { NextResponse } from "next/server";
 import { getActiveAuth } from "@/lib/auth";
 import { encrypt } from "@/lib/crypto";
@@ -21,7 +22,19 @@ export async function POST(req: Request) {
     const wabaIds = body.wabaId ? [body.wabaId] : await meta.wabaIdsFromToken(token);
     if (!wabaIds.length) return NextResponse.json({ error: "A Meta não informou qual conta do WhatsApp foi escolhida. Tente conectar de novo." }, { status: 400 });
     let waba: Awaited<ReturnType<typeof connectWaba>> | null = null;
-    for (const wabaId of wabaIds) waba = await connectWaba({ workspaceId: auth.workspace.id, wabaId, accessTokenEnc: encrypt(token), connectionType: type });
+    // BM que já está conectada (app antigo, com o token e a chave dela) NÃO é trocada pelo app novo
+    const already = await prisma.whatsAppAccount.findMany({ where: { workspaceId: auth.workspace.id, wabaId: { in: wabaIds } }, select: { wabaId: true } });
+    const skipped = already.map((w) => w.wabaId);
+    for (const wabaId of wabaIds.filter((id) => !skipped.includes(id))) waba = await connectWaba({ workspaceId: auth.workspace.id, wabaId, accessTokenEnc: encrypt(token), connectionType: type });
+    // Contas novas pelo botão: recebem a chave secreta do app verificado (a chave padrão antiga é de outro app)
+    const newIds = wabaIds.filter((id) => !skipped.includes(id));
+    const newSecret = env.metaAppSecret();
+    if (newIds.length && newSecret) {
+      await prisma.whatsAppAccount.updateMany({ where: { workspaceId: auth.workspace.id, wabaId: { in: newIds } }, data: { appSecretEnc: encrypt(newSecret) } });
+      resetBmSecrets();
+    }
+    if (!waba && skipped.length)
+      return NextResponse.json({ error: "Essa conta do WhatsApp já está conectada no Fuzil (pelo app antigo). Ela continua funcionando como está." }, { status: 409 });
 
     // Cloud API: o número precisa ser registrado. Na coexistência, o número já está ativo no app.
     if (type === "CLOUD_API" && body.phoneNumberId) {
