@@ -95,7 +95,11 @@ async function wabasInScope(workspaceId: string, groupId: string | null) {
 }
 
 /** Garante que todo template padrão ativo exista em todas as WABAs do seu escopo. */
+const SUBMIT_GAP_MS = 20_000;
+const MAX_SUBMISSIONS_PER_RUN = 6;
+
 export async function deployBlueprints(workspaceId?: string) {
+  let submitted = 0;
   // Funil do gerador de links: garante que o código e o aviso de acesso existem antes de subir
   await ensureLinksBlueprints().catch((e) => console.error("[links] templates", e));
   const blueprints = await prisma.templateBlueprint.findMany({
@@ -152,6 +156,10 @@ export async function deployBlueprints(workspaceId?: string) {
         continue;
       }
 
+      // Freio: a Meta desconfia de rajada de templates. Uma submissão por vez, com pausa, e teto por rodada
+      if (submitted >= MAX_SUBMISSIONS_PER_RUN) return;
+      if (submitted > 0) await new Promise((r) => setTimeout(r, SUBMIT_GAP_MS));
+      submitted++;
       const result = await createUtilityTemplate(waba, {
         name,
         language: bp.language,

@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.46",
+    date: "25/10/2026",
+    items: ["Templates padrão: ao conectar uma BM, o Fuzil envia os templates para a Meta devagar (um por vez, com pausa de 20 segundos e no máximo 6 por rodada), em vez de todos de uma vez. O restante sai nas próximas verificações"],
+  },
+  {
     version: "2.45",
     date: "25/10/2026",
     items: ["Grupos: BM com template em análise vai para 📝 Template em análise mesmo que já tenha outro template aprovado. Ao aprovar, confere cartão e número sozinha"],
