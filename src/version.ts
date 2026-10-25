@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.61",
+    date: "25/10/2026",
+    items: ["Conexões: a gaveta \"Receber respostas no Chat\" começa sempre fechada (o estado aparece na linha de resumo)"],
+  },
+  {
     version: "2.60",
     date: "25/10/2026",
     items: ["Código 131031 da Meta não marca mais a BM como \"conta bloqueada/restrita\" nem a manda para Banidas: é só \"a Meta recusou o envio\", e o motivo real aparece no Gerenciador do WhatsApp"],

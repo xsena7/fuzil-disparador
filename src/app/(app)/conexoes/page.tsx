@@ -262,7 +262,7 @@ export default async function ConnectionsPage() {
                     const ok = Boolean(waba.appSecretEnc && last && !rejected);
                     const when = (d: Date) => d.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
                     return (
-                      <details className={`group overflow-hidden rounded-xl border ${ok ? "border-emerald-200 bg-emerald-50" : rejected ? "border-red-200 bg-red-50" : "border-amber-200 bg-amber-50"}`} open={!ok}>
+                      <details className={`group overflow-hidden rounded-xl border ${ok ? "border-emerald-200 bg-emerald-50" : rejected ? "border-red-200 bg-red-50" : "border-amber-200 bg-amber-50"}`}>
                         <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-3 text-sm [&::-webkit-details-marker]:hidden">
                           <span className={`flex size-8 items-center justify-center rounded-lg text-white ${ok ? "bg-emerald-600" : rejected ? "bg-red-600" : "bg-amber-500"}`}><MessagesSquare className="size-4" /></span>
                           <span className="font-semibold text-zinc-900">Receber respostas no Chat</span>
