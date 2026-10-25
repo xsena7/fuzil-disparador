@@ -32,7 +32,7 @@ export const TUTORIALS: Tutorial[] = [
       {
         kind: "steps",
         items: [
-          "Conexões: conecte suas BMs (Business Managers) do WhatsApp. É só pedir acesso ao app do Fuzil, gerar o token do usuário do sistema e colar com o ID da WABA (veja o tutorial \"Conectar pelo token\").",
+          "Conexões: conecte suas BMs (Business Managers) do WhatsApp. É só clicar em Conectar Cloud API ou em Coexistência e seguir a tela da Meta (veja o tutorial \"Conectar pelo botão\").",
           "Grupos de BM: junte as BMs em um grupo. A campanha dispara pelo grupo, usando todos os números dele.",
           "Templates: crie (ou puxe) um template de Utilidade e espere a Meta aprovar.",
           "Saldo: confira se a conta tem créditos. Cada mensagem enviada consome créditos.",
@@ -59,12 +59,12 @@ export const TUTORIALS: Tutorial[] = [
       {
         kind: "steps",
         items: [
-          "Na sua BM, peça acesso ao app do Fuzil, crie o usuário do sistema fuzil-api, dê acesso a ele e gere o token (passo a passo no tutorial \"Conectar pelo token\" e em Conexões → Como conectar sua BM).",
-          "Em Conexões → Conectar BM, cole o ID da WABA e o token e clique em Conectar.",
-          "Em alguns segundos a BM aparece na lista, com os números e templates dela.",
+          "Em Conexões, no bloco Nova conexão, clique em Conectar Cloud API ou em Conectar em Coexistência.",
+          "Entre com o Facebook que é administrador da BM, escolha a BM, a conta do WhatsApp e o número, e clique em Concluir.",
+          "Espere aparecer \"BM conectada! 🎉\" e a BM aparece na lista, com os números e templates dela.",
         ],
       },
-      { kind: "tip", text: "Passo a passo completo (pedir acesso ao app do Fuzil, criar o fuzil-api, gerar o token e pegar o ID da WABA): veja o tutorial \"Conectar pelo token (app do Fuzil)\"." },
+      { kind: "tip", text: "Passo a passo do botão, com o que esperar na tela: veja o tutorial \"Conectar pelo botão (Cloud API / Coexistência)\"." },
       { kind: "text", text: "A tela de Conexões tem \"Nova conexão\" em cima e as BMs embaixo, em gavetas: a última conectada fica sempre no topo. A bolinha da gaveta mostra o estado de cada BM sem precisar abrir: verde (tudo certo), amarela (atenção) ou vermelha (algo impede o disparo)." },
       {
         kind: "steps",
@@ -319,7 +319,7 @@ export const TUTORIALS: Tutorial[] = [
       { kind: "text", text: "Resposta automática: em cada campanha (etapa Conteúdo ou Métricas) você pode deixar uma mensagem que é enviada sozinha, na hora, quando o cliente responde ao disparo. Ela vai uma única vez por contato e pode ter imagem, vídeo, áudio ou PDF." },
       { kind: "image", src: "/tutoriais/campanha-resposta-automatica.png", caption: "Resposta automática na campanha: dá para ligar, desligar e mudar o texto a qualquer momento, até com a campanha rodando." },
       { kind: "tip", text: "Use {{primeiro_nome}} na resposta automática para chamar o cliente pelo nome. Quem responde SAIR não recebe a resposta automática e é descadastrado." },
-      { kind: "warn", text: "Respostas não aparecem no Chat? Se a BM foi conectada com um app da própria BM (e não pelo app do Fuzil), cadastre a chave secreta desse app e publique o app. Pelo app do Fuzil a chave já entra sozinha (veja \"Conectar pelo token\")." },
+      { kind: "warn", text: "Respostas não aparecem no Chat? Se a BM foi conectada com um app da própria BM (e não pelo app do Fuzil), cadastre a chave secreta desse app e publique o app. Pelo botão do Fuzil a chave já entra sozinha." },
       { kind: "tip", text: "Nova conversa: o botão laranja ao lado da busca inicia uma conversa com qualquer número, começando por um template aprovado." },
     ],
   },

@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.64",
+    date: "25/10/2026",
+    items: ["Conexões: só a conexão pelo botão (Cloud API ou Coexistência). Saiu o formulário de ID da WABA e token, e o tutorial agora ensina o passo a passo do botão"],
+  },
+  {
     version: "2.63",
     date: "25/10/2026",
     items: ["Conexões: \"Verificar todas\" voltou a rodar em paralelo no servidor (lotes de 6 contas), bem mais rápido"],

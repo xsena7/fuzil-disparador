@@ -20,7 +20,7 @@ import { groupDot, groupTag } from "@/lib/group-colors";
 import { ConnectGuide } from "./connect-guide";
 import { FUZIL_APP_ID, defaultAppSecret, isPlatformOwner, supportWhatsAppLink } from "@/lib/onboarding";
 import {
-  connectManualAction,
+
   deleteWabaAction,
   deleteBusinessAction,
   registerPhoneAction,
@@ -73,36 +73,8 @@ export default async function ConnectionsPage() {
       />
 
       <h2 className="mb-4 text-base font-semibold">Nova conexão</h2>
-      <ConnectGuide
-        appId={FUZIL_APP_ID}
-        open={businesses.length === 0}
-        admin={auth.user.isSuperAdmin}
-        whatsappUrl={supportWhatsAppLink(`Oi! Pedi acesso ao app do Fuzil (ID ${FUZIL_APP_ID}) na minha BM. Pode aprovar? Conta: ${auth.workspace.name}`)}
-      />
+      <ConnectGuide open={businesses.length === 0} />
       <EmbeddedSignup appId={env.metaAppId()} configId={env.metaConfigId()} graphVersion={env.metaGraphVersion()} />
-
-      <Card className="mt-4 p-5" data-tour="connect-form">
-        <div className="font-semibold">Conectar BM</div>
-        <p className="mt-1 mb-4 text-zinc-500">
-          Cole o ID da conta do WhatsApp (WABA) e o token do usuário do sistema fuzil-api da sua BM.
-        </p>
-        <ActionForm action={connectManualAction} submit="Conectar" celebrateOk="BM conectada! 🎉">
-          <div className="grid gap-4 md:grid-cols-2">
-            <Field label="ID da WABA" hint="Na BM: Contas → Contas do WhatsApp (WhatsApp accounts) → clique na conta: o número em ID">
-              <Input name="wabaId" placeholder="1673861331112475" required autoComplete="off" inputMode="numeric" />
-            </Field>
-            <Field label="Token de acesso" hint="Token do usuário do sistema fuzil-api com as 3 permissões: whatsapp_business_messaging, whatsapp_business_management e business_management">
-              <PasswordInput name="token" placeholder="EAAG..." autoComplete="new-password" data-lpignore="true" data-1p-ignore="true" />
-            </Field>
-            {!usesDefaultSecret && isOwner && (
-              <Field label="Chave secreta do app (opcional)" hint="Configurações do app → Básico. Sem ela, as respostas dessa BM não aparecem no Chat">
-                <PasswordInput name="appSecret" autoComplete="new-password" data-lpignore="true" data-1p-ignore="true" />
-              </Field>
-            )}
-          </div>
-          {usesDefaultSecret && <p className="mt-3 text-xs font-medium text-emerald-700">✓ A chave secreta padrão entra sozinha nessa conexão.</p>}
-        </ActionForm>
-      </Card>
 
       {showDefaultSecret && (
         <details className="group mt-4 overflow-hidden rounded-2xl border border-orange-200 bg-orange-50" open={!hasDefaultSecret}>

@@ -24,19 +24,8 @@ const STEPS: Step[] = [
   {
     path: "/conexoes",
     target: "connect-guide",
-    title: "Libere o app do Fuzil na sua BM",
-    body: (
-      <>
-        Siga esses passos na Meta (abre em outra aba). Depois de pedir o acesso ao app, chame a gente no <b>WhatsApp</b> pelo botão verde para aprovar
-        rapidinho.
-      </>
-    ),
-  },
-  {
-    path: "/conexoes",
-    target: "connect-form",
-    title: "Cole o ID da WABA e o token",
-    body: "Cole o ID da conta do WhatsApp e o token gerado, e clique em Conectar. O Fuzil confere tudo na Meta e já puxa seus números.",
+    title: "Conecte pelo botão",
+    body: "Em Nova conexão, clique em Conectar Cloud API ou em Conectar em Coexistência. A Meta pergunta a BM e o número, e o Fuzil faz o resto, sem ID nem token.",
   },
   {
     path: "/conexoes",
