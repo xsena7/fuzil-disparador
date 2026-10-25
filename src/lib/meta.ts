@@ -134,8 +134,9 @@ export const meta = {
 
   /** Se a WABA tem forma de pagamento. null quando a Meta não informa. */
   async wabaHasPayment(token: string, wabaId: string): Promise<boolean | null> {
-    return graph<{ primary_funding_id?: string }>(token, "GET", wabaId, { query: { fields: "primary_funding_id" } })
-      .then((r) => Boolean(r.primary_funding_id))
+    // Só afirma "sem cartão" quando a Meta devolve o campo vazio. Se o campo não veio, não sabemos (null)
+    return graph<{ primary_funding_id?: string | null }>(token, "GET", wabaId, { query: { fields: "primary_funding_id" } })
+      .then((r) => (Object.prototype.hasOwnProperty.call(r, "primary_funding_id") ? Boolean(r.primary_funding_id) : null))
       .catch(() => null);
   },
 

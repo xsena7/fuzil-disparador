@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.51",
+    date: "25/10/2026",
+    items: ["Grupos: BM sem cartão só vai para 💳 Problemas de pagamento quando a Meta confirma que não há forma de pagamento (antes, se a Meta não informava o cartão, a BM caía lá por engano)"],
+  },
+  {
     version: "2.50",
     date: "25/10/2026",
     items: ["Grupos: 🚫 Banidas só recebe BM realmente banida pela Meta (erro 141014 ou número banido/restrito). Bloqueio de envio por pagamento deixou de ser tratado como banimento"],
