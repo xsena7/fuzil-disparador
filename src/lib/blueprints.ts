@@ -94,12 +94,11 @@ async function wabasInScope(workspaceId: string, groupId: string | null) {
   });
 }
 
-/** Garante que todo template padrão ativo exista em todas as WABAs do seu escopo. */
-const SUBMIT_GAP_MS = 20_000;
-const MAX_SUBMISSIONS_PER_RUN = 6;
+/** Depois que a BM é conectada, espera esse tempo antes de mandar os templates padrão. */
+const CONNECT_WAIT_MS = 5 * 60_000;
 
+/** Garante que todo template padrão ativo exista em todas as WABAs do seu escopo. */
 export async function deployBlueprints(workspaceId?: string) {
-  let submitted = 0;
   // Funil do gerador de links: garante que o código e o aviso de acesso existem antes de subir
   await ensureLinksBlueprints().catch((e) => console.error("[links] templates", e));
   const blueprints = await prisma.templateBlueprint.findMany({
@@ -112,6 +111,8 @@ export async function deployBlueprints(workspaceId?: string) {
       const dep = bp.deployments.find((d) => d.wabaId === waba.id);
       // Erros tentam até 3x
       if ((dep?.status === "ERROR" && dep.attempts >= 3) || dep?.status === "MARKETING_ON_CREATE") continue;
+      // BM recém-conectada: espera uns minutos antes de mandar template. A rodada seguinte pega.
+      if (Date.now() - waba.createdAt.getTime() < CONNECT_WAIT_MS) continue;
 
       let name = dep?.currentName ?? bp.name;
       let version = dep?.version ?? 1;
@@ -156,10 +157,6 @@ export async function deployBlueprints(workspaceId?: string) {
         continue;
       }
 
-      // Freio: a Meta desconfia de rajada de templates. Uma submissão por vez, com pausa, e teto por rodada
-      if (submitted >= MAX_SUBMISSIONS_PER_RUN) return;
-      if (submitted > 0) await new Promise((r) => setTimeout(r, SUBMIT_GAP_MS));
-      submitted++;
       const result = await createUtilityTemplate(waba, {
         name,
         language: bp.language,

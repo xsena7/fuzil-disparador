@@ -2,6 +2,14 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.59",
+    date: "25/10/2026",
+    items: [
+      "Templates padrão: rejeitado é apagado na Meta e reenviado sozinho com o próximo nome, tudo de uma vez",
+      "BM recém-conectada: espera 5 minutos antes de mandar os templates padrão",
+    ],
+  },
+  {
     version: "2.58",
     date: "25/10/2026",
     items: ["Sons de conexão: o áudio é liberado antes de tocar, pra o som de falha e de sucesso não ficarem mudos em alguns navegadores"],
