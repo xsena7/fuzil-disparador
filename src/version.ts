@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.43",
+    date: "25/10/2026",
+    items: ["Tutorial atualizado: como conectar BM pelo botão Cloud API / Coexistência, e o que esperar depois de clicar em Concluir (a comemoração \"BM conectada\")"],
+  },
+  {
     version: "2.42",
     date: "25/10/2026",
     items: ["Conexões: o Testar conexão não exige mais a permissão business_management (não é usada para enviar). Corrige o falso aviso de permissão em BMs conectadas pelo botão"],
