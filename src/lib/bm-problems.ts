@@ -11,9 +11,9 @@ export const PROBLEMS_GROUP = "PROBLEMS";
 /** Um grupo automático por tipo de problema. O "BMs com problema" fica para o que não se encaixa em nenhum. */
 export const PROBLEM_KINDS = {
   BANNED: { system: "PROBLEMS_BANNED", name: "🚫 Banidas", color: "red", description: "Número ou conta banida, bloqueada ou restrita pela Meta." },
+  TEMPLATE: { system: "PROBLEMS_TEMPLATE", name: "📝 Template em análise", color: "sky", description: "Nenhum template de utilidade aprovado (em análise ou faltando)." },
   PAYMENT: { system: "PROBLEMS_PAYMENT", name: "💳 Problemas de pagamento", color: "amber", description: "Sem cartão ou com erro no pagamento da conta do WhatsApp." },
   NO_PHONE: { system: "PROBLEMS_NOPHONE", name: "📱 Sem número", color: "amber", description: "Nenhum número registrado e conectado para disparar (sem número, só número de teste ou desconectado)." },
-  TEMPLATE: { system: "PROBLEMS_TEMPLATE", name: "📝 Template em análise", color: "sky", description: "Nenhum template de utilidade aprovado (em análise ou faltando)." },
   QUALITY: { system: "PROBLEMS_QUALITY", name: "📉 Número com qualidade baixa", color: "pink", description: "Qualidade vermelha ou número sinalizado pela Meta." },
   UNKNOWN: { system: PROBLEMS_GROUP, name: "⚠️ BMs com problema", color: "black", description: "Problemas que o Fuzil não conseguiu identificar (ou colocadas aqui por você)." },
 } as const;

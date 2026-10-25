@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.54",
+    date: "25/10/2026",
+    items: ["Grupos automáticos na ordem certa: 🚫 Banidas, 📝 Template em análise, 💳 Problemas de pagamento, 📱 Sem número, 📉 Qualidade baixa e ⚠️ BMs com problema"],
+  },
+  {
     version: "2.53",
     date: "25/10/2026",
     items: ["Grupos: o aviso genérico de \"envio bloqueado\" da Meta não passa mais na frente da checagem de template (a BM com template em análise vai para 📝 Template em análise)"],
