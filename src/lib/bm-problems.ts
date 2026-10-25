@@ -141,6 +141,12 @@ export async function checkBusinessAfterSync(wabaRecordId: string) {
   let reason: string | null = null;
   let fix = "";
   let kind: ProblemKind = "UNKNOWN";
+  // Template de utilidade aprovado na BM (o template é o primeiro critério: sem ele a BM nem dispara)
+  const [approvedTemplates, pendingTemplates] = await Promise.all([
+    prisma.template.count({ where: { waba: { businessId: waba.businessId }, status: "APPROVED", category: "UTILITY" } }),
+    prisma.template.count({ where: { waba: { businessId: waba.businessId }, status: "PENDING" } }),
+  ]);
+  const noApprovedTemplate = approvedTemplates === 0;
   const health = (Array.isArray(waba.healthIssues) ? waba.healthIssues : []) as Array<{ text?: string; fix?: string }>;
   // Só erro de acesso de verdade (token/permissão); queda de rede ou instabilidade da Meta não conta
   // Só erro de acesso de verdade (token/permissão/app bloqueado); queda de rede ou instabilidade da Meta não conta
@@ -161,7 +167,13 @@ export async function checkBusinessAfterSync(wabaRecordId: string) {
     reason = `A Meta bloqueou o envio na WABA ${waba.name}${health[0]?.text ? `: ${health[0].text}` : ""}`;
     fix = health[0]?.fix || problemFix(null, payment ? "PAYMENT" : "BANNED");
     kind = payment ? "PAYMENT" : "BANNED";
+  } else if (noApprovedTemplate) {
+    // Prioridade 1: template em análise (ou faltando). Depois de aprovado, a BM segue para pagamento/número ou volta às prontas
+    reason = pendingTemplates ? `${pendingTemplates} template(s) em análise na Meta, nenhum de utilidade aprovado ainda` : "Nenhum template de utilidade aprovado";
+    fix = pendingTemplates ? "Espere a Meta aprovar (costuma levar de minutos a 24h). A BM volta sozinha para o grupo quando aprovar." : "Crie um template de utilidade (ou ative um Template padrão para essa BM).";
+    kind = "TEMPLATE";
   } else if (waba.hasPaymentMethod === false) {
+    // Prioridade 2: sem cartão
     reason = `Sem forma de pagamento (cartão) na WABA ${waba.name}`;
     fix = problemFix(null, "PAYMENT");
     kind = "PAYMENT";
@@ -190,17 +202,6 @@ export async function checkBusinessAfterSync(wabaRecordId: string) {
       reason = `Qualidade vermelha no número ${red.displayPhoneNumber}`;
       fix = problemFix(null, "QUALITY");
       kind = "QUALITY";
-    } else {
-      // Sem nenhum template de utilidade aprovado na BM (em análise ou faltando)
-      const [approved, pending] = await Promise.all([
-        prisma.template.count({ where: { waba: { businessId: waba.businessId }, status: "APPROVED", category: "UTILITY" } }),
-        prisma.template.count({ where: { waba: { businessId: waba.businessId }, status: "PENDING" } }),
-      ]);
-      if (!approved) {
-        reason = pending ? `${pending} template(s) em análise na Meta, nenhum de utilidade aprovado ainda` : "Nenhum template de utilidade aprovado";
-        fix = pending ? "Espere a Meta aprovar (costuma levar de minutos a 24h). A BM volta sozinha para o grupo quando aprovar." : "Crie um template de utilidade (ou ative um Template padrão para essa BM).";
-        kind = "TEMPLATE";
-      }
     }
   }
   // O problema sumiu: volta sozinha para os grupos em que estava.

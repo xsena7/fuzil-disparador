@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.44",
+    date: "25/10/2026",
+    items: ["Grupos: template em análise agora é a prioridade (a BM vai primeiro para 📝 Template em análise). Quando o template é aprovado, o Fuzil confere cartão e número: se faltar algo, a BM vai para 💳 Problemas de pagamento ou 📱 Sem número; se estiver tudo certo, volta para as prontas para disparo"],
+  },
+  {
     version: "2.43",
     date: "25/10/2026",
     items: ["Tutorial atualizado: como conectar BM pelo botão Cloud API / Coexistência, e o que esperar depois de clicar em Concluir (a comemoração \"BM conectada\")"],
