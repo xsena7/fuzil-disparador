@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Smartphone, Zap } from "lucide-react";
+import { Loader2, Smartphone, Zap } from "lucide-react";
 import { Button, Card } from "./ui";
 import { celebrate } from "./celebration";
 
@@ -106,6 +106,18 @@ export function EmbeddedSignup({ appId, configId, graphVersion }: { appId: strin
 
   return (
     <div>
+      {/* Enquanto a conexão roda, a tela inteira fica travada (não dá pra clicar em nada até terminar) */}
+      {busy && (
+        <div className="fixed inset-0 z-[90] flex cursor-wait select-none flex-col items-center justify-center bg-zinc-950/70 backdrop-blur-sm" role="alert" aria-busy="true">
+          <div className="flex flex-col items-center rounded-3xl bg-white px-10 py-8 text-center shadow-2xl">
+            <span className="mb-4 flex size-14 items-center justify-center rounded-full bg-brand-gradient text-white shadow-lg shadow-orange-500/40">
+              <Loader2 className="size-7 animate-spin" />
+            </span>
+            <div className="text-xl font-bold text-zinc-900">Conectando sua BM...</div>
+            <div className="mt-1 max-w-xs text-sm text-zinc-500">Não feche a página. Isso leva alguns segundos.</div>
+          </div>
+        </div>
+      )}
       <div className="grid gap-4 md:grid-cols-2">
         {cards.map((c) => (
           <Card key={c.type} className="p-6">

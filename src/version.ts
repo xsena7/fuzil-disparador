@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.56",
+    date: "25/10/2026",
+    items: ["Conexões: enquanto a BM está conectando pelo botão, a tela fica travada com um carregamento (\"Conectando sua BM...\"), e só libera quando termina"],
+  },
+  {
     version: "2.55",
     date: "25/10/2026",
     items: ["Grupos: 📱 Sem número agora vem antes de 💳 Problemas de pagamento, na checagem e na ordem da tela (banidas > template > sem número > pagamento > qualidade > desconhecido)"],
