@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.58",
+    date: "25/10/2026",
+    items: ["Sons de conexão: o áudio é liberado antes de tocar, pra o som de falha e de sucesso não ficarem mudos em alguns navegadores"],
+  },
+  {
     version: "2.57",
     date: "25/10/2026",
     items: ["Conexões: se a conexão pelo botão falhar, toca o som de \"game over\" de videogame (e a tela libera)"],

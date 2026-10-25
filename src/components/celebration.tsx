@@ -18,6 +18,8 @@ function playChime() {
   try {
     const Ctx = window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
     const ctx = new Ctx();
+    // Alguns navegadores deixam o áudio suspenso até liberar: tenta liberar antes de tocar
+    void ctx.resume?.().catch(() => undefined);
     const master = ctx.createGain();
     master.gain.value = 0.12;
     master.connect(ctx.destination);
@@ -52,6 +54,8 @@ export function playFailChime() {
   try {
     const Ctx = window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
     const ctx = new Ctx();
+    // Alguns navegadores deixam o áudio suspenso até liberar: tenta liberar antes de tocar
+    void ctx.resume?.().catch(() => undefined);
     const master = ctx.createGain();
     master.gain.value = 0.12;
     master.connect(ctx.destination);
