@@ -165,11 +165,6 @@ export async function checkBusinessAfterSync(wabaRecordId: string) {
   } else if (accessLost) {
     reason = `O Fuzil não consegue acessar a WABA ${waba.name}`;
     fix = problemFix(null, "ACCESS");
-  } else if (waba.status === "BLOCKED") {
-    const payment = /pag|payment/i.test(health[0]?.text ?? "");
-    reason = `A Meta bloqueou o envio na WABA ${waba.name}${health[0]?.text ? `: ${health[0].text}` : ""}`;
-    fix = health[0]?.fix || problemFix(null, payment ? "PAYMENT" : "BANNED");
-    kind = payment ? "PAYMENT" : "BANNED";
   } else if (waba.phones.some((p) => p.status === "BANNED" || p.status === "RESTRICTED")) {
     // Banimento/restrição do número vem antes do template: a BM não dispara de jeito nenhum e tem que ir para Banidas
     const b = waba.phones.find((p) => p.status === "BANNED" || p.status === "RESTRICTED")!;
@@ -234,6 +229,13 @@ export async function checkBusinessAfterSync(wabaRecordId: string) {
         })
       : 1;
     if (bm?.problemAt && bm.problemKind !== "MANUAL" && settled && others === 0) await restoreBusiness(waba.businessId, bm.workspaceId, false);
+  }
+  // Envio bloqueado sem motivo identificado (não é banimento nem template/cartão/número): último recurso, vai para "BMs com problema"
+  if (!reason && waba.status === "BLOCKED") {
+    const payment = /pag|payment/i.test(health[0]?.text ?? "");
+    reason = `A Meta bloqueou o envio na WABA ${waba.name}${health[0]?.text ? `: ${health[0].text}` : ""}`;
+    fix = health[0]?.fix || problemFix(null, payment ? "PAYMENT" : "UNKNOWN");
+    kind = payment ? "PAYMENT" : "UNKNOWN";
   }
   // Banimento é prioridade máxima: vai para Banidas mesmo que a BM esteja em outro grupo de problema
   // (ou tenha sido colocada à mão: Banidas é a única exceção ao "só sai no Resolvido")

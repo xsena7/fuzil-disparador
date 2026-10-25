@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.53",
+    date: "25/10/2026",
+    items: ["Grupos: o aviso genérico de \"envio bloqueado\" da Meta não passa mais na frente da checagem de template (a BM com template em análise vai para 📝 Template em análise)"],
+  },
+  {
     version: "2.52",
     date: "25/10/2026",
     items: ["Grupos: a ordem fica assim: 1) banida → 🚫 Banidas; 2) template padrão do Fuzil em análise → 📝 Template em análise; 3) sem template aprovado → 📝; 4) sem cartão → 💳; 5) sem número → 📱. Só conta os templates do Fuzil"],
