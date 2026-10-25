@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.47",
+    date: "25/10/2026",
+    items: ["Grupos: número banido ou restrito volta a ir para 🚫 Banidas (antes a prioridade de template tirava a BM desse grupo)"],
+  },
+  {
     version: "2.46",
     date: "25/10/2026",
     items: ["Templates padrão: ao conectar uma BM, o Fuzil envia os templates para a Meta devagar (um por vez, com pausa de 20 segundos e no máximo 6 por rodada), em vez de todos de uma vez. O restante sai nas próximas verificações"],

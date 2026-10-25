@@ -168,6 +168,12 @@ export async function checkBusinessAfterSync(wabaRecordId: string) {
     reason = `A Meta bloqueou o envio na WABA ${waba.name}${health[0]?.text ? `: ${health[0].text}` : ""}`;
     fix = health[0]?.fix || problemFix(null, payment ? "PAYMENT" : "BANNED");
     kind = payment ? "PAYMENT" : "BANNED";
+  } else if (waba.phones.some((p) => p.status === "BANNED" || p.status === "RESTRICTED")) {
+    // Banimento/restrição do número vem antes do template: a BM não dispara de jeito nenhum e tem que ir para Banidas
+    const b = waba.phones.find((p) => p.status === "BANNED" || p.status === "RESTRICTED")!;
+    reason = `${b.status === "BANNED" ? "Número banido" : "Número restrito"}: ${b.displayPhoneNumber}`;
+    fix = problemFix(null, b.status === "BANNED" ? "BANNED" : "RESTRICTED");
+    kind = "BANNED";
   } else if (templateProblem) {
     // Prioridade 1: template em análise (ou faltando). Depois de aprovado, a BM segue para pagamento/número ou volta às prontas
     reason = pendingTemplates ? `${pendingTemplates} template(s) em análise na Meta` : "Nenhum template de utilidade aprovado";
