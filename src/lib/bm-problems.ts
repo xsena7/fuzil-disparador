@@ -145,7 +145,8 @@ export async function checkBusinessAfterSync(wabaRecordId: string) {
   // Template de utilidade aprovado na BM (o template é o primeiro critério: sem ele a BM nem dispara)
   const [approvedTemplates, pendingTemplates] = await Promise.all([
     prisma.template.count({ where: { waba: { businessId: waba.businessId }, status: "APPROVED", category: "UTILITY" } }),
-    prisma.template.count({ where: { waba: { businessId: waba.businessId }, status: "PENDING" } }),
+    // Só os templates padrão do Fuzil que estão em análise (os templates criados à mão não contam)
+    prisma.templateDeployment.count({ where: { status: "SUBMITTED", waba: { businessId: waba.businessId } } }),
   ]);
   // Template em análise é prioridade mesmo se a BM já tem outro aprovado; sem nenhum aprovado também
   const templateProblem = approvedTemplates === 0 || pendingTemplates > 0;

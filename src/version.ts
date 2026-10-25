@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.52",
+    date: "25/10/2026",
+    items: ["Grupos: a ordem fica assim: 1) banida → 🚫 Banidas; 2) template padrão do Fuzil em análise → 📝 Template em análise; 3) sem template aprovado → 📝; 4) sem cartão → 💳; 5) sem número → 📱. Só conta os templates do Fuzil"],
+  },
+  {
     version: "2.51",
     date: "25/10/2026",
     items: ["Grupos: BM sem cartão só vai para 💳 Problemas de pagamento quando a Meta confirma que não há forma de pagamento (antes, se a Meta não informava o cartão, a BM caía lá por engano)"],
