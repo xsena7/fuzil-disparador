@@ -365,7 +365,8 @@ async function checkTokenScopes(waba: { wabaId: string; appSecretEnc: string | n
     } | null;
     if (!json?.data || json.error) continue;
     const scopes = json.data.scopes ?? [];
-    const need = ["whatsapp_business_messaging", "whatsapp_business_management", "business_management"];
+    // Para enviar e sincronizar só são necessárias estas duas (business_management não é usada e o token do cadastro pelo botão não a recebe)
+    const need = ["whatsapp_business_messaging", "whatsapp_business_management"];
     const missing = need.filter((n) => !scopes.includes(n));
     // Com a lista de contas: a conta do WhatsApp tem que estar liberada para enviar
     const msg = json.data.granular_scopes?.find((g) => g.scope === "whatsapp_business_messaging");

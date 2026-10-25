@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.42",
+    date: "25/10/2026",
+    items: ["Conexões: o Testar conexão não exige mais a permissão business_management (não é usada para enviar). Corrige o falso aviso de permissão em BMs conectadas pelo botão"],
+  },
+  {
     version: "2.41",
     date: "25/10/2026",
     items: ["Conexões: ao conectar BM pelo botão Cloud API / Coexistência, aparece a comemoração com confete e som, e ela fica na tela até você clicar (pra fechar e conectar a próxima)"],
