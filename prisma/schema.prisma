@@ -59,6 +59,8 @@ enum Role {
 model Workspace {
   id                  String              @id @default(cuid())
   name                String
+  // Token da API do SMSBear da própria conta (criptografado): compra números BR para registrar nas WABAs
+  smsbearTokenEnc     String?
   // Saldo em créditos (1 crédito = 1 mensagem por padrão)
   creditBalance       Int                 @default(0)
   creditsPerMessage   Int                 @default(1)
@@ -86,6 +88,7 @@ model Workspace {
   wabas               WhatsAppAccount[]
   groups              BmGroup[]
   templates           Template[]
+  smsJobs             SmsJob[]
   campaigns           Campaign[]
   contacts            Contact[]
   alerts              Alert[]
@@ -213,6 +216,7 @@ model WhatsAppAccount {
   business          BusinessManager      @relation(fields: [businessId], references: [id], onDelete: Cascade)
   phones            PhoneNumber[]
   templates         Template[]
+  smsJobs           SmsJob[]
   deployments       TemplateDeployment[]
 
   @@unique([workspaceId, wabaId])
@@ -1020,4 +1024,40 @@ model CreditPurchase {
 
   @@index([workspaceId, createdAt])
   @@index([status, expiresAt])
+}
+
+// ---------------------------------------------------------------------------
+// SMSBear: registro automático de número na WABA (compra o número, pede o código, confirma; sem SMS em 2,5 min troca de número)
+// ---------------------------------------------------------------------------
+
+model SmsJob {
+  id            String          @id @default(cuid())
+  workspaceId   String
+  wabaId        String
+  verifiedName  String
+  // RUNNING | DONE | FAILED | STOPPED
+  status        String          @default("RUNNING")
+  // BUY = comprar número; WAIT = esperando o SMS da Meta
+  step          String          @default("BUY")
+  attempt       Int             @default(0)
+  maxAttempts   Int             @default(10)
+  orderId       String?
+  number        String?
+  // Phone ID da Meta do número da tentativa atual
+  phoneNumberId String?
+  stepAt        DateTime        @default(now())
+  spentCents    Int             @default(0)
+  // Pedidos do SMSBear que ainda precisam ser cancelados (o SMSBear pede alguns minutos após a compra)
+  toCancel      Json            @default("[]")
+  // Linha do tempo para o painel: [{ at, text, tone }]
+  log           Json            @default("[]")
+  error         String?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  finishedAt    DateTime?
+  workspace     Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  waba          WhatsAppAccount @relation(fields: [wabaId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([workspaceId, createdAt])
 }

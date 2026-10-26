@@ -2,6 +2,15 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.97",
+    date: "27/10/2026",
+    items: [
+      "Conexões: painel do SMSBear na direita. Conecte a sua conta do SMSBear (pelo token da API) e veja o saldo e o preço do número BR para WhatsApp",
+      "SMSBear: \"Registrar número automático\" na WABA que você escolher. O Fuzil compra o número, coloca na WABA, espera o código da Meta e confirma sozinho. Se o SMS não chegar em 2,5 minutos, cancela (o saldo volta) e compra outro, até dar certo ou chegar no máximo de tentativas",
+      "SMSBear: cada tentativa aparece ao vivo no painel, com botão Parar. Os números que não receberam SMS somem da lista de Conexões",
+    ],
+  },
+  {
     version: "2.96",
     date: "27/10/2026",
     items: [

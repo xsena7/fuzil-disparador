@@ -151,6 +151,8 @@ async function refreshBusinessTier(wabaRecordId: string) {
 }
 
 export const PHONE_REMOVED = "Número removido da Meta";
+// Número que o registro automático (SMSBear) largou porque o SMS não chegou: some da tela e nunca entra no rodízio
+export const PHONE_DISCARDED = "Número descartado (o SMS não chegou)";
 const TEST_NUMBER = "Número de teste da Meta";
 
 /** Números apagados na Meta somem do Fuzil (ficam escondidos, guardando histórico e a contagem do limite). */
@@ -223,7 +225,7 @@ export async function upsertPhone(workspaceId: string, wabaRecordId: string, p: 
     nameStatus: p.name_status,
     throughputLevel: p.throughput?.level,
     isCoexistence: Boolean(p.is_on_biz_app),
-    invalidReason: phoneInvalidReason(p),
+    invalidReason: existing?.invalidReason === PHONE_DISCARDED && p.status !== "CONNECTED" ? PHONE_DISCARDED : phoneInvalidReason(p),
     lastSyncedAt: new Date(),
   };
   if (!existing) {

@@ -1,0 +1,64 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { requireAuth } from "@/lib/auth";
+import { prisma } from "@/lib/db";
+import { encrypt } from "@/lib/crypto";
+import { smsbear, stopSmsJob } from "@/lib/smsbear";
+import type { FormState } from "./auth";
+
+/** Conecta a conta do SMSBear desta conta do Fuzil (pelo token da API, conferido na hora). */
+export async function connectSmsBearAction(_: FormState, form: FormData): Promise<FormState> {
+  const auth = await requireAuth();
+  const token = String(form.get("token") ?? "").trim();
+  if (token.length < 10) return { error: "Cole o token da API do SMSBear." };
+  try {
+    await smsbear.balance(token);
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Não deu para conferir o token no SMSBear" };
+  }
+  await prisma.workspace.update({ where: { id: auth.workspace.id }, data: { smsbearTokenEnc: encrypt(token) } });
+  revalidatePath("/conexoes");
+  return { ok: "SMSBear conectado!" };
+}
+
+export async function disconnectSmsBearAction(): Promise<FormState> {
+  const auth = await requireAuth();
+  const running = await prisma.smsJob.count({ where: { workspaceId: auth.workspace.id, status: "RUNNING" } });
+  if (running) return { error: "Tem registro automático em andamento. Pare ele antes de desconectar." };
+  await prisma.workspace.update({ where: { id: auth.workspace.id }, data: { smsbearTokenEnc: null } });
+  revalidatePath("/conexoes");
+  return { ok: "SMSBear desconectado." };
+}
+
+/** Começa o registro automático: compra, coloca na WABA, espera o SMS, confirma (e troca de número se não chegar). */
+export async function startSmsJobAction(_: FormState, form: FormData): Promise<FormState> {
+  const auth = await requireAuth();
+  const ws = await prisma.workspace.findUnique({ where: { id: auth.workspace.id }, select: { smsbearTokenEnc: true } });
+  if (!ws?.smsbearTokenEnc) return { error: "Conecte o SMSBear primeiro." };
+  const waba = await prisma.whatsAppAccount.findFirst({ where: { id: String(form.get("wabaId") ?? ""), workspaceId: auth.workspace.id }, include: { business: true } });
+  if (!waba) return { error: "Escolha a WABA." };
+  const name = String(form.get("name") ?? "").replace(/\s+/g, " ").trim().slice(0, 100);
+  if (name.length < 3) return { error: "Escreva o nome de exibição (o nome que aparece no WhatsApp)." };
+  const maxAttempts = Math.min(20, Math.max(1, Number(form.get("maxAttempts")) || 10));
+  // Uma de cada vez por WABA (dois números ao mesmo tempo confundem o código)
+  if (await prisma.smsJob.count({ where: { wabaId: waba.id, status: "RUNNING" } })) return { error: "Já tem um registro automático rodando nessa WABA." };
+  await prisma.smsJob.create({
+    data: {
+      workspaceId: auth.workspace.id,
+      wabaId: waba.id,
+      verifiedName: name,
+      maxAttempts,
+      log: [{ at: new Date().toISOString(), text: `Começou: registrar um número na ${waba.business.name} (até ${maxAttempts} tentativas).`, tone: "info" }],
+    },
+  });
+  return { ok: "Registro automático começou! Acompanhe aqui no painel." };
+}
+
+export async function stopSmsJobAction(jobId: string): Promise<FormState> {
+  const auth = await requireAuth();
+  const job = await prisma.smsJob.findFirst({ where: { id: jobId, workspaceId: auth.workspace.id } });
+  if (!job) return { error: "Tarefa não encontrada" };
+  await stopSmsJob(job.id);
+  return { ok: "Parado." };
+}

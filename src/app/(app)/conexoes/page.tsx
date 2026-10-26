@@ -10,7 +10,7 @@ import { ActionForm, ConfirmButton } from "@/components/action-form";
 import { LimitWindow } from "@/components/limit-card";
 import { bmWindows } from "@/lib/limit-windows";
 import { wabaReadiness } from "@/lib/readiness";
-import { PHONE_REMOVED } from "@/lib/sync";
+import { PHONE_DISCARDED, PHONE_REMOVED } from "@/lib/sync";
 import { PasswordInput } from "@/components/password-input";
 import { StatusDot } from "@/components/drawer";
 import { TestWaba } from "./test-waba";
@@ -19,6 +19,7 @@ import { VerifyAllButton } from "@/components/verify-all-button";
 import { groupDot, groupTag } from "@/lib/group-colors";
 import { ConnectGuide } from "./connect-guide";
 import { ProfileEditor } from "./profile-editor";
+import { SmsBearPanel } from "./smsbear-panel";
 import { FUZIL_APP_ID, defaultAppSecret, isPlatformOwner, supportWhatsAppLink } from "@/lib/onboarding";
 import {
 
@@ -53,7 +54,7 @@ export default async function ConnectionsPage() {
   const businesses = await prisma.businessManager.findMany({
     where: { workspaceId: auth.workspace.id },
     include: {
-      wabas: { include: { phones: { where: { OR: [{ invalidReason: null }, { invalidReason: { not: PHONE_REMOVED } }] }, orderBy: { createdAt: "asc" } },
+      wabas: { include: { phones: { where: { OR: [{ invalidReason: null }, { invalidReason: { notIn: [PHONE_REMOVED, PHONE_DISCARDED] } }] }, orderBy: { createdAt: "asc" } },
           templates: { where: { status: "APPROVED", category: "UTILITY" }, select: { id: true } },
           _count: { select: { templates: true } },
         },
@@ -68,8 +69,12 @@ export default async function ConnectionsPage() {
   for (const b of businesses) b.wabas.sort((x, y) => y.createdAt.getTime() - x.createdAt.getTime());
   const windows = await bmWindows(businesses.map((b) => b.id));
 
+  // WABAs para o painel do SMSBear (registrar número sozinho)
+  const smsWabas = businesses.flatMap((b) => b.wabas.map((w) => ({ id: w.id, label: `${b.name} · ${w.name}`, name: w.phones.find((p) => p.verifiedName)?.verifiedName ?? b.name })));
+
   return (
-    <div className="mx-auto max-w-6xl">
+    <div className="mx-auto max-w-[1520px] xl:grid xl:grid-cols-[minmax(0,1fr)_360px] xl:gap-6">
+      <div className="min-w-0">
       <PageHeader
         title="Conexões"
         description="BMs, WABAs e números conectados. Qualidade e limite são atualizados automaticamente a cada 10 minutos e pelos webhooks da Meta."
@@ -362,6 +367,13 @@ export default async function ConnectionsPage() {
         })}
       </div>
       </div>
+      </div>
+      {/* SMSBear: comprar número BR e registrar na WABA sozinho */}
+      <aside className="mt-8 xl:mt-0">
+        <div className="xl:sticky xl:top-6">
+          <SmsBearPanel wabas={smsWabas} />
+        </div>
+      </aside>
     </div>
   );
 }

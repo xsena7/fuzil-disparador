@@ -10,6 +10,7 @@ import { startSettingsRefresh } from "../lib/platform-settings";
 import { checkLimitAlerts } from "../lib/limit-alerts";
 import { reportError } from "../lib/report";
 import { runFunnels } from "../lib/funnels";
+import { smsJobsTick } from "../lib/smsbear";
 
 const SYNC_EVERY_MS = 10 * 60_000;
 const BLUEPRINT_EVERY_MS = 5 * 60_000;
@@ -88,6 +89,7 @@ async function main() {
   void every(60_000, "housekeeping", housekeeping);
   void every(60_000, "limites", checkLimitAlerts);
   void every(10_000, "funis", runFunnels);
+  void every(5_000, "smsbear", smsJobsTick);
   void every(20_000, "vendas", marketTick);
   void every(20_000, "recargas", creditTick);
   void every(10 * 60_000, "vendas-convites", recheckInvites);
