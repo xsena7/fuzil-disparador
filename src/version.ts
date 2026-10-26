@@ -2,6 +2,14 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.94",
+    date: "27/10/2026",
+    items: [
+      "Conexões: botão \"Perfil do WhatsApp\" em cada número conectado. Troca a foto, o recado, a descrição, a categoria, o site, o e-mail e o endereço direto pelo Fuzil, sem entrar no Facebook",
+      "Conexões: o perfil pode ser aplicado só no número, em todos os números da BM ou em todos os números da conta de uma vez",
+    ],
+  },
+  {
     version: "2.93",
     date: "27/10/2026",
     items: [

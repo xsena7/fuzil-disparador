@@ -15,6 +15,8 @@ export class MetaError extends Error {
 
 type Query = Record<string, string | number | undefined>;
 
+export type BusinessProfile = { about?: string; address?: string; description?: string; email?: string; profile_picture_url?: string; websites?: string[]; vertical?: string };
+
 async function graph<T>(
   token: string,
   method: "GET" | "POST" | "DELETE",
@@ -188,6 +190,19 @@ export const meta = {
     return graph<{ success: boolean }>(`${appId}|${appSecret}`, "POST", `${appId}/subscriptions`, {
       body: { object: "whatsapp_business_account", callback_url: callbackUrl, verify_token: verifyToken, fields: fields.join(",") },
     });
+  },
+
+  /** Perfil do WhatsApp do número: foto, recado, descrição, endereço, e-mail, sites e ramo. */
+  async getBusinessProfile(token: string, phoneNumberId: string) {
+    const r = await graph<{ data: BusinessProfile[] }>(token, "GET", `${phoneNumberId}/whatsapp_business_profile`, {
+      query: { fields: "about,address,description,email,profile_picture_url,websites,vertical" },
+    });
+    return r.data?.[0] ?? {};
+  },
+
+  /** Troca o perfil (só os campos enviados). A foto vai como handle do upload resumável. */
+  updateBusinessProfile(token: string, phoneNumberId: string, profile: Omit<BusinessProfile, "profile_picture_url"> & { profile_picture_handle?: string }) {
+    return graph<{ success: boolean }>(token, "POST", `${phoneNumberId}/whatsapp_business_profile`, { body: { messaging_product: "whatsapp", ...profile } });
   },
 
   /** Coloca um número novo na WABA (sem entrar no Facebook). Depois: request_code → verify_code → register. */

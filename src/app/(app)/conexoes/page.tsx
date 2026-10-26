@@ -18,6 +18,7 @@ import { EmbeddedSignup } from "@/components/embedded-signup";
 import { VerifyAllButton } from "@/components/verify-all-button";
 import { groupDot, groupTag } from "@/lib/group-colors";
 import { ConnectGuide } from "./connect-guide";
+import { ProfileEditor } from "./profile-editor";
 import { FUZIL_APP_ID, defaultAppSecret, isPlatformOwner, supportWhatsAppLink } from "@/lib/onboarding";
 import {
 
@@ -299,7 +300,8 @@ export default async function ConnectionsPage() {
                         <Badge color="blue" dot={false}>{tierLabel(p.messagingLimitTier)}</Badge>
                         {p.isCoexistence && <Badge dot={false}>Coexistência</Badge>}
                         {p.invalidReason ? <Badge color="red">{p.invalidReason}: não entra no rodízio</Badge> : !p.enabled && <Badge color="yellow">Fora do rodízio</Badge>}
-                        <div className="ml-auto flex gap-2">
+                        <div className="ml-auto flex flex-wrap justify-end gap-2">
+                          {p.status === "CONNECTED" && !p.invalidReason && <ProfileEditor phoneId={p.id} bmName={bm.name} />}
                           {p.status && p.status !== "CONNECTED" && !p.isCoexistence && (
                             <ActionForm action={async () => { "use server"; return registerPhoneAction(p.id); }} submit="Registrar número" variant="secondary" />
                           )}

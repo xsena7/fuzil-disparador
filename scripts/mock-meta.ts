@@ -73,6 +73,10 @@ createServer(async (req, res) => {
     return res.end(Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==", "base64"));
   }
   if (id === "oauth") return json(res, 200, { access_token: "mock-business-token" });
+  // Upload resumável (foto do perfil / exemplo de mídia): GET /app → POST /{app}/uploads → POST /upload:... devolve o handle
+  if (id === "app" && !edge) return json(res, 200, { id: "1810134293359501" });
+  if (edge === "uploads" && req.method === "POST") return json(res, 200, { id: `upload:${Date.now()}` });
+  if (id?.startsWith("upload:") && req.method === "POST") return json(res, 200, { h: `handle-${raw.length}` });
   // Token de usuário do sistema: "mock-waba-1002" enxerga só a WABA 1002; os outros enxergam todas
   if (id === "debug_token") {
     const t = url.searchParams.get("input_token") ?? "";
@@ -126,6 +130,13 @@ createServer(async (req, res) => {
     }
     sent.push({ phone: id, to: body.to, body });
     return json(res, 200, { messaging_product: "whatsapp", contacts: [{ input: body.to, wa_id: body.to }], messages: [{ id: `wamid.MOCK${Date.now().toString(36)}${++msgSeq}` }] });
+  }
+  // Perfil do WhatsApp do número (foto, recado, descrição...)
+  if (phone && edge === "whatsapp_business_profile") {
+    if (req.method === "GET") return json(res, 200, { data: [{ messaging_product: "whatsapp", vertical: "OTHER", ...(phone.profile ?? {}) }] });
+    const { messaging_product, profile_picture_handle, ...rest } = body;
+    phone.profile = { ...(phone.profile ?? {}), ...rest, ...(profile_picture_handle ? { profile_picture_url: `http://localhost:${PORT}/v23.0/download/media-${profile_picture_handle}` } : {}) };
+    return json(res, 200, { success: true });
   }
   if (phone && edge === "request_code") return json(res, 200, { success: true });
   if (phone && edge === "verify_code") {
