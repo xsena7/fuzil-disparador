@@ -168,6 +168,65 @@ export async function registerPhoneAction(phoneId: string): Promise<FormState> {
   return { ok: "Número registrado na Cloud API" };
 }
 
+/**
+ * Coloca um número novo na WABA direto pelo Fuzil (sem entrar no perfil do Facebook) e já manda o código por SMS.
+ * Depois é só digitar o código: o Fuzil confirma e registra o número na Cloud API.
+ */
+export async function addPhoneAction(wabaRecordId: string, _: FormState, form: FormData): Promise<FormState> {
+  const auth = await requireAuth();
+  const waba = await prisma.whatsAppAccount.findFirst({ where: { id: wabaRecordId, workspaceId: auth.workspace.id }, include: { business: true, phones: { select: { verifiedName: true } } } });
+  if (!waba) return { error: "WABA não encontrada" };
+  let digits = String(form.get("phone") ?? "").replace(/\D/g, "");
+  // Sem o 55 na frente: é número do Brasil (DDD + número)
+  if (digits.length === 10 || digits.length === 11) digits = `55${digits}`;
+  if (!/^55\d{10,11}$/.test(digits)) return { error: "Digite o número com DDD (ex.: 11 91234-5678). Só números do Brasil." };
+  const name = String(form.get("name") ?? "").replace(/\s+/g, " ").trim().slice(0, 100);
+  if (name.length < 3) return { error: "Escreva o nome de exibição (o nome que aparece no WhatsApp)." };
+  const method = form.get("method") === "VOICE" ? "VOICE" : "SMS";
+  const token = wabaToken(waba);
+  try {
+    const { id } = await meta.addPhone(token, waba.wabaId, "55", digits.slice(2), name);
+    await meta.requestCode(token, id, method);
+    await syncWaba(waba.id);
+  } catch (err) {
+    return { error: errMsg(err) };
+  }
+  revalidatePath("/conexoes");
+  return { ok: `Número adicionado! A Meta mandou um código ${method === "VOICE" ? "por ligação" : "por SMS"} para ele. Digite o código no número, logo abaixo, para terminar.` };
+}
+
+/** Manda (de novo) o código de confirmação para um número que ainda não foi confirmado. */
+export async function requestPhoneCodeAction(phoneId: string, method: "SMS" | "VOICE"): Promise<FormState> {
+  const auth = await requireAuth();
+  const phone = await prisma.phoneNumber.findFirst({ where: { id: phoneId, waba: { workspaceId: auth.workspace.id } }, include: { waba: true } });
+  if (!phone) return { error: "Número não encontrado" };
+  try {
+    await meta.requestCode(wabaToken(phone.waba), phone.phoneNumberId, method);
+  } catch (err) {
+    return { error: errMsg(err) };
+  }
+  return { ok: method === "VOICE" ? "A Meta vai ligar para o número com o código." : "Código enviado por SMS para o número." };
+}
+
+/** Confirma o código que chegou no número e já registra ele na Cloud API (pronto para disparar). */
+export async function verifyPhoneAction(phoneId: string, _: FormState, form: FormData): Promise<FormState> {
+  const auth = await requireAuth();
+  const phone = await prisma.phoneNumber.findFirst({ where: { id: phoneId, waba: { workspaceId: auth.workspace.id } }, include: { waba: true } });
+  if (!phone) return { error: "Número não encontrado" };
+  const code = String(form.get("code") ?? "").replace(/\D/g, "");
+  if (code.length !== 6) return { error: "O código tem 6 números." };
+  const token = wabaToken(phone.waba);
+  try {
+    await meta.verifyCode(token, phone.phoneNumberId, code);
+    await meta.registerPhone(token, phone.phoneNumberId, env.metaRegisterPin());
+    await syncWaba(phone.wabaId);
+  } catch (err) {
+    return { error: errMsg(err) };
+  }
+  revalidatePath("/conexoes");
+  return { ok: "Número confirmado e registrado! Ele já entra no rodízio dos disparos." };
+}
+
 export async function updateBusinessAction(businessId: string, form: FormData) {
   const auth = await requireAuth();
   await prisma.businessManager.updateMany({

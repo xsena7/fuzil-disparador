@@ -1,4 +1,4 @@
-import { AlertTriangle, CheckCircle2, ChevronRight, KeyRound, MessagesSquare, RefreshCw, Phone, Trash2 } from "lucide-react";
+import { AlertTriangle, CheckCircle2, ChevronRight, KeyRound, MessagesSquare, RefreshCw, Phone, Plus, Trash2 } from "lucide-react";
 import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { env } from "@/lib/env";
@@ -24,6 +24,9 @@ import {
   deleteWabaAction,
   deleteBusinessAction,
   registerPhoneAction,
+  addPhoneAction,
+  requestPhoneCodeAction,
+  verifyPhoneAction,
   syncAllAction,
   setAppSecretAction,
   updateWabaCredentialsAction,
@@ -302,8 +305,50 @@ export default async function ConnectionsPage() {
                           )}
                           {!p.invalidReason && <ConfirmButton action={togglePhoneAction.bind(null, p.id)}>{p.enabled ? "Tirar do rodízio" : "Colocar no rodízio"}</ConfirmButton>}
                         </div>
+                        {/* Número ainda não confirmado: digita o código que chegou e o Fuzil confirma e registra */}
+                        {p.status && p.status !== "CONNECTED" && !p.isCoexistence && (
+                          <details className="w-full rounded-xl bg-orange-50/60 px-3 py-2 ring-1 ring-orange-100" open={p.invalidReason === "Número não registrado na API"}>
+                            <summary className="cursor-pointer text-sm font-medium text-orange-900">Confirmar o número pelo código (SMS ou ligação)</summary>
+                            <div className="mt-3 flex flex-wrap items-end gap-3">
+                              <ActionForm action={verifyPhoneAction.bind(null, p.id)} submit="Confirmar e registrar" className="flex flex-wrap items-end gap-2">
+                                <Field label="Código de 6 números">
+                                  <Input name="code" inputMode="numeric" maxLength={7} placeholder="123456" className="w-36" autoComplete="one-time-code" />
+                                </Field>
+                              </ActionForm>
+                              <div className="flex flex-wrap gap-2 text-sm">
+                                <ActionForm action={async () => { "use server"; return requestPhoneCodeAction(p.id, "SMS"); }} submit="Mandar código por SMS" variant="secondary" />
+                                <ActionForm action={async () => { "use server"; return requestPhoneCodeAction(p.id, "VOICE"); }} submit="Receber por ligação" variant="secondary" />
+                              </div>
+                            </div>
+                          </details>
+                        )}
                       </div>
                     ))}
+                    {/* Número novo direto pelo Fuzil: não precisa entrar no perfil do Facebook */}
+                    <details className="group/add px-4 py-3">
+                      <summary className="flex cursor-pointer list-none items-center gap-2 text-sm font-semibold text-orange-700 [&::-webkit-details-marker]:hidden">
+                        <Plus className="size-4" /> Adicionar número nesta WABA
+                      </summary>
+                      <p className="mt-2 text-sm text-zinc-600">
+                        Sem entrar no Facebook: o Fuzil coloca o número na WABA e a Meta manda um código para ele. O número não pode estar em uso no WhatsApp do celular (apague a conta do WhatsApp nele antes).
+                      </p>
+                      <ActionForm action={addPhoneAction.bind(null, waba.id)} submit="Adicionar e mandar código" className="mt-3 space-y-3">
+                        <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto]">
+                          <Field label="Número com DDD">
+                            <Input name="phone" inputMode="tel" placeholder="11 91234-5678" required />
+                          </Field>
+                          <Field label="Nome de exibição" hint="O nome que aparece no WhatsApp (a Meta analisa)">
+                            <Input name="name" defaultValue={waba.phones.find((x) => x.verifiedName)?.verifiedName ?? bm.name} required maxLength={100} />
+                          </Field>
+                          <Field label="Código por">
+                            <select name="method" className="rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm">
+                              <option value="SMS">SMS</option>
+                              <option value="VOICE">Ligação</option>
+                            </select>
+                          </Field>
+                        </div>
+                      </ActionForm>
+                    </details>
                   </div>
                   </div>
                 </div>

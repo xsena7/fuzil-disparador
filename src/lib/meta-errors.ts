@@ -41,6 +41,7 @@ const ERRORS: Record<number, string> = {
   132068: "Fluxo bloqueado",
   133010: "Número não registrado na Cloud API",
   135000: "Erro genérico do usuário",
+  136025: "Código errado: confira o código que chegou no número",
 };
 
 export function metaErrorLabel(code?: number | null): string {

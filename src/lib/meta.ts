@@ -190,6 +190,20 @@ export const meta = {
     });
   },
 
+  /** Coloca um número novo na WABA (sem entrar no Facebook). Depois: request_code → verify_code → register. */
+  addPhone(token: string, wabaId: string, cc: string, phoneNumber: string, verifiedName: string) {
+    return graph<{ id: string }>(token, "POST", `${wabaId}/phone_numbers`, { body: { cc, phone_number: phoneNumber, verified_name: verifiedName } });
+  },
+
+  /** Manda o código de confirmação para o número (SMS ou ligação). */
+  requestCode(token: string, phoneNumberId: string, method: "SMS" | "VOICE") {
+    return graph<{ success: boolean }>(token, "POST", `${phoneNumberId}/request_code`, { body: { code_method: method, language: "pt_BR" } });
+  },
+
+  verifyCode(token: string, phoneNumberId: string, code: string) {
+    return graph<{ success: boolean }>(token, "POST", `${phoneNumberId}/verify_code`, { body: { code } });
+  },
+
   registerPhone(token: string, phoneNumberId: string, pin: string) {
     return graph<{ success: boolean }>(token, "POST", `${phoneNumberId}/register`, {
       body: { messaging_product: "whatsapp", pin },

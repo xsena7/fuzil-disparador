@@ -95,6 +95,13 @@ createServer(async (req, res) => {
   if (waba && !edge && req.method === "GET") {
     return json(res, 200, { id, name: waba.name, currency: "USD", timezone_id: "1", account_review_status: "APPROVED", primary_funding_id: "mock-cartao", owner_business_info: waba.business, health_status: { can_send_message: "AVAILABLE" } });
   }
+  // Adicionar número na WABA (fica pendente até confirmar o código e registrar). Código certo no simulador: 123456
+  if (waba && edge === "phone_numbers" && req.method === "POST") {
+    const pid = `56${Date.now().toString().slice(-6)}`;
+    const digits = `${body.cc}${body.phone_number}`;
+    waba.phones.push({ id: pid, display_phone_number: `+${digits}`, verified_name: body.verified_name, quality_rating: "UNKNOWN", status: "PENDING", name_status: "PENDING_REVIEW", platform_type: "NOT_APPLICABLE", code_verification_status: "NOT_VERIFIED" });
+    return json(res, 200, { id: pid });
+  }
   if (waba && edge === "phone_numbers") return json(res, 200, { data: waba.phones });
   if (waba && edge === "subscribed_apps") return json(res, 200, { success: true });
   if (waba && edge === "message_templates") {
@@ -120,7 +127,17 @@ createServer(async (req, res) => {
     sent.push({ phone: id, to: body.to, body });
     return json(res, 200, { messaging_product: "whatsapp", contacts: [{ input: body.to, wa_id: body.to }], messages: [{ id: `wamid.MOCK${Date.now().toString(36)}${++msgSeq}` }] });
   }
-  if (phone && edge === "register") return json(res, 200, { success: true });
+  if (phone && edge === "request_code") return json(res, 200, { success: true });
+  if (phone && edge === "verify_code") {
+    if (body.code !== "123456") return json(res, 400, { error: { message: "Code Mismatch", code: 136025 } });
+    phone.code_verification_status = "VERIFIED";
+    return json(res, 200, { success: true });
+  }
+  if (phone && edge === "register") {
+    if (phone.code_verification_status === "NOT_VERIFIED") return json(res, 400, { error: { message: "Phone number not verified", code: 133010 } });
+    Object.assign(phone, { status: "CONNECTED", platform_type: "CLOUD_API", whatsapp_business_manager_messaging_limit: "TIER_250", throughput: { level: "STANDARD" } });
+    return json(res, 200, { success: true });
+  }
 
   json(res, 404, { error: { message: `Mock: rota não encontrada ${req.method} ${url.pathname}`, code: 100 } });
 }).listen(PORT, () => console.log(`[mock-meta] ouvindo em http://localhost:${PORT}`));

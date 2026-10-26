@@ -2,6 +2,14 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.93",
+    date: "27/10/2026",
+    items: [
+      "Conexões: adicionar número numa WABA direto pelo Fuzil, sem entrar no perfil do Facebook. Digite o número e o nome de exibição; a Meta manda o código por SMS ou ligação, você digita o código e o Fuzil confirma e registra o número sozinho",
+      "Conexões: número que ainda não foi confirmado mostra a caixa para digitar o código e os botões para pedir o código de novo",
+    ],
+  },
+  {
     version: "2.92",
     date: "27/10/2026",
     items: [
