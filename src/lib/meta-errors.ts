@@ -60,6 +60,16 @@ export const RETRYABLE_CODES = new Set([4, 130429, 131000, 131016, 131056]);
  * Mensagem de erro para mostrar ao cliente: erros da Meta viram a explicação em português (com o código),
  * erros internos (banco, disco) viram uma frase simples. O erro original vai para o log.
  */
+/** Erro da Meta com o motivo completo (alguns códigos, como 100 e 131000, não dizem nada sozinhos). */
+export function metaDetail(err: unknown): string {
+  const base = friendlyError(err);
+  if (err instanceof MetaError) {
+    const extra = [err.message, err.details].filter((x) => x && !base.includes(x)).join(" · ");
+    return extra ? `${base}: ${extra}` : base;
+  }
+  return base;
+}
+
 export function friendlyError(err: unknown): string {
   if (err instanceof MetaError) {
     const label = err.code !== null && ERRORS[err.code] ? ERRORS[err.code] : null;

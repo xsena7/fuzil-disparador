@@ -3,8 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { MetaError, meta, type BusinessProfile } from "@/lib/meta";
-import { friendlyError } from "@/lib/meta-errors";
+import { meta, type BusinessProfile } from "@/lib/meta";
+import { friendlyError, metaDetail } from "@/lib/meta-errors";
 import { wabaToken } from "@/lib/sync";
 import type { FormState } from "./auth";
 
@@ -23,16 +23,6 @@ async function squareJpeg(buf: Buffer, mime: string): Promise<{ buf: Buffer; mim
     console.error("[perfil] não converteu a foto", err);
     return { buf, mime };
   }
-}
-
-/** Erro da Meta com o detalhe (o código 131000 sozinho não diz nada). */
-function metaDetail(err: unknown) {
-  const base = friendlyError(err);
-  if (err instanceof MetaError) {
-    const extra = [err.message, err.details].filter((x) => x && !base.includes(x)).join(" · ");
-    return extra ? `${base}: ${extra}` : base;
-  }
-  return base;
 }
 
 /** Perfil atual do número, como está na Meta. */

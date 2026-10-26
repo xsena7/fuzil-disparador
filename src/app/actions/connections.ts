@@ -15,6 +15,7 @@ import { resetBmSecrets } from "@/lib/webhook";
 import { FUZIL_APP_ID, defaultAppSecret, isPlatformOwner } from "@/lib/onboarding";
 
 const errMsg = friendlyError;
+import { metaDetail } from "@/lib/meta-errors";
 
 
 async function ownWaba(id: string) {
@@ -189,7 +190,7 @@ export async function addPhoneAction(wabaRecordId: string, _: FormState, form: F
     await meta.requestCode(token, id, method);
     await syncWaba(waba.id);
   } catch (err) {
-    return { error: errMsg(err) };
+    return { error: metaDetail(err) };
   }
   revalidatePath("/conexoes");
   return { ok: `Número adicionado! A Meta mandou um código ${method === "VOICE" ? "por ligação" : "por SMS"} para ele. Digite o código no número, logo abaixo, para terminar.` };

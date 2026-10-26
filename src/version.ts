@@ -2,6 +2,16 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.98",
+    date: "27/10/2026",
+    items: [
+      "SMSBear: número recusado pela Meta (normalmente já banido no WhatsApp) é trocado por outro na hora, até o máximo de tentativas",
+      "SMSBear: o painel mostra o cancelamento de cada número (\"cancelado: o saldo volta\" ou o que o SMSBear respondeu). O Fuzil tenta cancelar a cada 30s, porque o SMSBear só deixa alguns minutos depois da compra",
+      "SMSBear: se o saldo acabar enquanto o dinheiro dos números cancelados não voltou, o registro espera o saldo voltar e continua, em vez de parar",
+      "Adicionar número e SMSBear: quando a Meta recusa, aparece o motivo completo (antes vinha só \"Parâmetro inválido\" ou \"Permissão negada\")",
+    ],
+  },
+  {
     version: "2.97",
     date: "27/10/2026",
     items: [

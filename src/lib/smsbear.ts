@@ -5,14 +5,15 @@ import { prisma } from "./db";
 import { decrypt } from "./crypto";
 import { env } from "./env";
 import { meta } from "./meta";
-import { friendlyError } from "./meta-errors";
+import { friendlyError, metaDetail } from "./meta-errors";
 import { PHONE_DISCARDED, syncWaba, wabaToken } from "./sync";
 import type { Prisma } from "@prisma/client";
 import { createAlert } from "./alerts";
 import { formatPhone } from "./phone";
 
 export const SMS_WAIT_MS = Number(process.env.SMSBEAR_WAIT_MS) || 150_000; // 2,5 minutos esperando o SMS (o teste local encurta)
-const CANCEL_GIVE_UP_MS = 30 * 60_000; // cancelamento que não vai em 30 min: desiste (o SMSBear devolve sozinho no fim do prazo)
+const CANCEL_GIVE_UP_MS = 6 * 3600_000; // cancelamento que não vai em 6h: desiste e avisa para pedir no site
+const CANCEL_EVERY_MS = 30_000; // o SMSBear pede alguns minutos após a compra: tenta a cada 30s
 const SERVICE = "whatsapp";
 const COUNTRY = "brazil";
 
@@ -72,7 +73,7 @@ export async function workspaceBearToken(workspaceId: string) {
 }
 
 type LogLine = { at: string; text: string; tone?: "ok" | "bad" | "info" };
-type Cancel = { id: string; since: string };
+type Cancel = { id: string; since: string; number?: string; last?: string; error?: string };
 
 async function push(jobId: string, text: string, tone: LogLine["tone"] = "info", data: Record<string, unknown> = {}) {
   const job = await prisma.smsJob.findUniqueOrThrow({ where: { id: jobId }, select: { log: true } });
@@ -84,9 +85,9 @@ const local = (n: string) => n.replace(/\D/g, "").replace(/^55/, "");
 const pretty = (n: string) => formatPhone(n.replace(/\D/g, ""));
 
 /** Larga o número da tentativa: guarda o pedido para cancelar e esconde o número que não foi confirmado. */
-async function dropAttempt(job: { id: string; wabaId: string; orderId: string | null; phoneNumberId: string | null; toCancel: unknown }, why: string) {
+async function dropAttempt(job: { id: string; wabaId: string; orderId: string | null; number?: string | null; phoneNumberId: string | null; toCancel: unknown }, why: string) {
   const toCancel = [...((job.toCancel as Cancel[]) ?? [])];
-  if (job.orderId) toCancel.push({ id: job.orderId, since: new Date().toISOString() });
+  if (job.orderId) toCancel.push({ id: job.orderId, since: new Date().toISOString(), ...(job.number ? { number: job.number } : {}) });
   if (job.phoneNumberId)
     await prisma.phoneNumber.updateMany({ where: { phoneNumberId: job.phoneNumberId, status: { not: "CONNECTED" } }, data: { invalidReason: PHONE_DISCARDED, enabled: false } });
   await push(job.id, why, "bad", { toCancel, orderId: null, number: null, phoneNumberId: null, step: "BUY", stepAt: new Date() });
@@ -121,7 +122,14 @@ async function stepJob(job: JobWithWaba) {
       order = await smsbear.buy(token, `fuzil-${job.id}-${attempt}`);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      // Sem saldo ou sem estoque: não adianta insistir
+      // Sem saldo, mas com número esperando cancelar: o saldo volta quando o SMSBear deixar cancelar. Espera e continua
+      const waitingRefund = ((job.toCancel as Cancel[]) ?? []).length > 0;
+      if (/saldo|insufficient|balance/i.test(msg) && waitingRefund) {
+        const lastText = ((job.log as LogLine[]) ?? []).at(-1)?.text ?? "";
+        if (!lastText.startsWith("Sem saldo agora")) await push(job.id, "Sem saldo agora: esperando o SMSBear devolver o dos números cancelados para continuar...", "info");
+        return;
+      }
+      // Sem saldo de verdade ou sem estoque: não adianta insistir
       return finish(job.id, "FAILED", `Não deu para comprar o número: ${msg}`, "bad", msg);
     }
     await push(job.id, `Tentativa ${attempt}: número ${pretty(order.number)} comprado (R$ ${(Number(order.cost) / 100).toFixed(2).replace(".", ",")}).`, "info", {
@@ -138,15 +146,9 @@ async function stepJob(job: JobWithWaba) {
       await syncWaba(job.wabaId).catch(() => undefined);
       await push(job.id, "Número colocado na WABA. Esperando o código da Meta chegar por SMS (até 2,5 min)...", "info", { step: "WAIT", stepAt: new Date() });
     } catch (e) {
-      const msg = friendlyError(e);
+      // Número recusado pela Meta (normalmente já banido no WhatsApp): cancela e tenta outro, até o máximo de tentativas
       const fresh = await prisma.smsJob.findUniqueOrThrow({ where: { id: job.id } });
-      // A mesma recusa da Meta duas vezes seguidas não é do número (ex.: WABA no limite de números): para, sem gastar mais
-      const prev = ((fresh.log as LogLine[]) ?? []).filter((l) => l.tone === "bad").at(-1)?.text ?? "";
-      await dropAttempt(fresh, `A Meta recusou esse número: ${msg}`);
-      if (prev.includes(msg)) {
-        await alertEnd(job, false, `A Meta recusou duas vezes seguidas: ${msg}`);
-        return finish(job.id, "FAILED", "Parou: a Meta recusou do mesmo jeito duas vezes (o problema é da WABA, não do número).", "bad", msg);
-      }
+      await dropAttempt(fresh, `A Meta recusou esse número (${metaDetail(e)}). Cancelando e pegando outro.`);
     }
     return;
   }
@@ -185,15 +187,37 @@ async function cancelPending() {
   const jobs = await prisma.smsJob.findMany({ where: { NOT: { toCancel: { equals: [] } } }, select: { id: true, workspaceId: true, toCancel: true } });
   for (const job of jobs) {
     const token = await workspaceBearToken(job.workspaceId);
+    if (!token) continue;
     const left: Cancel[] = [];
     for (const c of (job.toCancel as Cancel[]) ?? []) {
-      if (!token) continue;
-      const ok = await smsbear.cancel(token, c.id).then(() => true).catch(async () => {
-        // Já foi devolvido ou recebeu SMS: não tem o que cancelar
-        const o = await smsbear.order(token, c.id).catch(() => null);
-        return Boolean(o && o.status !== "pending");
-      });
-      if (!ok && Date.now() - new Date(c.since).getTime() < CANCEL_GIVE_UP_MS) left.push(c);
+      if (c.last && Date.now() - new Date(c.last).getTime() < CANCEL_EVERY_MS) {
+        left.push(c);
+        continue;
+      }
+      const label = c.number ? pretty(c.number) : c.id;
+      let error: string | null = null;
+      try {
+        await smsbear.cancel(token, c.id);
+      } catch (e) {
+        error = e instanceof Error ? e.message : String(e);
+      }
+      if (!error) {
+        await push(job.id, `${label} cancelado no SMSBear: o saldo volta.`, "ok");
+        continue;
+      }
+      // Já foi devolvido (ou recebeu SMS): não tem o que cancelar
+      const o = await smsbear.order(token, c.id).catch(() => null);
+      if (o && o.status !== "pending") {
+        await push(job.id, o.status === "refund" ? `${label} devolvido pelo SMSBear: o saldo voltou.` : `${label} já recebeu SMS no SMSBear (não dá para cancelar).`, o.status === "refund" ? "ok" : "info");
+        continue;
+      }
+      if (Date.now() - new Date(c.since).getTime() > CANCEL_GIVE_UP_MS) {
+        await push(job.id, `O SMSBear não deixou cancelar ${label} (${error}). Cancele pelo site do SMSBear para o saldo voltar.`, "bad");
+        continue;
+      }
+      // Primeira recusa vai para a linha do tempo; as seguintes só atualizam o motivo
+      if (!c.error) await push(job.id, `O SMSBear ainda não deixou cancelar ${label} (${error}). O Fuzil tenta de novo a cada 30s.`, "info");
+      left.push({ ...c, last: new Date().toISOString(), error });
     }
     await prisma.smsJob.update({ where: { id: job.id }, data: { toCancel: left } });
   }
