@@ -15,17 +15,21 @@ import { normalizeBmName } from "./market-invite";
 export const RESERVE_MINUTES = 15;
 const LOCK = 727275;
 
-/** Só entra na vitrine a BM com convite capturado, testado e ainda não entregue. */
+/**
+ * Entra na vitrine a BM com convite capturado e ainda não entregue. Só sai o convite que o teste provou que não funciona
+ * (o Facebook costuma responder 400 para quem abre sem login, e aí o teste não dá certeza: a garantia de 24h cobre).
+ */
+const SELLABLE_CHECK = { in: ["OK", "UNKNOWN"] };
 export const sellableWhere = (productId: string): Prisma.MarketItemWhereInput => ({
   productId,
   status: "AVAILABLE",
-  invite: { is: { check: "OK", usedAt: null, url: { not: null } } },
+  invite: { is: { check: SELLABLE_CHECK, usedAt: null, url: { not: null } } },
 });
 
 export async function stockByProduct(): Promise<Map<string, number>> {
   const rows = await prisma.marketItem.groupBy({
     by: ["productId"],
-    where: { status: "AVAILABLE", invite: { is: { check: "OK", usedAt: null, url: { not: null } } } },
+    where: { status: "AVAILABLE", invite: { is: { check: SELLABLE_CHECK, usedAt: null, url: { not: null } } } },
     _count: true,
   });
   return new Map(rows.map((r) => [r.productId, r._count]));

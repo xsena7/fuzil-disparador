@@ -9,19 +9,32 @@ export async function ingestInviteEmail(m: { messageId: string; subject: string;
   const messageId = m.messageId.slice(0, 300);
   const { url, bmName } = parseInviteEmail({ subject: m.subject, text: m.text, html: m.html });
   const existing = await prisma.marketInvite.findUnique({ where: { messageId } });
-  // Já lido e completo: nada a fazer. Lido antes sem nome/link (leitor antigo): lê de novo
-  if (existing && (existing.usedAt || existing.itemId || (existing.url && existing.bmName) || (!url && !bmName))) return;
-  const test = url && url !== existing?.url ? await checkInviteLink(url) : null;
+  // Já entregue a um cliente: nunca mexe
+  if (existing?.usedAt) return;
+  const nextName = bmName ?? existing?.bmName ?? null;
+  const nextUrl = url ?? existing?.url ?? null;
+  const changed = !existing || existing.bmName !== nextName || existing.url !== nextUrl;
+  // Lido antes com o mesmo resultado: só falta (talvez) a BM no estoque
+  if (existing && !changed) {
+    if (!existing.itemId && existing.url && existing.bmName) await autoStockItem(existing.id, existing.bmName);
+    return;
+  }
+  const test = nextUrl && nextUrl !== existing?.url ? await checkInviteLink(nextUrl) : null;
   const data = {
     subject: m.subject.slice(0, 300),
     fromAddr: m.from.slice(0, 200),
-    bmName: bmName ?? existing?.bmName ?? null,
-    url: url ?? existing?.url ?? null,
-    ...(test ? { check: test.check, checkNote: test.note, checkedAt: new Date() } : !url && !existing ? { checkNote: "E-mail sem link de convite" } : {}),
+    bmName: nextName,
+    url: nextUrl,
+    ...(test ? { check: test.check, checkNote: test.note, checkedAt: new Date() } : !nextUrl && !existing ? { checkNote: "E-mail sem link de convite" } : {}),
   };
   const inv = existing
     ? await prisma.marketInvite.update({ where: { id: existing.id }, data })
     : await prisma.marketInvite.create({ data: { messageId, receivedAt: Number.isNaN(m.date.getTime()) ? new Date() : m.date, ...data } });
+  // Leitura antiga tinha pego o nome errado: corrige também a BM criada no estoque (se ainda não foi vendida)
+  if (existing?.itemId && nextName && existing.bmName !== nextName) {
+    await prisma.marketItem.updateMany({ where: { id: existing.itemId, status: { in: ["AVAILABLE", "DISABLED"] } }, data: { bmName: nextName } });
+  }
+  if (inv.itemId) return;
   if (!inv.url || !inv.bmName) return;
   // BM já cadastrada no estoque com esse nome: liga o convite nela
   await matchInvites();

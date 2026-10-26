@@ -49,7 +49,7 @@ function itemState(i: ItemWithInvite): { label: string; color: "green" | "yellow
   if (i.status === "DISABLED") return { label: "Fora da vitrine", color: "gray" };
   if (!i.invite) return { label: "Sem convite", color: "red" };
   if (i.invite.check === "INVALID") return { label: "Convite não funciona", color: "red" };
-  if (i.invite.check !== "OK") return { label: "Testando convite", color: "yellow" };
+  if (!i.invite.check) return { label: "Testando convite", color: "yellow" };
   return { label: "À venda", color: "green" };
 }
 
@@ -100,7 +100,7 @@ export default async function VendasPage({ searchParams }: { searchParams: Promi
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Link href="/vendas?aba=pedidos" className="transition hover:-translate-y-0.5"><Stat label="Vendido no mês" value={brlCents(monthSales._sum.totalCents ?? 0)} tone="green" sub={`${monthSales._count} pedido(s)`} /></Link>
-        <Link href="/vendas?aba=estoque" className="transition hover:-translate-y-0.5"><Stat label="À venda agora" value={forSale} tone="brand" sub="BMs com convite testado" /></Link>
+        <Link href="/vendas?aba=estoque" className="transition hover:-translate-y-0.5"><Stat label="À venda agora" value={forSale} tone="brand" sub="BMs com convite" /></Link>
         <Link href="/vendas?aba=estoque" className="transition hover:-translate-y-0.5"><Stat label="Sem convite" value={noInvite} tone={noInvite ? "amber" : "default"} sub="não aparecem na vitrine" /></Link>
         <Link href="/vendas?aba=pedidos" className="transition hover:-translate-y-0.5"><Stat label="Falta entregar" value={toDeliver} tone={toDeliver ? "red" : "default"} sub="pagos e não entregues" /></Link>
       </div>
@@ -261,7 +261,7 @@ export default async function VendasPage({ searchParams }: { searchParams: Promi
                         <div key={i.id} className="flex flex-wrap items-center gap-3 rounded-xl bg-zinc-50 px-3 py-2 text-sm ring-1 ring-zinc-200/70">
                           <span className="font-semibold text-zinc-900">{i.bmName}</span>
                           <Badge color={s.color}>{s.label}</Badge>
-                          {i.invite?.checkNote && i.invite.check !== "OK" && <span className="text-xs text-zinc-500">{i.invite.checkNote}</span>}
+                          {i.invite?.checkNote && i.invite.check === "INVALID" && <span className="text-xs text-zinc-500">{i.invite.checkNote}</span>}
                           {i.order && <span className="text-xs text-zinc-500">→ {i.order.name} ({i.order.email})</span>}
                           {(i.status === "AVAILABLE" || i.status === "DISABLED") && (
                             <span className="ml-auto flex gap-1.5">
@@ -298,7 +298,7 @@ export default async function VendasPage({ searchParams }: { searchParams: Promi
           </Card>
           {invites.length === 0 && <Empty icon={<Inbox className="size-5" />}>Nenhum e-mail lido ainda.</Empty>}
           {invites.map((inv) => {
-            const tone: DrawerTone = !inv.url ? "gray" : inv.check === "OK" ? "green" : inv.check === "INVALID" ? "red" : "amber";
+            const tone: DrawerTone = !inv.url ? "gray" : inv.check === "INVALID" ? "red" : inv.check ? "green" : "amber";
             return (
               <Drawer
                 key={inv.id}
@@ -308,7 +308,7 @@ export default async function VendasPage({ searchParams }: { searchParams: Promi
                 meta={
                   <>
                     {inv.usedAt ? <Badge color="blue">Entregue</Badge> : inv.item ? <Badge color="green">BM: {inv.item.bmName}</Badge> : inv.url ? <Badge color="yellow">Sem BM ligada</Badge> : <Badge color="gray">Sem convite</Badge>}
-                    {inv.url && <Badge color={inv.check === "OK" ? "green" : inv.check === "INVALID" ? "red" : "yellow"}>{inv.check === "OK" ? "Link responde" : inv.check === "INVALID" ? "Link não funciona" : "Não testado"}</Badge>}
+                    {inv.url && <Badge color={inv.check === "OK" ? "green" : inv.check === "INVALID" ? "red" : inv.check ? "gray" : "yellow"}>{inv.check === "OK" ? "Link responde" : inv.check === "INVALID" ? "Link não funciona" : inv.check ? "Sem teste (pede login)" : "Testando"}</Badge>}
                   </>
                 }
               >

@@ -55,7 +55,7 @@ export function findBmName(subject: string, text = ""): string | null {
     /(?:acessar|acesso a|acesso ao|acesso à) (?:o |a )?(?:portf[oó]lio empresarial )?["“]?(.+?)["”]? (?:no|na|em) (?:Meta|Gerenciador|Business|Facebook)/i,
     /join (?:the business portfolio )?["“]?(.+?)["”]? on (?:Meta|Facebook|Business)/i,
     /access (?:to )?(?:the business portfolio )?["“]?(.+?)["”]? on (?:Meta|Facebook|Business)/i,
-    /(?:convite|invitation|invite) (?:para|to|for) (?:participar de |join |acessar )?["“]?(.+?)["”]?$/i,
+    /(?:convite|invitation|invite) (?:para|to|for) (?:participar (?:de|do|da) |join |acessar )?(?!participar|portf)["“]?(.+?)["”]?$/i,
   ];
   for (const re of patterns) {
     const m = s.match(re) ?? text.replace(/\s+/g, " ").match(re);
@@ -91,7 +91,7 @@ export async function checkInviteLink(url: string, fetcher: typeof fetch = fetch
     const title = html.match(/<title[^>]*>([^<]*)<\/title>/i)?.[1] ?? "";
     const visible = `${title} ${html.replace(/<script[\s\S]*?<\/script>/gi, " ").replace(/<style[\s\S]*?<\/style>/gi, " ").replace(/<[^>]+>/g, " ")}`.slice(0, 60_000);
     if (INVALID.some((re) => re.test(visible))) return { check: "INVALID", note: "A página do convite diz que ele expirou ou não é válido" };
-    if (res.status >= 400) return { check: "UNKNOWN", note: `A Meta respondeu ${res.status}` };
+    if (res.status >= 400) return { check: "UNKNOWN", note: `O Facebook não abre o convite sem login (respondeu ${res.status}): não dá para testar, segue à venda` };
     return { check: "OK", note: "Link responde (pede login no Facebook para aceitar)" };
   } catch (e) {
     return { check: "UNKNOWN", note: `Não consegui abrir o link agora (${e instanceof Error ? e.message : String(e)})` };

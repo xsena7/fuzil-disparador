@@ -2,6 +2,14 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.77",
+    date: "26/10/2026",
+    items: [
+      "Vendas: convite que o Facebook não deixa testar sem login (responde 400) continua à venda. Só sai da vitrine o convite que o teste provar que não funciona (expirado ou inexistente)",
+      "Vendas: convites lidos com o nome errado são corrigidos sozinhos, junto com o nome da BM no estoque (ex.: \"participar do portfólio empresarial...\" vira só o nome da BM)",
+    ],
+  },
+  {
     version: "2.76",
     date: "26/10/2026",
     items: [
