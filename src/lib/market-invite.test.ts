@@ -59,3 +59,26 @@ test("e-mail de convite no formato da Meta (assunto codificado, HTML quoted-prin
   const r = parseInviteEmail({ subject: m.subject ?? "", text: m.text, html: typeof m.html === "string" ? m.html : null });
   assert.deepEqual(r, { url: "https://business.facebook.com/invitation/?token=AbCdEf123&ref=email_invite", bmName: "Colégio Azul" });
 });
+
+test("e-mail atual da Meta: nome do portfólio e link do botão", () => {
+  const html = `<p><b>Dany Silva</b> convidou você para participar do portfólio empresarial de <b>Autoposto Tanque Cheio</b>. Os portfólios conectam as Páginas.</p>
+    <p>Esse convite expirará em November 24, 2026.</p>
+    <a href="https://business.facebook.com/invitation/?token=TK123&amp;ref=biz_invite_email" style="color:#fff"><span>Faça login para ver o convite</span></a>
+    <a href="https://www.facebook.com/business/help/1234">Saiba mais</a>`;
+  const r = parseInviteEmail({
+    subject: "Ação necessária: você recebeu um convite para participar do portfólio empresarial Autoposto Tanque Cheio",
+    text: null,
+    html,
+  });
+  assert.deepEqual(r, { url: "https://business.facebook.com/invitation/?token=TK123&ref=biz_invite_email", bmName: "Autoposto Tanque Cheio" });
+});
+
+test("botão com link de redirecionamento do Facebook também vale", () => {
+  const html = `<a href="https://www.facebook.com/n/?business%2Finvitation%2F&amp;token=AB&amp;aref=1">Aceitar convite</a>`;
+  assert.equal(parseInviteEmail({ subject: "x", html }).url, "https://www.facebook.com/n/?business%2Finvitation%2F&token=AB&aref=1");
+});
+
+test("'expirará em' na página não marca o convite como vencido", async () => {
+  const f = (async () => new Response("<p>Esse convite expirará em 24 de novembro</p>", { status: 200 })) as unknown as typeof fetch;
+  assert.equal((await checkInviteLink("https://business.facebook.com/invitation/?token=1", f)).check, "OK");
+});

@@ -81,8 +81,8 @@ export default async function VendasPage({ searchParams }: { searchParams: Promi
     { done: Boolean(env.mpAccessToken()), title: "Ligar o Pix do Mercado Pago", text: "Cole o Access Token de produção em Admin → gaveta Vendas.", href: "/admin", cta: "Abrir o Admin" },
     { done: Boolean(stockBox), title: "Escolher o e-mail do estoque", text: stockBox ? stockBox.address : "Crie um e-mail em E-mails e marque \"e-mail do estoque\".", href: "/emails", cta: "Abrir E-mails" },
     { done: products.length > 0, title: "Criar o produto da vitrine", text: "Nome, tipo (com ou sem template) e preço por BM.", href: "/vendas?aba=produtos", cta: "Criar produto" },
-    { done: items.length > 0, title: "Colocar BMs no estoque", text: "Escolha as BMs conectadas ou digite o nome delas.", href: "/vendas?aba=estoque", cta: "Abrir o estoque" },
-    { done: forSale > 0, title: "Convidar o e-mail do estoque nas BMs", text: `Na Meta: Configurações do negócio → Pessoas → Convidar ${stockBox?.address ?? "o e-mail do estoque"}. O convite chega aqui e a BM vai para a vitrine.`, href: "/vendas?aba=convites", cta: "Ver convites" },
+    { done: items.length > 0, title: "Convidar o e-mail do estoque nas BMs", text: `Na Meta: Configurações do negócio → Pessoas → Convidar ${stockBox?.address ?? "o e-mail do estoque"}. O Fuzil lê o convite e coloca a BM no estoque sozinho.`, href: "/vendas?aba=convites", cta: "Ver convites" },
+    { done: forSale > 0, title: "Primeira BM na vitrine", text: "Quando o link do convite passa no teste, a BM aparece à venda sozinha.", href: "/vendas?aba=estoque", cta: "Ver estoque" },
   ];
   const nextStep = steps.findIndex((st) => !st.done);
 
@@ -204,9 +204,9 @@ export default async function VendasPage({ searchParams }: { searchParams: Promi
       {aba === "estoque" && (
         <div className="space-y-4">
           <Card className="p-5">
-            <div className="mb-1 font-semibold">Colocar BMs no estoque</div>
+            <div className="mb-1 font-semibold">O estoque se monta sozinho</div>
             <p className="mb-4 text-sm text-zinc-500">
-              Depois, convide o e-mail do estoque em cada BM (Configurações do negócio → Pessoas → Convidar). O Fuzil pega o convite sozinho, testa o link e a BM entra na vitrine.
+              Convide {stockBox ? <b className="text-zinc-800">{stockBox.address}</b> : "o e-mail do estoque"} em cada BM (Configurações do negócio → Pessoas → Convidar). O Fuzil lê o nome da BM e o link do botão do convite, testa o link e coloca a BM no estoque. Conectada no Fuzil com template aprovado, ela entra no produto &quot;com template&quot;; senão, no &quot;sem template&quot;.
             </p>
             {products.length === 0 ? (
               <div className="rounded-xl bg-orange-50/60 p-4 ring-1 ring-orange-200">
@@ -214,6 +214,9 @@ export default async function VendasPage({ searchParams }: { searchParams: Promi
                 <ProductForm />
               </div>
             ) : (
+              <details className="group rounded-xl ring-1 ring-zinc-200">
+              <summary className="cursor-pointer list-none px-4 py-3 text-sm font-semibold text-zinc-700 [&::-webkit-details-marker]:hidden">Colocar à mão (opcional) <span className="text-xs font-normal text-zinc-500">· só se quiser cadastrar antes do convite chegar</span></summary>
+              <div className="border-t border-zinc-100 p-4">
               <ActionForm action={addItemsAction} submit="Colocar no estoque">
                 <div className="grid gap-4 md:grid-cols-[1fr_2fr]">
                   <Field label="Produto">
@@ -239,6 +242,8 @@ export default async function VendasPage({ searchParams }: { searchParams: Promi
                   </div>
                 )}
               </ActionForm>
+              </div>
+              </details>
             )}
           </Card>
           {products.map((p) => {

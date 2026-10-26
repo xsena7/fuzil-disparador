@@ -2,6 +2,14 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.76",
+    date: "26/10/2026",
+    items: [
+      "Vendas: o estoque se monta sozinho. Chegou convite no e-mail do estoque, o Fuzil lê o nome da BM e o link do botão do convite, testa o link e coloca a BM no estoque (com template, se ela estiver conectada no Fuzil com template aprovado; senão, sem template)",
+      "Vendas: o leitor entende o e-mail atual da Meta (\"portfólio empresarial ...\" e o botão \"Faça login para ver o convite\"), e os convites que já tinham chegado são lidos de novo",
+    ],
+  },
+  {
     version: "2.75",
     date: "26/10/2026",
     items: ["Admin → Vendas: botão \"Testar o Mercado Pago\" gera um Pix de R$ 1,00 e cancela na hora, para conferir se o token funciona"],

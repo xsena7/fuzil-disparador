@@ -29,6 +29,9 @@ export async function saveProductAction(_: FormState, form: FormData): Promise<F
   const data = { name, description, kind, priceCents, sort, active };
   if (id) await prisma.marketProduct.update({ where: { id }, data });
   else await prisma.marketProduct.create({ data });
+  // Convites que chegaram antes de existir produto entram no estoque agora
+  const { reingestStockMailbox } = await import("@/lib/market-inbox");
+  await reingestStockMailbox().catch(() => undefined);
   return done(id ? "Produto salvo" : "Produto criado");
 }
 

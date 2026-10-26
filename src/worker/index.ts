@@ -3,7 +3,7 @@ import { maybeComplete, recoverStuck, runCampaignTick, startDueCampaigns, TICK_M
 import { syncWaba } from "../lib/sync";
 import { deployBlueprints } from "../lib/blueprints";
 import { marketTick } from "../lib/market";
-import { recheckInvites } from "../lib/market-inbox";
+import { recheckInvites, reingestStockMailbox } from "../lib/market-inbox";
 import { startSettingsRefresh } from "../lib/platform-settings";
 import { checkLimitAlerts } from "../lib/limit-alerts";
 import { reportError } from "../lib/report";
@@ -81,6 +81,7 @@ async function main() {
   void every(10_000, "funis", runFunnels);
   void every(20_000, "vendas", marketTick);
   void every(10 * 60_000, "vendas-convites", recheckInvites);
+  void every(2 * 60_000, "vendas-estoque", reingestStockMailbox);
   await dispatchLoop();
   // Desligamento: espera os envios em andamento terminarem
   while (running.size) await new Promise((r) => setTimeout(r, 200));

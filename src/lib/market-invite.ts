@@ -19,12 +19,24 @@ const decodeEntities = (s: string) =>
     .replace(/&lt;/g, "<")
     .replace(/&gt;/g, ">");
 
+const isMetaUrl = (u: string) => /^https?:\/\/([a-z0-9-]+\.)*(facebook\.com|fb\.me|fb\.com|meta\.com)\//i.test(u);
+
+/** Link do botão do convite no HTML ("Faça login para ver o convite", "Aceitar convite", "View invitation"...). */
+export function findInviteButton(html: string): string | null {
+  for (const m of html.matchAll(/<a\b[^>]*?href\s*=\s*(["'])(.*?)\1[^>]*>([\s\S]*?)<\/a>/gi)) {
+    const href = decodeEntities(m[2]).trim();
+    const label = decodeEntities(m[3].replace(/<[^>]+>/g, " ")).replace(/\s+/g, " ").trim();
+    if (isMetaUrl(href) && /convite|invitation|invite|aceitar|accept/i.test(label) && !/saiba mais|learn more|ajuda|help/i.test(label)) return href;
+  }
+  return null;
+}
+
 /** Link do convite no corpo do e-mail da Meta (business.facebook.com/invitation/?token=... e parecidos). */
 export function findInviteUrl(text: string): string | null {
   const body = decodeEntities(text);
   // Sem colchetes: a versão em texto do e-mail escreve "Aceitar convite [https://...]"
   const urls = body.match(/https?:\/\/[^\s"'<>()[\]{}]+/g) ?? [];
-  const meta = urls.filter((u) => /^https?:\/\/([a-z0-9-]+\.)*(facebook\.com|fb\.me|fb\.com)\//i.test(u));
+  const meta = urls.filter(isMetaUrl);
   // Link de convite de verdade (não o de "ajuda", "descadastrar" etc.)
   const invite =
     meta.find((u) => /\/invitation\/?\?[^ ]*token=/i.test(u)) ??
@@ -36,6 +48,9 @@ export function findInviteUrl(text: string): string | null {
 export function findBmName(subject: string, text = ""): string | null {
   const s = subject.replace(/\s+/g, " ").trim();
   const patterns = [
+    // "Ação necessária: você recebeu um convite para participar do portfólio empresarial Loja X" e "...portfólio empresarial de Loja X. Os portfólios..."
+    /portf[oó]lio empresarial (?:de |do |da )?["“]?(.+?)["”]?(?:\.\s|\.$| no | na | em |$)/i,
+    /business portfolio ["“]?(.+?)["”]?(?:\.\s|\.$| on |$)/i,
     /(?:participar|fazer parte) (?:do|da|de) (?:portf[oó]lio empresarial )?["“]?(.+?)["”]? (?:no|na|em) (?:Meta|Gerenciador|Business|Facebook)/i,
     /(?:acessar|acesso a|acesso ao|acesso à) (?:o |a )?(?:portf[oó]lio empresarial )?["“]?(.+?)["”]? (?:no|na|em) (?:Meta|Gerenciador|Business|Facebook)/i,
     /join (?:the business portfolio )?["“]?(.+?)["”]? on (?:Meta|Facebook|Business)/i,
@@ -53,10 +68,11 @@ export function findBmName(subject: string, text = ""): string | null {
 export function parseInviteEmail(input: { subject: string; text?: string | null; html?: string | null }): { url: string | null; bmName: string | null } {
   const body = `${input.text ?? ""}\n${input.html ?? ""}`;
   const plain = (input.text ?? "") || (input.html ?? "").replace(/<[^>]+>/g, " ");
-  return { url: findInviteUrl(body), bmName: findBmName(input.subject, decodeEntities(plain)) };
+  const subject = input.subject.replace(/^(?:a[cç][aã]o necess[aá]ria|action required)\s*:\s*/i, "");
+  return { url: (input.html ? findInviteButton(input.html) : null) ?? findInviteUrl(body), bmName: findBmName(subject, decodeEntities(plain)) };
 }
 
-const INVALID = [/expir/i, /n[aã]o (?:é|est[aá]) mais (?:v[aá]lido|dispon[ií]vel)/i, /no longer (?:valid|available)/i, /invalid/i, /inv[aá]lido/i, /j[aá] foi (?:aceito|usado)/i, /already (?:been )?(?:accepted|used)/i];
+const INVALID = [/expirou|\bexpired\b|has expired/i, /n[aã]o (?:é|est[aá]) mais (?:v[aá]lido|dispon[ií]vel)/i, /no longer (?:valid|available)/i, /invalid/i, /inv[aá]lido/i, /j[aá] foi (?:aceito|usado)/i, /already (?:been )?(?:accepted|used)/i];
 
 /**
  * Testa se o link do convite responde e não mostra "expirado/inválido".
