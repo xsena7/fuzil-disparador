@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "3.05",
+    date: "27/10/2026",
+    items: ["Conexões: o número de teste da Meta (+1 555, \"Test Number\") é reconhecido em mais formatos e nunca conta como número de verdade. A BM que só tem ele continua em \"Sem número\" e não vai mais para Pagamento por causa dele"],
+  },
+  {
     version: "3.04",
     date: "27/10/2026",
     items: ["SMS24h: Cancelar e Trocar número liberam na hora, sem esperar (no SMSBear continua a espera de uns 4 minutos, que é regra deles)"],

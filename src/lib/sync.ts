@@ -205,7 +205,9 @@ async function checkPendingNames(wabaRecordId: string, token: string) {
 /** Números que nunca entram no rodízio: os de teste da Meta e os que não estão registrados na Cloud API. */
 export function phoneInvalidReason(p: MetaPhone): string | null {
   const digits = p.display_phone_number.replace(/\D/g, "");
-  if (p.account_mode === "SANDBOX" || p.verified_name === "Test Number" || /^1555\d{7}$/.test(digits)) return TEST_NUMBER;
+  // Número de teste da Meta (vem em toda WABA nova e não dá para apagar): +1 555..., nome "Test Number" ou conta SANDBOX
+  const testName = /test\s*number|n[úu]mero\s+de\s+teste|^test$/i.test(String(p.verified_name ?? "").trim());
+  if (String(p.account_mode ?? "").toUpperCase() === "SANDBOX" || testName || /^1555\d{6,8}$/.test(digits)) return TEST_NUMBER;
   if (p.platform_type === "NOT_APPLICABLE") return "Número não registrado na API";
   return null;
 }
