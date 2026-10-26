@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.65",
+    date: "26/10/2026",
+    items: ["Grupos: \"Prontas para disparo\" é automático. A BM apta (cartão, número ativo e template aprovado) entra sozinha a cada sincronização, e sai quando deixa de estar pronta"],
+  },
+  {
     version: "2.64",
     date: "25/10/2026",
     items: ["Conexões: só a conexão pelo botão (Cloud API ou Coexistência). Saiu o formulário de ID da WABA e token, e o tutorial agora ensina o passo a passo do botão"],

@@ -62,6 +62,30 @@ export function problemFix(code: number | null | undefined, kind?: string): stri
  * Move a BM para o grupo do tipo de problema (se já tiver disparado alguma vez, ou se o problema impede o primeiro disparo).
  * Se ela já está num grupo de problema e o tipo mudou, troca de grupo sozinha.
  */
+/** Grupo automático "Prontas para disparo": BM apta (cartão, número ativo, template aprovado) e fora dos grupos de problema. */
+export const READY_GROUP = "READY";
+
+/** Coloca no grupo "Prontas para disparo" toda BM pronta e tira a que deixou de estar pronta. Roda a cada sincronização. */
+export async function syncReadyGroup(workspaceId: string) {
+  const { readyBusinessIds } = await import("./readiness");
+  let group = await prisma.bmGroup.findFirst({ where: { workspaceId, system: READY_GROUP } });
+  if (!group) {
+    // Se a conta já tem o grupo criado à mão (ex.: "Prontas para disparo"), ele vira o automático
+    const manual = await prisma.bmGroup.findFirst({ where: { workspaceId, system: null, name: { contains: "pront", mode: "insensitive" } } });
+    group = manual
+      ? await prisma.bmGroup.update({ where: { id: manual.id }, data: { system: READY_GROUP } })
+      : await prisma.bmGroup.create({ data: { workspaceId, system: READY_GROUP, name: "Prontas para disparo", color: "emerald", description: "BMs prontas para as campanhas. Entram e saem sozinhas." } });
+  }
+  const ready = await readyBusinessIds({ workspaceId });
+  const current = new Set((await prisma.bmGroupMember.findMany({ where: { groupId: group.id }, select: { businessId: true } })).map((m) => m.businessId));
+  const remove = [...current].filter((id) => !ready.has(id));
+  const add = [...ready].filter((id) => !current.has(id));
+  await prisma.$transaction([
+    prisma.bmGroupMember.deleteMany({ where: { groupId: group.id, businessId: { in: remove } } }),
+    prisma.bmGroupMember.createMany({ data: add.map((businessId) => ({ groupId: group.id, businessId })), skipDuplicates: true }),
+  ]);
+}
+
 export async function flagBusinessProblem(businessId: string, reason: string, fix: string, kind: ProblemKind = "UNKNOWN", fromSend = true, force = false) {
   const bm = await prisma.businessManager.findUnique({ where: { id: businessId }, include: { groups: { include: { group: true } } } });
   if (!bm) return;
