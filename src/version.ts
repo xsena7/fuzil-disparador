@@ -2,6 +2,15 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.69",
+    date: "26/10/2026",
+    items: [
+      "Agendamento: a data e a hora são sempre de Brasília, mesmo se o computador estiver em outro fuso, e a tela mostra por extenso quando vai começar",
+      "Agendamento: horário que já passou é recusado (antes disparava na hora sem avisar)",
+      "Agendamento: campanha agendada que foi pausada volta a esperar o horário quando retoma (antes disparava na hora)",
+    ],
+  },
+  {
     version: "2.68",
     date: "26/10/2026",
     items: [

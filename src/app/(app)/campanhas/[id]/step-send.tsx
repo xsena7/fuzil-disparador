@@ -124,8 +124,9 @@ export function StepSendForm({
       {insufficient && <label className="flex items-center gap-2 text-amber-700"><input type="checkbox" name="ignoreBalance" /> Enviar até acabar o saldo (pausa automaticamente)</label>}
       <label className="flex items-center gap-2"><input type="checkbox" checked={schedule} onChange={(e) => setSchedule(e.target.checked)} /> Agendar envio</label>
       {schedule && (
-        <Field label="Data e hora">
-          <Input type="datetime-local" required onChange={(e) => setIso(e.target.value ? new Date(e.target.value).toISOString() : "")} />
+        <Field label="Data e hora (horário de Brasília)" hint={iso ? `Vai começar em ${new Date(iso).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", dateStyle: "full", timeStyle: "short" })} (Brasília)` : undefined}>
+          {/* Sempre no horário de Brasília (UTC−3, sem horário de verão), qualquer que seja o fuso do computador */}
+          <Input type="datetime-local" required onChange={(e) => setIso(e.target.value ? new Date(`${e.target.value}:00-03:00`).toISOString() : "")} />
           <input type="hidden" name="scheduledAt" value={schedule ? iso : ""} />
         </Field>
       )}

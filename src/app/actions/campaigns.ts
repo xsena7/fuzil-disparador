@@ -141,6 +141,8 @@ export async function startCampaignAction(id: string, _: FormState, form: FormDa
   const scheduledAt = when ? new Date(when) : null;
   if (scheduledAt && Number.isNaN(scheduledAt.getTime())) return { error: "Data de agendamento inválida" };
   const future = scheduledAt && scheduledAt.getTime() > Date.now() + 30_000;
+  // Agendou para um horário que já passou: não dispara de surpresa
+  if (scheduledAt && !future) return { error: "Esse horário já passou (horário de Brasília). Escolha um horário daqui a pelo menos 1 minuto ou desmarque \"Agendar envio\"." };
 
   await prisma.campaign.update({
     where: { id },
@@ -168,7 +170,12 @@ export async function pauseCampaignAction(id: string) {
 export async function resumeCampaignAction(id: string) {
   const { c } = await ownCampaign(id);
   if (c.status !== "PAUSED") return;
-  await prisma.campaign.update({ where: { id }, data: { status: "RUNNING", pausedReason: null, startedAt: c.startedAt ?? new Date() } });
+  // Agendada que foi pausada antes de começar: volta a esperar o horário
+  if (!c.startedAt && c.scheduledAt && c.scheduledAt.getTime() > Date.now()) {
+    await prisma.campaign.update({ where: { id }, data: { status: "SCHEDULED", pausedReason: null } });
+  } else {
+    await prisma.campaign.update({ where: { id }, data: { status: "RUNNING", pausedReason: null, startedAt: c.startedAt ?? new Date() } });
+  }
   revalidatePath(`/campanhas/${id}`);
 }
 

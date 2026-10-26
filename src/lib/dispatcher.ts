@@ -577,8 +577,9 @@ export async function recoverStuck() {
 export async function startDueCampaigns() {
   const due = await prisma.campaign.findMany({ where: { status: "SCHEDULED", scheduledAt: { lte: new Date() }, workspace: { blockedAt: null } } });
   for (const c of due) {
-    await prisma.campaign.update({ where: { id: c.id }, data: { status: "RUNNING", startedAt: c.startedAt ?? new Date() } });
-    await announceStart(c.id, true);
+    // Só liga se ainda estiver agendada (cancelada ou pausada no mesmo segundo continua como está)
+    const r = await prisma.campaign.updateMany({ where: { id: c.id, status: "SCHEDULED" }, data: { status: "RUNNING", startedAt: c.startedAt ?? new Date() } });
+    if (r.count) await announceStart(c.id, true);
   }
 }
 
