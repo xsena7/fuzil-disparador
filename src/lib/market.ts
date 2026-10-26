@@ -54,7 +54,7 @@ type MpPayment = {
 
 async function mp<T>(method: "GET" | "POST", path: string, body?: unknown, idempotency?: string): Promise<T> {
   const token = env.mpAccessToken();
-  if (!token) throw new Error("Mercado Pago não configurado (Admin → Configurações da plataforma)");
+  if (!token) throw new Error("Mercado Pago não configurado (Admin → gaveta Vendas)");
   const res = await fetch(`${env.mpApiUrl()}${path}`, {
     method,
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", ...(idempotency ? { "X-Idempotency-Key": idempotency } : {}) },

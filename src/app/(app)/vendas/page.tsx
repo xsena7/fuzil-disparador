@@ -246,7 +246,7 @@ export default async function VendasPage({ searchParams }: { searchParams: Promi
             <div className="min-w-0 flex-1 text-sm">
               <div className="font-semibold text-zinc-900">E-mail do estoque</div>
               {!inboxConfigured() ? (
-                <div className="text-zinc-500">Ainda não configurado. Coloque o servidor, o e-mail e a senha em Admin → Configurações da plataforma (campos &quot;Vendas&quot;).</div>
+                <div className="text-zinc-500">Ainda não configurado. Coloque o servidor, o e-mail e a senha em Admin → gaveta Vendas.</div>
               ) : inbox ? (
                 <div className={inbox.ok ? "text-zinc-600" : "text-red-700"}>{inbox.ok ? "Funcionando" : "Erro"} · {inbox.text} · {when(new Date(inbox.at))}</div>
               ) : (

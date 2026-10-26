@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.71",
+    date: "26/10/2026",
+    items: ["Admin: as configurações de vendas (Mercado Pago, e-mail do estoque e WhatsApp) ficam numa gaveta própria, \"Vendas\""],
+  },
+  {
     version: "2.70",
     date: "26/10/2026",
     items: [

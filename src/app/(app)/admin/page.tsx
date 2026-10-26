@@ -19,6 +19,7 @@ import { Badge } from "@/components/ui";
 import { COMPANY_KEYS, PLATFORM_KEYS } from "@/lib/platform-settings";
 import { company } from "@/lib/company";
 import { env } from "@/lib/env";
+import { inboxConfigured } from "@/lib/market-inbox";
 import { cachedSetting } from "@/lib/settings-cache";
 import { PasswordInput } from "@/components/password-input";
 import { adminDeleteLinkAction } from "@/app/actions/links";
@@ -43,6 +44,7 @@ export default async function AdminPage() {
   const hookCount = Object.values(discordHooks).filter(Boolean).length;
   const setting = (k: string) => cachedSetting(k) ?? process.env[k] ?? "";
   const metaOk = Boolean(setting("META_APP_ID") && setting("META_APP_SECRET") && setting("META_SYSTEM_USER_TOKEN"));
+  const salesOk = Boolean(env.mpAccessToken() && inboxConfigured());
   const errorsHook = Boolean(setting("DISCORD_ERRORS_WEBHOOK"));
   const companyOk = Boolean(company().legalName && company().address);
   return (
@@ -135,15 +137,26 @@ export default async function AdminPage() {
         </div>
         <ActionForm action={adminSavePlatformAction} submit="Salvar integração">
           <div className="grid gap-4 md:grid-cols-2">
-            {PLATFORM_KEYS.map(({ key, label, secret }) => {
-              const current = cachedSetting(key) ?? process.env[key] ?? "";
-              return (
-                <Field key={key} label={label} hint={secret ? (current ? "Configurado ✓ (deixe em branco para manter)" : "Não configurado") : undefined}>
-                  {secret ? <PasswordInput name={key} defaultValue="" autoComplete="off" /> : <Input name={key} defaultValue={current} placeholder={key === "META_GRAPH_VERSION" ? "v23.0" : ""} autoComplete="off" />}
-                  {secret && current && <label className="mt-1 flex items-center gap-1.5 text-xs text-zinc-500"><input type="checkbox" name={`${key}__clear`} /> limpar</label>}
-                </Field>
-              );
-            })}
+            {PLATFORM_KEYS.filter((k) => !isSalesKey(k.key)).map((k) => (
+              <SettingField key={k.key} name={k.key} label={k.label} secret={k.secret} />
+            ))}
+          </div>
+        </ActionForm>
+      </Drawer>
+
+      <Drawer
+        title="Vendas (vitrine /vendas)"
+        tone={salesOk ? "green" : "amber"}
+        meta={<span>{salesOk ? "Mercado Pago e e-mail do estoque configurados" : `Falta ${[!env.mpAccessToken() && "o Mercado Pago", !inboxConfigured() && "o e-mail do estoque"].filter(Boolean).join(" e ")}`}</span>}
+      >
+        <p className="mb-4 text-sm text-zinc-500">
+          Pagamento no Pix pelo Mercado Pago e a caixa de e-mail que recebe os convites das BMs (o Fuzil lê ela a cada minuto). Campos secretos em branco mantêm o valor atual.
+        </p>
+        <ActionForm action={adminSavePlatformAction} submit="Salvar vendas">
+          <div className="grid gap-4 md:grid-cols-2">
+            {PLATFORM_KEYS.filter((k) => isSalesKey(k.key)).map((k) => (
+              <SettingField key={k.key} name={k.key} label={k.label.replace(/^Vendas: (.)/, (_, c: string) => c.toUpperCase())} secret={k.secret} />
+            ))}
           </div>
         </ActionForm>
       </Drawer>
@@ -224,5 +237,18 @@ export default async function AdminPage() {
 
 
     </div>
+  );
+}
+
+/** Configurações de vendas (Mercado Pago, e-mail do estoque, WhatsApp) ficam na gaveta de Vendas. */
+const isSalesKey = (key: string) => key.startsWith("MP_") || key.startsWith("MARKET_");
+
+function SettingField({ name, label, secret }: { name: string; label: string; secret: boolean }) {
+  const current = cachedSetting(name) ?? process.env[name] ?? "";
+  return (
+    <Field label={label} hint={secret ? (current ? "Configurado ✓ (deixe em branco para manter)" : "Não configurado") : undefined}>
+      {secret ? <PasswordInput name={name} defaultValue="" autoComplete="off" /> : <Input name={name} defaultValue={current} placeholder={name === "META_GRAPH_VERSION" ? "v23.0" : name === "MARKET_IMAP_PORT" ? "993" : ""} autoComplete="off" />}
+      {secret && current && <label className="mt-1 flex items-center gap-1.5 text-xs text-zinc-500"><input type="checkbox" name={`${name}__clear`} /> limpar</label>}
+    </Field>
   );
 }

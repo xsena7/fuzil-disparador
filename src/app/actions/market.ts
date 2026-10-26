@@ -117,7 +117,7 @@ export async function recheckInviteAction(inviteId: string) {
 export async function pollInboxNowAction() {
   await requireFinancePartner();
   const { inboxConfigured, pollInbox } = await import("@/lib/market-inbox");
-  if (!inboxConfigured()) return { error: "Configure o e-mail dos convites em Admin → Configurações da plataforma" };
+  if (!inboxConfigured()) return { error: "Configure o e-mail dos convites em Admin → gaveta Vendas" };
   try {
     const r = await pollInbox();
     return done(`Li ${r.read} e-mail(s) novo(s), ${r.invites} com convite`);
