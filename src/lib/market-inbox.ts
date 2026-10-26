@@ -5,7 +5,7 @@ import { checkInviteLink, normalizeBmName, parseInviteEmail } from "./market-inv
 import { matchInvites } from "./market";
 
 /** E-mail que chegou na caixa do estoque: vira um convite capturado e, se ainda não existe, uma BM no estoque. */
-export async function ingestInviteEmail(m: { messageId: string; subject: string; from: string; text: string | null; html: string | null; date: Date }) {
+export async function ingestInviteEmail(m: { messageId: string; subject: string; from: string; text: string | null; html: string | null; date: Date; productId?: string | null }) {
   const messageId = m.messageId.slice(0, 300);
   const { url, bmName } = parseInviteEmail({ subject: m.subject, text: m.text, html: m.html });
   const existing = await prisma.marketInvite.findUnique({ where: { messageId } });
@@ -16,7 +16,7 @@ export async function ingestInviteEmail(m: { messageId: string; subject: string;
   const changed = !existing || existing.bmName !== nextName || existing.url !== nextUrl;
   // Lido antes com o mesmo resultado: só falta (talvez) a BM no estoque
   if (existing && !changed) {
-    if (!existing.itemId && existing.url && existing.bmName) await autoStockItem(existing.id, existing.bmName);
+    if (!existing.itemId && existing.url && existing.bmName) await autoStockItem(existing.id, existing.bmName, m.productId);
     return;
   }
   const test = nextUrl && nextUrl !== existing?.url ? await checkInviteLink(nextUrl) : null;
@@ -39,15 +39,17 @@ export async function ingestInviteEmail(m: { messageId: string; subject: string;
   // BM já cadastrada no estoque com esse nome: liga o convite nela
   await matchInvites();
   const fresh = await prisma.marketInvite.findUnique({ where: { id: inv.id }, select: { itemId: true } });
-  if (!fresh?.itemId) await autoStockItem(inv.id, inv.bmName);
+  if (!fresh?.itemId) await autoStockItem(inv.id, inv.bmName, m.productId);
 }
 
 /**
  * Cria a BM no estoque a partir do convite. O produto sai da própria BM: se ela está conectada no Fuzil
  * (conta de um dos sócios) com template de utilidade aprovado, vai para o produto "com template"; senão, "sem template".
  */
-async function autoStockItem(inviteId: string, bmName: string) {
-  const products = await prisma.marketProduct.findMany({ where: { active: true }, orderBy: [{ sort: "asc" }, { createdAt: "asc" }] });
+async function autoStockItem(inviteId: string, bmName: string, productId?: string | null) {
+  // Chegou no e-mail de estoque de um produto: vai para esse produto, sem adivinhar
+  const own = productId ? await prisma.marketProduct.findUnique({ where: { id: productId } }) : null;
+  const products = own ? [own] : await prisma.marketProduct.findMany({ where: { active: true }, orderBy: [{ sort: "asc" }, { createdAt: "asc" }] });
   if (!products.length) return; // sem produto ainda: o convite fica esperando (o painel avisa)
   const partners = await prisma.user.findMany({ where: { financePartner: true }, select: { memberships: { select: { workspaceId: true } } } });
   const workspaceIds = [...new Set(partners.flatMap((p) => p.memberships.map((m) => m.workspaceId)))];
@@ -58,25 +60,33 @@ async function autoStockItem(inviteId: string, bmName: string) {
   });
   const bm = bms.find((b) => normalizeBmName(b.name) === key);
   const hasTemplate = Boolean(bm?.wabas.some((w) => w.templates.length));
-  const product = products.find((p) => p.kind === (hasTemplate ? "TEMPLATE" : "NO_TEMPLATE")) ?? products[0];
+  const product = own ?? products.find((p) => p.kind === (hasTemplate ? "TEMPLATE" : "NO_TEMPLATE")) ?? products[0];
   const item = await prisma.marketItem.create({ data: { productId: product.id, bmName, businessId: bm?.id ?? null } });
   await prisma.marketInvite.update({ where: { id: inviteId }, data: { itemId: item.id } });
 }
 
 /** Lê de novo os e-mails da caixa do estoque (últimos 30 dias): pega convites que chegaram antes de o leitor entender o formato, ou antes de existir produto. */
 export async function reingestStockMailbox() {
-  const box = await prisma.mailBox.findFirst({ where: { purpose: "STOCK" } });
-  if (!box) return;
-  const msgs = await prisma.mailMessage.findMany({
-    where: { mailboxId: box.id, direction: "IN", receivedAt: { gt: new Date(Date.now() - 30 * 86_400_000) } },
-    orderBy: { receivedAt: "asc" },
-    take: 300,
-    select: { id: true, messageId: true, subject: true, fromAddr: true, fromName: true, text: true, html: true, receivedAt: true },
-  });
-  for (const m of msgs) {
-    await ingestInviteEmail({ messageId: m.messageId ?? `msg-${m.id}`, subject: m.subject, from: m.fromName ? `${m.fromName} <${m.fromAddr}>` : m.fromAddr, text: m.text, html: m.html, date: m.receivedAt }).catch((e) =>
-      console.error("[vendas] reler convite", e),
-    );
+  // A caixa geral do estoque e as caixas de cada produto
+  const boxes = await prisma.mailBox.findMany({ where: { OR: [{ purpose: "STOCK" }, { productId: { not: null } }] } });
+  for (const box of boxes) {
+    const msgs = await prisma.mailMessage.findMany({
+      where: { mailboxId: box.id, direction: "IN", receivedAt: { gt: new Date(Date.now() - 30 * 86_400_000) } },
+      orderBy: { receivedAt: "asc" },
+      take: 300,
+      select: { id: true, messageId: true, subject: true, fromAddr: true, fromName: true, text: true, html: true, receivedAt: true },
+    });
+    for (const m of msgs) {
+      await ingestInviteEmail({
+        messageId: m.messageId ?? `msg-${m.id}`,
+        subject: m.subject,
+        from: m.fromName ? `${m.fromName} <${m.fromAddr}>` : m.fromAddr,
+        text: m.text,
+        html: m.html,
+        date: m.receivedAt,
+        productId: box.productId,
+      }).catch((e) => console.error("[vendas] reler convite", e));
+    }
   }
   // Convite completo que ficou sem BM (ex.: chegou antes de existir produto): liga na BM com o mesmo nome ou cria agora
   await matchInvites();

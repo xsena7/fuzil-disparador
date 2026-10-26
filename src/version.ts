@@ -2,6 +2,14 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.80",
+    date: "27/10/2026",
+    items: [
+      "Vendas: cada produto pode ter o seu e-mail de estoque (ex.: bm250@fuzildisparador.com.br). O convite que chegar nele entra direto nesse produto, e o e-mail aparece na gaveta do produto",
+      "Vendas: botão \"Mover\" em cada BM do estoque, para trocar de produto",
+    ],
+  },
+  {
     version: "2.79",
     date: "26/10/2026",
     items: [

@@ -869,6 +869,7 @@ model MarketProduct {
   createdAt   DateTime      @default(now())
   items       MarketItem[]
   orders      MarketOrder[]
+  mailbox     MailBox?
 }
 
 // Uma BM do estoque
@@ -952,14 +953,17 @@ model MarketInvite {
 // ---------------------------------------------------------------------------
 
 model MailBox {
-  id          String        @id @default(cuid())
+  id          String         @id @default(cuid())
   // Endereço completo, minúsculo (ex.: estoque@fuzildisparador.com.br)
-  address     String        @unique
+  address     String         @unique
   name        String
   // STOCK = caixa do estoque das vendas: os convites de BM que chegam aqui entram sozinhos nas Vendas
   purpose     String?
+  // Caixa de estoque de um produto: os convites que chegam aqui entram nesse produto
+  productId   String?        @unique
+  product     MarketProduct? @relation(fields: [productId], references: [id], onDelete: SetNull)
   createdById String?
-  createdAt   DateTime      @default(now())
+  createdAt   DateTime       @default(now())
   messages    MailMessage[]
 }
 

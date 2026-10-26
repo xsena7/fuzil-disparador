@@ -6,6 +6,7 @@ import { parseMoney } from "@/lib/finance";
 import { requireFinancePartner } from "@/lib/finance-partners";
 import { deliverOrder, matchInvites, replaceItem } from "@/lib/market";
 import { checkInviteLink } from "@/lib/market-invite";
+import { cleanLocalPart, mailDomain } from "@/lib/mail";
 import type { FormState } from "./auth";
 
 // Painel de Vendas: só os sócios (os mesmos do Financeiro)
@@ -16,7 +17,7 @@ const done = (ok: string): FormState => {
 };
 
 export async function saveProductAction(_: FormState, form: FormData): Promise<FormState> {
-  await requireFinancePartner();
+  const auth = await requireFinancePartner();
   const id = String(form.get("id") ?? "");
   const name = String(form.get("name") ?? "").trim().slice(0, 80);
   const description = String(form.get("description") ?? "").trim().slice(0, 300);
@@ -27,8 +28,30 @@ export async function saveProductAction(_: FormState, form: FormData): Promise<F
   if (!name) return { error: "Dê um nome ao produto (ex.: BM com template aprovado)" };
   if (!priceCents) return { error: "Digite o preço (ex.: 50 ou 49,90)" };
   const data = { name, description, kind, priceCents, sort, active };
-  if (id) await prisma.marketProduct.update({ where: { id }, data });
-  else await prisma.marketProduct.create({ data });
+  // E-mail de estoque do produto (opcional): o convite que chegar nele entra nesse produto
+  const rawBox = String(form.get("mailbox") ?? "").trim();
+  const local = rawBox ? cleanLocalPart(rawBox) : null;
+  if (rawBox && !local) return { error: "E-mail do estoque: use só letras, números, ponto, traço ou sublinhado (ex.: bm250)" };
+  const address = local ? `${local}@${mailDomain()}` : null;
+  if (address) {
+    const box = await prisma.mailBox.findUnique({ where: { address } });
+    if (box?.productId && box.productId !== id) return { error: `${address} já é o e-mail de estoque de outro produto` };
+    if (box?.purpose === "STOCK") return { error: `${address} é o e-mail geral do estoque. Use outro para esse produto` };
+  }
+  const product = id ? await prisma.marketProduct.update({ where: { id }, data }) : await prisma.marketProduct.create({ data });
+  if (address) {
+    await prisma.$transaction([
+      // Um e-mail por produto: solta o e-mail antigo desse produto (a caixa continua existindo em E-mails)
+      prisma.mailBox.updateMany({ where: { productId: product.id, NOT: { address } }, data: { productId: null } }),
+      prisma.mailBox.upsert({
+        where: { address },
+        create: { address, name: `Estoque ${name}`.slice(0, 60), productId: product.id, createdById: auth.user.id },
+        update: { productId: product.id },
+      }),
+    ]);
+  } else if (form.get("mailboxClear") === "on") {
+    await prisma.mailBox.updateMany({ where: { productId: product.id }, data: { productId: null } });
+  }
   // Convites que chegaram antes de existir produto entram no estoque agora
   const { reingestStockMailbox } = await import("@/lib/market-inbox");
   await reingestStockMailbox().catch(() => undefined);
@@ -74,6 +97,17 @@ export async function toggleItemAction(id: string) {
   if (!it || (it.status !== "AVAILABLE" && it.status !== "DISABLED")) return { error: "Só dá para pausar BM que não foi vendida nem está reservada" };
   await prisma.marketItem.update({ where: { id }, data: { status: it.status === "AVAILABLE" ? "DISABLED" : "AVAILABLE" } });
   return done(it.status === "AVAILABLE" ? "BM tirada da vitrine" : "BM de volta na vitrine");
+}
+
+/** Muda a BM de produto (só a que não foi vendida nem está reservada). */
+export async function moveItemAction(id: string, _: FormState, form: FormData): Promise<FormState> {
+  await requireFinancePartner();
+  const productId = String(form.get("productId") ?? "");
+  const [it, product] = await Promise.all([prisma.marketItem.findUnique({ where: { id } }), prisma.marketProduct.findUnique({ where: { id: productId } })]);
+  if (!it || !product) return { error: "Escolha o produto" };
+  if (it.status !== "AVAILABLE" && it.status !== "DISABLED") return { error: "BM vendida ou reservada não muda de produto" };
+  await prisma.marketItem.update({ where: { id }, data: { productId } });
+  return done(`${it.bmName} foi para ${product.name}`);
 }
 
 export async function removeItemAction(id: string) {

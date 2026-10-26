@@ -4,7 +4,7 @@ import { CheckCircle2, ChevronRight, Circle, ExternalLink, Inbox, Mail, Package,
 import { prisma } from "@/lib/db";
 import { brlCents, siteUrl, stockByProduct } from "@/lib/market";
 import { env } from "@/lib/env";
-import { stockMailbox } from "@/lib/mail";
+import { mailDomain, stockMailbox } from "@/lib/mail";
 import { requireFinancePartner } from "@/lib/finance-partners";
 import { ActionForm, ConfirmButton } from "@/components/action-form";
 import { Badge, Card, Empty, Field, Input, PageHeader, Select, Stat, Textarea } from "@/components/ui";
@@ -19,6 +19,7 @@ import {
   removeItemAction,
   replaceItemAction,
   saveProductAction,
+  moveItemAction,
   toggleItemAction,
   unassignInviteAction,
 } from "@/app/actions/market";
@@ -63,7 +64,7 @@ export default async function VendasPage({ searchParams }: { searchParams: Promi
   monthStart.setHours(0, 0, 0, 0);
 
   const [products, stock, orders, items, invites, bms, stockBox, monthSales] = await Promise.all([
-    prisma.marketProduct.findMany({ orderBy: [{ sort: "asc" }, { createdAt: "asc" }], include: { _count: { select: { items: true } } } }),
+    prisma.marketProduct.findMany({ orderBy: [{ sort: "asc" }, { createdAt: "asc" }], include: { _count: { select: { items: true } }, mailbox: { select: { address: true } } } }),
     stockByProduct(),
     prisma.marketOrder.findMany({ orderBy: { createdAt: "desc" }, take: 100, include: { product: { select: { name: true } }, items: { include: { invite: true } } } }),
     prisma.marketItem.findMany({ orderBy: { createdAt: "desc" }, include: { invite: true, product: { select: { name: true } }, order: { select: { name: true, email: true } } } }),
@@ -207,12 +208,13 @@ export default async function VendasPage({ searchParams }: { searchParams: Promi
           <Card className="p-5">
             <div className="mb-1 font-semibold">O estoque se monta sozinho</div>
             <p className="mb-4 text-sm text-zinc-500">
-              Convide {stockBox ? <b className="text-zinc-800">{stockBox.address}</b> : "o e-mail do estoque"} em cada BM (Configurações do negócio → Pessoas → Convidar). O Fuzil lê o nome da BM e o link do botão do convite, testa o link e coloca a BM no estoque. Conectada no Fuzil com template aprovado, ela entra no produto &quot;com template&quot;; senão, no &quot;sem template&quot;.
+              Convide o e-mail do produto na BM (Configurações do negócio → Pessoas → Convidar): o Fuzil lê o nome da BM e o link do botão do convite, testa e coloca a BM <b>nesse produto</b>. O e-mail de cada produto aparece na gaveta dele aqui embaixo (e você muda em Produtos).
+              {stockBox && <> Convite que chegar no e-mail geral (<b className="text-zinc-800">{stockBox.address}</b>) vai para o produto com template se a BM estiver conectada no Fuzil com template aprovado; senão, para o sem template.</>} Para trocar uma BM de produto, use &quot;Mover&quot;.
             </p>
             {products.length === 0 ? (
               <div className="rounded-xl bg-orange-50/60 p-4 ring-1 ring-orange-200">
                 <div className="mb-3 text-sm font-semibold text-zinc-900">Primeiro, crie o produto que vai aparecer na vitrine:</div>
-                <ProductForm />
+                <ProductForm domain={mailDomain()} />
               </div>
             ) : (
               <details className="group rounded-xl ring-1 ring-zinc-200">
@@ -251,7 +253,7 @@ export default async function VendasPage({ searchParams }: { searchParams: Promi
             const mine = items.filter((i) => i.productId === p.id);
             const sale = stock.get(p.id) ?? 0;
             return (
-              <Drawer key={p.id} tone={sale ? "green" : mine.length ? "amber" : "gray"} title={p.name} subtitle={`${brlCents(p.priceCents)} por BM${p.active ? "" : " · fora da vitrine"}`} meta={<><MetaItem value={sale} label="à venda" /><MetaItem value={mine.filter((i) => i.status === "SOLD").length} label="vendidas" /></>}>
+              <Drawer key={p.id} tone={sale ? "green" : mine.length ? "amber" : "gray"} title={p.name} subtitle={`${brlCents(p.priceCents)} por BM${p.active ? "" : " · fora da vitrine"} · ${p.mailbox ? `convide ${p.mailbox.address} para colocar BM aqui` : "sem e-mail próprio (recebe pelo e-mail geral)"}`} meta={<><MetaItem value={sale} label="à venda" /><MetaItem value={mine.filter((i) => i.status === "SOLD").length} label="vendidas" /></>}>
                 {mine.length === 0 ? (
                   <p className="text-sm text-zinc-500">Nenhuma BM nesse produto.</p>
                 ) : (
@@ -265,7 +267,14 @@ export default async function VendasPage({ searchParams }: { searchParams: Promi
                           {i.invite?.checkNote && i.invite.check === "INVALID" && <span className="text-xs text-zinc-500">{i.invite.checkNote}</span>}
                           {i.order && <span className="text-xs text-zinc-500">→ {i.order.name} ({i.order.email})</span>}
                           {(i.status === "AVAILABLE" || i.status === "DISABLED") && (
-                            <span className="ml-auto flex gap-1.5">
+                            <span className="ml-auto flex flex-wrap items-center gap-1.5">
+                              {products.length > 1 && (
+                                <ActionForm action={moveItemAction.bind(null, i.id)} submit="Mover" variant="secondary" className="flex items-center gap-1.5 [&>div]:mt-0 [&_button]:px-3 [&_button]:py-1.5 [&_button]:text-xs">
+                                  <Select name="productId" defaultValue={i.productId} className="w-44 text-xs">
+                                    {products.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
+                                  </Select>
+                                </ActionForm>
+                              )}
                               <ConfirmButton action={toggleItemAction.bind(null, i.id)} className="px-3 py-1.5 text-xs">{i.status === "AVAILABLE" ? "Tirar da vitrine" : "Pôr na vitrine"}</ConfirmButton>
                               <ConfirmButton action={removeItemAction.bind(null, i.id)} confirm={`Tirar "${i.bmName}" do estoque?`} variant="danger" className="px-3 py-1.5 text-xs">Apagar</ConfirmButton>
                             </span>
@@ -345,11 +354,11 @@ export default async function VendasPage({ searchParams }: { searchParams: Promi
         <div className="space-y-4">
           <Card className="p-5">
             <div className="mb-4 font-semibold">Novo produto</div>
-            <ProductForm />
+            <ProductForm domain={mailDomain()} />
           </Card>
           {products.map((p) => (
-            <Drawer key={p.id} tone={p.active ? "green" : "gray"} title={p.name} subtitle={p.kind === "TEMPLATE" ? "Com template aprovado" : "Sem template"} meta={<><MetaItem value={brlCents(p.priceCents)} label="" /><MetaItem value={stock.get(p.id) ?? 0} label="à venda" /></>}>
-              <ProductForm product={p} />
+            <Drawer key={p.id} tone={p.active ? "green" : "gray"} title={p.name} subtitle={`${p.kind === "TEMPLATE" ? "Com template aprovado" : "Sem template"} · ${p.mailbox ? `e-mail do estoque: ${p.mailbox.address}` : "sem e-mail próprio"}`} meta={<><MetaItem value={brlCents(p.priceCents)} label="" /><MetaItem value={stock.get(p.id) ?? 0} label="à venda" /></>}>
+              <ProductForm product={p} domain={mailDomain()} />
               <div className="mt-4 border-t border-zinc-100 pt-4">
                 <ConfirmButton action={deleteProductAction.bind(null, p.id)} confirm={`Apagar o produto "${p.name}"?${p._count.items ? `\nAs ${p._count.items} BM(s) do estoque dele também saem.` : ""}`} variant="danger" className="px-3 py-1.5 text-xs">Apagar produto</ConfirmButton>
               </div>
@@ -361,7 +370,7 @@ export default async function VendasPage({ searchParams }: { searchParams: Promi
   );
 }
 
-function ProductForm({ product }: { product?: { id: string; name: string; description: string; kind: string; priceCents: number; sort: number; active: boolean } }) {
+function ProductForm({ product, domain }: { product?: { id: string; name: string; description: string; kind: string; priceCents: number; sort: number; active: boolean; mailbox?: { address: string } | null }; domain: string }) {
   return (
     <ActionForm action={saveProductAction} submit={product ? "Salvar" : "Criar produto"}>
       {product && <input type="hidden" name="id" value={product.id} />}
@@ -386,6 +395,19 @@ function ProductForm({ product }: { product?: { id: string; name: string; descri
         <Field label="Ordem na vitrine">
           <Input name="sort" type="number" min={0} max={999} defaultValue={product?.sort ?? 0} />
         </Field>
+      </div>
+      <div className="mt-4">
+        <Field label="E-mail do estoque desse produto (opcional)" hint="O convite de BM que chegar nesse e-mail entra direto nesse produto. Sem e-mail próprio, a BM vem pelo e-mail geral do estoque e o Fuzil escolhe pelo template.">
+          <div className="flex max-w-md items-center rounded-xl border border-zinc-200 bg-white pr-3 focus-within:border-orange-400 focus-within:ring-2 focus-within:ring-orange-100">
+            <input name="mailbox" defaultValue={product?.mailbox?.address.split("@")[0] ?? ""} placeholder="bm250" maxLength={64} autoComplete="off" className="min-w-0 flex-1 rounded-xl px-3 py-2 text-sm outline-none" />
+            <span className="text-xs text-zinc-500">@{domain}</span>
+          </div>
+        </Field>
+        {product?.mailbox && (
+          <label className="mt-1.5 flex items-center gap-2 text-xs text-zinc-500">
+            <input type="checkbox" name="mailboxClear" /> Tirar o e-mail desse produto (deixe o campo acima vazio)
+          </label>
+        )}
       </div>
       <label className="mt-3 flex items-center gap-2 text-sm text-zinc-700">
         <input type="checkbox" name="active" defaultChecked={product?.active ?? true} /> Aparece na vitrine

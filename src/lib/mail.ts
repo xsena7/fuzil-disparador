@@ -63,8 +63,9 @@ export async function storeIncoming(mail: ParsedMail, recipients: string[], size
         receivedAt: mail.date && !Number.isNaN(mail.date.getTime()) ? mail.date : new Date(),
       },
     });
-    if (box.purpose === "STOCK") {
-      await ingestInviteEmail({ messageId: mail.messageId ?? `${box.address}-${Date.now()}`, subject, from: mail.from?.text ?? "", text, html, date: mail.date ?? new Date() }).catch((e) =>
+    // Caixa de estoque (a geral ou a de um produto): o convite entra nas Vendas
+    if (box.purpose === "STOCK" || box.productId) {
+      await ingestInviteEmail({ messageId: mail.messageId ?? `${box.address}-${Date.now()}`, subject, from: mail.from?.text ?? "", text, html, date: mail.date ?? new Date(), productId: box.productId }).catch((e) =>
         console.error("[mail] convite do estoque", e),
       );
     }

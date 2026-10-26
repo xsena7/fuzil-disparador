@@ -27,7 +27,7 @@ export default async function EmailsPage({ searchParams }: { searchParams: Promi
   await requireFinancePartner();
   const sp = await searchParams;
   const domain = mailDomain();
-  const boxes = await prisma.mailBox.findMany({ orderBy: { address: "asc" }, include: { _count: { select: { messages: { where: { direction: "IN", readAt: null } } } } } });
+  const boxes = await prisma.mailBox.findMany({ orderBy: { address: "asc" }, include: { _count: { select: { messages: { where: { direction: "IN", readAt: null } } } }, product: { select: { name: true } } } });
   const box = boxes.find((b) => b.id === sp.caixa) ?? boxes[0] ?? null;
   const pasta = sp.pasta === "enviados" ? "OUT" : "IN";
   const q = (sp.q ?? "").trim().slice(0, 80);
@@ -62,7 +62,7 @@ export default async function EmailsPage({ searchParams }: { searchParams: Promi
             {boxes.map((b) => (
               <Link key={b.id} href={`/emails?caixa=${b.id}`} className={clsx("flex items-center gap-3 border-b border-zinc-100 px-4 py-3 text-sm last:border-0", box?.id === b.id ? "bg-orange-50" : "hover:bg-zinc-50")}>
                 <span className={clsx("flex size-8 shrink-0 items-center justify-center rounded-lg", box?.id === b.id ? "bg-brand-gradient text-white" : "bg-zinc-100 text-zinc-500")}>
-                  {b.purpose === "STOCK" ? <ShoppingBag className="size-4" /> : <Mail className="size-4" />}
+                  {b.purpose === "STOCK" || b.productId ? <ShoppingBag className="size-4" /> : <Mail className="size-4" />}
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate font-semibold text-zinc-900">{b.name}</span>
@@ -102,7 +102,8 @@ export default async function EmailsPage({ searchParams }: { searchParams: Promi
               <Card className="flex flex-wrap items-center gap-3 p-4">
                 <div className="min-w-0 flex-1">
                   <div className="flex min-w-0 flex-wrap items-center gap-2 font-semibold text-zinc-900">
-                    <span className="min-w-0 truncate">{box.address}</span> {box.purpose === "STOCK" && <Badge color="green">E-mail do estoque das Vendas</Badge>}
+                    <span className="min-w-0 truncate">{box.address}</span> {box.purpose === "STOCK" && <Badge color="green">E-mail geral do estoque das Vendas</Badge>}
+                    {box.product && <Badge color="green">Estoque do produto: {box.product.name}</Badge>}
                   </div>
                   <div className="text-xs text-zinc-500">{box.name}</div>
                 </div>
