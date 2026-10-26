@@ -37,6 +37,7 @@ const TABS = [
 const ORDER: Record<string, { label: string; tone: DrawerTone; color: "green" | "yellow" | "red" | "gray" | "blue" }> = {
   PENDING: { label: "Esperando Pix", tone: "amber", color: "yellow" },
   PAID: { label: "Pago, falta entregar", tone: "red", color: "red" },
+  SENDING: { label: "Enviando", tone: "amber", color: "yellow" },
   DELIVERED: { label: "Entregue", tone: "green", color: "green" },
   EXPIRED: { label: "Não pagou", tone: "gray", color: "gray" },
   CANCELLED: { label: "Cancelado", tone: "gray", color: "gray" },

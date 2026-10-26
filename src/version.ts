@@ -2,6 +2,14 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.79",
+    date: "26/10/2026",
+    items: [
+      "Vendas: o cliente recebe um e-mail só (com o PDF e o link da BM), mesmo quando o Mercado Pago avisa o pagamento mais de uma vez ao mesmo tempo",
+      "Vendas: o botão \"Mandar o e-mail de novo\" do pedido entregue agora reenvia de verdade",
+    ],
+  },
+  {
     version: "2.78",
     date: "26/10/2026",
     items: ["Vendas: depois de gerar o Pix na vitrine, a página do pedido abre certinho (antes dava 404 no endereço fuzildisparador.com.br/vendas)"],

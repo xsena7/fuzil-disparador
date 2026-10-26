@@ -903,8 +903,10 @@ model MarketOrder {
   name        String
   email       String
   phone       String?
-  // PENDING (esperando o Pix) | PAID (pago, faltando convite) | DELIVERED | EXPIRED | CANCELLED
+  // PENDING (esperando o Pix) | PAID (pago, faltando entregar) | SENDING (mandando o e-mail) | DELIVERED | EXPIRED | CANCELLED
   status      String        @default("PENDING")
+  // Quando começou a mandar o e-mail de entrega (só um aviso de pagamento manda; travou, tenta de novo depois de 10 min)
+  sendingAt   DateTime?
   mpPaymentId String?       @unique
   pixCode     String?
   pixQr       String?

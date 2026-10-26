@@ -142,8 +142,12 @@ export async function confirmPayment(paymentId: string) {
     await prisma.marketOrder.update({ where: { id: order.id }, data: { error: `Pago valor menor: ${pay.transaction_amount}` } });
     return { status: "amount_mismatch" };
   }
-  if (order.status === "PENDING" || order.status === "EXPIRED" || order.status === "CANCELLED") {
-    await prisma.marketOrder.update({ where: { id: order.id }, data: { status: "PAID", paidAt: new Date(), mpPaymentId: String(pay.id) } });
+  // Só um aviso marca como pago (e avisa vocês uma vez só)
+  const marked = await prisma.marketOrder.updateMany({
+    where: { id: order.id, status: { in: ["PENDING", "EXPIRED", "CANCELLED"] } },
+    data: { status: "PAID", paidAt: new Date(), mpPaymentId: String(pay.id) },
+  });
+  if (marked.count) {
     await notifyOwner("SALE", `Venda paga: ${order.quantity} BM(s) · ${brlCents(order.totalCents)}`, `${order.name} (${order.email}).`, { orderId: order.id });
   }
   await deliverOrder(order.id);
@@ -173,11 +177,12 @@ async function ensureBuyerAccount(name: string, email: string): Promise<{ userId
  * Separa as BMs, marca os convites como entregues e manda o e-mail (convites + acesso + PDF + WhatsApp).
  * Pode rodar de novo sem problema: o que já foi separado continua separado, e só falta o e-mail se ele falhou.
  */
-export async function deliverOrder(orderId: string) {
+export async function deliverOrder(orderId: string, opts: { resend?: boolean } = {}) {
   const ready = await prisma.$transaction(async (tx) => {
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(${LOCK})`;
     const order = await tx.marketOrder.findUnique({ where: { id: orderId }, include: { items: { include: { invite: true } }, product: true } });
-    if (!order || order.status !== "PAID") return null;
+    // Só o primeiro aviso de pagamento entrega (o Mercado Pago avisa mais de uma vez, e o worker também confere)
+    if (!order || !(order.status === "PAID" || (opts.resend && order.status === "DELIVERED"))) return null;
     let mine = order.items.filter((i) => i.status === "RESERVED" || i.status === "SOLD");
     // Pagou depois que a reserva venceu: separa de novo do estoque
     if (mine.length < order.quantity) {
@@ -192,6 +197,8 @@ export async function deliverOrder(orderId: string) {
     const now = new Date();
     await tx.marketItem.updateMany({ where: { id: { in: mine.map((m) => m.id) }, status: "RESERVED" }, data: { status: "SOLD", soldAt: now, reservedUntil: null } });
     await tx.marketInvite.updateMany({ where: { itemId: { in: mine.map((m) => m.id) }, usedAt: null }, data: { usedAt: now } });
+    // Pega o pedido para mandar o e-mail: quem chegar depois encontra "Enviando" e não manda de novo
+    await tx.marketOrder.update({ where: { id: order.id }, data: { status: "SENDING", sendingAt: now } });
     return { order, items: mine, missing: false as const };
   });
   if (!ready) return;
@@ -200,13 +207,21 @@ export async function deliverOrder(orderId: string) {
     return;
   }
   const { order, items } = ready;
-  const account = await ensureBuyerAccount(order.name, order.email);
-  if (!order.userId) await prisma.marketOrder.update({ where: { id: order.id }, data: { userId: account.userId } });
-  const sent = await sendDeliveryEmail(order, items.map((i) => i.invite?.url).filter((u): u is string => Boolean(u)), account);
-  await prisma.marketOrder.update({
-    where: { id: order.id },
-    data: sent ? { status: "DELIVERED", deliveredAt: new Date(), error: null } : { error: "O e-mail não saiu (confira a chave do Resend). Tento de novo sozinho." },
-  });
+  let sent = false;
+  try {
+    const account = await ensureBuyerAccount(order.name, order.email);
+    if (!order.userId) await prisma.marketOrder.update({ where: { id: order.id }, data: { userId: account.userId } });
+    // Reenvio pelo painel: entra pelo login (o link de criar senha já foi no primeiro e-mail)
+    const access = opts.resend && order.status === "DELIVERED" ? { ...account, created: false, accessUrl: `${env.appUrl()}/login` } : account;
+    sent = await sendDeliveryEmail(order, items.map((i) => i.invite?.url).filter((u): u is string => Boolean(u)), access);
+  } finally {
+    await prisma.marketOrder.update({
+      where: { id: order.id },
+      data: sent
+        ? { status: "DELIVERED", deliveredAt: order.deliveredAt ?? new Date(), sendingAt: null, error: null }
+        : { status: order.status === "DELIVERED" ? "DELIVERED" : "PAID", sendingAt: null, error: "O e-mail não saiu (confira a chave do Resend). Tento de novo sozinho." },
+    });
+  }
 }
 
 async function sendDeliveryEmail(
@@ -313,6 +328,8 @@ export async function marketTick() {
   // Pedido sem Pix (deu erro ao gerar) e vencido
   const stale = await prisma.marketOrder.findMany({ where: { status: "PENDING", mpPaymentId: null, expiresAt: { lt: new Date(now) } }, select: { id: true } });
   for (const o of stale) await releaseOrder(o.id, "EXPIRED");
+  // Travou no meio do envio (ex.: o servidor reiniciou): volta para "pago" e tenta de novo
+  await prisma.marketOrder.updateMany({ where: { status: "SENDING", sendingAt: { lt: new Date(now - 10 * 60_000) } }, data: { status: "PAID", sendingAt: null } });
   // Pago e ainda não entregue (faltou estoque ou o e-mail falhou): tenta de novo nas primeiras 48h
   const paid = await prisma.marketOrder.findMany({ where: { status: "PAID", paidAt: { gt: new Date(now - 48 * 3600_000) } }, select: { id: true } });
   for (const o of paid) await deliverOrder(o.id).catch((e) => console.error("[vendas] entrega", e));

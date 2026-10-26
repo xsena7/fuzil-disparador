@@ -118,7 +118,7 @@ export async function recheckInviteAction(inviteId: string) {
 
 export async function deliverAgainAction(orderId: string) {
   await requireFinancePartner();
-  await deliverOrder(orderId);
+  await deliverOrder(orderId, { resend: true });
   const o = await prisma.marketOrder.findUnique({ where: { id: orderId } });
   if (o?.status === "DELIVERED") return done("Entregue e e-mail enviado");
   return { error: o?.error ?? "Ainda não deu para entregar" };
