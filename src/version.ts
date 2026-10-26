@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.67",
+    date: "26/10/2026",
+    items: ["Grupos: \"Prontas para disparo\" fica fixo em toda conta, como o Aquecimento, mesmo sem nenhuma BM pronta ainda"],
+  },
+  {
     version: "2.66",
     date: "26/10/2026",
     items: ["Grupos: \"Prontas para disparo\" voltou a aparecer na lista (automático: as BMs entram e saem sozinhas)"],
