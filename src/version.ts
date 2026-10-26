@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.66",
+    date: "26/10/2026",
+    items: ["Grupos: \"Prontas para disparo\" voltou a aparecer na lista (automático: as BMs entram e saem sozinhas)"],
+  },
+  {
     version: "2.65",
     date: "26/10/2026",
     items: ["Grupos: \"Prontas para disparo\" é automático. A BM apta (cartão, número ativo e template aprovado) entra sozinha a cada sincronização, e sai quando deixa de estar pronta"],

@@ -9,7 +9,7 @@ import { Drawer, MetaItem } from "@/components/drawer";
 import { Badge, Empty, Field, Input, PageHeader, Stat } from "@/components/ui";
 import { ActionForm, ConfirmButton } from "@/components/action-form";
 import { deleteGroupAction, restoreBusinessAction, saveGroupAction } from "@/app/actions/groups";
-import { PROBLEM_KINDS, isProblemSystem } from "@/lib/bm-problems";
+import { PROBLEM_KINDS, READY_GROUP, isProblemSystem } from "@/lib/bm-problems";
 import { bmAptidao } from "@/lib/readiness";
 import { StatusDot } from "@/components/drawer";
 import { SendToGroup } from "./send-to-group";
@@ -48,7 +48,8 @@ export default async function GroupsPage() {
     const g = groups.find((x) => x.system === k.system);
     return { id: g?.id ?? k.system, name: g?.name ?? k.name, color: g?.color ?? k.color, description: g?.description ?? k.description, members: g?.members ?? [] };
   });
-  const regular = groups.filter((g) => !g.system);
+  // "Prontas para disparo" é automático, mas aparece junto dos grupos comuns (as BMs entram e saem sozinhas)
+  const regular = groups.filter((g) => !g.system || g.system === READY_GROUP);
   // Limite e disponível do grupo somam só as BMs prontas para disparar (as outras não entram na campanha)
   const isReady = (id: string) => Boolean(apt.get(id)?.apta && !businesses.find((b) => b.id === id)?.problemAt);
   const stats = await Promise.all(regular.map((g) => statsForBusinesses(g.members.map((m) => m.businessId).filter(isReady))));
