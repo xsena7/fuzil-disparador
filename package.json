@@ -13,14 +13,13 @@
     "typecheck": "tsc --noEmit",
     "test": "tsx --test src/lib/*.test.ts",
     "mock:meta": "tsx scripts/mock-meta.ts",
-    "build:worker": "esbuild src/worker/index.ts --bundle --platform=node --target=node22 --format=esm --packages=external --outfile=dist/worker.mjs --log-level=warning"
+    "build:worker": "esbuild src/worker/index.ts --bundle --platform=node --target=node22 --format=esm --packages=external --outfile=dist/worker.mjs --log-level=warning && esbuild src/mail/index.ts --bundle --platform=node --target=node22 --format=esm --packages=external --outfile=dist/mail.mjs --log-level=warning"
   },
   "dependencies": {
     "@prisma/client": "6.19.3",
     "bcryptjs": "3.0.3",
     "clsx": "2.1.1",
     "exceljs": "^4.4.0",
-    "imapflow": "1.0.191",
     "lucide-react": "0.577.0",
     "mailparser": "3.7.4",
     "next": "15.5.27",
@@ -29,6 +28,7 @@
     "prisma": "6.19.3",
     "react": "19.1.9",
     "react-dom": "19.1.9",
+    "smtp-server": "3.13.6",
     "tsx": "4.23.15",
     "zod": "3.25.76"
   },
@@ -39,6 +39,7 @@
     "@types/papaparse": "5.5.2",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
+    "@types/smtp-server": "3.5.10",
     "esbuild": "^0.28.2",
     "tailwindcss": "4.3.3",
     "typescript": "5.9.3"

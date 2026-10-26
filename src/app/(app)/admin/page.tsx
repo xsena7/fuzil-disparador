@@ -19,7 +19,7 @@ import { Badge } from "@/components/ui";
 import { COMPANY_KEYS, PLATFORM_KEYS } from "@/lib/platform-settings";
 import { company } from "@/lib/company";
 import { env } from "@/lib/env";
-import { inboxConfigured } from "@/lib/market-inbox";
+import { stockMailbox } from "@/lib/mail";
 import { cachedSetting } from "@/lib/settings-cache";
 import { PasswordInput } from "@/components/password-input";
 import { adminDeleteLinkAction } from "@/app/actions/links";
@@ -44,7 +44,8 @@ export default async function AdminPage() {
   const hookCount = Object.values(discordHooks).filter(Boolean).length;
   const setting = (k: string) => cachedSetting(k) ?? process.env[k] ?? "";
   const metaOk = Boolean(setting("META_APP_ID") && setting("META_APP_SECRET") && setting("META_SYSTEM_USER_TOKEN"));
-  const salesOk = Boolean(env.mpAccessToken() && inboxConfigured());
+  const stockBox = await stockMailbox();
+  const salesOk = Boolean(env.mpAccessToken() && stockBox);
   const errorsHook = Boolean(setting("DISCORD_ERRORS_WEBHOOK"));
   const companyOk = Boolean(company().legalName && company().address);
   return (
@@ -147,10 +148,11 @@ export default async function AdminPage() {
       <Drawer
         title="Vendas (vitrine /vendas)"
         tone={salesOk ? "green" : "amber"}
-        meta={<span>{salesOk ? "Mercado Pago e e-mail do estoque configurados" : `Falta ${[!env.mpAccessToken() && "o Mercado Pago", !inboxConfigured() && "o e-mail do estoque"].filter(Boolean).join(" e ")}`}</span>}
+        meta={<span>{salesOk ? "Mercado Pago e e-mail do estoque configurados" : `Falta ${[!env.mpAccessToken() && "o Mercado Pago", !stockBox && "o e-mail do estoque"].filter(Boolean).join(" e ")}`}</span>}
       >
         <p className="mb-4 text-sm text-zinc-500">
-          Pagamento no Pix pelo Mercado Pago e a caixa de e-mail que recebe os convites das BMs (o Fuzil lê ela a cada minuto). Campos secretos em branco mantêm o valor atual.
+          Pagamento no Pix pelo Mercado Pago. Os convites das BMs chegam no e-mail do estoque, que é criado em <b>E-mails</b> (marcando &quot;e-mail do estoque&quot;):{" "}
+          {stockBox ? <b className="text-emerald-700">{stockBox.address}</b> : <b className="text-amber-700">ainda não escolhido</b>}. Campos secretos em branco mantêm o valor atual.
         </p>
         <ActionForm action={adminSavePlatformAction} submit="Salvar vendas">
           <div className="grid gap-4 md:grid-cols-2">

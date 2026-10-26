@@ -1,10 +1,9 @@
 import Link from "next/link";
 import clsx from "clsx";
-import { ExternalLink, Inbox, Mail, Package, RefreshCw, ShoppingBag, Store } from "lucide-react";
+import { ExternalLink, Inbox, Mail, Package, ShoppingBag, Store } from "lucide-react";
 import { prisma } from "@/lib/db";
-import { decrypt } from "@/lib/crypto";
 import { brlCents, siteUrl, stockByProduct } from "@/lib/market";
-import { inboxConfigured } from "@/lib/market-inbox";
+import { stockMailbox } from "@/lib/mail";
 import { requireFinancePartner } from "@/lib/finance-partners";
 import { ActionForm, ConfirmButton } from "@/components/action-form";
 import { Badge, Card, Empty, Field, Input, PageHeader, Select, Stat, Textarea } from "@/components/ui";
@@ -15,7 +14,6 @@ import {
   deleteProductAction,
   deliverAgainAction,
   markPaidAction,
-  pollInboxNowAction,
   recheckInviteAction,
   removeItemAction,
   replaceItemAction,
@@ -62,22 +60,16 @@ export default async function VendasPage({ searchParams }: { searchParams: Promi
   monthStart.setDate(1);
   monthStart.setHours(0, 0, 0, 0);
 
-  const [products, stock, orders, items, invites, bms, statusRow, monthSales] = await Promise.all([
+  const [products, stock, orders, items, invites, bms, stockBox, monthSales] = await Promise.all([
     prisma.marketProduct.findMany({ orderBy: [{ sort: "asc" }, { createdAt: "asc" }], include: { _count: { select: { items: true } } } }),
     stockByProduct(),
     prisma.marketOrder.findMany({ orderBy: { createdAt: "desc" }, take: 100, include: { product: { select: { name: true } }, items: { include: { invite: true } } } }),
     prisma.marketItem.findMany({ orderBy: { createdAt: "desc" }, include: { invite: true, product: { select: { name: true } }, order: { select: { name: true, email: true } } } }),
     prisma.marketInvite.findMany({ orderBy: { receivedAt: "desc" }, take: 100, include: { item: { select: { bmName: true, status: true } } } }),
     prisma.businessManager.findMany({ where: { workspaceId: auth.workspace.id }, orderBy: { name: "asc" }, select: { id: true, name: true, marketItems: { where: { status: { not: "SOLD" } }, select: { id: true } } } }),
-    prisma.platformSetting.findUnique({ where: { key: "MARKET_INBOX_STATUS" } }),
+    stockMailbox(),
     prisma.marketOrder.aggregate({ where: { status: { in: ["PAID", "DELIVERED"] }, paidAt: { gte: monthStart } }, _sum: { totalCents: true }, _count: true }),
   ]);
-  let inbox: { at: string; ok: boolean; text: string } | null = null;
-  try {
-    inbox = statusRow ? JSON.parse(decrypt(statusRow.value)) : null;
-  } catch {
-    inbox = null;
-  }
   const forSale = [...stock.values()].reduce((a, n) => a + n, 0);
   const noInvite = items.filter((i) => (i.status === "AVAILABLE" || i.status === "DISABLED") && !i.invite).length;
   const toDeliver = orders.filter((o) => o.status === "PAID").length;
@@ -242,18 +234,18 @@ export default async function VendasPage({ searchParams }: { searchParams: Promi
       {aba === "convites" && (
         <div className="space-y-4">
           <Card className="flex flex-wrap items-center gap-4 p-5">
-            <span className={clsx("flex size-10 items-center justify-center rounded-xl text-white", !inboxConfigured() ? "bg-zinc-400" : inbox?.ok === false ? "bg-red-500" : "bg-emerald-600")}><Mail className="size-5" /></span>
+            <span className={clsx("flex size-10 items-center justify-center rounded-xl text-white", stockBox ? "bg-emerald-600" : "bg-zinc-400")}><Mail className="size-5" /></span>
             <div className="min-w-0 flex-1 text-sm">
               <div className="font-semibold text-zinc-900">E-mail do estoque</div>
-              {!inboxConfigured() ? (
-                <div className="text-zinc-500">Ainda não configurado. Coloque o servidor, o e-mail e a senha em Admin → gaveta Vendas.</div>
-              ) : inbox ? (
-                <div className={inbox.ok ? "text-zinc-600" : "text-red-700"}>{inbox.ok ? "Funcionando" : "Erro"} · {inbox.text} · {when(new Date(inbox.at))}</div>
+              {stockBox ? (
+                <div className="text-zinc-600">
+                  <b className="text-zinc-900">{stockBox.address}</b>: convide esse e-mail em cada BM. O convite chega no Fuzil na hora, é testado e liga sozinho à BM do estoque.
+                </div>
               ) : (
-                <div className="text-zinc-500">Configurado. O Fuzil lê a caixa a cada minuto.</div>
+                <div className="text-zinc-500">Ainda não escolhido. Crie um e-mail em E-mails e marque &quot;e-mail do estoque&quot;.</div>
               )}
             </div>
-            <ConfirmButton action={pollInboxNowAction} className="px-3 py-1.5 text-xs"><RefreshCw className="size-3.5" /> Ler agora</ConfirmButton>
+            <Link href="/emails" className="rounded-xl border border-zinc-200 px-3 py-1.5 text-xs font-semibold text-zinc-700 hover:bg-zinc-50">Abrir E-mails</Link>
           </Card>
           {invites.length === 0 && <Empty icon={<Inbox className="size-5" />}>Nenhum e-mail lido ainda.</Empty>}
           {invites.map((inv) => {

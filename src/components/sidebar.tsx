@@ -4,7 +4,7 @@ import clsx from "clsx";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Bell, Building2, GraduationCap, MessagesSquare, Coins, FileText, Flame, Home, Layers, LogOut, Megaphone, Menu, X, Settings, Shield, ShoppingBag, Sparkles, Wallet } from "lucide-react";
+import { Bell, Building2, GraduationCap, MessagesSquare, Coins, FileText, Flame, Home, Layers, LogOut, Mail, Megaphone, Menu, X, Settings, Shield, ShoppingBag, Sparkles, Wallet } from "lucide-react";
 import { logoutAction } from "@/app/actions/auth";
 import { Logo } from "./brand";
 import { APP_VERSION } from "@/version";
@@ -42,13 +42,13 @@ const sections = [
   },
 ];
 
-export function Sidebar({ workspace, user, unread, chatUnread = 0, balance, isSuperAdmin, financePartner = false }: { workspace: string; user: string; unread: number; chatUnread?: number; balance: number; isSuperAdmin: boolean; financePartner?: boolean }) {
+export function Sidebar({ workspace, user, unread, chatUnread = 0, mailUnread = 0, balance, isSuperAdmin, financePartner = false }: { workspace: string; user: string; unread: number; chatUnread?: number; mailUnread?: number; balance: number; isSuperAdmin: boolean; financePartner?: boolean }) {
   const path = usePathname();
   // No celular o menu fica escondido e abre pelo botão ☰; fecha sozinho ao trocar de página
   const [open, setOpen] = useState(false);
   useEffect(() => setOpen(false), [path]);
   // Financeiro: só para os sócios (fixos no banco)
-  const platform = [...(isSuperAdmin ? [{ href: "/admin", label: "Admin", icon: Shield }] : []), ...(financePartner ? [{ href: "/financeiro", label: "Financeiro", icon: Wallet }, { href: "/vendas", label: "Vendas", icon: ShoppingBag }] : [])];
+  const platform = [...(isSuperAdmin ? [{ href: "/admin", label: "Admin", icon: Shield }] : []), ...(financePartner ? [{ href: "/financeiro", label: "Financeiro", icon: Wallet }, { href: "/vendas", label: "Vendas", icon: ShoppingBag }, { href: "/emails", label: "E-mails", icon: Mail }] : [])];
   const all = platform.length ? [...sections, { title: "Plataforma", items: platform }] : sections;
   return (
     <>
@@ -110,6 +110,9 @@ export function Sidebar({ workspace, user, unread, chatUnread = 0, balance, isSu
                     <span className="flex-1">{label}</span>
                     {href === "/chat" && chatUnread > 0 && (
                       <span className="rounded-full bg-emerald-500 px-1.5 text-[11px] font-semibold text-white">{chatUnread}</span>
+                    )}
+                    {href === "/emails" && mailUnread > 0 && (
+                      <span className="rounded-full bg-sky-500 px-1.5 text-[11px] font-semibold text-white">{mailUnread}</span>
                     )}
                     {href === "/alertas" && unread > 0 && (
                       <span className="rounded-full bg-brand-gradient px-1.5 text-[11px] font-semibold text-white">{unread}</span>

@@ -28,12 +28,6 @@ export const env = {
   // Vendas (marketplace)
   mpAccessToken: () => platform("MP_ACCESS_TOKEN"),
   mpApiUrl: () => opt("MP_API_URL", "https://api.mercadopago.com").replace(/\/$/, ""),
-  marketImap: () => ({
-    host: platform("MARKET_IMAP_HOST"),
-    port: Number(platform("MARKET_IMAP_PORT", "993")) || 993,
-    user: platform("MARKET_IMAP_USER"),
-    pass: platform("MARKET_IMAP_PASSWORD"),
-  }),
   marketWhatsapp: () => platform("MARKET_WHATSAPP").replace(/\D/g, ""),
 };
 

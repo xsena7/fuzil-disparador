@@ -944,3 +944,42 @@ model MarketInvite {
 
   @@index([receivedAt])
 }
+
+// ---------------------------------------------------------------------------
+// E-mails do domínio do Fuzil (o servidor do Fuzil recebe direto, sem provedor)
+// ---------------------------------------------------------------------------
+
+model MailBox {
+  id          String        @id @default(cuid())
+  // Endereço completo, minúsculo (ex.: estoque@fuzildisparador.com.br)
+  address     String        @unique
+  name        String
+  // STOCK = caixa do estoque das vendas: os convites de BM que chegam aqui entram sozinhos nas Vendas
+  purpose     String?
+  createdById String?
+  createdAt   DateTime      @default(now())
+  messages    MailMessage[]
+}
+
+model MailMessage {
+  id          String    @id @default(cuid())
+  mailboxId   String
+  // IN = recebido; OUT = enviado pelo Fuzil
+  direction   String    @default("IN")
+  messageId   String?
+  fromAddr    String
+  fromName    String?
+  toAddr      String
+  subject     String
+  text        String?
+  html        String?
+  // [{ name, mime, size, path }]
+  attachments Json?
+  size        Int       @default(0)
+  readAt      DateTime?
+  receivedAt  DateTime  @default(now())
+  mailbox     MailBox   @relation(fields: [mailboxId], references: [id], onDelete: Cascade)
+
+  @@index([mailboxId, receivedAt])
+  @@index([mailboxId, readAt])
+}

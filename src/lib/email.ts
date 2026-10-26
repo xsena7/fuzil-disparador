@@ -11,6 +11,10 @@ export async function sendEmail(input: {
   html: string;
   text: string;
   attachments?: Array<{ filename: string; content: Buffer }>;
+  /** Remetente (padrão: EMAIL_FROM). Tem que ser do domínio verificado no Resend. */
+  from?: string;
+  replyTo?: string;
+  headers?: Record<string, string>;
 }): Promise<boolean> {
   const key = env.resendKey();
   if (!key) {
@@ -22,8 +26,10 @@ export async function sendEmail(input: {
       method: "POST",
       headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        from: env.emailFrom(),
+        from: input.from ?? env.emailFrom(),
         to: input.to,
+        ...(input.replyTo ? { reply_to: input.replyTo } : {}),
+        ...(input.headers ? { headers: input.headers } : {}),
         subject: input.subject,
         html: input.html,
         text: input.text,

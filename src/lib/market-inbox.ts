@@ -1,63 +1,28 @@
-// Caixa de e-mail do estoque: lê os convites de BM que chegam (IMAP), testa o link e liga ao estoque.
-import { ImapFlow } from "imapflow";
-import { simpleParser } from "mailparser";
+// Convites de BM da caixa do estoque (um e-mail do próprio Fuzil): acha o convite, testa o link e liga ao estoque.
 import { prisma } from "./db";
-import { env } from "./env";
 import { checkInviteLink, parseInviteEmail } from "./market-invite";
 import { matchInvites } from "./market";
 
-export function inboxConfigured() {
-  const c = env.marketImap();
-  return Boolean(c.host && c.user && c.pass);
-}
-
-/** Lê os e-mails dos últimos 7 dias que ainda não foram vistos pelo Fuzil. Devolve quantos convites novos achou. */
-export async function pollInbox(): Promise<{ read: number; invites: number }> {
-  const c = env.marketImap();
-  if (!c.host || !c.user || !c.pass) return { read: 0, invites: 0 };
-  const client = new ImapFlow({ host: c.host, port: c.port, secure: c.port === 993, auth: { user: c.user, pass: c.pass }, logger: false, socketTimeout: 60_000 });
-  let read = 0;
-  let invites = 0;
-  await client.connect();
-  try {
-    const lock = await client.getMailboxLock("INBOX");
-    try {
-      const since = new Date(Date.now() - 7 * 86_400_000);
-      const uids = (await client.search({ since }, { uid: true })) || [];
-      // Os mais novos primeiro, no máximo 200 por rodada
-      for (const uid of uids.slice(-200).reverse()) {
-        const msg = await client.fetchOne(String(uid), { source: true, envelope: true }, { uid: true });
-        if (!msg || !msg.source) continue;
-        const messageId = msg.envelope?.messageId || `uid-${uid}-${c.user}`;
-        if (await prisma.marketInvite.findUnique({ where: { messageId }, select: { id: true } })) continue;
-        const mail = await simpleParser(msg.source);
-        read++;
-        const subject = mail.subject ?? "(sem assunto)";
-        const { url, bmName } = parseInviteEmail({ subject, text: mail.text, html: typeof mail.html === "string" ? mail.html : null });
-        const test = url ? await checkInviteLink(url) : null;
-        await prisma.marketInvite.create({
-          data: {
-            messageId,
-            subject: subject.slice(0, 300),
-            fromAddr: (mail.from?.text ?? "").slice(0, 200),
-            bmName,
-            url,
-            check: test?.check ?? null,
-            checkNote: test?.note ?? (url ? null : "E-mail sem link de convite"),
-            checkedAt: test ? new Date() : null,
-            receivedAt: mail.date ?? new Date(),
-          },
-        });
-        if (url) invites++;
-      }
-    } finally {
-      lock.release();
-    }
-  } finally {
-    await client.logout().catch(() => undefined);
-  }
-  if (invites) await matchInvites();
-  return { read, invites };
+/** E-mail que chegou na caixa do estoque: vira um convite capturado (se tiver link de convite da Meta). */
+export async function ingestInviteEmail(m: { messageId: string; subject: string; from: string; text: string | null; html: string | null; date: Date }) {
+  const messageId = m.messageId.slice(0, 300);
+  if (await prisma.marketInvite.findUnique({ where: { messageId }, select: { id: true } })) return;
+  const { url, bmName } = parseInviteEmail({ subject: m.subject, text: m.text, html: m.html });
+  const test = url ? await checkInviteLink(url) : null;
+  await prisma.marketInvite.create({
+    data: {
+      messageId,
+      subject: m.subject.slice(0, 300),
+      fromAddr: m.from.slice(0, 200),
+      bmName,
+      url,
+      check: test?.check ?? null,
+      checkNote: test?.note ?? (url ? null : "E-mail sem link de convite"),
+      checkedAt: test ? new Date() : null,
+      receivedAt: Number.isNaN(m.date.getTime()) ? new Date() : m.date,
+    },
+  });
+  if (url) await matchInvites();
 }
 
 /** Testa de novo os convites ainda não entregues (convite expira com o tempo): no máximo 20 por rodada, a cada 12h cada um. */

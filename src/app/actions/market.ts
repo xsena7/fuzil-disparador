@@ -113,19 +113,6 @@ export async function recheckInviteAction(inviteId: string) {
   return done(t.check === "OK" ? "Link responde" : t.note);
 }
 
-/** Lê a caixa de e-mail agora (sem esperar o próximo minuto). */
-export async function pollInboxNowAction() {
-  await requireFinancePartner();
-  const { inboxConfigured, pollInbox } = await import("@/lib/market-inbox");
-  if (!inboxConfigured()) return { error: "Configure o e-mail dos convites em Admin → gaveta Vendas" };
-  try {
-    const r = await pollInbox();
-    return done(`Li ${r.read} e-mail(s) novo(s), ${r.invites} com convite`);
-  } catch (e) {
-    return { error: `Não consegui ler o e-mail: ${e instanceof Error ? e.message : String(e)}` };
-  }
-}
-
 export async function deliverAgainAction(orderId: string) {
   await requireFinancePartner();
   await deliverOrder(orderId);

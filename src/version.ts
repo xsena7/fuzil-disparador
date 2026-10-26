@@ -2,6 +2,15 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.72",
+    date: "26/10/2026",
+    items: [
+      "E-mails: aba nova em Plataforma (só os sócios) para criar endereços @fuzildisparador.com.br, ler, responder e baixar anexos, com contador de não lidos no menu",
+      "E-mails: o conteúdo do e-mail abre isolado (nenhum script de quem mandou roda no Fuzil) e os anexos só abrem logado",
+      "Vendas: o e-mail do estoque agora é uma caixa do próprio Fuzil (marque \"e-mail do estoque\" em E-mails). Os convites de BM caem direto nas Vendas, sem senha de outro provedor",
+    ],
+  },
+  {
     version: "2.71",
     date: "26/10/2026",
     items: ["Admin: as configurações de vendas (Mercado Pago, e-mail do estoque e WhatsApp) ficam numa gaveta própria, \"Vendas\""],
