@@ -10,6 +10,7 @@ import { prisma } from "@/lib/db";
 import { trackedUrlBase } from "@/lib/env";
 import { createUtilityTemplate, deployBlueprints } from "@/lib/blueprints";
 import { wabaToken } from "@/lib/sync";
+import { recheckWorkspaceBms } from "@/lib/bm-problems";
 import { meta, type TemplateComponent } from "@/lib/meta";
 import { extractVars } from "@/lib/template-utils";
 import { saveUpload } from "@/lib/uploads";
@@ -36,6 +37,7 @@ const schema = z.object({
   groupId: z.string().optional(),
   wabaIds: z.array(z.string()),
   asBlueprint: z.boolean(),
+  keepReady: z.boolean().optional(),
 });
 
 function buildComponents(d: z.infer<typeof schema>): TemplateComponent[] {
@@ -106,6 +108,7 @@ export async function createTemplateAction(_: FormState, form: FormData): Promis
         components: components as unknown as Prisma.InputJsonValue,
         headerSamplePath: sample?.path,
         headerSampleMime: sample?.mime,
+        keepReady: Boolean(data.keepReady),
       },
     });
     deployBlueprints(auth.workspace.id).catch((e) => console.error("[blueprints]", e));
@@ -166,6 +169,17 @@ export async function toggleBlueprintAction(id: string) {
   await prisma.templateBlueprint.update({ where: { id }, data: { active: !bp.active } });
   if (!bp.active) deployBlueprints(auth.workspace.id).catch(() => undefined);
   revalidatePath("/templates-padrao");
+}
+
+/** Liga/desliga "não tirar as BMs prontas do disparo enquanto esse template estiver em análise" e já acerta os grupos. */
+export async function toggleKeepReadyAction(id: string) {
+  const auth = await requireAuth();
+  const bp = await prisma.templateBlueprint.findFirst({ where: { id, workspaceId: auth.workspace.id } });
+  if (!bp) return;
+  await prisma.templateBlueprint.update({ where: { id }, data: { keepReady: !bp.keepReady } });
+  await recheckWorkspaceBms(auth.workspace.id);
+  revalidatePath("/templates-padrao");
+  revalidatePath("/grupos");
 }
 
 export async function deleteBlueprintAction(id: string) {

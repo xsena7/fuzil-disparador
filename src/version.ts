@@ -2,6 +2,15 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.90",
+    date: "27/10/2026",
+    items: [
+      "Templates padrão: nova opção \"Não tirar as BMs prontas do disparo\". Para template extra (ex.: de um cliente para outro dia): enquanto ele está em análise, a BM que já tem outro template aprovado continua em Prontas para disparo",
+      "Templates padrão: a opção também liga/desliga num template que já foi criado, e as BMs voltam para o grupo certo na hora",
+      "Novo template padrão: o grupo \"Prontas para disparo\" aparece na escolha do grupo",
+    ],
+  },
+  {
     version: "2.89",
     date: "27/10/2026",
     items: ["Financeiro: o Guilherme (dono) pode apagar qualquer lançamento, de qualquer sócio. Os outros sócios continuam apagando só os próprios"],

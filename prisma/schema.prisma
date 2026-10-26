@@ -530,6 +530,8 @@ model TemplateBlueprint {
   headerSamplePath String?
   headerSampleMime String?
   active           Boolean              @default(true)
+  // Template extra (ex.: de um cliente para outro dia): em análise não tira das prontas a BM que já tem outro aprovado
+  keepReady        Boolean              @default(false)
   createdAt        DateTime             @default(now())
   updatedAt        DateTime             @updatedAt
   workspace        Workspace            @relation(fields: [workspaceId], references: [id], onDelete: Cascade)

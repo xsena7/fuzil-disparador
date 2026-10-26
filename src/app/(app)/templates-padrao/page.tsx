@@ -1,11 +1,12 @@
 import { Plus, RefreshCw, Trash2 } from "lucide-react";
+import clsx from "clsx";
 import { Drawer, MetaItem } from "@/components/drawer";
 import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { Badge, Empty, LinkButton, PageHeader, type BadgeColor } from "@/components/ui";
 import { ActionForm, ConfirmButton } from "@/components/action-form";
 import { Textarea } from "@/components/ui";
-import { deleteBlueprintAction, deployNowAction, editBlueprintTextAction, toggleBlueprintAction } from "@/app/actions/templates";
+import { deleteBlueprintAction, deployNowAction, editBlueprintTextAction, toggleBlueprintAction, toggleKeepReadyAction } from "@/app/actions/templates";
 import type { TComponent } from "@/lib/template-utils";
 
 export const dynamic = "force-dynamic";
@@ -74,11 +75,20 @@ export default async function BlueprintsPage() {
                 <>
                   <MetaItem value={`${approved}/${scope.length}`} label="BMs aprovadas" />
                   {!bp.active && <Badge color="gray">Desativado</Badge>}
+                  {bp.keepReady && <Badge color="blue">Não tira das prontas</Badge>}
                   <span>{bp.group ? `Grupo: ${bp.group.name}` : "Todas as BMs"}</span>
                 </>
               }
             >
               <div className="mb-3 flex flex-wrap items-center gap-2">
+                {bp.category !== "AUTHENTICATION" && (
+                  <form action={toggleKeepReadyAction.bind(null, bp.id)} className="flex items-center gap-2 text-sm text-zinc-600">
+                    <button className={clsx("relative h-5 w-9 shrink-0 rounded-full transition", bp.keepReady ? "bg-brand-500" : "bg-zinc-300")} title="Liga/desliga">
+                      <span className={clsx("absolute top-0.5 size-4 rounded-full bg-white shadow transition", bp.keepReady ? "left-[18px]" : "left-0.5")} />
+                    </button>
+                    Não tirar as BMs prontas do disparo enquanto estiver em análise
+                  </form>
+                )}
                 <div className="ml-auto flex gap-2">
                   <ConfirmButton action={toggleBlueprintAction.bind(null, bp.id)}>{bp.active ? "Desativar" : "Ativar"}</ConfirmButton>
                   <ConfirmButton action={deleteBlueprintAction.bind(null, bp.id)} variant="ghost" className="text-red-600" confirm="Remover este template padrão? (as cópias já criadas na Meta continuam lá)"><Trash2 className="size-4" /></ConfirmButton>

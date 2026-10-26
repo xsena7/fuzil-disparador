@@ -165,6 +165,13 @@ const BAD_PHONE: Record<string, { label: string; kind: string }> = {
   DISCONNECTED: { label: "Número desconectado", kind: "REGISTER" },
 };
 
+/** Confere de novo todas as BMs da conta (sem chamar a Meta) e acerta os grupos. */
+export async function recheckWorkspaceBms(workspaceId: string) {
+  const wabas = await prisma.whatsAppAccount.findMany({ where: { workspaceId }, select: { id: true } });
+  for (const w of wabas) await checkBusinessAfterSync(w.id).catch((e) => console.error("[bm-problems] reconferir", e));
+  await syncReadyGroup(workspaceId).catch(() => undefined);
+}
+
 /** Depois de sincronizar uma WABA: confere se a BM tem algum problema e move se tiver. */
 export async function checkBusinessAfterSync(wabaRecordId: string) {
   const waba = await prisma.whatsAppAccount.findUnique({
@@ -178,8 +185,8 @@ export async function checkBusinessAfterSync(wabaRecordId: string) {
   // Template de utilidade aprovado na BM (o template é o primeiro critério: sem ele a BM nem dispara)
   const [approvedTemplates, pendingTemplates] = await Promise.all([
     prisma.template.count({ where: { waba: { businessId: waba.businessId }, status: "APPROVED", category: "UTILITY" } }),
-    // Só os templates padrão do Fuzil que estão em análise (os templates criados à mão não contam)
-    prisma.templateDeployment.count({ where: { status: "SUBMITTED", waba: { businessId: waba.businessId } } }),
+    // Só os templates padrão do Fuzil que estão em análise (os criados à mão e os marcados "não tirar das prontas" não contam)
+    prisma.templateDeployment.count({ where: { status: "SUBMITTED", waba: { businessId: waba.businessId }, blueprint: { keepReady: false } } }),
   ]);
   // Template em análise é prioridade mesmo se a BM já tem outro aprovado; sem nenhum aprovado também
   const templateProblem = approvedTemplates === 0 || pendingTemplates > 0;

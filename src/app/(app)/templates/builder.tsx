@@ -37,11 +37,12 @@ export function TemplateBuilder({
   const [groupId, setGroupId] = useState(groups[0]?.id ?? "");
   const [wabaIds, setWabaIds] = useState<string[]>([]);
   const [asBlueprint, setAsBlueprint] = useState(defaultBlueprint);
+  const [keepReady, setKeepReady] = useState(false);
   const [samplePreview, setSamplePreview] = useState<string | null>(null);
   const bodyRef = useRef<HTMLTextAreaElement>(null);
 
   const vars = useMemo(() => extractVars(body), [body]);
-  const payload = JSON.stringify({ name, language, headerType, headerText, headerExample, body, bodyExamples, footer, buttons, target, groupId, wabaIds, asBlueprint });
+  const payload = JSON.stringify({ name, language, headerType, headerText, headerExample, body, bodyExamples, footer, buttons, target, groupId, wabaIds, asBlueprint, keepReady: asBlueprint && keepReady });
 
   function addVar() {
     const next = `{{${vars.filter((v) => /^\d+$/.test(v)).length + 1}}}`;
@@ -247,6 +248,15 @@ export function TemplateBuilder({
               <span className="block text-zinc-600">Sobe automaticamente em toda BM do escopo, inclusive nas que forem conectadas depois. Se a Meta recategorizar para marketing, a cópia é excluída e você é avisado.</span>
             </span>
           </label>
+          {asBlueprint && (
+            <label className="flex items-start gap-2 rounded-lg border border-zinc-200 p-3">
+              <input type="checkbox" className="mt-0.5" checked={keepReady} onChange={(e) => setKeepReady(e.target.checked)} />
+              <span>
+                <b>Não tirar as BMs prontas do disparo</b>
+                <span className="block text-zinc-600">Para template extra (ex.: de um cliente para outro dia). Enquanto ele estiver em análise, a BM que já tem outro template aprovado continua em Prontas para disparo e não vai para Template em análise.</span>
+              </span>
+            </label>
+          )}
         </Card>
 
         <div className="flex items-center gap-3">
