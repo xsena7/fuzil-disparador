@@ -126,8 +126,9 @@ export async function deployBlueprints(workspaceId?: string) {
         }
         await prisma.template.deleteMany({ where: { wabaId: waba.id, name, language: bp.language } });
       }
-      // Queimou o nome (virou marketing, rejeitou) ou o texto foi editado depois de rejeitar: sobe com o próximo nome
-      const burned = rejected || dep?.status === "RECATEGORIZED_DELETED" || dep?.status === "RETRY";
+      // Queimou o nome (virou marketing, rejeitou, foi pausado) ou o texto foi editado depois de rejeitar: sobe com o próximo nome
+      // Pausado não é apagado: a Meta pode despausar, e aí ele volta a servir junto com o novo
+      const burned = rejected || dep?.status === "RECATEGORIZED_DELETED" || dep?.status === "RETRY" || (dep?.status === "PAUSED" && version < MAX_VERSIONS);
       if (burned) {
         // O nome queimou nessa WABA: tenta o próximo número (pulando nomes que já existem nela)
         if (version >= MAX_VERSIONS) continue;
@@ -203,6 +204,7 @@ function deploymentStatusFor(status: string, category: string, expected = "UTILI
   if (category !== expected) return "RECATEGORIZED_DELETED";
   if (status === "APPROVED") return "APPROVED";
   if (status === "REJECTED") return "REJECTED";
+  if (status === "PAUSED" || status === "DISABLED") return "PAUSED";
   return "SUBMITTED";
 }
 

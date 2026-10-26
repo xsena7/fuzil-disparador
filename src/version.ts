@@ -2,6 +2,14 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "3.10",
+    date: "27/10/2026",
+    items: [
+      "Templates padrão: quando a Meta pausa ou desativa um template, o Fuzil manda sozinho a próxima versão para análise (fzl_disp2, fzl_disp3...), igual ao rejeitado. O pausado não é apagado, porque a Meta pode despausar",
+      "Templates padrão: template pausado aparece como \"Pausado pela Meta: enviando outro\" (antes aparecia como \"Em análise\")",
+    ],
+  },
+  {
     version: "3.09",
     date: "27/10/2026",
     items: ["Avisos no canto da tela: mais limpos e curtos. Só o que aconteceu (ex.: \"Sem número\") e de quem, com uma bolinha de cor. Avisos iguais chegam juntos num só (\"Sem número (2)\")"],

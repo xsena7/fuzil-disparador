@@ -21,6 +21,7 @@ const DEP: Record<string, [BadgeColor, string]> = {
   MARKETING_ON_CREATE: ["red", "Meta criou como marketing: mude o texto"],
   ERROR: ["red", "Erro"],
   RETRY: ["yellow", "Reenviando com o texto novo"],
+  PAUSED: ["yellow", "Pausado pela Meta: enviando outro"],
 };
 
 // Motivos de rejeição da Meta, em português

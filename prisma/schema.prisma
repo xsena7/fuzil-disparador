@@ -561,6 +561,8 @@ enum DeploymentStatus {
   ERROR
   // Texto editado depois de rejeitar: sobe de novo com o próximo nome (o antigo segue rejeitado na Meta)
   RETRY
+  // A Meta pausou/desativou o template (qualidade): sobe outro com o próximo nome (o pausado fica, pode voltar)
+  PAUSED
 }
 
 model TemplateDeployment {
