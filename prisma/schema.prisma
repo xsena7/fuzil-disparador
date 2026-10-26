@@ -89,6 +89,7 @@ model Workspace {
   groups              BmGroup[]
   templates           Template[]
   smsJobs             SmsJob[]
+  smsOrders           SmsOrder[]
   campaigns           Campaign[]
   contacts            Contact[]
   alerts              Alert[]
@@ -1059,5 +1060,24 @@ model SmsJob {
   waba          WhatsAppAccount @relation(fields: [wabaId], references: [id], onDelete: Cascade)
 
   @@index([status])
+  @@index([workspaceId, createdAt])
+}
+
+// SMSBear modo manual: número comprado pelo painel; o código que chegar aparece ao vivo para copiar
+model SmsOrder {
+  id          String    @id @default(cuid())
+  workspaceId String
+  orderId     String
+  number      String
+  costCents   Int       @default(0)
+  // PENDING | RECEIVED | CANCELLED
+  status      String    @default("PENDING")
+  code        String?
+  smsText     String?
+  checkedAt   DateTime?
+  hidden      Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
   @@index([workspaceId, createdAt])
 }

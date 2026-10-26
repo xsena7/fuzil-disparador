@@ -82,3 +82,60 @@ export async function stopSmsJobAction(jobId: string): Promise<FormState> {
   await stopSmsJob(job.id);
   return { ok: "Parado." };
 }
+
+// ---------------------------------------------------------------------------
+// Modo manual: compra o número, o código aparece no painel, você coloca na WABA pelo "Adicionar número"
+// ---------------------------------------------------------------------------
+
+async function bearTokenOf(workspaceId: string) {
+  const { workspaceBearToken } = await import("@/lib/smsbear");
+  return workspaceBearToken(workspaceId);
+}
+
+export async function buyManualAction(): Promise<FormState> {
+  const auth = await requireAuth();
+  const token = await bearTokenOf(auth.workspace.id);
+  if (!token) return { error: "Conecte o SMSBear primeiro." };
+  try {
+    const { randomUUID } = await import("node:crypto");
+    const o = await smsbear.buy(token, randomUUID());
+    await prisma.smsOrder.create({ data: { workspaceId: auth.workspace.id, orderId: o.id, number: o.number, costCents: Number(o.cost) || 0 } });
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Não deu para comprar o número" };
+  }
+  return { ok: "Número comprado! Copie e coloque na WABA em \"Adicionar número nesta WABA\". O código aparece aqui quando chegar." };
+}
+
+/** Cancela no SMSBear (o saldo volta). O SMSBear só deixa alguns minutos depois da compra. */
+export async function cancelManualAction(id: string): Promise<FormState> {
+  const auth = await requireAuth();
+  const o = await prisma.smsOrder.findFirst({ where: { id, workspaceId: auth.workspace.id } });
+  if (!o) return { error: "Número não encontrado" };
+  if (o.status !== "PENDING") return { error: o.status === "RECEIVED" ? "Esse número já recebeu SMS: não dá para cancelar." : "Já foi cancelado." };
+  const { cancelOpensIn } = await import("@/lib/smsbear-shared");
+  const wait = cancelOpensIn(o.createdAt);
+  if (wait > 0) return { error: `O SMSBear libera o cancelamento em ${Math.ceil(wait / 1000)}s.` };
+  const token = await bearTokenOf(auth.workspace.id);
+  if (!token) return { error: "Conecte o SMSBear primeiro." };
+  try {
+    await smsbear.cancel(token, o.orderId);
+  } catch (e) {
+    return { error: `O SMSBear ainda não deixou cancelar (${e instanceof Error ? e.message : "erro"}). Ele libera uns 4 minutos depois da compra.` };
+  }
+  await prisma.smsOrder.update({ where: { id: o.id }, data: { status: "CANCELLED" } });
+  return { ok: "Cancelado: o saldo volta." };
+}
+
+/** Trocar número: cancela este e já compra outro. */
+export async function swapManualAction(id: string): Promise<FormState> {
+  const r = await cancelManualAction(id);
+  if (r?.error) return r;
+  return buyManualAction();
+}
+
+/** Tira do painel (o que já foi cancelado ou recebeu SMS). */
+export async function hideManualAction(id: string): Promise<FormState> {
+  const auth = await requireAuth();
+  await prisma.smsOrder.updateMany({ where: { id, workspaceId: auth.workspace.id, status: { not: "PENDING" } }, data: { hidden: true } });
+  return { ok: "Removido." };
+}

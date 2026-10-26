@@ -1,6 +1,6 @@
 import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { smsbear, workspaceBearToken } from "@/lib/smsbear";
+import { manualOrders, smsbear, workspaceBearToken } from "@/lib/smsbear";
 
 export const dynamic = "force-dynamic";
 
@@ -28,8 +28,10 @@ export async function GET() {
     take: 5,
     include: { waba: { select: { name: true, business: { select: { name: true } } } } },
   });
+  const manual = await manualOrders(auth.workspace.id, token).catch(() => []);
   return Response.json({
     connected: true,
+    manual,
     balance: c.balance,
     price: c.price,
     error: c.error,

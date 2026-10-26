@@ -243,3 +243,22 @@ async function alertEnd(job: { workspaceId: string; waba: { business: { name: st
 }
 
 export const newIdempotency = () => randomUUID();
+
+/** Modo manual: atualiza os números aguardando SMS (no máximo a cada 4s cada) e devolve os do painel. */
+export async function manualOrders(workspaceId: string, token: string) {
+  const list = await prisma.smsOrder.findMany({ where: { workspaceId, hidden: false }, orderBy: { createdAt: "desc" }, take: 6 });
+  await Promise.all(
+    list
+      .filter((o) => o.status === "PENDING" && (!o.checkedAt || Date.now() - o.checkedAt.getTime() > 4000))
+      .map(async (o) => {
+        const r = await smsbear.order(token, o.orderId).catch(() => null);
+        if (!r) return;
+        const code = codeFromSms(r.sms);
+        const st = String(r.status ?? "").toLowerCase();
+        const status = code ? "RECEIVED" : /refund|cancel|devolv|reembols/.test(st) ? "CANCELLED" : "PENDING";
+        Object.assign(o, { status, code, smsText: r.sms?.[0]?.text ?? null, checkedAt: new Date() });
+        await prisma.smsOrder.update({ where: { id: o.id }, data: { status, code, smsText: o.smsText, checkedAt: o.checkedAt } });
+      }),
+  );
+  return list.map((o) => ({ id: o.id, number: o.number, costCents: o.costCents, status: o.status, code: o.code, smsText: o.smsText, createdAt: o.createdAt }));
+}

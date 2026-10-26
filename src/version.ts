@@ -2,6 +2,14 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "3.00",
+    date: "27/10/2026",
+    items: [
+      "SMSBear: modo Manual no painel. Compre o número BR, copie e coloque na BM em \"Adicionar número nesta WABA\"; quando a Meta mandar o SMS, o código aparece no painel na hora, com botão de copiar",
+      "SMSBear: botões Cancelar e Trocar número em cada número. Eles ficam travados até o SMSBear liberar (uns 4 minutos depois da compra), com a contagem, e acendem sozinhos",
+    ],
+  },
+  {
     version: "2.99",
     date: "27/10/2026",
     items: [
