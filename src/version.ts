@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "3.04",
+    date: "27/10/2026",
+    items: ["SMS24h: Cancelar e Trocar número liberam na hora, sem esperar (no SMSBear continua a espera de uns 4 minutos, que é regra deles)"],
+  },
+  {
     version: "3.03",
     date: "27/10/2026",
     items: [
