@@ -81,6 +81,7 @@ export async function syncWaba(wabaRecordId: string) {
     const real = phones.filter((p) => phoneInvalidReason(p) !== TEST_NUMBER);
     for (const p of real) await upsertPhone(waba.workspaceId, waba.id, p);
     await removeGonePhones(waba.id, real.map((p) => p.id));
+    await checkPendingNames(waba.id, token).catch((e) => console.error("[sync] troca de nome", e));
     // Conversas de número de teste são só teste: some tudo
     const test = phones.filter((p) => phoneInvalidReason(p) === TEST_NUMBER).map((p) => p.id);
     if (test.length) await prisma.phoneNumber.deleteMany({ where: { wabaId: waba.id, phoneNumberId: { in: test } } });
@@ -160,6 +161,43 @@ async function removeGonePhones(wabaRecordId: string, metaIds: string[]) {
   });
   // Fica escondido (não apaga): os envios das últimas 24h dele continuam contando no limite da BM
   if (gone.length) await prisma.phoneNumber.updateMany({ where: { id: { in: gone.map((p) => p.id) } }, data: { invalidReason: PHONE_REMOVED, enabled: false } });
+}
+
+/**
+ * Troca de nome pedida pelo Fuzil: quando a Meta aprova, registra o número de novo (sem isso o nome novo não aparece).
+ * Recusou: avisa e esquece o pedido.
+ */
+async function checkPendingNames(wabaRecordId: string, token: string) {
+  const phones = await prisma.phoneNumber.findMany({ where: { wabaId: wabaRecordId, pendingName: { not: null } }, include: { waba: { include: { business: true } } } });
+  for (const p of phones) {
+    const info = await meta.phoneNameStatus(token, p.phoneNumberId).catch(() => null);
+    if (!info) continue;
+    const approved = info.new_name_status === "APPROVED" || (info.verified_name === p.pendingName && info.name_status === "APPROVED");
+    const declined = ["DECLINED", "REJECTED"].includes(String(info.new_name_status ?? ""));
+    const num = formatPhone(p.displayPhoneNumber.replace(/\D/g, ""));
+    if (approved) {
+      const registered = await meta.registerPhone(token, p.phoneNumberId, env.metaRegisterPin()).then(() => true).catch(() => false);
+      await prisma.phoneNumber.update({ where: { id: p.id }, data: { pendingName: null, pendingNameAt: null, ...(registered ? { verifiedName: p.pendingName } : {}) } });
+      await createAlert({
+        workspaceId: p.waba.workspaceId,
+        type: "NUMBER_STATUS",
+        severity: registered ? "INFO" : "WARNING",
+        title: `Nome do número ${num} (${p.waba.business.name}) aprovado: ${p.pendingName}`,
+        message: registered
+          ? "A Meta aprovou o nome novo e o Fuzil registrou o número de novo. Pode levar alguns minutos para aparecer no celular."
+          : "A Meta aprovou o nome novo, mas o Fuzil não conseguiu registrar o número de novo. Em Conexões, clique em Registrar número.",
+      });
+    } else if (declined) {
+      await prisma.phoneNumber.update({ where: { id: p.id }, data: { pendingName: null, pendingNameAt: null } });
+      await createAlert({
+        workspaceId: p.waba.workspaceId,
+        type: "NUMBER_STATUS",
+        severity: "WARNING",
+        title: `Nome do número ${num} (${p.waba.business.name}) recusado: ${p.pendingName}`,
+        message: "A Meta recusou o nome novo. O número continua com o nome antigo. Tente um nome parecido com o da empresa (a Meta recusa nome genérico ou que não bate com a marca).",
+      });
+    }
+  }
 }
 
 /** Números que nunca entram no rodízio: os de teste da Meta e os que não estão registrados na Cloud API. */
@@ -401,6 +439,7 @@ export const WEBHOOK_FIELDS = [
   "template_category_update",
   "message_template_quality_update",
   "phone_number_quality_update",
+  "phone_number_name_update",
   "account_update",
   "account_alerts",
 ];

@@ -205,6 +205,18 @@ export const meta = {
     return graph<{ success: boolean }>(token, "POST", `${phoneNumberId}/whatsapp_business_profile`, { body: { messaging_product: "whatsapp", ...profile } });
   },
 
+  /** Pede a troca do nome de exibição. A Meta analisa de novo; depois de aprovado, o número tem que ser registrado de novo. */
+  requestDisplayName(token: string, phoneNumberId: string, name: string) {
+    return graph<{ success: boolean }>(token, "POST", phoneNumberId, { query: { new_display_name: name } });
+  },
+
+  /** Situação do nome atual e do nome novo pedido. */
+  phoneNameStatus(token: string, phoneNumberId: string) {
+    return graph<{ verified_name?: string; name_status?: string; new_display_name?: string; new_name_status?: string }>(token, "GET", phoneNumberId, {
+      query: { fields: "verified_name,name_status,new_display_name,new_name_status" },
+    });
+  },
+
   /** Coloca um número novo na WABA (sem entrar no Facebook). Depois: request_code → verify_code → register. */
   addPhone(token: string, wabaId: string, cc: string, phoneNumber: string, verifiedName: string) {
     return graph<{ id: string }>(token, "POST", `${wabaId}/phone_numbers`, { body: { cc, phone_number: phoneNumber, verified_name: verifiedName } });

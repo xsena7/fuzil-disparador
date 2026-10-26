@@ -4,7 +4,7 @@ import { useActionState, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import clsx from "clsx";
 import { ImagePlus, Loader2, UserRound } from "lucide-react";
-import { getProfileAction, saveProfileAction } from "@/app/actions/profile";
+import { getProfileAction, renamePhoneAction, saveProfileAction } from "@/app/actions/profile";
 import type { BusinessProfile } from "@/lib/meta";
 import { Button, Field, Input, Textarea } from "@/components/ui";
 import { toastResult } from "@/components/toast";
@@ -32,7 +32,8 @@ const VERTICALS: Array<[string, string]> = [
 ];
 
 /** "Perfil do WhatsApp" de um número: foto, recado, descrição, site... e aplicar em vários números de uma vez. */
-export function ProfileEditor({ phoneId, bmName }: { phoneId: string; bmName: string }) {
+export function ProfileEditor({ phoneId, bmName, currentName, pendingName }: { phoneId: string; bmName: string; currentName: string | null; pendingName: string | null }) {
+  const [renameState, renameAction, renaming] = useActionState(renamePhoneAction.bind(null, phoneId), undefined);
   const [open, setOpen] = useState(false);
   const [profile, setProfile] = useState<BusinessProfile | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -45,6 +46,10 @@ export function ProfileEditor({ phoneId, bmName }: { phoneId: string; bmName: st
     if (!open || profile || loadError) return;
     getProfileAction(phoneId).then((r) => (r.error ? setLoadError(r.error) : setProfile(r.profile ?? {})));
   }, [open, profile, loadError, phoneId]);
+  useEffect(() => {
+    toastResult(renameState);
+    if (renameState?.ok) router.refresh();
+  }, [renameState, router]);
   useEffect(() => {
     toastResult(state);
     if (state?.ok) {
@@ -68,6 +73,17 @@ export function ProfileEditor({ phoneId, bmName }: { phoneId: string; bmName: st
         <div className="font-semibold text-zinc-900">Perfil do WhatsApp</div>
         <button type="button" onClick={() => setOpen(false)} className="text-sm text-zinc-500 hover:text-zinc-800">Fechar</button>
       </div>
+      {/* Nome no WhatsApp: a Meta analisa de novo; quando aprova, o Fuzil registra o número de novo sozinho */}
+      <form action={renameAction} className="mb-4 rounded-xl bg-white p-3 ring-1 ring-zinc-200">
+        <div className="flex flex-wrap items-end gap-2">
+          <Field label="Nome no WhatsApp" hint="A Meta analisa o nome novo (de minutos até 48h). Enquanto isso, o número continua disparando com o nome atual.">
+            <Input name="displayName" defaultValue={pendingName ?? currentName ?? ""} maxLength={100} className="w-80 max-w-full" />
+          </Field>
+          <Button variant="secondary" disabled={renaming}>{renaming ? "Enviando..." : "Pedir troca de nome"}</Button>
+        </div>
+        {pendingName && <p className="mt-2 text-xs font-medium text-amber-700">Em análise na Meta: &quot;{pendingName}&quot;. Quando aprovar, o Fuzil registra o número de novo e avisa nos Alertas.</p>}
+        {renameState?.error && <p className="mt-2 text-sm text-red-600">{renameState.error}</p>}
+      </form>
       {loadError && <p className="mb-3 text-sm text-red-600">Não deu para ler o perfil atual: {loadError}</p>}
       {!profile && !loadError ? (
         <div className="flex items-center gap-2 py-4 text-sm text-zinc-500"><Loader2 className="size-4 animate-spin" /> Buscando o perfil na Meta...</div>

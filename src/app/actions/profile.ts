@@ -26,6 +26,24 @@ export async function getProfileAction(phoneId: string): Promise<{ profile?: Bus
   }
 }
 
+/** Pede para a Meta trocar o nome do número. Quando aprovar, o Fuzil registra o número de novo sozinho. */
+export async function renamePhoneAction(phoneId: string, _: FormState, form: FormData): Promise<FormState> {
+  const auth = await requireAuth();
+  const phone = await prisma.phoneNumber.findFirst({ where: { id: phoneId, waba: { workspaceId: auth.workspace.id } }, include: { waba: true } });
+  if (!phone) return { error: "Número não encontrado" };
+  const name = String(form.get("displayName") ?? "").replace(/\s+/g, " ").trim().slice(0, 100);
+  if (name.length < 3) return { error: "Escreva o nome novo (pelo menos 3 letras)." };
+  if (name === phone.verifiedName) return { error: "Esse já é o nome do número." };
+  try {
+    await meta.requestDisplayName(wabaToken(phone.waba), phone.phoneNumberId, name);
+  } catch (err) {
+    return { error: friendlyError(err) };
+  }
+  await prisma.phoneNumber.update({ where: { id: phone.id }, data: { pendingName: name, pendingNameAt: new Date() } });
+  revalidatePath("/conexoes");
+  return { ok: `Pedido enviado! A Meta vai analisar "${name}" (costuma levar de minutos até 48h). Quando aprovar, o Fuzil registra o número de novo sozinho e te avisa nos Alertas.` };
+}
+
 /**
  * Salva o perfil num número, em todos os números da BM ou em todos os números da conta.
  * Num número só: o que ficar vazio é apagado. Em vários: só os campos preenchidos são trocados (o resto fica como está).

@@ -228,6 +228,9 @@ model PhoneNumber {
   messagingLimitTier String?
   status             String? // CONNECTED, FLAGGED, RESTRICTED, BANNED...
   nameStatus         String?
+  // Troca de nome pedida pelo Fuzil e ainda em análise na Meta (quando aprova, o Fuzil registra o número de novo sozinho)
+  pendingName        String?
+  pendingNameAt      DateTime?
   throughputLevel    String?
   isCoexistence      Boolean             @default(false)
   // Permite tirar o número do rodízio sem desconectar

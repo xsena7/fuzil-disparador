@@ -2,6 +2,13 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.95",
+    date: "27/10/2026",
+    items: [
+      "Conexões → Perfil do WhatsApp: trocar o nome do número pelo Fuzil. A Meta analisa o nome novo e, quando aprova, o Fuzil registra o número de novo sozinho (sem isso o nome não muda) e avisa nos Alertas. Se recusar, também avisa",
+    ],
+  },
+  {
     version: "2.94",
     date: "27/10/2026",
     items: [

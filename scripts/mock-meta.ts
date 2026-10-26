@@ -131,6 +131,18 @@ createServer(async (req, res) => {
     sent.push({ phone: id, to: body.to, body });
     return json(res, 200, { messaging_product: "whatsapp", contacts: [{ input: body.to, wa_id: body.to }], messages: [{ id: `wamid.MOCK${Date.now().toString(36)}${++msgSeq}` }] });
   }
+  // Troca de nome: POST /{phone}?new_display_name=... fica em análise; nomes com "aprova" são aprovados na próxima leitura
+  if (phone && !edge && req.method === "POST" && url.searchParams.get("new_display_name")) {
+    phone.new_display_name = url.searchParams.get("new_display_name");
+    phone.new_name_status = "PENDING_REVIEW";
+    return json(res, 200, { success: true });
+  }
+  if (phone && !edge && req.method === "GET" && url.searchParams.get("fields")?.includes("new_name_status")) {
+    if (phone.new_name_status === "PENDING_REVIEW" && /aprova/i.test(phone.new_display_name)) {
+      Object.assign(phone, { verified_name: phone.new_display_name, name_status: "APPROVED", new_name_status: "APPROVED" });
+    }
+    return json(res, 200, { id: phone.id, verified_name: phone.verified_name, name_status: phone.name_status, new_display_name: phone.new_display_name, new_name_status: phone.new_name_status });
+  }
   // Perfil do WhatsApp do número (foto, recado, descrição...)
   if (phone && edge === "whatsapp_business_profile") {
     if (req.method === "GET") return json(res, 200, { data: [{ messaging_product: "whatsapp", vertical: "OTHER", ...(phone.profile ?? {}) }] });

@@ -301,7 +301,7 @@ export default async function ConnectionsPage() {
                         {p.isCoexistence && <Badge dot={false}>Coexistência</Badge>}
                         {p.invalidReason ? <Badge color="red">{p.invalidReason}: não entra no rodízio</Badge> : !p.enabled && <Badge color="yellow">Fora do rodízio</Badge>}
                         <div className="ml-auto flex flex-wrap justify-end gap-2">
-                          {p.status === "CONNECTED" && !p.invalidReason && <ProfileEditor phoneId={p.id} bmName={bm.name} />}
+                          {p.status === "CONNECTED" && !p.invalidReason && <ProfileEditor phoneId={p.id} bmName={bm.name} currentName={p.verifiedName} pendingName={p.pendingName} />}
                           {p.status && p.status !== "CONNECTED" && !p.isCoexistence && (
                             <ActionForm action={async () => { "use server"; return registerPhoneAction(p.id); }} submit="Registrar número" variant="secondary" />
                           )}
