@@ -57,16 +57,18 @@ export async function recordCampaignSends(
   workspaceId: string,
   campaignId: string,
   phoneId: string,
-  items: Array<{ phone: string; name: string | null; wamid: string; text: string }>,
+  items: Array<{ phone: string; name: string | null; wamid: string; text: string; at?: Date }>,
 ) {
   if (!items.length) return;
   const now = new Date();
+  // Cada disparo entra com o horário em que saiu de verdade (o chat mostra na ordem real, não em lote)
+  const at = items.map((i) => (i.at ?? now).toISOString());
   const rows = await prisma.$queryRaw<Array<{ id: string; contactPhone: string }>>`
     INSERT INTO "Conversation" (id, "workspaceId", "phoneId", "contactPhone", "contactName", "lastMessageAt", "lastMessageText", "lastDirection", "createdAt")
-    SELECT x.id, ${workspaceId}, ${phoneId}, x.phone, x.name, ${now}, x.text, 'OUT', ${now}
-    FROM unnest(${items.map(() => newId())}::text[], ${items.map((i) => i.phone)}::text[], ${items.map((i) => i.name ?? null)}::text[], ${items.map((i) => preview("template", i.text).slice(0, 200))}::text[]) AS x(id, phone, name, text)
+    SELECT x.id, ${workspaceId}, ${phoneId}, x.phone, x.name, x.at, x.text, 'OUT', x.at
+    FROM unnest(${items.map(() => newId())}::text[], ${items.map((i) => i.phone)}::text[], ${items.map((i) => i.name ?? null)}::text[], ${items.map((i) => preview("template", i.text).slice(0, 200))}::text[], ${at}::timestamp(3)[]) AS x(id, phone, name, text, at)
     ON CONFLICT ("phoneId", "contactPhone") DO UPDATE SET
-      "lastMessageAt" = EXCLUDED."lastMessageAt",
+      "lastMessageAt" = GREATEST("Conversation"."lastMessageAt", EXCLUDED."lastMessageAt"),
       "lastMessageText" = EXCLUDED."lastMessageText",
       "lastDirection" = 'OUT',
       "contactName" = COALESCE("Conversation"."contactName", EXCLUDED."contactName")
@@ -76,7 +78,7 @@ export async function recordCampaignSends(
     data: items.flatMap((i) => {
       const conversationId = convByPhone.get(i.phone);
       return conversationId
-        ? [{ id: newId(), conversationId, workspaceId, direction: "OUT", kind: "template", text: i.text, wamid: i.wamid, status: "sent", source: "CAMPAIGN", campaignId, createdAt: now }]
+        ? [{ id: newId(), conversationId, workspaceId, direction: "OUT", kind: "template", text: i.text, wamid: i.wamid, status: "sent", source: "CAMPAIGN", campaignId, createdAt: i.at ?? now }]
         : [];
     }),
     skipDuplicates: true,

@@ -419,7 +419,7 @@ export async function runCampaignTick(campaignId: string) {
             await releaseRecipients(items.slice(offset).map((r) => r.id));
             break;
           }
-          const sentNow: Array<{ phone: string; name: string | null; wamid: string; text: string }> = [];
+          const sentNow: Array<{ phone: string; name: string | null; wamid: string; text: string; at: Date }> = [];
           await Promise.all(
             chunk.map(async (r) => {
               if (fatalWabas.has(sender.wabaId) || fatalSenders.has(sender.phoneId)) {
@@ -438,7 +438,7 @@ export async function runCampaignTick(campaignId: string) {
                       await sleep(500);
                       await prisma.campaignRecipient.update({ where: { id: r.id }, data });
                     });
-                    sentNow.push({ phone: r.phone, name: r.name, wamid: out.wamid, text: renderCampaignText(sender.template.components, campaign, r) });
+                    sentNow.push({ phone: r.phone, name: r.name, wamid: out.wamid, text: renderCampaignText(sender.template.components, campaign, r), at: new Date() });
                     if (!firstSent.has(sender.businessId)) {
                       firstSent.add(sender.businessId);
                       await prisma.businessManager.updateMany({ where: { id: sender.businessId, firstSentAt: null }, data: { firstSentAt: new Date() } });

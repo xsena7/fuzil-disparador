@@ -61,6 +61,9 @@ type Extra = {
   history: Array<{ campaignId: string; campaignName: string; sentAt: string; status: string; clickCount: number; repliedAt: string | null; autoReplySentAt: string | null }>;
 };
 
+/** De quanto em quanto tempo a lista de conversas é atualizada. */
+const LIST_POLL_MS = 1500;
+
 const TABS = [
   { key: "sending", label: "Disparando", hint: "Quem recebeu o disparo e ainda não respondeu nem clicou" },
   { key: "active", label: "Em andamento", hint: "Quem respondeu ou clicou no botão do disparo" },
@@ -121,6 +124,10 @@ export function ChatApp({
   const [showClosed, setShowClosed] = useState(false);
   const [q, setQ] = useState("");
   const [convs, setConvs] = useState<ConvRow[] | null>(null);
+  // Feed ao vivo: conversa nova entra uma de cada vez (espalhada no intervalo da atualização), com destaque
+  const [revealed, setRevealed] = useState<Set<string>>(new Set());
+  const [fresh, setFresh] = useState<Set<string>>(new Set());
+  const queue = useRef<string[]>([]);
   const [unreadByPhone, setUnreadByPhone] = useState<Record<string, number>>({});
   const [activeId, setActiveId] = useState<string | null>(null);
   const [detail, setDetail] = useState<ConvDetail | null>(null);
@@ -142,7 +149,7 @@ export function ChatApp({
     return g ? phones.filter((p) => g.bmIds.includes(p.bmId)) : phones;
   }, [group, groups, phones]);
 
-  // Lista de conversas (atualiza a cada 4s)
+  // Lista de conversas (atualiza a cada 1,5s)
   const loadList = useCallback(async () => {
     const sp = new URLSearchParams({ tab });
     if (showClosed) sp.set("closed", "1");
@@ -151,15 +158,52 @@ export function ChatApp({
     if (q.trim()) sp.set("q", q.trim());
     const data = await getJson<{ conversations: ConvRow[]; unreadByPhone: Record<string, number> }>(`/api/chat/conversations?${sp}`);
     if (data) {
-      setConvs(data.conversations);
+      setConvs((prev) => {
+        if (prev === null) {
+          // Primeira carga (ou trocou o filtro): mostra tudo de uma vez
+          queue.current = [];
+          setRevealed(new Set(data.conversations.map((c) => c.id)));
+        } else {
+          setRevealed((shown) => {
+            const waiting = new Set(queue.current);
+            // As mais antigas entram primeiro: a mais nova termina no topo
+            const novas = data.conversations.filter((c) => !shown.has(c.id) && !waiting.has(c.id)).reverse().map((c) => c.id);
+            queue.current.push(...novas);
+            return shown;
+          });
+        }
+        return data.conversations;
+      });
       setUnreadByPhone(data.unreadByPhone);
     }
   }, [tab, phone, group, q, showClosed]);
 
+  // Solta as conversas novas da fila uma por uma, espalhadas até a próxima atualização
+  useEffect(() => {
+    let alive = true;
+    let timer: ReturnType<typeof setTimeout>;
+    const step = () => {
+      if (!alive) return;
+      const id = queue.current.shift();
+      if (id) {
+        setRevealed((shown) => new Set(shown).add(id));
+        setFresh((f) => new Set(f).add(id));
+        setTimeout(() => setFresh((f) => { const n = new Set(f); n.delete(id); return n; }), 1600);
+      }
+      const left = queue.current.length;
+      timer = setTimeout(step, left ? Math.max(40, Math.min(350, LIST_POLL_MS / (left + 1))) : 120);
+    };
+    timer = setTimeout(step, 120);
+    return () => {
+      alive = false;
+      clearTimeout(timer);
+    };
+  }, []);
+
   useEffect(() => {
     setConvs(null);
     const t = setTimeout(loadList, q ? 300 : 0);
-    const i = setInterval(() => { if (!document.hidden) loadList(); }, 4000);
+    const i = setInterval(() => { if (!document.hidden) loadList(); }, LIST_POLL_MS);
     return () => { clearTimeout(t); clearInterval(i); };
   }, [loadList, q]);
 
@@ -320,13 +364,13 @@ export function ChatApp({
               {showClosed ? "Nenhuma conversa finalizada." : tab === "active" ? "Ninguém respondeu nem clicou ainda. Quando um cliente responder ou clicar no botão do disparo, a conversa aparece aqui na hora." : "Nenhum disparo aguardando resposta."}
             </div>
           )}
-          {convs?.map((c) => {
+          {convs?.filter((c) => revealed.has(c.id)).map((c) => {
             const p = phoneById.get(c.phoneId);
             return (
               <button
                 key={c.id}
                 onClick={() => openConversation(c.id)}
-                className={clsx("flex w-full items-start gap-3 border-b border-zinc-100 px-4 py-3 text-left transition", c.id === activeId ? "bg-brand-50/70" : "hover:bg-zinc-50")}
+                className={clsx("flex w-full items-start gap-3 border-b border-zinc-100 px-4 py-3 text-left transition", fresh.has(c.id) && "animate-chat-in", c.id === activeId ? "bg-brand-50/70" : "hover:bg-zinc-50")}
               >
                 <span className={clsx("flex size-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br text-sm font-semibold text-white", avatarColor(c.contactPhone))}>
                   {initials(c.contactName, c.contactPhone)}

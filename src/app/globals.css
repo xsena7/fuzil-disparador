@@ -34,6 +34,9 @@ input, select, textarea { font: inherit; }
 .skeleton { position: relative; overflow: hidden; background: #eceef3; border-radius: 0.75rem; }
 .skeleton::after { content: ""; position: absolute; inset: 0; transform: translateX(-100%); background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.6), transparent); animation: shimmer 1.2s infinite; }
 
+/* Conversa nova chegando no Chat: desliza e acende rapidinho */
+@keyframes chat-in { 0% { opacity: 0; transform: translateY(-10px); background-color: rgb(255 237 213); } 60% { opacity: 1; transform: none; background-color: rgb(255 237 213); } 100% { background-color: transparent; } }
+.animate-chat-in { animation: chat-in 1.4s ease-out; }
 @keyframes fade-up { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
 .animate-fade-up { animation: fade-up 0.25s ease-out both; }
 

@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.86",
+    date: "27/10/2026",
+    items: ["Chat: os contatos do disparo aparecem ao vivo, um por um, na hora em que a mensagem sai (com um destaque laranja rápido), em vez de surgirem em lotes"],
+  },
+  {
     version: "2.85",
     date: "27/10/2026",
     items: ["Campanhas: o grupo \"Prontas para disparo\" voltou a aparecer na escolha do grupo (também no Aquecimento e no gerador de links)"],
