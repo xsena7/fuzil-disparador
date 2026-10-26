@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.87",
+    date: "27/10/2026",
+    items: ["Financeiro: no Acerto dá para anotar o Pix que saiu do caixa da empresa para cobrir custos, escolhendo quem recebeu (você ou o sócio). O reembolso entra na conta certa e o saldo do caixa baixa"],
+  },
+  {
     version: "2.86",
     date: "27/10/2026",
     items: ["Chat: os contatos do disparo aparecem ao vivo, um por um, na hora em que a mensagem sai (com um destaque laranja rápido), em vez de surgirem em lotes"],

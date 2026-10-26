@@ -155,3 +155,17 @@ test("caixa sem dinheiro suficiente: reembolsa o que dá e o resto divide entre 
   assert.deepEqual(r.transfers, [{ from: "gui", to: "edu", amountCents: 1000 }]);
 });
 
+
+test("caixa: Guilherme anota o Pix do caixa para o Eduardo cobrir o que ele pagou", () => {
+  const r = settle(
+    [
+      { kind: "EXPENSE", amountCents: 1900, userId: "edu", toUserId: null },
+      { kind: "INCOME", amountCents: 5000, userId: "gui", toUserId: null, cash: true },
+      { kind: "WITHDRAW", amountCents: 1900, userId: "gui", toUserId: "edu" },
+    ],
+    ["gui", "edu"],
+  );
+  assert.equal(r.cash, 3100);
+  assert.deepEqual(r.refunds, []);
+  assert.deepEqual(r.transfers, []);
+});

@@ -13,13 +13,18 @@ import { confirmDialog } from "@/components/confirm-dialog";
 const KINDS: Array<{ kind: FinanceKind; label: string; hint: string; icon: typeof ArrowUpRight; on: string }> = [
   { kind: "EXPENSE", label: "Despesa", hint: "Compra, gasto da empresa", icon: ArrowUpRight, on: "border-rose-300 bg-rose-50 text-rose-800 ring-2 ring-rose-100" },
   { kind: "INCOME", label: "Entrada", hint: "Venda, dinheiro que entrou", icon: ArrowDownLeft, on: "border-emerald-300 bg-emerald-50 text-emerald-800 ring-2 ring-emerald-100" },
-  { kind: "SETTLEMENT", label: "Acerto", hint: "Você passou Pix pro sócio", icon: ArrowLeftRight, on: "border-sky-300 bg-sky-50 text-sky-800 ring-2 ring-sky-100" },
+  { kind: "SETTLEMENT", label: "Acerto", hint: "Pix pro sócio ou do caixa", icon: ArrowLeftRight, on: "border-sky-300 bg-sky-50 text-sky-800 ring-2 ring-sky-100" },
 ];
 
 /** Nova anotação: quem anota é quem pagou/recebeu; data e hora são as de agora. Limpa os campos depois de salvar. */
-export function FinanceForm({ others }: { others: Array<{ id: string; name: string }> }) {
+export function FinanceForm({ me, partners }: { me: string; partners: Array<{ id: string; name: string }> }) {
   const [kind, setKind] = useState<FinanceKind>("EXPENSE");
   const [where, setWhere] = useState<"cash" | "me">("cash");
+  // Acerto: Pix da minha conta para o sócio, ou Pix do caixa da empresa para qualquer sócio (inclusive eu)
+  const [from, setFrom] = useState<"me" | "cash">("cash");
+  const others = partners.filter((p) => p.id !== me);
+  const fromCash = kind === "SETTLEMENT" && from === "cash";
+  const targets = fromCash ? partners.map((p) => ({ id: p.id, name: p.id === me ? `${p.name} (você)` : p.name })) : others;
   const [state, action, pending] = useActionState(addFinanceEntryAction, undefined);
   const ref = useRef<HTMLFormElement>(null);
   const router = useRouter();
@@ -32,7 +37,7 @@ export function FinanceForm({ others }: { others: Array<{ id: string; name: stri
   }, [state, router]);
   return (
     <form ref={ref} action={action} className="space-y-4">
-      <input type="hidden" name="kind" value={kind} />
+      <input type="hidden" name="kind" value={fromCash ? "WITHDRAW" : kind} />
       <input type="hidden" name="where" value={where} />
       <div className="grid gap-2 sm:grid-cols-3">
         {KINDS.map((k) => (
@@ -50,6 +55,24 @@ export function FinanceForm({ others }: { others: Array<{ id: string; name: stri
           </button>
         ))}
       </div>
+      {kind === "SETTLEMENT" && (
+        <div className="flex flex-wrap items-center gap-2 text-sm">
+          <span className="font-medium text-zinc-700">Saiu de:</span>
+          {([
+            ["cash", "Caixa da empresa (cobrir custos)"],
+            ["me", "Minha conta (Pix pro sócio)"],
+          ] as const).map(([v, label]) => (
+            <button
+              key={v}
+              type="button"
+              onClick={() => setFrom(v)}
+              className={clsx("rounded-full px-3.5 py-1.5 font-medium transition", from === v ? "bg-zinc-900 text-white" : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200")}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
       {kind !== "SETTLEMENT" && (
         <div className="flex flex-wrap items-center gap-2 text-sm">
           <span className="font-medium text-zinc-700">{kind === "EXPENSE" ? "Pago com:" : "Caiu em:"}</span>
@@ -70,21 +93,24 @@ export function FinanceForm({ others }: { others: Array<{ id: string; name: stri
       )}
       <div className="grid gap-4 md:grid-cols-[2fr_1fr_1fr]">
         <Field label={kind === "SETTLEMENT" ? "Descrição (opcional)" : "Descrição"}>
-          <Input name="description" placeholder={kind === "EXPENSE" ? "Ex.: Compra de 5 BMs" : kind === "INCOME" ? "Ex.: Disparo cliente Ericky" : "Ex.: Pix do acerto de outubro"} required={kind !== "SETTLEMENT"} maxLength={200} />
+          <Input name="description" placeholder={kind === "EXPENSE" ? "Ex.: Compra de 5 BMs" : kind === "INCOME" ? "Ex.: Disparo cliente Ericky" : fromCash ? "Ex.: Pix do caixa para pagar os perfis" : "Ex.: Pix do acerto de outubro"} required={kind !== "SETTLEMENT"} maxLength={200} />
         </Field>
         <Field label="Valor (R$)">
           <Input name="amount" placeholder="300,00" inputMode="decimal" required />
         </Field>
         {kind === "SETTLEMENT" ? (
-          others.length > 1 ? (
+          targets.length > 1 ? (
             <Field label="Para quem">
-              <Select name="toUserId" required defaultValue="">
+              <Select key={from} name="toUserId" required defaultValue="">
                 <option value="" disabled>Escolha</option>
-                {others.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
+                {targets.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
               </Select>
             </Field>
           ) : (
-            <Field label="Para quem"><div className="rounded-xl border border-zinc-200 bg-zinc-50 px-3.5 py-2.5 text-sm font-medium">{others[0]?.name ?? "—"}</div></Field>
+            <Field label="Para quem">
+              <input type="hidden" name="toUserId" value={targets[0]?.id ?? ""} />
+              <div className="rounded-xl border border-zinc-200 bg-zinc-50 px-3.5 py-2.5 text-sm font-medium">{targets[0]?.name ?? "—"}</div>
+            </Field>
           )
         ) : (
           <Field label="Categoria">

@@ -27,8 +27,12 @@ export async function addFinanceEntryAction(_: FormState, form: FormData): Promi
   // Despesa/entrada: do caixa da empresa (padrão) ou da conta de quem anotou
   const cash = (kind === "EXPENSE" || kind === "INCOME") && form.get("where") !== "me";
   if (kind === "WITHDRAW") {
-    if (form.get("fromButton") !== "1") return { error: "O reembolso do caixa é anotado pelo botão \"Já recebi do caixa\"." };
-    if (!description) description = "Reembolso do caixa da empresa";
+    // Pix que saiu do caixa da empresa para um sócio (qualquer um, inclusive quem anota)
+    const partners = await financePartners();
+    toUserId = form.get("fromButton") === "1" ? auth.user.id : String(form.get("toUserId") ?? "");
+    const to = partners.find((p) => p.id === toUserId);
+    if (!to) return { error: "Escolha para quem o caixa mandou o Pix" };
+    if (!description) description = form.get("fromButton") === "1" ? "Reembolso do caixa da empresa" : `Pix do caixa para ${to.name.split(" ")[0]} (cobrir custos)`;
   } else if (kind === "SETTLEMENT") {
     const partners = await financePartners();
     const others = partners.filter((p) => p.id !== auth.user.id);
@@ -81,7 +85,7 @@ export async function addFinanceEntryAction(_: FormState, form: FormData): Promi
     return result;
   }
   revalidatePath("/financeiro");
-  return { ok: kind === "SETTLEMENT" ? "Acerto anotado!" : kind === "WITHDRAW" ? "Reembolso anotado!" : kind === "EXPENSE" ? "Despesa anotada!" : "Entrada anotada!" };
+  return { ok: kind === "SETTLEMENT" ? "Acerto anotado!" : kind === "WITHDRAW" ? "Pix do caixa anotado!" : kind === "EXPENSE" ? "Despesa anotada!" : "Entrada anotada!" };
 }
 
 /** Só quem anotou pode apagar (ninguém edita). */

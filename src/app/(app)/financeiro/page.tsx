@@ -134,7 +134,7 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
 
       <Card className="p-5">
         <div className="mb-4 font-semibold">Nova anotação</div>
-        <FinanceForm others={partners.filter((p) => p.id !== auth.user.id).map((p) => ({ id: p.id, name: p.name }))} />
+        <FinanceForm me={auth.user.id} partners={partners.map((p) => ({ id: p.id, name: p.name }))} />
       </Card>
 
       {/* Visão do mês */}
@@ -186,7 +186,7 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
             const Icon = k === "EXPENSE" ? ArrowUpRight : k === "INCOME" ? ArrowDownLeft : k === "WITHDRAW" ? Undo2 : ArrowLeftRight;
             const who =
               k === "WITHDRAW"
-                ? `Caixa → ${nm(e.userId)} (reembolso)`
+                ? `Caixa da empresa → ${nm(e.toUserId ?? e.userId)} · anotado por ${nm(e.userId)}`
                 : k === "SETTLEMENT"
                   ? `${nm(e.userId)} → ${e.toUserId ? nm(e.toUserId) : "?"}`
                   : e.cash

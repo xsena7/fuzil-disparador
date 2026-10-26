@@ -2,7 +2,7 @@
 
 export const FINANCE_CATEGORIES = ["Perfil", "Automação", "SMS", "Captcha", "Disparo", "Venda BM", "Sem categoria"] as const;
 // EXPENSE/INCOME com cash = saiu/entrou no caixa da empresa (não mexe na conta de nenhum sócio).
-// WITHDRAW = reembolso: o caixa devolveu ao sócio algo que ele pagou do bolso.
+// WITHDRAW = o caixa da empresa mandou Pix para um sócio (reembolso / cobrir custos). toUserId = quem recebeu.
 export type FinanceKind = "EXPENSE" | "INCOME" | "SETTLEMENT" | "WITHDRAW";
 
 export type FinanceLine = { kind: FinanceKind; amountCents: number; userId: string; toUserId: string | null; cash?: boolean };
@@ -39,7 +39,8 @@ export function settle(
       else get(l.userId).received += l.amountCents;
       profit += l.amountCents;
     } else if (l.kind === "WITHDRAW") {
-      get(l.userId).got += l.amountCents;
+      // Quem recebeu o Pix do caixa (anotações antigas não têm toUserId: foi quem anotou)
+      get(l.toUserId ?? l.userId).got += l.amountCents;
       cash -= l.amountCents;
     } else if (l.toUserId) {
       get(l.userId).sent += l.amountCents;
