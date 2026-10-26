@@ -18,26 +18,39 @@ export async function createMailboxAction(_: FormState, form: FormData): Promise
   const address = `${local}@${mailDomain()}`;
   const name = String(form.get("name") ?? "").trim().slice(0, 60) || local;
   if (await prisma.mailBox.findUnique({ where: { address } })) return { error: `${address} já existe` };
-  const stock = form.get("stock") === "on";
-  const box = await prisma.$transaction(async (tx) => {
-    if (stock) await tx.mailBox.updateMany({ where: { purpose: "STOCK" }, data: { purpose: null } });
-    return tx.mailBox.create({ data: { address, name, purpose: stock ? "STOCK" : null, createdById: auth.user.id } });
-  });
+  const box = await prisma.mailBox.create({ data: { address, name, createdById: auth.user.id } });
+  const cat = await applyCategory(box.id, String(form.get("category") ?? ""));
+  if (cat.error) return cat;
   redirect(`/emails?caixa=${box.id}`);
 }
 
-/** A caixa do estoque é uma só: os convites de BM que chegam nela entram nas Vendas. */
-export async function setStockMailboxAction(id: string) {
-  await requireFinancePartner();
-  const box = await prisma.mailBox.findUnique({ where: { id } });
-  if (!box) return { error: "Caixa não encontrada" };
-  const turnOff = box.purpose === "STOCK";
+/**
+ * Categoria da caixa: "" = e-mail comum; "STOCK" = estoque geral das Vendas; "product:<id>" = estoque de um produto.
+ * Só uma caixa por categoria de estoque: quem tinha a categoria antes volta a ser e-mail comum.
+ */
+async function applyCategory(boxId: string, category: string): Promise<{ ok?: string; error?: string }> {
+  const productId = category.startsWith("product:") ? category.slice(8) : null;
+  if (productId && !(await prisma.marketProduct.findUnique({ where: { id: productId }, select: { id: true } }))) return { error: "Produto não encontrado" };
   await prisma.$transaction([
-    prisma.mailBox.updateMany({ where: { purpose: "STOCK" }, data: { purpose: null } }),
-    ...(turnOff ? [] : [prisma.mailBox.update({ where: { id }, data: { purpose: "STOCK" } })]),
+    ...(category === "STOCK" ? [prisma.mailBox.updateMany({ where: { purpose: "STOCK", NOT: { id: boxId } }, data: { purpose: null } })] : []),
+    ...(productId ? [prisma.mailBox.updateMany({ where: { productId, NOT: { id: boxId } }, data: { productId: null } })] : []),
+    prisma.mailBox.update({ where: { id: boxId }, data: { purpose: category === "STOCK" ? "STOCK" : null, productId } }),
   ]);
+  // Convites que já estavam nessa caixa entram no estoque agora
+  if (category) {
+    const { reingestStockMailbox } = await import("@/lib/market-inbox");
+    await reingestStockMailbox().catch(() => undefined);
+  }
+  return { ok: "Categoria salva" };
+}
+
+export async function setMailboxCategoryAction(id: string, _: FormState, form: FormData): Promise<FormState> {
+  await requireFinancePartner();
+  if (!(await prisma.mailBox.findUnique({ where: { id }, select: { id: true } }))) return { error: "Caixa não encontrada" };
+  const r = await applyCategory(id, String(form.get("category") ?? ""));
   revalidatePath("/emails");
-  return { ok: turnOff ? "Essa caixa não é mais o e-mail do estoque" : `${box.address} agora é o e-mail do estoque das Vendas` };
+  revalidatePath("/vendas");
+  return r;
 }
 
 async function removeFiles(rows: Array<{ attachments: unknown }>) {

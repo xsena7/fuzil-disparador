@@ -6,8 +6,8 @@ import { requireFinancePartner } from "@/lib/finance-partners";
 import { mailDomain, type MailAttachment } from "@/lib/mail";
 import { emailConfigured } from "@/lib/email";
 import { ActionForm, ConfirmButton } from "@/components/action-form";
-import { Badge, Card, Empty, Field, Input, PageHeader, Textarea } from "@/components/ui";
-import { createMailboxAction, deleteMailboxAction, deleteMessageAction, markUnreadAction, sendMailAction, setStockMailboxAction } from "@/app/actions/mail";
+import { Badge, Card, Empty, Field, Input, PageHeader, Select, Textarea } from "@/components/ui";
+import { createMailboxAction, deleteMailboxAction, deleteMessageAction, markUnreadAction, sendMailAction, setMailboxCategoryAction } from "@/app/actions/mail";
 
 export const dynamic = "force-dynamic";
 
@@ -29,6 +29,15 @@ export default async function EmailsPage({ searchParams }: { searchParams: Promi
   const domain = mailDomain();
   const boxes = await prisma.mailBox.findMany({ orderBy: { address: "asc" }, include: { _count: { select: { messages: { where: { direction: "IN", readAt: null } } } }, product: { select: { name: true } } } });
   const box = boxes.find((b) => b.id === sp.caixa) ?? boxes[0] ?? null;
+  const products = await prisma.marketProduct.findMany({ orderBy: [{ sort: "asc" }, { createdAt: "asc" }], select: { id: true, name: true } });
+  const categoryOf = (b: { purpose: string | null; productId: string | null }) => (b.purpose === "STOCK" ? "STOCK" : b.productId ? `product:${b.productId}` : "");
+  const CategoryOptions = () => (
+    <>
+      <option value="">E-mail comum (só recebe)</option>
+      <option value="STOCK">Estoque geral das Vendas</option>
+      {products.map((p) => <option key={p.id} value={`product:${p.id}`}>Estoque do produto: {p.name}</option>)}
+    </>
+  );
   const pasta = sp.pasta === "enviados" ? "OUT" : "IN";
   const q = (sp.q ?? "").trim().slice(0, 80);
 
@@ -85,9 +94,11 @@ export default async function EmailsPage({ searchParams }: { searchParams: Promi
                 <Field label="Nome (aparece para quem recebe)">
                   <Input name="name" maxLength={60} placeholder="Fuzil Disparador" />
                 </Field>
-                <label className="flex items-start gap-2 text-xs text-zinc-600">
-                  <input type="checkbox" name="stock" className="mt-0.5" /> É o e-mail do estoque das Vendas (os convites de BM que chegarem aqui entram sozinhos no estoque)
-                </label>
+                <Field label="Categoria" hint="Estoque: os convites de BM que chegarem aqui entram sozinhos nas Vendas">
+                  <Select name="category" defaultValue="">
+                    <CategoryOptions />
+                  </Select>
+                </Field>
               </div>
             </ActionForm>
           </Card>
@@ -99,17 +110,28 @@ export default async function EmailsPage({ searchParams }: { searchParams: Promi
             <Empty icon={<Inbox className="size-5" />}>Crie o primeiro e-mail ao lado. Ele já começa a receber assim que o domínio estiver apontado para o Fuzil.</Empty>
           ) : (
             <>
-              <Card className="flex flex-wrap items-center gap-3 p-4">
-                <div className="min-w-0 flex-1">
-                  <div className="flex min-w-0 flex-wrap items-center gap-2 font-semibold text-zinc-900">
-                    <span className="min-w-0 truncate">{box.address}</span> {box.purpose === "STOCK" && <Badge color="green">E-mail geral do estoque das Vendas</Badge>}
-                    {box.product && <Badge color="green">Estoque do produto: {box.product.name}</Badge>}
+              <Card className="space-y-3 p-4">
+                <div className="flex flex-wrap items-start gap-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="break-all font-semibold text-zinc-900">{box.address}</div>
+                    <div className="text-xs text-zinc-500">{box.name}</div>
                   </div>
-                  <div className="text-xs text-zinc-500">{box.name}</div>
+                  <Link href={`${base}&novo=1`} className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-brand-gradient px-4 py-2 text-sm font-semibold text-white shadow-sm"><PenSquare className="size-4" /> Escrever</Link>
                 </div>
-                <Link href={`${base}&novo=1`} className="inline-flex items-center gap-2 rounded-xl bg-brand-gradient px-4 py-2 text-sm font-semibold text-white shadow-sm"><PenSquare className="size-4" /> Escrever</Link>
-                <ConfirmButton action={setStockMailboxAction.bind(null, box.id)} className="px-3 py-2 text-xs">{box.purpose === "STOCK" ? "Deixar de ser o estoque" : "Usar como e-mail do estoque"}</ConfirmButton>
-                <ConfirmButton action={deleteMailboxAction.bind(null, box.id)} confirm={`Apagar ${box.address}?\nTodos os e-mails dela somem e o endereço para de receber.`} variant="danger" className="px-3 py-2 text-xs"><Trash2 className="size-3.5" /></ConfirmButton>
+                <div className="flex flex-wrap items-center gap-2 border-t border-zinc-100 pt-3">
+                  <span className="text-xs font-semibold text-zinc-600">Categoria:</span>
+                  {box.purpose === "STOCK" && <Badge color="green">Estoque geral das Vendas</Badge>}
+                  {box.product && <Badge color="green">Estoque do produto: {box.product.name}</Badge>}
+                  {!box.purpose && !box.product && <Badge color="gray">E-mail comum</Badge>}
+                  <span className="ml-auto flex flex-wrap items-center gap-2">
+                    <ActionForm key={`${box.id}-${categoryOf(box)}`} action={setMailboxCategoryAction.bind(null, box.id)} submit="Salvar" variant="secondary" className="flex items-center gap-2 [&>div]:mt-0 [&_button]:px-3 [&_button]:py-2 [&_button]:text-xs">
+                      <Select name="category" defaultValue={categoryOf(box)} className="w-64 max-w-full text-xs" aria-label="Categoria do e-mail">
+                        <CategoryOptions />
+                      </Select>
+                    </ActionForm>
+                    <ConfirmButton action={deleteMailboxAction.bind(null, box.id)} confirm={`Apagar ${box.address}?\nTodos os e-mails dela somem e o endereço para de receber.`} variant="danger" className="px-3 py-2 text-xs"><Trash2 className="size-3.5" /></ConfirmButton>
+                  </span>
+                </div>
               </Card>
 
               {composing ? (

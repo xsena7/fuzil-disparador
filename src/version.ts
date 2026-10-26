@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.81",
+    date: "27/10/2026",
+    items: ["E-mails: cada e-mail tem uma categoria (e-mail comum, estoque geral das Vendas ou estoque de um produto), escolhida ao criar ou depois, no topo da caixa"],
+  },
+  {
     version: "2.80",
     date: "27/10/2026",
     items: [
