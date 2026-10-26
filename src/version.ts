@@ -2,6 +2,14 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "3.06",
+    date: "27/10/2026",
+    items: [
+      "Conexões: o painel de números (SMSBear/SMS24h) agora rola sozinho quando o histórico fica grande, sem passar da altura da tela",
+      "Manual: botão \"Limpar os que terminaram\" tira do painel de uma vez os números cancelados ou que já receberam o código",
+    ],
+  },
+  {
     version: "3.05",
     date: "27/10/2026",
     items: ["Conexões: o número de teste da Meta (+1 555, \"Test Number\") é reconhecido em mais formatos e nunca conta como número de verdade. A BM que só tem ele continua em \"Sem número\" e não vai mais para Pagamento por causa dele"],

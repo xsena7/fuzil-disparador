@@ -3,7 +3,7 @@
 import { useActionState, useCallback, useEffect, useState, useTransition } from "react";
 import clsx from "clsx";
 import { Check, CheckCircle2, Copy, Loader2, LogOut, MessageSquareText, RefreshCw, ShoppingCart, Square, Trash2, X, XCircle, Zap } from "lucide-react";
-import { buyManualAction, cancelManualAction, clearSmsJobsAction, connectSmsProviderAction, deleteSmsJobAction, disconnectSmsProviderAction, hideManualAction, startSmsJobAction, stopSmsJobAction, swapManualAction } from "@/app/actions/smsbear";
+import { buyManualAction, cancelManualAction, clearManualAction, clearSmsJobsAction, connectSmsProviderAction, deleteSmsJobAction, disconnectSmsProviderAction, hideManualAction, startSmsJobAction, stopSmsJobAction, swapManualAction } from "@/app/actions/smsbear";
 import { SMS_PROVIDER_INFO, cancelOpensIn, type SmsProviderKey } from "@/lib/smsbear-shared";
 import { KeepInput } from "@/components/keep-input";
 import { Button, Field, Input } from "@/components/ui";
@@ -323,6 +323,13 @@ function ManualTab({ provider, orders, now, reload }: { provider: SmsProviderKey
       <Button type="button" disabled={busy} className="w-full" onClick={() => run(() => buyManualAction(provider))}>
         {busy ? <Loader2 className="size-4 animate-spin" /> : <ShoppingCart className="size-4" />} Comprar número BR para WhatsApp
       </Button>
+      {orders.some((o) => o.status !== "PENDING") && (
+        <div className="flex justify-end">
+          <button type="button" disabled={busy} onClick={() => run(() => clearManualAction(provider))} className="inline-flex items-center gap-1 text-xs font-medium text-zinc-500 hover:text-red-600">
+            <Trash2 className="size-3.5" /> Limpar os que terminaram
+          </button>
+        </div>
+      )}
       {orders.map((o) => {
         const opens = o.status === "PENDING" ? cancelOpensIn(o.createdAt, o.provider, now) : 0;
         const locked = opens > 0;

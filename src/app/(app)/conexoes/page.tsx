@@ -373,7 +373,7 @@ export default async function ConnectionsPage() {
       </div>
       {/* SMSBear: comprar número BR e registrar na WABA sozinho */}
       <aside className="mt-8 xl:mt-0">
-        <div className="xl:sticky xl:top-6">
+        <div className="xl:sticky xl:top-6 xl:max-h-[calc(100vh-3rem)] xl:overflow-y-auto xl:overscroll-contain xl:rounded-2xl">
           <SmsBearPanel wabas={smsWabas} />
         </div>
       </aside>

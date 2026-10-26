@@ -147,3 +147,10 @@ export async function hideManualAction(id: string): Promise<FormState> {
   await prisma.smsOrder.updateMany({ where: { id, workspaceId: auth.workspace.id, status: { not: "PENDING" } }, data: { hidden: true } });
   return { ok: "Removido." };
 }
+
+/** Limpa o Manual: tira do painel todos os números que já terminaram (cancelados ou com código). */
+export async function clearManualAction(provider: SmsProviderKey): Promise<FormState> {
+  const auth = await requireAuth();
+  const r = await prisma.smsOrder.updateMany({ where: { workspaceId: auth.workspace.id, provider: pick(provider), status: { not: "PENDING" }, hidden: false }, data: { hidden: true } });
+  return { ok: `${r.count} número(s) tirado(s) do painel.` };
+}
