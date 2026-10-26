@@ -76,6 +76,11 @@ async function main() {
   process.on("unhandledRejection", (err) => void reportError("worker", err, { path: "unhandledRejection" }));
   process.on("uncaughtException", (err) => void reportError("worker", err, { path: "uncaughtException" }));
   await startSettingsRefresh();
+  // Alertas repetidos de "BM foi para o grupo X" (a BM piscava entre grupos a cada sincronização): fica só o primeiro de cada 24h
+  await prisma.$executeRaw`
+    DELETE FROM "Alert" a USING "Alert" b
+    WHERE a.type = 'BM_PROBLEM' AND b.type = 'BM_PROBLEM' AND a."workspaceId" = b."workspaceId" AND a.title = b.title
+      AND b."createdAt" < a."createdAt" AND a."createdAt" - b."createdAt" < interval '24 hours'`.catch((e) => console.error("[worker] limpar alertas", e));
   process.on("SIGTERM", () => (stopping = true));
   process.on("SIGINT", () => (stopping = true));
   void every(SYNC_EVERY_MS, "sync", syncAll);

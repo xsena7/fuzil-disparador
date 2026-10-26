@@ -88,6 +88,11 @@ export async function syncReadyGroup(workspaceId: string) {
   ]);
 }
 
+/** Já avisou que essa BM foi para esse grupo nas últimas 24h? (não enche o painel nem o Discord com o mesmo aviso) */
+async function alreadyAlerted(workspaceId: string, title: string) {
+  return Boolean(await prisma.alert.findFirst({ where: { workspaceId, type: "BM_PROBLEM", title, createdAt: { gt: new Date(Date.now() - 24 * 3600_000) } }, select: { id: true } }));
+}
+
 export async function flagBusinessProblem(businessId: string, reason: string, fix: string, kind: ProblemKind = "UNKNOWN", fromSend = true, force = false) {
   const bm = await prisma.businessManager.findUnique({ where: { id: businessId }, include: { groups: { include: { group: true } } } });
   if (!bm) return;
@@ -108,7 +113,8 @@ export async function flagBusinessProblem(businessId: string, reason: string, fi
       prisma.bmGroupMember.create({ data: { groupId: group.id, businessId } }),
       prisma.businessManager.update({ where: { id: businessId }, data: { problemReason: reason, problemFix: fix, problemKind: kind, problemFromSend: fromSend, problemAt: new Date() } }),
     ]);
-    await createAlert({ workspaceId: bm.workspaceId, type: "BM_PROBLEM", severity: "WARNING", title: `${bm.name} foi para "${group.name}"`, message: `${reason}. Como resolver: ${fix}` });
+    const t = `${bm.name} foi para "${group.name}"`;
+    if (!(await alreadyAlerted(bm.workspaceId, t))) await createAlert({ workspaceId: bm.workspaceId, type: "BM_PROBLEM", severity: "WARNING", title: t, message: `${reason}. Como resolver: ${fix}` });
     return;
   }
   const prev = bm.groups.filter((g) => !g.group.system).map((g) => g.groupId);
@@ -124,13 +130,9 @@ export async function flagBusinessProblem(businessId: string, reason: string, fi
       data: { problemReason: reason, problemFix: fix, problemAt: new Date(), problemPrevGroups: prev, problemKind: kind, problemFromSend: fromSend },
     }),
   ]);
-  await createAlert({
-    workspaceId: bm.workspaceId,
-    type: "BM_PROBLEM",
-    severity: "CRITICAL",
-    title: `${bm.name} foi para "${group.name}"`,
-    message: `${reason}. Ela saiu dos grupos de disparo. Como resolver: ${fix}`,
-  });
+  const title = `${bm.name} foi para "${group.name}"`;
+  if (!(await alreadyAlerted(bm.workspaceId, title)))
+    await createAlert({ workspaceId: bm.workspaceId, type: "BM_PROBLEM", severity: "CRITICAL", title, message: `${reason}. Ela saiu dos grupos de disparo. Como resolver: ${fix}` });
 }
 
 /** O problema sumiu sozinho (a Meta voltou ao normal): libera para avisar de novo no futuro. */
@@ -236,28 +238,6 @@ export async function checkBusinessAfterSync(wabaRecordId: string) {
       kind = "QUALITY";
     }
   }
-  // O problema sumiu: volta sozinha para os grupos em que estava.
-  // Se veio de um envio (ex.: pagamento recusado), espera algumas horas sem o problema antes de voltar.
-  if (!reason && !waba.lastSyncError) {
-    const bm = await prisma.businessManager.findUnique({ where: { id: waba.businessId }, select: { problemAt: true, problemKind: true, problemFromSend: true, workspaceId: true } });
-    const settled = bm?.problemAt && (!bm.problemFromSend || Date.now() - bm.problemAt.getTime() > 6 * 3600_000);
-    // Só volta se nenhuma outra conta do WhatsApp dessa BM ainda tem problema
-    const others = settled
-      ? await prisma.whatsAppAccount.count({
-          where: {
-            businessId: waba.businessId,
-            id: { not: waba.id },
-            OR: [
-              { lastSyncError: { not: null } },
-              { status: "BLOCKED" },
-              { hasPaymentMethod: false },
-              { phones: { some: { invalidReason: null, OR: [{ qualityRating: "RED" }, { status: { in: Object.keys(BAD_PHONE) } }] } } },
-            ],
-          },
-        })
-      : 1;
-    if (bm?.problemAt && bm.problemKind !== "MANUAL" && settled && others === 0) await restoreBusiness(waba.businessId, bm.workspaceId, false);
-  }
   // Envio bloqueado sem motivo identificado (não é banimento nem template/cartão/número): último recurso, vai para "BMs com problema"
   if (!reason && waba.status === "BLOCKED") {
     const payment = /pag|payment/i.test(health[0]?.text ?? "");
@@ -279,4 +259,28 @@ export async function checkBusinessAfterSync(wabaRecordId: string) {
   }
   if (reason) await flagBusinessProblem(waba.businessId, reason, fix, accessLost && kind !== "BANNED" ? "UNKNOWN" : kind, false, true);
   else if (!waba.lastSyncError) await clearIgnoredProblem(waba.businessId);
+
+  // O problema sumiu: volta sozinha para os grupos em que estava.
+  // Só depois de TODAS as checagens acima (antes, o "envio bloqueado" vinha depois e a BM saía e voltava a cada sincronização)
+  // Se veio de um envio (ex.: pagamento recusado), espera algumas horas sem o problema antes de voltar.
+  if (!reason && !waba.lastSyncError) {
+    const bm = await prisma.businessManager.findUnique({ where: { id: waba.businessId }, select: { problemAt: true, problemKind: true, problemFromSend: true, workspaceId: true } });
+    const settled = bm?.problemAt && (!bm.problemFromSend || Date.now() - bm.problemAt.getTime() > 6 * 3600_000);
+    // Só volta se nenhuma outra conta do WhatsApp dessa BM ainda tem problema
+    const others = settled
+      ? await prisma.whatsAppAccount.count({
+          where: {
+            businessId: waba.businessId,
+            id: { not: waba.id },
+            OR: [
+              { lastSyncError: { not: null } },
+              { status: "BLOCKED" },
+              { hasPaymentMethod: false },
+              { phones: { some: { invalidReason: null, OR: [{ qualityRating: "RED" }, { status: { in: Object.keys(BAD_PHONE) } }] } } },
+            ],
+          },
+        })
+      : 1;
+    if (bm?.problemAt && bm.problemKind !== "MANUAL" && settled && others === 0) await restoreBusiness(waba.businessId, bm.workspaceId, false);
+  }
 }

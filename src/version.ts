@@ -2,6 +2,14 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.84",
+    date: "27/10/2026",
+    items: [
+      "Grupos: BM com \"envio bloqueado\" pela Meta (ex.: pagamento) não fica mais saindo e voltando do grupo de problema a cada sincronização. Ela fica parada no grupo até resolver de verdade",
+      "Alertas: o mesmo aviso de \"BM foi para o grupo X\" não se repete em 24h, e os repetidos que já tinham acumulado foram apagados",
+    ],
+  },
+  {
     version: "2.83",
     date: "27/10/2026",
     items: ["Saldo: recarga mínima de R$ 60,00 (6.000 créditos a R$ 0,01). Os pacotes começam em 6 mil"],
