@@ -217,7 +217,7 @@ export function RefundButton({ amount }: { amount: string }) {
 }
 
 /** Copiar a chave Pix do sócio que vai receber. */
-export function CopyPix({ pixKey, name }: { pixKey: string; name: string }) {
+export function CopyPix({ pixKey, name, small }: { pixKey: string; name: string; small?: boolean }) {
   const [done, setDone] = useState(false);
   return (
     <button
@@ -225,13 +225,16 @@ export function CopyPix({ pixKey, name }: { pixKey: string; name: string }) {
       onClick={async () => {
         await navigator.clipboard.writeText(pixKey);
         setDone(true);
-        toast("success", `Chave Pix de ${name} copiada!`);
+        toast("success", name === "você" ? "Sua chave Pix foi copiada!" : `Chave Pix de ${name} copiada!`);
         setTimeout(() => setDone(false), 1800);
       }}
-      className="inline-flex items-center gap-2 rounded-xl bg-brand-gradient px-4 py-2 text-sm font-semibold text-white shadow-md shadow-orange-500/30 hover:brightness-110"
+      className={clsx(
+        "inline-flex items-center gap-2 rounded-xl bg-brand-gradient font-semibold text-white shadow-md shadow-orange-500/30 hover:brightness-110",
+        small ? "px-3 py-1.5 text-xs" : "px-4 py-2 text-sm",
+      )}
       title={pixKey}
     >
-      {done ? <Check className="size-4" /> : <Copy className="size-4" />} Copiar chave Pix de {name}
+      {done ? <Check className="size-4" /> : <Copy className="size-4" />} {done ? "Copiada!" : name === "você" ? "Copiar minha chave Pix" : `Copiar chave Pix de ${name}`}
     </button>
   );
 }

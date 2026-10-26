@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.88",
+    date: "27/10/2026",
+    items: ["Financeiro: a chave Pix dos dois sócios fica sempre lá em cima, no cartão de cada um, com botão de copiar (e também na linha de reembolso do caixa)"],
+  },
+  {
     version: "2.87",
     date: "27/10/2026",
     items: ["Financeiro: no Acerto dá para anotar o Pix que saiu do caixa da empresa para cobrir custos, escolhendo quem recebeu (você ou o sócio). O reembolso entra na conta certa e o saldo do caixa baixa"],

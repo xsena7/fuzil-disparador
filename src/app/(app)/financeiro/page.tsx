@@ -5,7 +5,7 @@ import { prisma } from "@/lib/db";
 import { FINANCE_CATEGORIES, brl, settle, type FinanceKind } from "@/lib/finance";
 import { financePartners, requireFinancePartner } from "@/lib/finance-partners";
 import { Card, Empty, PageHeader, Stat } from "@/components/ui";
-import { DeleteEntry, FinanceForm, PixKeyForm, RefundButton, SettleButton } from "./finance-form";
+import { CopyPix, DeleteEntry, FinanceForm, PixKeyForm, RefundButton, SettleButton } from "./finance-form";
 
 export const dynamic = "force-dynamic";
 
@@ -33,6 +33,7 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
   ]);
   const nameOf = new Map(partners.map((p) => [p.id, first(p.name)]));
   const nm = (id: string) => nameOf.get(id) ?? "Ex-sócio";
+  const pixOf = (id: string) => partners.find((p) => p.id === id)?.pixKey ?? null;
 
   // Acerto: sempre com tudo o que já foi anotado (não por mês)
   const all = settle(
@@ -90,7 +91,10 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
                 O caixa deve reembolsar <span className="text-brand-gradient">{brl(r.amountCents)}</span> {r.to === auth.user.id ? "para você" : `para ${nm(r.to)}`}
                 <div className="text-xs font-normal text-zinc-400">É o que {r.to === auth.user.id ? "você pagou" : `${nm(r.to)} pagou`} do próprio bolso. Faça o Pix da conta da empresa e clique no botão.</div>
               </div>
-              {r.to === auth.user.id && <RefundButton amount={(r.amountCents / 100).toFixed(2).replace(".", ",")} />}
+              <div className="flex flex-wrap items-center gap-2">
+                {pixOf(r.to) && <CopyPix pixKey={pixOf(r.to)!} name={r.to === auth.user.id ? "você" : nm(r.to)} />}
+                {r.to === auth.user.id && <RefundButton amount={(r.amountCents / 100).toFixed(2).replace(".", ",")} />}
+              </div>
             </div>
           ))}
           {all.transfers.map((t) => (
@@ -114,7 +118,15 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
             .filter((p) => nameOf.has(p.userId))
             .map((p) => (
               <div key={p.userId} className="rounded-2xl bg-white/5 px-4 py-3 text-sm ring-1 ring-white/10">
-                <div className="font-semibold">{nm(p.userId)}{p.userId === auth.user.id && " (você)"}</div>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="font-semibold">{nm(p.userId)}{p.userId === auth.user.id && " (você)"}</div>
+                  {pixOf(p.userId) ? (
+                    <CopyPix pixKey={pixOf(p.userId)!} name={p.userId === auth.user.id ? "você" : nm(p.userId)} small />
+                  ) : (
+                    <span className="text-xs text-zinc-400">{p.userId === auth.user.id ? "Cadastre sua chave Pix aqui embaixo" : "Ainda não cadastrou a chave Pix"}</span>
+                  )}
+                </div>
+                {pixOf(p.userId) && <div className="mt-0.5 truncate text-xs text-zinc-400">Pix: {pixOf(p.userId)}</div>}
                 <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-zinc-300">
                   <span>Pagou do bolso <b className="text-rose-300">{brl(p.paid)}</b></span>
                   <span>Recebeu na conta <b className="text-emerald-300">{brl(p.received)}</b></span>
