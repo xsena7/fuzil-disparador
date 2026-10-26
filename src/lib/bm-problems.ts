@@ -65,6 +65,9 @@ export function problemFix(code: number | null | undefined, kind?: string): stri
 /** Grupo automático "Prontas para disparo": BM apta (cartão, número ativo, template aprovado) e fora dos grupos de problema. */
 export const READY_GROUP = "READY";
 
+/** Grupos que podem disparar: os criados por você e o automático "Prontas para disparo" (os de problema não). */
+export const usableGroupWhere = { OR: [{ system: null }, { system: READY_GROUP }] };
+
 /** O grupo "Prontas para disparo" fixo da conta: existe sempre (como o Aquecimento). Se já há um criado à mão, ele vira o automático. */
 export async function ensureReadyGroup(workspaceId: string) {
   const group = await prisma.bmGroup.findFirst({ where: { workspaceId, system: READY_GROUP } });

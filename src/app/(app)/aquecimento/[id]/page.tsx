@@ -19,6 +19,7 @@ import { checkDomain } from "@/lib/domain-check";
 import { JobsEditor } from "./jobs-editor";
 import { AvatarUpload } from "./avatar-upload";
 
+import { usableGroupWhere } from "@/lib/bm-problems";
 export const dynamic = "force-dynamic";
 
 const STATUS = { CODE_SENT: { label: "Falta o código", color: "yellow" }, VERIFIED: { label: "Confirmado", color: "blue" }, COMPLETED: { label: "Cadastro completo", color: "green" }, STOPPED: { label: "Tirado do funil", color: "gray" } } as const;
@@ -36,7 +37,7 @@ export default async function FunnelPage({ params, searchParams }: { params: Pro
     prisma.lead.groupBy({ by: ["status"], where: { funnelId: id }, _count: true }),
     prisma.lead.count({ where: { funnelId: id, createdAt: { gte: new Date(Date.now() - 86400_000) } } }),
     prisma.lead.findMany({ where: { funnelId: id, ...(statusFilter ? { status: statusFilter } : {}) }, orderBy: { createdAt: "desc" }, take: 100 }),
-    prisma.bmGroup.findMany({ where: { workspaceId: ws, system: null }, orderBy: { name: "asc" } }),
+    prisma.bmGroup.findMany({ where: { workspaceId: ws, ...usableGroupWhere }, orderBy: { name: "asc" } }),
     prisma.templateBlueprint.findMany({ where: { workspaceId: ws, active: true }, orderBy: { createdAt: "asc" } }),
     prisma.$queryRaw<Array<{ name: string; tier: string | null; sent: bigint; delivered: bigint; read: bigint; replied: bigint; failed: bigint }>>`
       SELECT b.name, b."messagingLimitTier" AS tier,

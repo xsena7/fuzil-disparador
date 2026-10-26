@@ -11,6 +11,7 @@ import { encrypt } from "@/lib/crypto";
 import { createFunnel, createFunnelFromModel, funnelPage, setFunnelStatus, slugify, type FormField, type FunnelStep, type Job } from "@/lib/funnels";
 import type { FormState } from "./auth";
 
+import { usableGroupWhere } from "@/lib/bm-problems";
 async function ownFunnel(id: string) {
   const auth = await requireAuth();
   const funnel = await prisma.funnel.findFirst({ where: { id, workspaceId: auth.workspace.id } });
@@ -29,7 +30,7 @@ export async function createFunnelAction(_: FormState, form: FormData): Promise<
     const adminWs = await prisma.membership.count({ where: { workspaceId: auth.workspace.id, user: { isSuperAdmin: true } } });
     if (!auth.user.isSuperAdmin || !adminWs) return { error: "Só contas de administradores do Fuzil têm o funil do gerador de links" };
     if (await prisma.funnel.findFirst({ where: { kind: "LINKS", workspaceId: auth.workspace.id }, select: { id: true } })) return { error: "Essa conta já tem um funil do gerador de links. Abra ele na lista acima." };
-    const group = await prisma.bmGroup.findFirst({ where: { id: String(form.get("groupId") ?? ""), workspaceId: auth.workspace.id, system: null } });
+    const group = await prisma.bmGroup.findFirst({ where: { id: String(form.get("groupId") ?? ""), workspaceId: auth.workspace.id, ...usableGroupWhere } });
     if (!group) return { error: "Escolha o grupo de BM que vai disparar" };
     const { createLinksFunnel } = await import("@/lib/links-login");
     const f = await createLinksFunnel(auth.workspace.id, group.id, name || "Login do gerador de links");
@@ -41,7 +42,7 @@ export async function createFunnelAction(_: FormState, form: FormData): Promise<
   const jobTitle = String(form.get("jobTitle") ?? "").trim();
   if (!name) return { error: "Dê um nome ao funil" };
   if (slug.length < 3 || RESERVED.has(slug)) return { error: "Escolha outro endereço (mínimo 3 letras)" };
-  const group = await prisma.bmGroup.findFirst({ where: { id: groupId, workspaceId: auth.workspace.id, system: null } });
+  const group = await prisma.bmGroup.findFirst({ where: { id: groupId, workspaceId: auth.workspace.id, ...usableGroupWhere } });
   if (!group) return { error: "Escolha o grupo de BM que vai disparar" };
   if (await prisma.funnel.findUnique({ where: { slug } })) return { error: "Esse endereço já está em uso, escolha outro" };
   let id: string;
@@ -112,7 +113,7 @@ export async function saveSettingsAction(_: FormState, form: FormData): Promise<
     const own = [process.env.APP_URL, process.env.REDIRECT_DOMAIN, process.env.SITE_DOMAIN].some((v) => v && v.replace(/^https?:\/\//, "").replace(/[:/].*$/, "").endsWith(domain));
     if (taken || own) return { error: "Esse domínio já está em uso" };
   }
-  const group = await prisma.bmGroup.findFirst({ where: { id: groupId, workspaceId: auth.workspace.id, system: null } });
+  const group = await prisma.bmGroup.findFirst({ where: { id: groupId, workspaceId: auth.workspace.id, ...usableGroupWhere } });
   if (!group) return { error: "Escolha o grupo de BM" };
   // Token da API de Conversões: em branco mantém o atual; "remover" apaga
   const capiToken = str(form, "capiToken", 600).replace(/\s+/g, "");

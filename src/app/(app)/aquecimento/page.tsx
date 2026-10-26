@@ -10,6 +10,7 @@ import { createFunnelAction } from "@/app/actions/funnels";
 import { company } from "@/lib/company";
 import { NewFunnelFields } from "./new-funnel-fields";
 
+import { usableGroupWhere } from "@/lib/bm-problems";
 export const dynamic = "force-dynamic";
 
 export default async function WarmupPage() {
@@ -17,7 +18,7 @@ export default async function WarmupPage() {
   const ws = auth.workspace.id;
   const [funnels, groups, counts] = await Promise.all([
     prisma.funnel.findMany({ where: { workspaceId: ws }, orderBy: { createdAt: "desc" } }),
-    prisma.bmGroup.findMany({ where: { workspaceId: ws, system: null }, orderBy: { name: "asc" } }),
+    prisma.bmGroup.findMany({ where: { workspaceId: ws, ...usableGroupWhere }, orderBy: { name: "asc" } }),
     prisma.lead.groupBy({ by: ["funnelId", "status"], where: { workspaceId: ws }, _count: true }),
   ]);
   const adminWs = (await prisma.membership.count({ where: { workspaceId: ws, user: { isSuperAdmin: true } } })) > 0;

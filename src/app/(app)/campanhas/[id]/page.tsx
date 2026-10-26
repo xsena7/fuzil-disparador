@@ -28,6 +28,7 @@ import { ClientReportStep } from "./client-report";
 import { AutoRefresh } from "./auto-refresh";
 import { templateAliases, templateFamily } from "@/lib/blueprints";
 
+import { usableGroupWhere } from "@/lib/bm-problems";
 export const dynamic = "force-dynamic";
 
 const STEPS = [
@@ -119,7 +120,7 @@ export default async function CampaignPage({ params, searchParams }: { params: P
 
 async function TemplateStep({ campaignId, workspaceId, locked }: { campaignId: string; workspaceId: string; locked: boolean }) {
   const campaign = await prisma.campaign.findUniqueOrThrow({ where: { id: campaignId } });
-  const groups = await prisma.bmGroup.findMany({ where: { workspaceId, system: null }, include: { members: true }, orderBy: { name: "asc" } });
+  const groups = await prisma.bmGroup.findMany({ where: { workspaceId, ...usableGroupWhere }, include: { members: true }, orderBy: { name: "asc" } });
   const templates = await prisma.template.findMany({ where: { workspaceId }, include: { waba: true } });
   const wabas = await prisma.whatsAppAccount.findMany({ where: { workspaceId }, include: { business: true } });
   const wabaLabel = (w: { name: string; business: { name: string } }) => `${w.business.name} / ${w.name}`;

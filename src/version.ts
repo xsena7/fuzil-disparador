@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.85",
+    date: "27/10/2026",
+    items: ["Campanhas: o grupo \"Prontas para disparo\" voltou a aparecer na escolha do grupo (também no Aquecimento e no gerador de links)"],
+  },
+  {
     version: "2.84",
     date: "27/10/2026",
     items: [

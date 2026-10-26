@@ -12,6 +12,7 @@ import { announceStart, planSenders } from "@/lib/dispatcher";
 import { createAlert } from "@/lib/alerts";
 import type { FormState } from "./auth";
 
+import { usableGroupWhere } from "@/lib/bm-problems";
 async function ownCampaign(id: string) {
   const auth = await requireAuth();
   const c = await prisma.campaign.findFirst({ where: { id, workspaceId: auth.workspace.id } });
@@ -26,7 +27,7 @@ export async function createCampaignAction(_: FormState, form: FormData): Promis
   const name = String(form.get("name") ?? "").trim();
   if (!name) return { error: "Dê um nome à campanha" };
   const scope = String(form.get("scope") ?? "GROUP") === "BM" ? "BM" : "GROUP";
-  const lastGroup = scope === "GROUP" ? await prisma.campaign.findFirst({ where: { workspaceId: auth.workspace.id, groupId: { not: null }, group: { system: null } }, orderBy: { createdAt: "desc" } }) : null;
+  const lastGroup = scope === "GROUP" ? await prisma.campaign.findFirst({ where: { workspaceId: auth.workspace.id, groupId: { not: null }, group: usableGroupWhere }, orderBy: { createdAt: "desc" } }) : null;
   const c = await prisma.campaign.create({ data: { workspaceId: auth.workspace.id, name, scope, groupId: lastGroup?.groupId } });
   redirect(`/campanhas/${c.id}?etapa=template`);
 }
@@ -72,7 +73,7 @@ export async function saveTemplateStepAction(id: string, _: FormState, form: For
       const created = await prisma.bmGroup.create({ data: { workspaceId: c.workspaceId, name: `Só a BM: ${bm.name}`, system, members: { create: { businessId: bm.id } } } });
       groupId = created.id;
     }
-  } else if (!(await prisma.bmGroup.findFirst({ where: { id: groupId, workspaceId: c.workspaceId, system: null }, select: { id: true } }))) return { error: "Grupo não encontrado" };
+  } else if (!(await prisma.bmGroup.findFirst({ where: { id: groupId, workspaceId: c.workspaceId, ...usableGroupWhere }, select: { id: true } }))) return { error: "Grupo não encontrado" };
   if (!name || !language) return { error: "Escolha um template" };
   const changed = name !== c.templateName || language !== c.templateLanguage;
   await prisma.campaign.update({

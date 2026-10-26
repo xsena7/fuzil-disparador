@@ -12,6 +12,7 @@ import { CODE_COOLDOWN_S, hashCode, MAX_CODE_ATTEMPTS, MAX_CODE_SENDS, advanceLe
 import { createLinksFunnel, endLinksSession, linksAuth, linksFunnelFor, startLinksSession } from "@/lib/links-login";
 import type { FormState } from "./auth";
 
+import { usableGroupWhere } from "@/lib/bm-problems";
 const ALPHABET = "abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 const newCode = () => Array.from({ length: 7 }, () => ALPHABET[randomInt(ALPHABET.length)]).join("");
 
@@ -151,7 +152,7 @@ export async function deleteMyLinkAction(id: string): Promise<{ ok?: true; error
 export async function setupLinksLoginAction(_: FormState, form: FormData): Promise<FormState> {
   const auth = await requireSuperAdmin();
   const groupId = String(form.get("groupId") ?? "");
-  const group = await prisma.bmGroup.findFirst({ where: { id: groupId, workspaceId: auth.workspace.id, system: null } });
+  const group = await prisma.bmGroup.findFirst({ where: { id: groupId, workspaceId: auth.workspace.id, ...usableGroupWhere } });
   if (!group) return { error: "Escolha um grupo de BM." };
   // O funil do login desta conta (cada conta de administrador tem o seu)
   const existing = await prisma.funnel.findFirst({ where: { kind: "LINKS", workspaceId: auth.workspace.id } });
