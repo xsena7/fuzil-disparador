@@ -1,8 +1,9 @@
 import Link from "next/link";
 import clsx from "clsx";
-import { ExternalLink, Inbox, Mail, Package, ShoppingBag, Store } from "lucide-react";
+import { CheckCircle2, ChevronRight, Circle, ExternalLink, Inbox, Mail, Package, ShoppingBag, Store } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { brlCents, siteUrl, stockByProduct } from "@/lib/market";
+import { env } from "@/lib/env";
 import { stockMailbox } from "@/lib/mail";
 import { requireFinancePartner } from "@/lib/finance-partners";
 import { ActionForm, ConfirmButton } from "@/components/action-form";
@@ -75,6 +76,15 @@ export default async function VendasPage({ searchParams }: { searchParams: Promi
   const toDeliver = orders.filter((o) => o.status === "PAID").length;
   const freeItems = items.filter((i) => !i.invite && i.status !== "SOLD");
   const vitrineUrl = `${siteUrl()}/vendas`;
+  // Passo a passo para começar a vender: cada passo mostra se está feito e leva direto para fazer
+  const steps = [
+    { done: Boolean(env.mpAccessToken()), title: "Ligar o Pix do Mercado Pago", text: "Cole o Access Token de produção em Admin → gaveta Vendas.", href: "/admin", cta: "Abrir o Admin" },
+    { done: Boolean(stockBox), title: "Escolher o e-mail do estoque", text: stockBox ? stockBox.address : "Crie um e-mail em E-mails e marque \"e-mail do estoque\".", href: "/emails", cta: "Abrir E-mails" },
+    { done: products.length > 0, title: "Criar o produto da vitrine", text: "Nome, tipo (com ou sem template) e preço por BM.", href: "/vendas?aba=produtos", cta: "Criar produto" },
+    { done: items.length > 0, title: "Colocar BMs no estoque", text: "Escolha as BMs conectadas ou digite o nome delas.", href: "/vendas?aba=estoque", cta: "Abrir o estoque" },
+    { done: forSale > 0, title: "Convidar o e-mail do estoque nas BMs", text: `Na Meta: Configurações do negócio → Pessoas → Convidar ${stockBox?.address ?? "o e-mail do estoque"}. O convite chega aqui e a BM vai para a vitrine.`, href: "/vendas?aba=convites", cta: "Ver convites" },
+  ];
+  const nextStep = steps.findIndex((st) => !st.done);
 
   return (
     <div className="mx-auto max-w-6xl space-y-5">
@@ -89,11 +99,42 @@ export default async function VendasPage({ searchParams }: { searchParams: Promi
       />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Stat label="Vendido no mês" value={brlCents(monthSales._sum.totalCents ?? 0)} tone="green" sub={`${monthSales._count} pedido(s)`} />
-        <Stat label="À venda agora" value={forSale} tone="brand" sub="BMs com convite testado" />
-        <Stat label="Sem convite" value={noInvite} tone={noInvite ? "amber" : "default"} sub="não aparecem na vitrine" />
-        <Stat label="Falta entregar" value={toDeliver} tone={toDeliver ? "red" : "default"} sub="pagos e não entregues" />
+        <Link href="/vendas?aba=pedidos" className="transition hover:-translate-y-0.5"><Stat label="Vendido no mês" value={brlCents(monthSales._sum.totalCents ?? 0)} tone="green" sub={`${monthSales._count} pedido(s)`} /></Link>
+        <Link href="/vendas?aba=estoque" className="transition hover:-translate-y-0.5"><Stat label="À venda agora" value={forSale} tone="brand" sub="BMs com convite testado" /></Link>
+        <Link href="/vendas?aba=estoque" className="transition hover:-translate-y-0.5"><Stat label="Sem convite" value={noInvite} tone={noInvite ? "amber" : "default"} sub="não aparecem na vitrine" /></Link>
+        <Link href="/vendas?aba=pedidos" className="transition hover:-translate-y-0.5"><Stat label="Falta entregar" value={toDeliver} tone={toDeliver ? "red" : "default"} sub="pagos e não entregues" /></Link>
       </div>
+
+      {nextStep >= 0 && (
+        <Card className="p-5">
+          <div className="mb-1 font-semibold text-zinc-900">Para começar a vender</div>
+          <p className="mb-4 text-sm text-zinc-500">{steps.filter((st) => st.done).length} de {steps.length} feitos. Clique no passo para fazer.</p>
+          <ol className="space-y-2">
+            {steps.map((st, i) => (
+              <li key={st.title}>
+                <Link
+                  href={st.href}
+                  className={clsx(
+                    "flex items-center gap-3 rounded-xl px-4 py-3 ring-1 transition",
+                    st.done ? "bg-emerald-50/60 ring-emerald-100" : i === nextStep ? "bg-orange-50 ring-orange-300 hover:bg-orange-100" : "bg-white ring-zinc-200 hover:bg-zinc-50",
+                  )}
+                >
+                  {st.done ? <CheckCircle2 className="size-5 shrink-0 text-emerald-600" /> : <Circle className={clsx("size-5 shrink-0", i === nextStep ? "text-orange-500" : "text-zinc-300")} />}
+                  <span className="min-w-0 flex-1">
+                    <span className={clsx("block text-sm font-semibold", st.done ? "text-emerald-900" : "text-zinc-900")}>{i + 1}. {st.title}</span>
+                    <span className="block truncate text-xs text-zinc-500">{st.text}</span>
+                  </span>
+                  {!st.done && (
+                    <span className={clsx("inline-flex shrink-0 items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-semibold", i === nextStep ? "bg-brand-gradient text-white" : "text-zinc-600")}>
+                      {st.cta} <ChevronRight className="size-3.5" />
+                    </span>
+                  )}
+                </Link>
+              </li>
+            ))}
+          </ol>
+        </Card>
+      )}
 
       <div className="flex flex-wrap gap-2">
         {TABS.map((t) => (
@@ -168,7 +209,10 @@ export default async function VendasPage({ searchParams }: { searchParams: Promi
               Depois, convide o e-mail do estoque em cada BM (Configurações do negócio → Pessoas → Convidar). O Fuzil pega o convite sozinho, testa o link e a BM entra na vitrine.
             </p>
             {products.length === 0 ? (
-              <p className="text-sm text-amber-700">Crie um produto primeiro, na aba Produtos.</p>
+              <div className="rounded-xl bg-orange-50/60 p-4 ring-1 ring-orange-200">
+                <div className="mb-3 text-sm font-semibold text-zinc-900">Primeiro, crie o produto que vai aparecer na vitrine:</div>
+                <ProductForm />
+              </div>
             ) : (
               <ActionForm action={addItemsAction} submit="Colocar no estoque">
                 <div className="grid gap-4 md:grid-cols-[1fr_2fr]">

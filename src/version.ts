@@ -2,6 +2,14 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.74",
+    date: "26/10/2026",
+    items: [
+      "Vendas: passo a passo clicável no topo (Mercado Pago, e-mail do estoque, produto, BMs e convites), com o que já está feito e um botão que leva direto para o que falta",
+      "Vendas: dá para criar o produto ali mesmo no Estoque, e os números do topo levam para a aba certa",
+    ],
+  },
+  {
     version: "2.73",
     date: "26/10/2026",
     items: ["E-mails: o servidor de e-mail do Fuzil passa a rodar no servidor (porta 25 liberada na VM). Os e-mails chegam assim que o DNS do domínio apontar para o Fuzil"],
