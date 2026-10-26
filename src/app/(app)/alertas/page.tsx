@@ -19,6 +19,18 @@ export default async function AlertsPage({ searchParams }: { searchParams: Promi
     take: 300,
   });
   const icon = { CRITICAL: Siren, WARNING: AlertTriangle, INFO: Info };
+  // Alertas antigos de número não diziam a BM: descobre pelo número do título (os novos já trazem no texto)
+  const phoneIn = (t: string) => t.match(/\+?\d[\d\s()-]{8,}\d/)?.[0].replace(/\D/g, "") ?? null;
+  const wanted = [...new Set(alerts.map((a) => phoneIn(a.title)).filter((x): x is string => Boolean(x)))];
+  const phones = wanted.length
+    ? await prisma.phoneNumber.findMany({ where: { waba: { workspaceId: auth.workspace.id } }, select: { displayPhoneNumber: true, waba: { select: { business: { select: { name: true } } } } } })
+    : [];
+  const bmOf = new Map(phones.map((p) => [p.displayPhoneNumber.replace(/\D/g, ""), p.waba.business.name]));
+  const bmFor = (title: string) => {
+    const d = phoneIn(title);
+    const bm = d ? bmOf.get(d) : undefined;
+    return bm && !title.includes(bm) ? bm : null;
+  };
   return (
     <div className="mx-auto max-w-4xl">
       <PageHeader
@@ -44,7 +56,10 @@ export default async function AlertsPage({ searchParams }: { searchParams: Promi
                   <span className={clsx("flex size-7 shrink-0 items-center justify-center rounded-lg", a.severity === "CRITICAL" ? "bg-red-100 text-red-600" : a.severity === "WARNING" ? "bg-amber-100 text-amber-700" : "bg-sky-100 text-sky-600")}>
                     <Icon className="size-4" />
                   </span>
-                  <span className={clsx("min-w-0 flex-1 truncate text-sm", a.readAt ? "text-zinc-600" : "font-medium text-zinc-900")}>{a.title}</span>
+                  <span className={clsx("min-w-0 flex-1 truncate text-sm", a.readAt ? "text-zinc-600" : "font-medium text-zinc-900")}>
+                    {a.title}
+                    {bmFor(a.title) && <span className="ml-2 rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-700">{/^bm\b/i.test(bmFor(a.title)!) ? "" : "BM "}{bmFor(a.title)}</span>}
+                  </span>
                   {!a.readAt && <span className="size-2 shrink-0 rounded-full bg-red-500" />}
                   <span className="shrink-0 text-xs text-zinc-400">{a.createdAt.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}</span>
                   <ChevronRight className="size-4 shrink-0 text-zinc-300 transition-transform group-open:rotate-90" />

@@ -60,7 +60,7 @@ export async function processWebhook(payload: any) {
   if (payload?.object !== "whatsapp_business_account") return;
   for (const entry of payload.entry ?? []) {
     const wabaMetaId: string = entry.id;
-    const wabas = await prisma.whatsAppAccount.findMany({ where: { wabaId: wabaMetaId } });
+    const wabas = await prisma.whatsAppAccount.findMany({ where: { wabaId: wabaMetaId }, include: { business: { select: { name: true } } } });
     for (const change of entry.changes ?? []) {
       const value = change.value ?? {};
       switch (change.field) {
@@ -95,7 +95,7 @@ export async function processWebhook(payload: any) {
               workspaceId: w.workspaceId,
               type: "ACCOUNT_UPDATE",
               severity: bad ? "CRITICAL" : "INFO",
-              title: `Atualização na WABA ${w.name}: ${event}`,
+              title: `Atualização na WABA ${w.name} (${w.business.name}): ${event}`,
               message: JSON.stringify(value.violation_info ?? value.restriction_info ?? value.ban_info ?? value).slice(0, 500),
             });
             await syncWaba(w.id).catch(() => undefined);
@@ -141,7 +141,7 @@ async function rerouteFailed(
         workspaceId: campaign.workspaceId,
         type: "SENDER_REMOVED",
         severity: "CRITICAL",
-        title: `Número ${display} retirado da campanha "${campaign.name}"`,
+        title: `Número ${display} (${sender.waba.business.name}) retirado da campanha "${campaign.name}"`,
         message: `${sender.waba.business.name}: ${reason}. As mensagens dele vão sair pelas outras BMs do grupo.`,
       });
     }

@@ -509,7 +509,7 @@ export async function runCampaignTick(campaignId: string) {
       workspaceId: campaign.workspaceId,
       type: "SENDER_REMOVED",
       severity: "CRITICAL",
-      title: `Número ${sender.display} retirado da campanha "${campaign.name}"`,
+      title: `Número ${sender.display} (${sender.businessName}) retirado da campanha "${campaign.name}"`,
       message: `${sender.businessName}: ${reason}`,
     });
   }

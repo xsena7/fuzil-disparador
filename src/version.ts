@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.91",
+    date: "27/10/2026",
+    items: ["Alertas: número banido, restrito, com qualidade alterada ou retirado de campanha agora mostra de qual BM ele é (também nos alertas antigos). O status aparece em português (ex.: Conectado → Banido)"],
+  },
+  {
     version: "2.90",
     date: "27/10/2026",
     items: [

@@ -191,24 +191,39 @@ export async function upsertPhone(workspaceId: string, wabaRecordId: string, p: 
   if (!existing) {
     return prisma.phoneNumber.create({ data: { phoneNumberId: p.id, ...data } });
   }
-  await diffPhone(workspaceId, existing, data);
+  await diffPhone(workspaceId, existing, data, await wabaLabel(wabaRecordId));
   return prisma.phoneNumber.update({ where: { id: existing.id }, data });
 }
+
+const PHONE_STATUS_PT: Record<string, string> = {
+  CONNECTED: "Conectado",
+  BANNED: "Banido",
+  RESTRICTED: "Restrito",
+  FLAGGED: "Sinalizado",
+  DISCONNECTED: "Desconectado",
+  RATE_LIMITED: "Limitado",
+  PENDING: "Pendente",
+  DELETED: "Excluído",
+  MIGRATED: "Migrado",
+  UNVERIFIED: "Não verificado",
+};
 
 async function diffPhone(
   workspaceId: string,
   before: { displayPhoneNumber: string; qualityRating: string | null; status: string | null },
   after: { qualityRating: string; status?: string },
+  bm: string,
 ) {
   const num = formatPhone(before.displayPhoneNumber.replace(/\D/g, ""));
+  // A BM (e a WABA) do número vai no título e na mensagem: dá para saber na hora de qual BM é
   if (before.qualityRating && before.qualityRating !== after.qualityRating) {
     const worse = (QUALITY_ORDER[after.qualityRating] ?? 0) < (QUALITY_ORDER[before.qualityRating] ?? 0);
     await createAlert({
       workspaceId,
       type: "QUALITY_CHANGE",
       severity: worse ? (after.qualityRating === "RED" ? "CRITICAL" : "WARNING") : "INFO",
-      title: `Qualidade do número ${num} ${worse ? "caiu" : "subiu"}`,
-      message: `${qualityLabel(before.qualityRating)} → ${qualityLabel(after.qualityRating)}`,
+      title: `Qualidade do número ${num} (${bm.split(" / ")[0]}) ${worse ? "caiu" : "subiu"}`,
+      message: `${/^bm\b/i.test(bm) ? "" : "BM "}${bm}: ${qualityLabel(before.qualityRating)} → ${qualityLabel(after.qualityRating)}`,
     });
   }
   if (before.status && after.status && before.status !== after.status) {
@@ -217,8 +232,8 @@ async function diffPhone(
       workspaceId,
       type: "NUMBER_STATUS",
       severity: bad ? "CRITICAL" : "INFO",
-      title: `Status do número ${num} mudou`,
-      message: `${before.status} → ${after.status}`,
+      title: after.status === "BANNED" ? `Número ${num} banido (${bm.split(" / ")[0]})` : `Status do número ${num} (${bm.split(" / ")[0]}) mudou`,
+      message: `${/^bm\b/i.test(bm) ? "" : "BM "}${bm}: ${PHONE_STATUS_PT[before.status] ?? before.status} → ${PHONE_STATUS_PT[after.status] ?? after.status}`,
     });
   }
 }
