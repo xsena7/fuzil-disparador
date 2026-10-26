@@ -71,3 +71,10 @@ input, select, textarea { font: inherit; }
 @keyframes confetti-fall { 0% { transform: translateY(0) rotate(0deg); opacity: 1; } 100% { transform: translateY(105vh) rotate(720deg); opacity: .9; } }
 @keyframes celebrate-pop { 0% { opacity: 0; transform: scale(.6) translateY(20px); } 100% { opacity: 1; transform: none; } }
 @keyframes celebrate-check { 0% { transform: scale(0) rotate(-45deg); } 100% { transform: none; } }
+
+/* Barrinha que encolhe nos avisos do canto da tela */
+@keyframes toast-bar {
+  from { width: 100%; }
+  to { width: 0%; }
+}
+.animate-toast-bar { animation: toast-bar linear forwards; }

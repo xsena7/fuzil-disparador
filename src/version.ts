@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "3.09",
+    date: "27/10/2026",
+    items: ["Avisos no canto da tela: mais limpos e curtos. Só o que aconteceu (ex.: \"Sem número\") e de quem, com uma bolinha de cor. Avisos iguais chegam juntos num só (\"Sem número (2)\")"],
+  },
+  {
     version: "3.08",
     date: "27/10/2026",
     items: ["Conexões: número +1 (dos EUA) é tratado como número de teste da Meta, mesmo sem 555 (ex.: +1 711-670-0424). Ele não conta como número da BM, então ela fica em \"Sem número\" (que vem antes de Pagamento) até ter um número do Brasil"],
