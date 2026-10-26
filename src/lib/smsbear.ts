@@ -205,10 +205,15 @@ async function cancelPending() {
         await push(job.id, `${label} cancelado no SMSBear: o saldo volta.`, "ok");
         continue;
       }
-      // Já foi devolvido (ou recebeu SMS): não tem o que cancelar
+      // Só sai da fila se foi devolvido de verdade ou se tem SMS (qualquer outra situação = ainda aguardando: tenta de novo)
       const o = await smsbear.order(token, c.id).catch(() => null);
-      if (o && o.status !== "pending") {
-        await push(job.id, o.status === "refund" ? `${label} devolvido pelo SMSBear: o saldo voltou.` : `${label} já recebeu SMS no SMSBear (não dá para cancelar).`, o.status === "refund" ? "ok" : "info");
+      const st = String(o?.status ?? "").toLowerCase();
+      if (o && /refund|cancel|devolv|reembols/.test(st)) {
+        await push(job.id, `${label} devolvido pelo SMSBear: o saldo voltou.`, "ok");
+        continue;
+      }
+      if (o && (o.sms?.length ?? 0) > 0) {
+        await push(job.id, `${label} recebeu SMS no SMSBear (não dá para cancelar).`, "info");
         continue;
       }
       if (Date.now() - new Date(c.since).getTime() > CANCEL_GIVE_UP_MS) {
