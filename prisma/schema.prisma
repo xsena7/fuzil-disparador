@@ -12,24 +12,24 @@ datasource db {
 // ---------------------------------------------------------------------------
 
 model User {
-  id           String          @id @default(cuid())
-  email        String          @unique
-  name         String
-  passwordHash String
-  isSuperAdmin Boolean         @default(false)
-  lastLoginAt  DateTime?
+  id              String          @id @default(cuid())
+  email           String          @unique
+  name            String
+  passwordHash    String
+  isSuperAdmin    Boolean         @default(false)
+  lastLoginAt     DateTime?
   // Tour de boas-vindas: null = ainda não perguntou; DONE = fez; SKIPPED = não quis
-  tourState    String?
-  createdAt    DateTime        @default(now())
-  memberships  Membership[]
-  sessions     Session[]
-  tokens       PasswordToken[]
+  tourState       String?
+  createdAt       DateTime        @default(now())
+  memberships     Membership[]
+  sessions        Session[]
+  tokens          PasswordToken[]
   // Sócio do financeiro (divisão em partes iguais). Fica fixo: dar administrador para alguém não muda a divisão
-  financePartner  Boolean        @default(false)
+  financePartner  Boolean         @default(false)
   // Chave Pix do sócio (para o outro copiar na hora do acerto)
   pixKey          String?
-  financeEntries  FinanceEntry[] @relation("FinanceUser")
-  financeReceived FinanceEntry[] @relation("FinanceTo")
+  financeEntries  FinanceEntry[]  @relation("FinanceUser")
+  financeReceived FinanceEntry[]  @relation("FinanceTo")
 }
 
 enum TokenPurpose {
@@ -171,6 +171,7 @@ model BusinessManager {
   workspace          Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   wabas              WhatsAppAccount[]
   groups             BmGroupMember[]
+  marketItems        MarketItem[]
 
   @@unique([workspaceId, metaBusinessId])
 }
@@ -829,12 +830,12 @@ model LinkSession {
 
 // Financeiro dos sócios (administradores do Fuzil), dividido em partes iguais. Não é de uma conta de cliente.
 model FinanceEntry {
-  id             String    @id @default(cuid())
+  id             String   @id @default(cuid())
   // EXPENSE = pagou uma despesa; INCOME = recebeu; SETTLEMENT = passou Pix para o outro sócio (acerto);
   // WITHDRAW = o caixa da empresa reembolsou o sócio
   kind           String
   // Despesa/entrada do caixa da empresa (não passou pela conta de nenhum sócio)
-  cash           Boolean   @default(false)
+  cash           Boolean  @default(false)
   description    String
   amountCents    Int
   category       String?
@@ -845,9 +846,101 @@ model FinanceEntry {
   attachmentPath String?
   attachmentName String?
   attachmentMime String?
-  createdAt      DateTime  @default(now())
-  user           User      @relation("FinanceUser", fields: [userId], references: [id], onDelete: Restrict)
-  toUser         User?     @relation("FinanceTo", fields: [toUserId], references: [id], onDelete: Restrict)
+  createdAt      DateTime @default(now())
+  user           User     @relation("FinanceUser", fields: [userId], references: [id], onDelete: Restrict)
+  toUser         User?    @relation("FinanceTo", fields: [toUserId], references: [id], onDelete: Restrict)
 
   @@index([createdAt])
+}
+
+// ---------------------------------------------------------------------------
+// Vendas (marketplace em /vendas): tipos de BM à venda, estoque, pedidos e convites capturados do e-mail
+// ---------------------------------------------------------------------------
+
+model MarketProduct {
+  id          String        @id @default(cuid())
+  name        String
+  description String        @default("")
+  // TEMPLATE = BM com template do Fuzil aprovado; NO_TEMPLATE = sem template
+  kind        String        @default("TEMPLATE")
+  priceCents  Int
+  active      Boolean       @default(true)
+  sort        Int           @default(0)
+  createdAt   DateTime      @default(now())
+  items       MarketItem[]
+  orders      MarketOrder[]
+}
+
+// Uma BM do estoque
+model MarketItem {
+  id            String           @id @default(cuid())
+  productId     String
+  // BM conectada na conta do dono (para mostrar o template e checar a saúde). Opcional.
+  businessId    String?
+  // Nome da BM na Meta: é por ele que o Fuzil acha o convite no e-mail
+  bmName        String
+  // AVAILABLE | RESERVED | SOLD | DISABLED
+  status        String           @default("AVAILABLE")
+  orderId       String?
+  reservedUntil DateTime?
+  soldAt        DateTime?
+  createdAt     DateTime         @default(now())
+  product       MarketProduct    @relation(fields: [productId], references: [id], onDelete: Cascade)
+  business      BusinessManager? @relation(fields: [businessId], references: [id], onDelete: SetNull)
+  order         MarketOrder?     @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  invite        MarketInvite?
+
+  @@index([productId, status])
+}
+
+model MarketOrder {
+  id          String        @id @default(cuid())
+  // Link público do pedido (/vendas/pedido/<token>)
+  token       String        @unique
+  productId   String
+  quantity    Int
+  totalCents  Int
+  name        String
+  email       String
+  phone       String?
+  // PENDING (esperando o Pix) | PAID (pago, faltando convite) | DELIVERED | EXPIRED | CANCELLED
+  status      String        @default("PENDING")
+  mpPaymentId String?       @unique
+  pixCode     String?
+  pixQr       String?
+  expiresAt   DateTime
+  paidAt      DateTime?
+  deliveredAt DateTime?
+  // Conta do Fuzil do comprador (criada sozinha se não tinha)
+  userId      String?
+  error       String?
+  createdAt   DateTime      @default(now())
+  product     MarketProduct @relation(fields: [productId], references: [id], onDelete: Restrict)
+  items       MarketItem[]
+
+  @@index([status, expiresAt])
+}
+
+// Convite de BM que chegou no e-mail do estoque
+model MarketInvite {
+  id         String      @id @default(cuid())
+  messageId  String      @unique
+  subject    String
+  fromAddr   String
+  // Nome da BM lido do e-mail (para casar com o estoque)
+  bmName     String?
+  url        String?
+  // OK | INVALID | UNKNOWN (o teste do link)
+  check      String?
+  checkNote  String?
+  checkedAt  DateTime?
+  // Item do estoque que usa esse convite
+  itemId     String?     @unique
+  // Já foi entregue a um cliente (não reaproveita)
+  usedAt     DateTime?
+  receivedAt DateTime
+  createdAt  DateTime    @default(now())
+  item       MarketItem? @relation(fields: [itemId], references: [id], onDelete: SetNull)
+
+  @@index([receivedAt])
 }

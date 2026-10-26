@@ -28,6 +28,7 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
             <a href="/#comparar" className="hover:text-white">Lado a lado</a>
             <a href="/#como-funciona" className="hover:text-white">Como funciona</a>
             <a href="/#contato" className="hover:text-white">Testes</a>
+            <a href="/vendas" className="font-semibold text-orange-300 hover:text-white">Comprar BM</a>
           </nav>
           <a href={`${c.appUrl}/login`} className="ml-auto rounded-xl bg-brand-gradient px-4 py-2 text-sm font-medium text-white shadow-sm md:ml-0">Entrar</a>
         </div>

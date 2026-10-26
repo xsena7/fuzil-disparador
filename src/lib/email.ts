@@ -5,17 +5,30 @@ export function emailConfigured() {
 }
 
 /** Envia um e-mail pelo Resend. Sem chave configurada, só registra no log e retorna false. */
-export async function sendEmail(input: { to: string | string[]; subject: string; html: string; text: string }): Promise<boolean> {
+export async function sendEmail(input: {
+  to: string | string[];
+  subject: string;
+  html: string;
+  text: string;
+  attachments?: Array<{ filename: string; content: Buffer }>;
+}): Promise<boolean> {
   const key = env.resendKey();
   if (!key) {
     console.warn(`[email] RESEND_API_KEY não configurada — e-mail "${input.subject}" não enviado`);
     return false;
   }
   try {
-    const res = await fetch("https://api.resend.com/emails", {
+    const res = await fetch(`${(process.env.RESEND_API_URL || "https://api.resend.com").replace(/\/$/, "")}/emails`, {
       method: "POST",
       headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ from: env.emailFrom(), to: input.to, subject: input.subject, html: input.html, text: input.text }),
+      body: JSON.stringify({
+        from: env.emailFrom(),
+        to: input.to,
+        subject: input.subject,
+        html: input.html,
+        text: input.text,
+        ...(input.attachments?.length ? { attachments: input.attachments.map((a) => ({ filename: a.filename, content: a.content.toString("base64") })) } : {}),
+      }),
       signal: AbortSignal.timeout(15_000),
     });
     if (!res.ok) {

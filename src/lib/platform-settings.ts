@@ -12,6 +12,12 @@ export const PLATFORM_KEYS = [
   { key: "RESEND_API_KEY", label: "Chave do Resend (e-mails)", secret: true },
   { key: "EMAIL_FROM", label: "Remetente dos e-mails", secret: false },
   { key: "DISCORD_ERRORS_WEBHOOK", label: "Webhook do Discord para erros do sistema", secret: true },
+  { key: "MP_ACCESS_TOKEN", label: "Vendas: Access Token do Mercado Pago (produção)", secret: true },
+  { key: "MARKET_IMAP_HOST", label: "Vendas: servidor IMAP do e-mail dos convites (ex.: imap.hostinger.com)", secret: false },
+  { key: "MARKET_IMAP_PORT", label: "Vendas: porta IMAP (normalmente 993)", secret: false },
+  { key: "MARKET_IMAP_USER", label: "Vendas: e-mail que recebe os convites (ex.: estoque@fuzildisparador.com.br)", secret: false },
+  { key: "MARKET_IMAP_PASSWORD", label: "Vendas: senha desse e-mail", secret: true },
+  { key: "MARKET_WHATSAPP", label: "Vendas: WhatsApp do suporte (só números, com 55)", secret: false },
 ] as const;
 
 export type PlatformKey = (typeof PLATFORM_KEYS)[number]["key"];

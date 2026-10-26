@@ -4,7 +4,7 @@ import clsx from "clsx";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Bell, Building2, GraduationCap, MessagesSquare, Coins, FileText, Flame, Home, Layers, LogOut, Megaphone, Menu, X, Settings, Shield, Sparkles, Wallet } from "lucide-react";
+import { Bell, Building2, GraduationCap, MessagesSquare, Coins, FileText, Flame, Home, Layers, LogOut, Megaphone, Menu, X, Settings, Shield, ShoppingBag, Sparkles, Wallet } from "lucide-react";
 import { logoutAction } from "@/app/actions/auth";
 import { Logo } from "./brand";
 import { APP_VERSION } from "@/version";
@@ -48,7 +48,7 @@ export function Sidebar({ workspace, user, unread, chatUnread = 0, balance, isSu
   const [open, setOpen] = useState(false);
   useEffect(() => setOpen(false), [path]);
   // Financeiro: só para os sócios (fixos no banco)
-  const platform = [...(isSuperAdmin ? [{ href: "/admin", label: "Admin", icon: Shield }] : []), ...(financePartner ? [{ href: "/financeiro", label: "Financeiro", icon: Wallet }] : [])];
+  const platform = [...(isSuperAdmin ? [{ href: "/admin", label: "Admin", icon: Shield }] : []), ...(financePartner ? [{ href: "/financeiro", label: "Financeiro", icon: Wallet }, { href: "/vendas", label: "Vendas", icon: ShoppingBag }] : [])];
   const all = platform.length ? [...sections, { title: "Plataforma", items: platform }] : sections;
   return (
     <>

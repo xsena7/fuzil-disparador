@@ -2,6 +2,9 @@ import { prisma } from "../lib/db";
 import { maybeComplete, recoverStuck, runCampaignTick, startDueCampaigns, TICK_MS } from "../lib/dispatcher";
 import { syncWaba } from "../lib/sync";
 import { deployBlueprints } from "../lib/blueprints";
+import { marketTick } from "../lib/market";
+import { inboxConfigured, pollInbox, recheckInvites } from "../lib/market-inbox";
+import { encrypt } from "../lib/crypto";
 import { startSettingsRefresh } from "../lib/platform-settings";
 import { checkLimitAlerts } from "../lib/limit-alerts";
 import { reportError } from "../lib/report";
@@ -65,6 +68,21 @@ async function housekeeping() {
   await prisma.conversation.deleteMany({ where: { hasInbound: false, lastMessageAt: { lt: new Date(Date.now() - 45 * 86400_000) } } });
 }
 
+/** Caixa de e-mail dos convites (vendas): erro de senha/servidor fica no painel, sem encher o Discord a cada minuto. */
+async function marketInbox() {
+  if (!inboxConfigured()) return;
+  let status: { at: string; ok: boolean; text: string };
+  try {
+    const r = await pollInbox();
+    await recheckInvites();
+    status = { at: new Date().toISOString(), ok: true, text: `Li ${r.read} e-mail(s) novo(s), ${r.invites} com convite` };
+  } catch (e) {
+    status = { at: new Date().toISOString(), ok: false, text: e instanceof Error ? e.message : String(e) };
+  }
+  const value = encrypt(JSON.stringify(status));
+  await prisma.platformSetting.upsert({ where: { key: "MARKET_INBOX_STATUS" }, create: { key: "MARKET_INBOX_STATUS", value }, update: { value } });
+}
+
 async function main() {
   console.log("[worker] Fuzil Disparador worker iniciado");
   process.on("unhandledRejection", (err) => void reportError("worker", err, { path: "unhandledRejection" }));
@@ -77,6 +95,8 @@ async function main() {
   void every(60_000, "housekeeping", housekeeping);
   void every(60_000, "limites", checkLimitAlerts);
   void every(10_000, "funis", runFunnels);
+  void every(20_000, "vendas", marketTick);
+  void every(60_000, "vendas-email", marketInbox);
   await dispatchLoop();
   // Desligamento: espera os envios em andamento terminarem
   while (running.size) await new Promise((r) => setTimeout(r, 200));

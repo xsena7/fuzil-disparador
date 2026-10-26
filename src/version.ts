@@ -2,6 +2,16 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.70",
+    date: "26/10/2026",
+    items: [
+      "Vendas: vitrine pública em fuzildisparador.com.br/vendas, com BMs por tipo (com ou sem template), estoque ao vivo e o template aparecendo ao passar o mouse",
+      "Vendas: pagamento no Pix pelo Mercado Pago. A BM fica separada por 15 minutos e, quando o Pix cai, o cliente recebe sozinho no e-mail o convite de cada BM, o acesso ao Fuzil (conta criada sozinha) e um PDF ensinando a disparar e a usar o gerador de links",
+      "Vendas: o Fuzil lê o e-mail do estoque, acha os convites das BMs, testa se o link responde e liga cada convite à BM certa pelo nome. Só BM com convite testado aparece na vitrine",
+      "Vendas: painel só dos sócios com pedidos, estoque, convites recebidos e produtos, com troca de BM (garantia de 24h: convite que não funciona ou conta banida) e botão de WhatsApp para o cliente",
+    ],
+  },
+  {
     version: "2.69",
     date: "26/10/2026",
     items: [
