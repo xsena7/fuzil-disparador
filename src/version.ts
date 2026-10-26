@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "3.07",
+    date: "27/10/2026",
+    items: ["Conexões: as BMs ficam separadas em gavetas pelo grupo em que estão (Prontas para disparo, grupos de problema, seus grupos e Sem grupo), com a quantidade de BMs em cada. Abra a gaveta para ver as BMs daquela situação"],
+  },
+  {
     version: "3.06",
     date: "27/10/2026",
     items: [

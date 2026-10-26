@@ -17,6 +17,7 @@ import { TestWaba } from "./test-waba";
 import { EmbeddedSignup } from "@/components/embedded-signup";
 import { VerifyAllButton } from "@/components/verify-all-button";
 import { groupDot, groupTag } from "@/lib/group-colors";
+import { READY_GROUP, isProblemSystem } from "@/lib/bm-problems";
 import { ConnectGuide } from "./connect-guide";
 import { ProfileEditor } from "./profile-editor";
 import { SmsBearPanel } from "./smsbear-panel";
@@ -69,6 +70,25 @@ export default async function ConnectionsPage() {
   businesses.sort((a, b) => lastConnected(b) - lastConnected(a));
   for (const b of businesses) b.wabas.sort((x, y) => y.createdAt.getTime() - x.createdAt.getTime());
   const windows = await bmWindows(businesses.map((b) => b.id));
+
+  // Gavetas por grupo: cada BM fica no grupo principal dela (problema > Prontas para disparo > grupo seu > Sem grupo)
+  type Sec = { key: string; name: string; color: string | null; order: number; items: typeof businesses };
+  const secs = new Map<string, Sec>();
+  for (const b of businesses) {
+    const gs = b.groups.map((g) => g.group).filter((g) => !g.system?.startsWith("BM:"));
+    const main = gs.find((g) => isProblemSystem(g.system)) ?? gs.find((g) => g.system === READY_GROUP) ?? gs.find((g) => !g.system) ?? null;
+    const key = main?.id ?? "none";
+    if (!secs.has(key))
+      secs.set(key, {
+        key,
+        name: main?.name ?? "Sem grupo",
+        color: main?.color ?? null,
+        order: !main ? 3 : main.system === READY_GROUP ? 0 : isProblemSystem(main.system) ? 1 : 2,
+        items: [],
+      });
+    secs.get(key)!.items.push(b);
+  }
+  const sections = [...secs.values()].sort((a, b) => a.order - b.order || a.name.localeCompare(b.name, "pt-BR"));
 
   // WABAs para o painel do SMSBear (registrar número sozinho)
   const smsWabas = businesses.flatMap((b) => b.wabas.map((w) => ({ id: w.id, label: `${b.name} · ${w.name}`, name: w.phones.find((p) => p.verifiedName)?.verifiedName ?? b.name })));
@@ -123,7 +143,16 @@ export default async function ConnectionsPage() {
       {businesses.length === 0 && <Empty>Nenhuma BM conectada ainda. Use uma das opções acima.</Empty>}
 
       <div className="space-y-4">
-        {businesses.map((bm) => {
+        {sections.map((sec) => (
+          <details key={sec.key} className="group/sec overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-50/60">
+            <summary className="flex cursor-pointer list-none items-center gap-3 px-5 py-3.5 hover:bg-zinc-100/70 [&::-webkit-details-marker]:hidden">
+              <ChevronRight className="size-4 shrink-0 text-zinc-400 transition-transform group-open/sec:rotate-90" />
+              <span className={`size-2.5 shrink-0 rounded-full ${sec.key === "none" ? "bg-zinc-300" : groupDot(sec.color)}`} />
+              <span className="text-base font-semibold text-zinc-900">{sec.name}</span>
+              <span className="ml-auto rounded-full bg-white px-2.5 py-0.5 text-xs font-semibold text-zinc-600 ring-1 ring-zinc-200">{sec.items.length} BM{sec.items.length === 1 ? "" : "s"}</span>
+            </summary>
+            <div className="space-y-4 border-t border-zinc-200 p-3">
+        {sec.items.map((bm) => {
           // Cor da gaveta: vermelho se alguma conta não consegue disparar, amarelo se tem aviso, verde se está tudo certo
           const issues = bm.wabas.flatMap((w) => wabaReadiness({ ...w, usableTemplates: w.templates.length }));
           const tone = bm.problemAt || !bm.wabas.length || issues.some((i) => i.block) ? "red" : issues.length ? "amber" : "green";
@@ -368,6 +397,9 @@ export default async function ConnectionsPage() {
           </details>
           );
         })}
+            </div>
+          </details>
+        ))}
       </div>
       </div>
       </div>
