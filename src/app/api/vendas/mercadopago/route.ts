@@ -1,8 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { confirmPayment } from "@/lib/market";
+import { handlePaymentNotice } from "@/lib/payments";
 
 /**
- * Aviso do Mercado Pago (Pix pago, cancelado...). O aviso só diz o ID do pagamento:
+ * Aviso do Mercado Pago (Pix pago, cancelado...), das Vendas de BM e das recargas de créditos. O aviso só diz o ID do pagamento:
  * o Fuzil consulta o pagamento direto na API do Mercado Pago antes de entregar (aviso falso não entrega nada).
  */
 export async function POST(req: NextRequest) {
@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
   const id = String(body.data?.id ?? q.get("data.id") ?? q.get("id") ?? "");
   if (type === "payment" && /^\d{1,30}$/.test(id)) {
     try {
-      await confirmPayment(id);
+      await handlePaymentNotice(id);
     } catch (e) {
       console.error("[vendas] aviso do Mercado Pago", e);
       // 500 = o Mercado Pago manda o aviso de novo depois

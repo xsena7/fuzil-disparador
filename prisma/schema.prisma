@@ -94,6 +94,7 @@ model Workspace {
   quickReplies        QuickReply[]
   funnels             Funnel[]
   externalLinks       ExternalLink[]
+  creditPurchases     CreditPurchase[]
 }
 
 model Membership {
@@ -988,4 +989,28 @@ model MailMessage {
 
   @@index([mailboxId, receivedAt])
   @@index([mailboxId, readAt])
+}
+
+// Compra de créditos pelo Pix (Mercado Pago). Pagou: o saldo entra sozinho, uma vez só
+model CreditPurchase {
+  id          String    @id @default(cuid())
+  // Link da compra (a tela de Saldo pergunta a situação por ele)
+  token       String    @unique
+  workspaceId String
+  userId      String
+  credits     Int
+  amountCents Int
+  // PENDING | PAID | EXPIRED | CANCELLED
+  status      String    @default("PENDING")
+  mpPaymentId String?   @unique
+  pixCode     String?
+  pixQr       String?
+  expiresAt   DateTime
+  paidAt      DateTime?
+  error       String?
+  createdAt   DateTime  @default(now())
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, createdAt])
+  @@index([status, expiresAt])
 }

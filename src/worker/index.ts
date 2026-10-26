@@ -1,8 +1,10 @@
 import { prisma } from "../lib/db";
+import { settleLeftoverCredits } from "../lib/credits";
 import { maybeComplete, recoverStuck, runCampaignTick, startDueCampaigns, TICK_MS } from "../lib/dispatcher";
 import { syncWaba } from "../lib/sync";
 import { deployBlueprints } from "../lib/blueprints";
 import { marketTick } from "../lib/market";
+import { creditTick } from "../lib/credit-purchase";
 import { recheckInvites, reingestStockMailbox } from "../lib/market-inbox";
 import { startSettingsRefresh } from "../lib/platform-settings";
 import { checkLimitAlerts } from "../lib/limit-alerts";
@@ -55,6 +57,8 @@ async function syncAll() {
 
 async function housekeeping() {
   await recoverStuck();
+  // Crédito que ficou anotado em destinatário não enviado (ex.: o worker caiu no meio do lote) volta para o saldo
+  await settleLeftoverCredits();
   // Campanhas "RUNNING" sem pendentes (ex.: todos descadastrados) são finalizadas
   const runningCampaigns = await prisma.campaign.findMany({ where: { status: "RUNNING" }, select: { id: true } });
   for (const c of runningCampaigns) if (!running.has(c.id)) await maybeComplete(c.id);
@@ -80,6 +84,7 @@ async function main() {
   void every(60_000, "limites", checkLimitAlerts);
   void every(10_000, "funis", runFunnels);
   void every(20_000, "vendas", marketTick);
+  void every(20_000, "recargas", creditTick);
   void every(10 * 60_000, "vendas-convites", recheckInvites);
   void every(2 * 60_000, "vendas-estoque", reingestStockMailbox);
   await dispatchLoop();

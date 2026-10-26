@@ -29,6 +29,11 @@ export const env = {
   mpAccessToken: () => platform("MP_ACCESS_TOKEN"),
   mpApiUrl: () => opt("MP_API_URL", "https://api.mercadopago.com").replace(/\/$/, ""),
   marketWhatsapp: () => platform("MARKET_WHATSAPP").replace(/\D/g, ""),
+  /** Preço de 1 crédito em reais (padrão R$ 0,01). Aceita "0,01" ou "0.01". */
+  creditPrice: () => {
+    const v = Number(platform("MARKET_CREDIT_PRICE", "0.01").replace(",", "."));
+    return Number.isFinite(v) && v > 0 && v <= 10 ? v : 0.01;
+  },
 };
 
 export function metaConfigured() {

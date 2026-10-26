@@ -2,6 +2,16 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.82",
+    date: "27/10/2026",
+    items: [
+      "Saldo: compra de créditos pelo Pix. 1 crédito = 1 disparo, a R$ 0,01 por crédito (preço muda em Admin → Vendas). Pacotes prontos ou quantidade livre, e o saldo entra sozinho quando o Pix cai",
+      "Saldo: o crédito entra uma vez só, mesmo com o Mercado Pago avisando o pagamento várias vezes. Pix não pago vence sozinho em 30 minutos e clique duplo não gera dois Pix",
+      "Disparo: o crédito fica anotado em cada destinatário até a mensagem sair. O que falha ou volta para a fila é estornado numa operação só, e se o servidor cair no meio do lote o crédito volta sozinho (antes podia se perder)",
+      "Financeiro: recargas de créditos e vendas de BM pagas no Pix entram sozinhas como entrada no caixa da empresa",
+    ],
+  },
+  {
     version: "2.81",
     date: "27/10/2026",
     items: ["E-mails: cada e-mail tem uma categoria (e-mail comum, estoque geral das Vendas ou estoque de um produto), escolhida ao criar ou depois, no topo da caixa"],

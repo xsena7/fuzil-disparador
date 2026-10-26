@@ -5,7 +5,7 @@ import { meta, MetaError } from "./meta";
 import { wabaToken } from "./sync";
 import { tierToLimit } from "./limits";
 import { createAlert } from "./alerts";
-import { addCredits, tryDebit } from "./credits";
+import { chargeRecipients, settleRecipients } from "./credits";
 import { buildSendComponents, getComponent, type TComponent, type VariableMapping } from "./template-utils";
 
 /** Texto do corpo e botões (sem exemplos): dois templates com a mesma assinatura são o mesmo conteúdo. */
@@ -165,7 +165,8 @@ async function releaseRecipients(ids: string[]) {
   if (!ids.length) return;
   await prisma.campaignRecipient.updateMany({
     where: { id: { in: ids }, status: "SENDING" },
-    data: { status: "PENDING", attempts: { decrement: 1 }, creditsCharged: 0 },
+    // O crédito anotado fica: ou é estornado por settleRecipients, ou é descontado na próxima cobrança (não paga duas vezes)
+    data: { status: "PENDING", attempts: { decrement: 1 } },
   });
 }
 
@@ -377,20 +378,19 @@ export async function runCampaignTick(campaignId: string) {
     await pauseCampaign(campaign, "Saldo insuficiente. Adicione créditos e retome a campanha.");
     return;
   }
-  if (sendable.length && !(await tryDebit(campaign.workspaceId, sendable.length * price, `Campanha ${campaign.name}`, campaign.id))) {
+  // Cobra e anota o crédito em cada destinatário na mesma operação (se o worker cair, nada se perde)
+  if (sendable.length && !(await chargeRecipients(campaign.workspaceId, sendable.map((r) => r.id), price, `Campanha ${campaign.name}`, campaign.id))) {
     await releaseRecipients(sendable.map((r) => r.id));
     await pauseCampaign(campaign, "Saldo insuficiente. Adicione créditos e retome a campanha.");
     return;
   }
-  // Marca o crédito reservado em cada um: se o worker cair no meio, a recuperação sabe quanto devolver
-  if (sendable.length && price > 0)
-    await prisma.campaignRecipient.updateMany({ where: { id: { in: sendable.map((r) => r.id) } }, data: { creditsCharged: price } });
+  const settle = (ids: string[], why: string) => settleRecipients(campaign.id, why, ids).catch((e) => console.error("[dispatcher] estorno", e));
 
   const { buckets, rest } = distribute(sendable, plan.senders, plan.capacity, perSender);
   // O que não coube volta pra fila (e o crédito volta junto)
   if (rest.length) {
     await releaseRecipients(rest.map((r) => r.id));
-    await addCredits(campaign.workspaceId, rest.length * price, "REFUND", `Estorno (sem capacidade) — ${campaign.name}`, { campaignId: campaign.id });
+    await settle(rest.map((r) => r.id), "Estorno (sem capacidade)");
   }
 
   const started = Date.now();
@@ -398,7 +398,6 @@ export async function runCampaignTick(campaignId: string) {
   const fatalWabas = new Map<string, string>();
   const fatalCodes = new Map<string, number | null>();
   const firstSent = new Set<string>();
-  let refund = 0;
   // Pausou ou cancelou no meio do lote: para de enviar e devolve o resto
   let stopped = false;
   const watch = setInterval(() => {
@@ -418,7 +417,6 @@ export async function runCampaignTick(campaignId: string) {
           // Trava de segurança: reconfere a categoria a cada leva (a recategorização pode chegar no meio do lote)
           if (stopped || !(await templateStillUtility(sender, campaign.templateCategory))) {
             await releaseRecipients(items.slice(offset).map((r) => r.id));
-            refund += (items.length - offset) * price;
             break;
           }
           const sentNow: Array<{ phone: string; name: string | null; wamid: string; text: string }> = [];
@@ -426,7 +424,6 @@ export async function runCampaignTick(campaignId: string) {
             chunk.map(async (r) => {
               if (fatalWabas.has(sender.wabaId) || fatalSenders.has(sender.phoneId)) {
                 await releaseRecipients([r.id]);
-                refund += price;
                 return;
               }
               let sentWamid: string | null = null;
@@ -449,45 +446,38 @@ export async function runCampaignTick(campaignId: string) {
                     break;
                   }
                   case "retry":
-                    refund += price;
                     if (r.attempts >= MAX_ATTEMPTS) {
                       await prisma.campaignRecipient.update({
                         where: { id: r.id },
-                        data: { status: "FAILED", senderId: sender.phoneId, failedAt: new Date(), errorCode: out.code, errorTitle: metaErrorLabel(out.code), creditsCharged: 0 },
+                        data: { status: "FAILED", senderId: sender.phoneId, failedAt: new Date(), errorCode: out.code, errorTitle: metaErrorLabel(out.code) },
                       });
                     } else {
                       // Espera antes de tentar de novo (limite de velocidade da Meta precisa de tempo, não de 2s)
                       const wait = (out.code === 131056 ? 120 : 30) * r.attempts;
-                      await prisma.campaignRecipient.update({ where: { id: r.id }, data: { status: "PENDING", creditsCharged: 0, retryAt: new Date(Date.now() + wait * 1000) } });
+                      await prisma.campaignRecipient.update({ where: { id: r.id }, data: { status: "PENDING", retryAt: new Date(Date.now() + wait * 1000) } });
                     }
                     break;
                   case "sender_fatal":
-                    refund += price;
                     if (!fatalSenders.has(sender.phoneId)) fatalCodes.set(sender.phoneId, out.code);
                     fatalSenders.set(sender.phoneId, out.title);
                     await releaseRecipients([r.id]);
                     break;
                   case "template_fatal":
                     // Problema na cópia do template DESSA WABA: tira só ela, as outras seguem
-                    refund += price;
                     fatalWabas.set(sender.wabaId, out.title);
                     await releaseRecipients([r.id]);
                     break;
                   case "failed":
-                    refund += price;
                     await prisma.campaignRecipient.update({
                       where: { id: r.id },
-                      data: { status: "FAILED", senderId: sender.phoneId, failedAt: new Date(), errorCode: out.code, errorTitle: out.title, errorDetail: out.detail, creditsCharged: 0 },
+                      data: { status: "FAILED", senderId: sender.phoneId, failedAt: new Date(), errorCode: out.code, errorTitle: out.title, errorDetail: out.detail },
                     });
                     break;
                 }
               } catch (e) {
                 // Erro inesperado (ex.: banco caiu um instante): não perde o crédito nem envia duas vezes
                 console.error("[dispatcher] destinatário", r.id, e instanceof Error ? e.message : e);
-                if (!sentWamid) {
-                  await releaseRecipients([r.id]).catch(() => undefined);
-                  refund += price;
-                }
+                if (!sentWamid) await releaseRecipients([r.id]).catch(() => undefined);
               }
             }),
           );
@@ -500,9 +490,8 @@ export async function runCampaignTick(campaignId: string) {
     );
   } finally {
     clearInterval(watch);
-    if (refund > 0) {
-      await addCredits(campaign.workspaceId, refund, "REFUND", `Estorno de falhas — ${campaign.name}`, { campaignId: campaign.id });
-    }
+    // Estorna o que não saiu (falhou, voltou para a fila, BM com problema...), numa operação só
+    await settle(sendable.map((r) => r.id), "Estorno de falhas");
   }
 
   // Template com problema numa WABA: tira os números dela da campanha; só pausa se não sobrar nenhum
@@ -559,18 +548,12 @@ export async function maybeComplete(campaignId: string) {
 /** Recupera destinatários presos em SENDING (ex.: worker reiniciou no meio do envio). */
 export async function recoverStuck() {
   const where = { status: "SENDING" as const, wamid: null, queuedAt: { lt: new Date(Date.now() - 5 * 60_000) } };
-  const stuck = await prisma.campaignRecipient.findMany({ where, select: { id: true, creditsCharged: true, campaign: { select: { id: true, name: true, workspaceId: true } } }, take: 50_000 });
+  const stuck = await prisma.campaignRecipient.findMany({ where, select: { id: true, campaignId: true }, take: 50_000 });
   if (!stuck.length) return;
-  const res = await prisma.campaignRecipient.updateMany({ where: { ...where, id: { in: stuck.map((r) => r.id) } }, data: { status: "PENDING", creditsCharged: 0 } });
+  const res = await prisma.campaignRecipient.updateMany({ where: { ...where, id: { in: stuck.map((r) => r.id) } }, data: { status: "PENDING" } });
   // Devolve o crédito que foi reservado para eles (vão ser cobrados de novo quando saírem)
-  const byCampaign = new Map<string, { workspaceId: string; name: string; amount: number }>();
-  for (const r of stuck) {
-    const cur = byCampaign.get(r.campaign.id) ?? { workspaceId: r.campaign.workspaceId, name: r.campaign.name, amount: 0 };
-    cur.amount += r.creditsCharged;
-    byCampaign.set(r.campaign.id, cur);
-  }
-  for (const [campaignId, c] of byCampaign)
-    if (c.amount > 0) await addCredits(c.workspaceId, c.amount, "REFUND", `Estorno (envio interrompido) — ${c.name}`, { campaignId });
+  for (const campaignId of new Set(stuck.map((r) => r.campaignId)))
+    await settleRecipients(campaignId, "Estorno (envio interrompido)", stuck.filter((r) => r.campaignId === campaignId).map((r) => r.id)).catch((e) => console.error("[dispatcher] estorno", e));
   console.log(`[dispatcher] ${res.count} destinatários devolvidos para a fila`);
 }
 

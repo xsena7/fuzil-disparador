@@ -10,6 +10,8 @@ import { createAlert } from "./alerts";
 import { platformOwnerId, SUPPORT_WHATSAPP } from "./onboarding";
 import { buildGuidePdf } from "./market-pdf";
 import { normalizeBmName } from "./market-invite";
+import { recordCompanyIncome } from "./finance-auto";
+import { mp, mpCreatePix, mpDate, mpGetPayment, paidEnough, type MpPayment } from "./mercadopago";
 
 /** Quanto tempo o estoque fica separado esperando o Pix. */
 export const RESERVE_MINUTES = 15;
@@ -44,38 +46,6 @@ export function supportLink(text: string) {
   return `https://wa.me/${n}?text=${encodeURIComponent(text)}`;
 }
 
-// ---------------------------------------------------------------------------
-// Mercado Pago
-// ---------------------------------------------------------------------------
-
-type MpPayment = {
-  id: number;
-  status: string; // pending | approved | rejected | cancelled | refunded | in_process ...
-  external_reference?: string;
-  transaction_amount?: number;
-  point_of_interaction?: { transaction_data?: { qr_code?: string; qr_code_base64?: string } };
-};
-
-async function mp<T>(method: "GET" | "POST" | "PUT", path: string, body?: unknown, idempotency?: string): Promise<T> {
-  const token = env.mpAccessToken();
-  if (!token) throw new Error("Mercado Pago não configurado (Admin → gaveta Vendas)");
-  const res = await fetch(`${env.mpApiUrl()}${path}`, {
-    method,
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", ...(idempotency ? { "X-Idempotency-Key": idempotency } : {}) },
-    body: body ? JSON.stringify(body) : undefined,
-    signal: AbortSignal.timeout(20_000),
-  });
-  const json = (await res.json().catch(() => ({}))) as T & { message?: string };
-  if (!res.ok) throw new Error(`Mercado Pago ${res.status}: ${json.message ?? "erro"}`);
-  return json;
-}
-
-/** "2026-10-26T12:15:00.000-03:00" (formato que o Mercado Pago pede para o vencimento do Pix). */
-function mpDate(d: Date) {
-  return `${new Date(d.getTime() - 3 * 3600_000).toISOString().replace("Z", "")}-03:00`;
-}
-
-export const mpGetPayment = (id: string) => mp<MpPayment>("GET", `/v1/payments/${encodeURIComponent(id)}`);
 
 // ---------------------------------------------------------------------------
 // Pedido: reserva + Pix
@@ -99,23 +69,16 @@ export async function createOrder(input: { productId: string; quantity: number; 
   if ("error" in reserved) return { error: reserved.error ?? "Não deu certo" };
   const { order, product } = reserved;
   try {
-    const pay = await mp<MpPayment>(
-      "POST",
-      "/v1/payments",
-      {
-        transaction_amount: order.totalCents / 100,
-        description: `${quantity}x ${product.name}`,
-        payment_method_id: "pix",
-        external_reference: order.id,
-        notification_url: `${env.appUrl()}/api/vendas/mercadopago`,
-        date_of_expiration: mpDate(order.expiresAt),
-        payer: { email: order.email, first_name: order.name.split(" ")[0] },
-      },
-      order.id,
-    );
-    const tx = pay.point_of_interaction?.transaction_data;
-    if (!tx?.qr_code) throw new Error("Mercado Pago não devolveu o Pix");
-    await prisma.marketOrder.update({ where: { id: order.id }, data: { mpPaymentId: String(pay.id), pixCode: tx.qr_code, pixQr: tx.qr_code_base64 ?? null } });
+    const pix = await mpCreatePix({
+      amountCents: order.totalCents,
+      description: `${quantity}x ${product.name}`,
+      reference: order.id,
+      email: order.email,
+      firstName: order.name.split(" ")[0],
+      expiresAt: order.expiresAt,
+      idempotency: order.id,
+    });
+    await prisma.marketOrder.update({ where: { id: order.id }, data: { mpPaymentId: pix.id, pixCode: pix.code, pixQr: pix.qr } });
     return { token: order.token };
   } catch (e) {
     console.error("[vendas] criar Pix", e);
@@ -134,11 +97,15 @@ async function releaseOrder(orderId: string, status: "EXPIRED" | "CANCELLED", er
 
 /** Pagamento avisado pelo Mercado Pago: confere direto na API (nunca confia só no aviso) e entrega. */
 export async function confirmPayment(paymentId: string) {
-  const pay = await mpGetPayment(paymentId);
+  return confirmMarketPayment(await mpGetPayment(paymentId));
+}
+
+/** Pagamento de um pedido de BM (já consultado no Mercado Pago). */
+export async function confirmMarketPayment(pay: MpPayment) {
   if (pay.status !== "approved" || !pay.external_reference) return { status: pay.status };
   const order = await prisma.marketOrder.findUnique({ where: { id: pay.external_reference } });
   if (!order || (order.mpPaymentId && order.mpPaymentId !== String(pay.id))) return { status: "ignored" };
-  if (Math.round((pay.transaction_amount ?? 0) * 100) < order.totalCents) {
+  if (!paidEnough(pay, order.totalCents)) {
     await prisma.marketOrder.update({ where: { id: order.id }, data: { error: `Pago valor menor: ${pay.transaction_amount}` } });
     return { status: "amount_mismatch" };
   }
@@ -149,6 +116,8 @@ export async function confirmPayment(paymentId: string) {
   });
   if (marked.count) {
     await notifyOwner("SALE", `Venda paga: ${order.quantity} BM(s) · ${brlCents(order.totalCents)}`, `${order.name} (${order.email}).`, { orderId: order.id });
+    // O Pix caiu na conta da empresa: entra no caixa do Financeiro
+    await recordCompanyIncome({ description: `Venda de ${order.quantity} BM(s) — ${order.name}`, amountCents: order.totalCents, category: "Venda BM" }).catch((e) => console.error("[vendas] financeiro", e));
   }
   await deliverOrder(order.id);
   return { status: "approved" };

@@ -7,7 +7,7 @@ import { decrypt } from "./crypto";
 import { createAlert } from "./alerts";
 import { onCategoryChanged, onStatusChanged, syncWaba } from "./sync";
 import { metaErrorLabel, SENDER_FATAL_CODES } from "./meta-errors";
-import { addCredits } from "./credits";
+import { settleRecipients } from "./credits";
 import { flagBusinessProblem, kindForCode, problemFix } from "./bm-problems";
 import { canonicalWaId, formatPhone } from "./phone";
 import { applyChatStatus, ingestInbound, maybeAutoReply, sendChatMessage } from "./chat";
@@ -125,10 +125,11 @@ async function rerouteFailed(
 
   const back = await prisma.campaignRecipient.updateMany({
     where: { id: r.id, status: { in: ["SENT", "DELIVERED"] } },
-    data: { status: "PENDING", wamid: null, senderId: null, sentAt: null, deliveredAt: null, failedAt: null, retryAt: null, creditsCharged: 0, errorCode: code, errorTitle: `${metaErrorLabel(code)} no número anterior: reenviando por outra BM` },
+    data: { status: "PENDING", wamid: null, senderId: null, sentAt: null, deliveredAt: null, failedAt: null, retryAt: null, errorCode: code, errorTitle: `${metaErrorLabel(code)} no número anterior: reenviando por outra BM` },
   });
   if (!back.count) return false;
-  if (r.creditsCharged > 0) await addCredits(campaign.workspaceId, r.creditsCharged, "REFUND", `Estorno (reenvio por outra BM) — ${campaign.name}`, { campaignId: campaign.id });
+  // Estorna o crédito desse envio (zera e devolve juntos; se já foi cobrado de novo no reenvio, não mexe)
+  await settleRecipients(campaign.id, "Estorno (reenvio por outra BM)", [r.id]).catch((e) => console.error("[webhook] estorno", e));
 
   if (!campaign.excludedSenders.includes(r.senderId)) {
     await prisma.campaign.update({ where: { id: campaign.id }, data: { excludedSenders: { push: r.senderId } } });

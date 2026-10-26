@@ -14,6 +14,7 @@ export const PLATFORM_KEYS = [
   { key: "DISCORD_ERRORS_WEBHOOK", label: "Webhook do Discord para erros do sistema", secret: true },
   { key: "MP_ACCESS_TOKEN", label: "Vendas: Access Token do Mercado Pago (produção)", secret: true },
   { key: "MARKET_WHATSAPP", label: "Vendas: WhatsApp do suporte (só números, com 55)", secret: false },
+  { key: "MARKET_CREDIT_PRICE", label: "Vendas: preço de 1 crédito em R$ (padrão 0,01)", secret: false },
 ] as const;
 
 export type PlatformKey = (typeof PLATFORM_KEYS)[number]["key"];
