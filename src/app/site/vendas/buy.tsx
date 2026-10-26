@@ -102,6 +102,11 @@ export function ProductCard({ product: p }: { product: VitrineProduct }) {
 
 function Checkout({ product: p, qty, onClose }: { product: VitrineProduct; qty: number; onClose: () => void }) {
   const [state, action, pending] = useActionState(createOrderAction, undefined);
+  // Pix gerado: abre a página do pedido (navegação normal, para passar pela reescrita do domínio do site)
+  useEffect(() => {
+    if (state?.goTo) window.location.assign(state.goTo);
+  }, [state]);
+  const going = pending || Boolean(state?.goTo);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && !pending && onClose();
     window.addEventListener("keydown", onKey);
@@ -132,8 +137,8 @@ function Checkout({ product: p, qty, onClose }: { product: VitrineProduct; qty: 
           <li className="flex gap-1.5"><BadgeCheck className="size-4 shrink-0 text-emerald-600" /> Garantia de 24h: trocamos se o convite não funcionar ou se a conta chegar banida.</li>
         </ul>
         {state?.error && <p className="mt-3 rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-700">{state.error}</p>}
-        <button disabled={pending} className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-brand-gradient px-5 py-3.5 font-semibold text-white shadow-lg shadow-orange-500/25 disabled:opacity-60">
-          {pending && <Loader2 className="size-4 animate-spin" />} {pending ? "Gerando o Pix..." : "Gerar Pix"}
+        <button disabled={going} className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-brand-gradient px-5 py-3.5 font-semibold text-white shadow-lg shadow-orange-500/25 disabled:opacity-60">
+          {going && <Loader2 className="size-4 animate-spin" />} {going ? "Gerando o Pix..." : "Gerar Pix"}
         </button>
       </form>
     </div>

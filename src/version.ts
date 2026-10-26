@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.78",
+    date: "26/10/2026",
+    items: ["Vendas: depois de gerar o Pix na vitrine, a página do pedido abre certinho (antes dava 404 no endereço fuzildisparador.com.br/vendas)"],
+  },
+  {
     version: "2.77",
     date: "26/10/2026",
     items: [
