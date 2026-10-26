@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { meta, type BusinessProfile } from "@/lib/meta";
+import { MetaError, meta, type BusinessProfile } from "@/lib/meta";
 import { friendlyError } from "@/lib/meta-errors";
 import { wabaToken } from "@/lib/sync";
 import type { FormState } from "./auth";
@@ -13,6 +13,27 @@ import type { FormState } from "./auth";
 const PHOTO_TYPES = ["image/jpeg", "image/png"];
 const MAX_PHOTO = 5 * 1024 * 1024;
 export type ProfileScope = "phone" | "bm" | "all";
+
+/** Foto do perfil no jeito que a Meta aceita melhor: JPG quadrado de 640×640 (se não der para converter, vai a original). */
+async function squareJpeg(buf: Buffer, mime: string): Promise<{ buf: Buffer; mime: string }> {
+  try {
+    const sharp = (await import("sharp")).default;
+    return { buf: await sharp(buf).rotate().resize(640, 640, { fit: "cover" }).flatten({ background: "#ffffff" }).jpeg({ quality: 90 }).toBuffer(), mime: "image/jpeg" };
+  } catch (err) {
+    console.error("[perfil] não converteu a foto", err);
+    return { buf, mime };
+  }
+}
+
+/** Erro da Meta com o detalhe (o código 131000 sozinho não diz nada). */
+function metaDetail(err: unknown) {
+  const base = friendlyError(err);
+  if (err instanceof MetaError) {
+    const extra = [err.message, err.details].filter((x) => x && !base.includes(x)).join(" · ");
+    return extra ? `${base}: ${extra}` : base;
+  }
+  return base;
+}
 
 /** Perfil atual do número, como está na Meta. */
 export async function getProfileAction(phoneId: string): Promise<{ profile?: BusinessProfile; error?: string }> {
@@ -71,10 +92,12 @@ export async function saveProfileAction(phoneId: string, _: FormState, form: For
   if (photo && photo.size > MAX_PHOTO) return { error: "Foto grande demais (máximo 5 MB)" };
 
   const profile: Omit<BusinessProfile, "profile_picture_url"> = {};
-  for (const [k, v] of [["about", about], ["description", description], ["address", address], ["email", email]] as const) if (v || !many) profile[k] = v;
+  // Campo vazio não vai: a Meta recusa texto vazio (erro 131000) e o vazio fica como estava
+  for (const [k, v] of [["about", about], ["description", description], ["address", address], ["email", email]] as const) if (v) profile[k] = v;
   if (website) profile.websites = [website];
   if (vertical) profile.vertical = vertical;
-  if (!photo && !Object.values(profile).some(Boolean) && many) return { error: "Preencha algum campo ou escolha uma foto para aplicar nos números." };
+  const hasText = Object.keys(profile).length > 0;
+  if (!photo && !hasText) return { error: "Preencha algum campo ou escolha uma foto." };
 
   // Números que recebem: só os conectados e válidos
   const targets = await prisma.phoneNumber.findMany({
@@ -84,7 +107,7 @@ export async function saveProfileAction(phoneId: string, _: FormState, form: For
     },
     include: { waba: true },
   });
-  const buf = photo ? Buffer.from(await photo.arrayBuffer()) : null;
+  const pic = photo ? await squareJpeg(Buffer.from(await photo.arrayBuffer()), photo.type) : null;
   // A foto é enviada uma vez por conexão (cada token tem o seu app) e reaproveitada nos números dela
   const handles = new Map<string, Promise<string>>();
   const errors: string[] = [];
@@ -93,22 +116,25 @@ export async function saveProfileAction(phoneId: string, _: FormState, form: For
     await Promise.all(
       targets.slice(i, i + 5).map(async (p) => {
         const token = wabaToken(p.waba);
-        try {
-          let handle: string | undefined;
-          if (buf && photo) {
-            if (!handles.has(token)) handles.set(token, meta.uploadSampleMedia(token, buf, photo.name || "perfil.jpg", photo.type));
-            handle = await handles.get(token)!;
+        // Texto e foto vão separados: se a Meta recusar a foto, o texto ainda é salvo (e vice-versa)
+        const failed: string[] = [];
+        if (hasText) await meta.updateBusinessProfile(token, p.phoneNumberId, profile).catch((err) => failed.push(`texto: ${metaDetail(err)}`));
+        if (pic) {
+          try {
+            if (!handles.has(token)) handles.set(token, meta.uploadSampleMedia(token, pic.buf, "perfil.jpg", pic.mime));
+            await meta.updateBusinessProfile(token, p.phoneNumberId, { profile_picture_handle: await handles.get(token)! });
+          } catch (err) {
+            handles.delete(token);
+            failed.push(`foto: ${metaDetail(err)}`);
           }
-          await meta.updateBusinessProfile(token, p.phoneNumberId, { ...profile, ...(handle ? { profile_picture_handle: handle } : {}) });
-          ok++;
-        } catch (err) {
-          errors.push(`${p.displayPhoneNumber}: ${friendlyError(err)}`);
         }
+        if (failed.length) errors.push(`${p.displayPhoneNumber} (${failed.join("; ")})`);
+        else ok++;
       }),
     );
   }
   revalidatePath("/conexoes");
   if (!targets.length) return { error: "Nenhum número conectado para receber o perfil." };
   if (!errors.length) return { ok: ok === 1 ? "Perfil do WhatsApp atualizado! Pode levar alguns minutos para aparecer no celular." : `Perfil atualizado em ${ok} números! Pode levar alguns minutos para aparecer no celular.` };
-  return { error: `Atualizado em ${ok} de ${targets.length}. Erros: ${errors.slice(0, 5).join(" | ")}${errors.length > 5 ? ` (+${errors.length - 5})` : ""}` };
+  return { error: `${targets.length === 1 ? "Não deu para salvar tudo" : `Atualizado em ${ok} de ${targets.length}`}. ${errors.slice(0, 5).join(" | ")}${errors.length > 5 ? ` (+${errors.length - 5})` : ""}` };
 }

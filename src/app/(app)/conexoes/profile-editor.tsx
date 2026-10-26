@@ -148,7 +148,7 @@ export function ProfileEditor({ phoneId, bmName, currentName, pendingName }: { p
               </button>
             ))}
           </div>
-          {many && <p className="text-xs text-zinc-500">Em vários números, só o que você preencher (e a foto, se escolher) é trocado. O resto do perfil de cada número fica como está.</p>}
+          <p className="text-xs text-zinc-500">Só o que estiver preenchido (e a foto, se você escolher uma) é enviado. Campo vazio fica como está na Meta.</p>
           <div className="flex items-center gap-3">
             <Button disabled={pending}>{pending ? "Salvando na Meta..." : "Salvar perfil"}</Button>
             {state?.error && <span className="text-sm text-red-600">{state.error}</span>}

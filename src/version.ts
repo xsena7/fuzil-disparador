@@ -2,6 +2,14 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.96",
+    date: "27/10/2026",
+    items: [
+      "Perfil do WhatsApp: corrigido o erro 131000 ao salvar. Campo vazio não é mais enviado (a Meta recusava), a foto vai separada do texto e é convertida para JPG quadrado 640×640 antes de enviar",
+      "Perfil do WhatsApp: quando a Meta recusa, o erro mostra o motivo completo e diz se foi a foto ou o texto",
+    ],
+  },
+  {
     version: "2.95",
     date: "27/10/2026",
     items: [
