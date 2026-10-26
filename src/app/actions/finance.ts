@@ -7,7 +7,7 @@ import { prisma } from "@/lib/db";
 import { env } from "@/lib/env";
 import { shortToken } from "@/lib/crypto";
 import { FINANCE_CATEGORIES, parseMoney, settle, type FinanceKind } from "@/lib/finance";
-import { financePartners, requireFinancePartner } from "@/lib/finance-partners";
+import { financePartners, isFinanceOwner, requireFinancePartner } from "@/lib/finance-partners";
 import type { FormState } from "./auth";
 
 // Comprovantes ficam numa pasta separada, fora do /media público: só abrem pela rota dos sócios
@@ -88,12 +88,12 @@ export async function addFinanceEntryAction(_: FormState, form: FormData): Promi
   return { ok: kind === "SETTLEMENT" ? "Acerto anotado!" : kind === "WITHDRAW" ? "Pix do caixa anotado!" : kind === "EXPENSE" ? "Despesa anotada!" : "Entrada anotada!" };
 }
 
-/** Só quem anotou pode apagar (ninguém edita). */
+/** Quem anotou apaga o próprio lançamento; o dono do financeiro apaga qualquer um (ninguém edita). */
 export async function deleteFinanceEntryAction(id: string): Promise<{ ok?: string; error?: string }> {
   const auth = await requireFinancePartner();
   const e = await prisma.financeEntry.findUnique({ where: { id } });
   if (!e) return { error: "Anotação não encontrada" };
-  if (e.userId !== auth.user.id) return { error: "Só quem anotou pode apagar." };
+  if (e.userId !== auth.user.id && !(await isFinanceOwner(auth.user.id))) return { error: "Só quem anotou pode apagar." };
   await prisma.financeEntry.delete({ where: { id } });
   if (e.attachmentPath) await unlink(e.attachmentPath).catch(() => undefined);
   revalidatePath("/financeiro");

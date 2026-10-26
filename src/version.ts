@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.89",
+    date: "27/10/2026",
+    items: ["Financeiro: o Guilherme (dono) pode apagar qualquer lançamento, de qualquer sócio. Os outros sócios continuam apagando só os próprios"],
+  },
+  {
     version: "2.88",
     date: "27/10/2026",
     items: ["Financeiro: a chave Pix dos dois sócios fica sempre lá em cima, no cartão de cada um, com botão de copiar (e também na linha de reembolso do caixa)"],

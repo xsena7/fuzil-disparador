@@ -3,7 +3,7 @@ import clsx from "clsx";
 import { ArrowDownLeft, ArrowLeftRight, ArrowUpRight, CheckCircle2, Landmark, Paperclip, Undo2, Wallet } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { FINANCE_CATEGORIES, brl, settle, type FinanceKind } from "@/lib/finance";
-import { financePartners, requireFinancePartner } from "@/lib/finance-partners";
+import { financePartners, isFinanceOwner, requireFinancePartner } from "@/lib/finance-partners";
 import { Card, Empty, PageHeader, Stat } from "@/components/ui";
 import { CopyPix, DeleteEntry, FinanceForm, PixKeyForm, RefundButton, SettleButton } from "./finance-form";
 
@@ -27,9 +27,10 @@ const first = (name: string) => name.split(" ")[0];
 export default async function FinancePage({ searchParams }: { searchParams: Promise<{ mes?: string; cat?: string }> }) {
   const auth = await requireFinancePartner();
   const sp = await searchParams;
-  const [partners, entries] = await Promise.all([
+  const [partners, entries, owner] = await Promise.all([
     financePartners(),
     prisma.financeEntry.findMany({ orderBy: { createdAt: "desc" }, include: { user: { select: { name: true } }, toUser: { select: { name: true } } } }),
+    isFinanceOwner(auth.user.id),
   ]);
   const nameOf = new Map(partners.map((p) => [p.id, first(p.name)]));
   const nm = (id: string) => nameOf.get(id) ?? "Ex-sócio";
@@ -226,7 +227,7 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
                   {k === "EXPENSE" ? "−" : k === "INCOME" ? "+" : ""}
                   {brl(e.amountCents)}
                 </span>
-                {e.userId === auth.user.id && <DeleteEntry id={e.id} />}
+                {(e.userId === auth.user.id || owner) && <DeleteEntry id={e.id} other={e.userId !== auth.user.id ? nm(e.userId) : undefined} />}
               </div>
             );
           })}

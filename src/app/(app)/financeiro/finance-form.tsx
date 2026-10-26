@@ -133,15 +133,15 @@ export function FinanceForm({ me, partners }: { me: string; partners: Array<{ id
   );
 }
 
-/** Apagar (só aparece para quem anotou). */
-export function DeleteEntry({ id }: { id: string }) {
+/** Apagar (aparece para quem anotou e para o dono do financeiro). */
+export function DeleteEntry({ id, other }: { id: string; other?: string }) {
   const router = useRouter();
   return (
     <button
       type="button"
       className="rounded-lg px-2 py-1 text-xs font-medium text-rose-600 hover:bg-rose-50"
       onClick={async () => {
-        if (!(await confirmDialog("Apagar essa anotação?\nNão dá para desfazer (e ninguém pode editar: se errou, apague e anote de novo)."))) return;
+        if (!(await confirmDialog(`Apagar essa anotação${other ? ` feita por ${other}` : ""}?\nNão dá para desfazer (e ninguém pode editar: se errou, apague e anote de novo).`))) return;
         const r = await deleteFinanceEntryAction(id);
         if (r.error) toast("error", r.error);
         else toast("success", r.ok);
