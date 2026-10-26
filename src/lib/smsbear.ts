@@ -139,16 +139,20 @@ async function stepJob(job: JobWithWaba) {
       spentCents: job.spentCents + (Number(order.cost) || 0),
       stepAt: new Date(),
     });
+    // Duas etapas na Meta: colocar o número na WABA e pedir o código. O log diz em qual delas a Meta recusou
+    let stage = `colocar o número na WABA ${job.waba.name} (nome "${job.verifiedName}")`;
     try {
       const { id } = await meta.addPhone(metaToken, job.waba.wabaId, "55", local(order.number), job.verifiedName);
       await prisma.smsJob.update({ where: { id: job.id }, data: { phoneNumberId: id } });
+      stage = "pedir o código por SMS (o número já entrou na WABA)";
       await meta.requestCode(metaToken, id, "SMS");
       await syncWaba(job.wabaId).catch(() => undefined);
       await push(job.id, "Número colocado na WABA. Esperando o código da Meta chegar por SMS (até 2,5 min)...", "info", { step: "WAIT", stepAt: new Date() });
     } catch (e) {
       // Número recusado pela Meta (normalmente já banido no WhatsApp): cancela e tenta outro, até o máximo de tentativas
+      console.error("[smsbear] Meta recusou", stage, e);
       const fresh = await prisma.smsJob.findUniqueOrThrow({ where: { id: job.id } });
-      await dropAttempt(fresh, `A Meta recusou esse número (${metaDetail(e)}). Cancelando e pegando outro.`);
+      await dropAttempt(fresh, `A Meta recusou ao ${stage}: ${metaDetail(e)}. Cancelando e pegando outro.`);
     }
     return;
   }

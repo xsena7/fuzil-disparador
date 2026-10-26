@@ -64,7 +64,7 @@ export const RETRYABLE_CODES = new Set([4, 130429, 131000, 131016, 131056]);
 export function metaDetail(err: unknown): string {
   const base = friendlyError(err);
   if (err instanceof MetaError) {
-    const extra = [err.message, err.details].filter((x) => x && !base.includes(x)).join(" · ");
+    const extra = [err.message, err.details, err.subcode ? `subcódigo ${err.subcode}` : null].filter((x) => x && !base.includes(x)).join(" · ");
     return extra ? `${base}: ${extra}` : base;
   }
   return base;
