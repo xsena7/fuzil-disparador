@@ -1,7 +1,7 @@
 import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { env } from "@/lib/env";
-import { CREDIT_PACKAGES, MAX_CREDITS, MIN_CREDITS, purchaseStatus } from "@/lib/credit-purchase";
+import { MAX_CREDITS, MIN_AMOUNT_CENTS, creditPackages, minCredits, purchaseStatus } from "@/lib/credit-purchase";
 import { supportLink } from "@/lib/market";
 import { Badge, Card, PageHeader, Stat, Table, Td } from "@/components/ui";
 import { BuyCredits } from "./buy-credits";
@@ -55,10 +55,10 @@ export default async function BalancePage() {
       <Card className="mb-6 p-5">
         <div className="mb-1 font-semibold text-zinc-900">Comprar créditos</div>
         <p className="mb-4 text-sm text-zinc-500">
-          {brl(Math.round(price * 100 * 100)) /* 100 créditos */} a cada 100 créditos ({price.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 2, maximumFractionDigits: 4 })} por crédito). Pague no Pix e o saldo entra sozinho.
+          {price.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 2, maximumFractionDigits: 4 })} por crédito (1 crédito = 1 disparo). Recarga mínima de {brl(MIN_AMOUNT_CENTS)}. Pague no Pix e o saldo entra sozinho.
         </p>
         {canBuy ? (
-          <BuyCredits price={price} packages={CREDIT_PACKAGES} min={MIN_CREDITS} max={MAX_CREDITS} resume={resume} />
+          <BuyCredits price={price} packages={creditPackages(price)} min={minCredits(price)} minCents={MIN_AMOUNT_CENTS} max={MAX_CREDITS} resume={resume} />
         ) : (
           <p className="rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-800">
             A compra pelo Pix ainda não está ligada.{" "}

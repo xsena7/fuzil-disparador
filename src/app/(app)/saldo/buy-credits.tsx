@@ -12,7 +12,7 @@ const n = (v: number) => v.toLocaleString("pt-BR");
 const brl = (c: number) => (c / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
 /** Comprar créditos: escolhe o pacote (ou digita), gera o Pix e o saldo entra sozinho quando o pagamento cai. */
-export function BuyCredits({ price, packages, min, max, resume }: { price: number; packages: number[]; min: number; max: number; resume: { token: string; status: PurchaseStatus } | null }) {
+export function BuyCredits({ price, packages, min, minCents, max, resume }: { price: number; packages: number[]; min: number; minCents: number; max: number; resume: { token: string; status: PurchaseStatus } | null }) {
   const [credits, setCredits] = useState(packages[1] ?? packages[0]);
   const [custom, setCustom] = useState("");
   const [state, action, pending] = useActionState(buyCreditsAction, undefined);
@@ -28,7 +28,7 @@ export function BuyCredits({ price, packages, min, max, resume }: { price: numbe
 
   const chosen = custom ? Number(custom.replace(/\D/g, "")) || 0 : credits;
   const cents = useMemo(() => Math.round(chosen * price * 100), [chosen, price]);
-  const invalid = chosen < min || chosen > max || cents < 100;
+  const invalid = chosen > max || cents < minCents;
 
   // Pix gerado: começa a acompanhar
   useEffect(() => {
@@ -180,7 +180,7 @@ export function BuyCredits({ price, packages, min, max, resume }: { price: numbe
           {pending ? <Loader2 className="size-4 animate-spin" /> : <Zap className="size-4" />} {pending ? "Gerando o Pix..." : "Gerar Pix"}
         </button>
       </div>
-      {custom && invalid && chosen > 0 && <p className="mt-2 text-sm text-amber-700">{chosen < min ? `O mínimo é ${n(min)} créditos.` : chosen > max ? `O máximo por Pix é ${n(max)} créditos.` : "O Pix mínimo é de R$ 1,00."}</p>}
+      {custom && invalid && chosen > 0 && <p className="mt-2 text-sm text-amber-700">{chosen > max ? `O máximo por Pix é ${n(max)} créditos.` : `A recarga mínima é de ${brl(minCents)} (${n(min)} créditos).`}</p>}
       {state?.error && <p className="mt-2 text-sm text-red-600">{state.error}</p>}
     </form>
   );

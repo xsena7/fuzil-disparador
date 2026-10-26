@@ -7,11 +7,23 @@ import { platformOwnerId } from "./onboarding";
 import { mpCreatePix, mpGetPayment, paidEnough, type MpPayment } from "./mercadopago";
 import { recordCompanyIncome } from "./finance-auto";
 
-export const MIN_CREDITS = 100;
+/** Recarga mínima: R$ 60,00 (a quantidade mínima de créditos sai do preço do crédito). */
+export const MIN_AMOUNT_CENTS = 6_000;
 export const MAX_CREDITS = 5_000_000;
 /** Quanto tempo o Pix da recarga vale. */
 export const CREDIT_PIX_MINUTES = 30;
-export const CREDIT_PACKAGES = [5_000, 10_000, 25_000, 50_000, 100_000];
+const BASE_PACKAGES = [6_000, 10_000, 25_000, 50_000, 100_000];
+
+/** Menor quantidade de créditos que dá a recarga mínima no preço atual. */
+export function minCredits(price = env.creditPrice()): number {
+  return Math.ceil(MIN_AMOUNT_CENTS / (price * 100) - 1e-9);
+}
+
+/** Pacotes prontos da tela de Saldo (todos acima do mínimo; o primeiro é o próprio mínimo). */
+export function creditPackages(price = env.creditPrice()): number[] {
+  const min = minCredits(price);
+  return [...new Set([min, ...BASE_PACKAGES.filter((p) => p > min)])].slice(0, 5);
+}
 
 /** Valor da recarga em centavos (arredonda para o centavo mais próximo). */
 export function creditsPriceCents(credits: number, price = env.creditPrice()): number {
@@ -23,10 +35,10 @@ const n = (v: number) => v.toLocaleString("pt-BR");
 
 export async function createCreditPurchase(input: { workspaceId: string; userId: string; email: string; name: string; credits: number }): Promise<{ token: string } | { error: string }> {
   const credits = Math.floor(input.credits);
-  if (!Number.isFinite(credits) || credits < MIN_CREDITS) return { error: `O mínimo é ${n(MIN_CREDITS)} créditos` };
-  if (credits > MAX_CREDITS) return { error: `O máximo por Pix é ${n(MAX_CREDITS)} créditos` };
   const amountCents = creditsPriceCents(credits);
-  if (amountCents < 100) return { error: "O Pix mínimo é de R$ 1,00" };
+  if (!Number.isFinite(credits) || credits < 1 || amountCents < MIN_AMOUNT_CENTS)
+    return { error: `A recarga mínima é de ${brl(MIN_AMOUNT_CENTS)} (${n(minCredits())} créditos)` };
+  if (credits > MAX_CREDITS) return { error: `O máximo por Pix é ${n(MAX_CREDITS)} créditos` };
   // Pix em aberto da mesma conta e valor: reaproveita (clique duplo não gera dois Pix)
   const open = await prisma.creditPurchase.findFirst({ where: { workspaceId: input.workspaceId, credits, status: "PENDING", mpPaymentId: { not: null }, expiresAt: { gt: new Date(Date.now() + 5 * 60_000) } } });
   if (open) return { token: open.token };

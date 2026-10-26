@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.83",
+    date: "27/10/2026",
+    items: ["Saldo: recarga mínima de R$ 60,00 (6.000 créditos a R$ 0,01). Os pacotes começam em 6 mil"],
+  },
+  {
     version: "2.82",
     date: "27/10/2026",
     items: [
