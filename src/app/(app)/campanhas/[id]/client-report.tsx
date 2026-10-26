@@ -4,7 +4,7 @@ import { prisma } from "@/lib/db";
 import { env } from "@/lib/env";
 import { Card, Field, Input, Select } from "@/components/ui";
 import { parsePixKeys } from "@/lib/pix-keys";
-import { parseOverrides, realReportNumbers, reportNumbers } from "@/lib/report-numbers";
+import { realReportNumbers, reportNumbers } from "@/lib/report-numbers";
 import { ReportNumbersFields } from "./report-numbers-fields";
 import { ActionForm, ConfirmButton } from "@/components/action-form";
 import { resetReportNumbersAction, saveCampaignPriceAction, saveReportNumbersAction, shareReportAction, unshareReportAction } from "@/app/actions/client-report";
@@ -21,7 +21,6 @@ export async function ClientReportStep({ campaignId, workspaceId, canAdjust = fa
   ]);
   // Enviadas do relatório (as ajustadas em Métricas, se você ajustou)
   const [rn, real] = await Promise.all([reportNumbers(campaignId, c.reportOverrides), realReportNumbers(campaignId)]);
-  const overrides = parseOverrides(c.reportOverrides);
   const sent = rn.sent;
   const price = c.reportPrice ?? ws.reportPrice ?? 0;
   const keys = parsePixKeys(ws.pixKeys);
@@ -77,13 +76,13 @@ export async function ClientReportStep({ campaignId, workspaceId, canAdjust = fa
           {rn.adjusted && <span className="rounded-full bg-orange-50 px-2 py-0.5 text-xs font-medium text-orange-700">ajustados por você</span>}
         </div>
         <p className="mb-4 text-sm text-zinc-500">
-          Se a Meta cobrou diferente do que o Fuzil contou (ex.: conta banida no meio do disparo), ajuste aqui. O valor cobrado usa as <b>Enviadas</b>, e o funil do relatório (inclusive o que aparece ao passar o mouse) usa todos estes números. As Métricas continuam mostrando os números reais.
+          Se a Meta cobrou diferente do que o Fuzil contou (ex.: conta banida no meio do disparo), ajuste aqui. O valor cobrado usa as <b>Enviadas</b>, e o funil do relatório (inclusive o que aparece ao passar o mouse) usa todos estes números. Depois de salvar, eles continuam subindo ao vivo junto com os reais, na mesma proporção (ex.: real 200 cliques, você colocou 2.000; o real foi a 250, o relatório mostra 2.500). As Métricas continuam mostrando os números reais.
         </p>
         <p className="mb-4 rounded-lg bg-zinc-50 px-3 py-2 text-xs text-zinc-600">Os números precisam fechar: <b>Público ≥ Enviadas ≥ Lidas ≥ Clicaram</b>, e <b>Responderam ≤ Lidas</b>.</p>
         <ActionForm action={saveReportNumbersAction.bind(null, campaignId)} submit="Salvar números" variant="secondary">
           <ReportNumbersFields
             real={{ total: real.total, sent: real.sent, read: real.read, clicked: real.clicked, replied: real.replied }}
-            initial={{ total: overrides.total ?? real.total, sent: overrides.sent ?? real.sent, read: overrides.read ?? real.read, clicked: overrides.clicked ?? real.clicked, replied: overrides.replied ?? real.replied }}
+            initial={rn.adjusted ? { total: rn.total, sent: rn.sent, read: rn.read, clicked: rn.clicked, replied: rn.replied } : { total: real.total, sent: real.sent, read: real.read, clicked: real.clicked, replied: real.replied }}
           />
         </ActionForm>
         {rn.adjusted && (

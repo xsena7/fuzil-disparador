@@ -57,25 +57,53 @@ export function parseOverrides(raw: unknown): Partial<Record<ReportKey, number>>
   return out;
 }
 
-/** Números que o relatório do cliente mostra: os ajustados por cima dos reais, com o resto recalculado para fechar a conta. */
-export async function reportNumbers(campaignId: string, overrides: unknown): Promise<ReportNumbers> {
-  const real = await realReportNumbers(campaignId);
+/** Números reais na hora em que o ajuste foi salvo (a base da proporção). Ajustes antigos não têm: ficam fixos. */
+export function parseBase(raw: unknown): Partial<Record<ReportKey, number>> {
+  if (!raw || typeof raw !== "object") return {};
+  return parseOverrides((raw as Record<string, unknown>).base);
+}
+
+/**
+ * Ajuste por cima dos reais, acompanhando ao vivo na mesma proporção:
+ * real 200 cliques → ajustado 2.000 (×10); o real vai a 250 → o relatório mostra 2.500.
+ * Se o real era 0 quando salvou, cada novo real soma na proporção das Enviadas.
+ */
+export function applyOverrides(real: Omit<ReportNumbers, "adjusted">, overrides: unknown): ReportNumbers {
   const o = parseOverrides(overrides);
   if (!Object.keys(o).length) return { ...real, adjusted: false };
-  const n = { ...real, ...o };
-  // Garante a lógica mesmo se algum ajuste antigo não fechava (corta de cima para baixo)
+  const base = parseBase(overrides);
+  const live = Object.keys(base).length > 0;
+  const sentFactor = live && base.sent && o.sent !== undefined ? o.sent / base.sent : 1;
+  const n = { ...real };
+  for (const { key } of REPORT_FIELDS) {
+    const v = o[key];
+    if (v === undefined) continue;
+    const b = base[key];
+    if (!live || b === undefined) {
+      n[key] = v;
+      continue;
+    }
+    const factor = b > 0 ? v / b : sentFactor;
+    n[key] = Math.max(0, Math.round(v + (real[key] - b) * factor));
+  }
+  // Garante a lógica (corta de cima para baixo)
   n.sent = Math.min(n.sent, n.total);
   n.read = Math.min(n.read, n.sent);
   n.clicked = Math.min(n.clicked, n.read);
   n.replied = Math.min(n.replied, n.read);
   return {
     ...n,
-    // Cliques totais acompanham quem clicou quando o número foi ajustado
-    clicks: o.clicked !== undefined ? o.clicked : real.clicks,
+    // Cliques totais acompanham quem clicou na mesma proporção
+    clicks: o.clicked === undefined ? real.clicks : real.clicked > 0 ? Math.max(n.clicked, Math.round((real.clicks * n.clicked) / real.clicked)) : n.clicked,
     sentUnread: Math.max(0, n.sent - n.read),
     pending: Math.max(0, n.total - n.sent),
     adjusted: true,
   };
+}
+
+/** Números que o relatório do cliente mostra: os ajustados por cima dos reais, acompanhando os reais ao vivo. */
+export async function reportNumbers(campaignId: string, overrides: unknown): Promise<ReportNumbers> {
+  return applyOverrides(await realReportNumbers(campaignId), overrides);
 }
 
 /** A lógica dos números: Público ≥ Enviadas ≥ Lidas ≥ Clicaram, e Responderam ≤ Lidas. Devolve o erro em português. */

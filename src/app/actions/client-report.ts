@@ -109,9 +109,11 @@ export async function saveReportNumbersAction(id: string, _: FormState, form: Fo
   if (wrong) return { error: wrong };
   // Igual aos reais: não guarda nada (o relatório volta a seguir os números de verdade)
   const same = REPORT_FIELDS.every(({ key }) => v[key] === real[key]);
-  await prisma.campaign.update({ where: { id: c.id }, data: { reportOverrides: same ? Prisma.DbNull : v } });
+  // Guarda também os reais de agora: daqui para frente o relatório sobe junto com os reais, na mesma proporção
+  const base = Object.fromEntries(REPORT_FIELDS.map(({ key }) => [key, real[key]]));
+  await prisma.campaign.update({ where: { id: c.id }, data: { reportOverrides: same ? Prisma.DbNull : { ...v, base } } });
   revalidatePath(`/campanhas/${c.id}`);
-  return { ok: same ? "Os números são iguais aos reais: o relatório segue os números da campanha." : "Números do relatório salvos! O valor e o funil do relatório do cliente já usam esses números." };
+  return { ok: same ? "Os números são iguais aos reais: o relatório segue os números da campanha." : "Números do relatório salvos! Daqui para frente eles sobem junto com os reais, na mesma proporção (valor e funil do relatório do cliente)." };
 }
 
 export async function resetReportNumbersAction(id: string): Promise<{ ok?: string; error?: string }> {

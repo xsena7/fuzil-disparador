@@ -2,6 +2,14 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.92",
+    date: "27/10/2026",
+    items: [
+      "Relatório do cliente: os números que você ajustou continuam subindo ao vivo junto com os reais, cada um na sua própria proporção (ex.: real 200 cliques, você colocou 2.000; o real foi a 250, o relatório mostra 2.500)",
+      "Relatório do cliente: com os números ajustados, nenhum número real aparece no relatório (nem os créditos usados)",
+    ],
+  },
+  {
     version: "2.91",
     date: "27/10/2026",
     items: ["Alertas: número banido, restrito, com qualidade alterada ou retirado de campanha agora mostra de qual BM ele é (também nos alertas antigos). O status aparece em português (ex.: Conectado → Banido)"],
