@@ -26,6 +26,7 @@ apt-get update -y
 apt-get install -y git curl iptables-persistent netfilter-persistent
 iptables -C INPUT -p tcp --dport 80 -j ACCEPT 2>/dev/null || iptables -I INPUT 6 -m state --state NEW -p tcp --dport 80 -j ACCEPT
 iptables -C INPUT -p tcp --dport 443 -j ACCEPT 2>/dev/null || iptables -I INPUT 6 -m state --state NEW -p tcp --dport 443 -j ACCEPT
+iptables -C INPUT -p tcp --dport 25 -j ACCEPT 2>/dev/null || iptables -I INPUT 6 -m state --state NEW -p tcp --dport 25 -j ACCEPT
 netfilter-persistent save
 
 # Docker

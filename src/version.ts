@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.73",
+    date: "26/10/2026",
+    items: ["E-mails: o servidor de e-mail do Fuzil passa a rodar no servidor (porta 25 liberada na VM). Os e-mails chegam assim que o DNS do domínio apontar para o Fuzil"],
+  },
+  {
     version: "2.72",
     date: "26/10/2026",
     items: [

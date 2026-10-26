@@ -51,6 +51,25 @@ services:
     depends_on:
       - app
 
+  # E-mails do domínio (só recebe): a porta 25 da VM cai aqui e os e-mails vão para a aba E-mails do Fuzil
+  mail:
+    image: fuzil-disparador:latest
+    pull_policy: never
+    restart: unless-stopped
+    command: ["node", "dist/mail.mjs"]
+    init: true
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://fuzil:${POSTGRES_PASSWORD:-fuzil}@db:5432/fuzil
+      UPLOAD_DIR: /data/uploads
+      NODE_OPTIONS: --max-old-space-size=192
+    ports:
+      - "25:2525"
+    volumes:
+      - uploads:/data/uploads
+    depends_on:
+      - worker
+
   caddy:
     image: caddy:2-alpine
     restart: unless-stopped

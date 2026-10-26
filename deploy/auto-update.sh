@@ -7,6 +7,11 @@ cd "$(dirname "$0")/.."
 if [ -w /etc/cron.d ] && grep -q '^\*/5 .*auto-update.sh' /etc/cron.d/fuzil 2>/dev/null; then
   sed -i 's#^\*/5 \(.*auto-update.sh\)#* \1#' /etc/cron.d/fuzil
 fi
+# Porta 25 aberta no firewall da VM (os e-mails do domínio chegam no serviço "mail")
+if command -v iptables >/dev/null 2>&1 && [ "$(id -u)" = "0" ] && ! iptables -C INPUT -p tcp --dport 25 -j ACCEPT 2>/dev/null; then
+  iptables -I INPUT 6 -m state --state NEW -p tcp --dport 25 -j ACCEPT 2>/dev/null || iptables -I INPUT -p tcp --dport 25 -j ACCEPT
+  command -v netfilter-persistent >/dev/null 2>&1 && netfilter-persistent save >/dev/null 2>&1 || true
+fi
 git fetch -q origin "$BRANCH"
 TARGET="$(git rev-parse "origin/$BRANCH")"
 # Última versão que subiu de verdade (se uma montagem falhar, tenta de novo no próximo minuto)
