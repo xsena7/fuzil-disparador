@@ -49,7 +49,8 @@ export default async function GroupsPage() {
     return { id: g?.id ?? k.system, name: g?.name ?? k.name, color: g?.color ?? k.color, description: g?.description ?? k.description, members: g?.members ?? [] };
   });
   // "Prontas para disparo" é automático, mas aparece junto dos grupos comuns (as BMs entram e saem sozinhas)
-  const regular = groups.filter((g) => !g.system || g.system === READY_GROUP);
+  // O automático vem primeiro
+  const regular = groups.filter((g) => !g.system || g.system === READY_GROUP).sort((a, b) => Number(b.system === READY_GROUP) - Number(a.system === READY_GROUP));
   // Limite e disponível do grupo somam só as BMs prontas para disparar (as outras não entram na campanha)
   const isReady = (id: string) => Boolean(apt.get(id)?.apta && !businesses.find((b) => b.id === id)?.problemAt);
   const stats = await Promise.all(regular.map((g) => statsForBusinesses(g.members.map((m) => m.businessId).filter(isReady))));
@@ -130,6 +131,7 @@ export default async function GroupsPage() {
               subtitle={g.description || g.members.map((m) => m.business.name).join(" · ") || "Sem BMs"}
               meta={
                 <>
+                  {g.system === READY_GROUP && <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 ring-1 ring-emerald-200">Automático</span>}
                   {tone !== "green" && (
                     <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 ${tone === "red" ? "bg-red-50 text-red-700 ring-red-200" : "bg-amber-50 text-amber-700 ring-amber-200"}`}>
                       {tone === "red" ? "Nenhum número ativo" : "Limite esgotado agora"}
@@ -179,6 +181,9 @@ export default async function GroupsPage() {
                   ) : null;
                 })}
               </div>
+              {g.system === READY_GROUP ? (
+                <p className="text-xs text-zinc-500">Grupo automático do Fuzil: as BMs entram sozinhas quando têm número conectado, cartão e template aprovado, e saem sozinhas quando algo falta. Não dá para editar nem excluir.</p>
+              ) : (
               <details className="group/edit">
                 <summary className="cursor-pointer list-none text-sm font-medium text-zinc-600 hover:text-zinc-900 [&::-webkit-details-marker]:hidden">✏️ Editar nome, cor e BMs</summary>
                 <ActionForm action={saveGroupAction} submit="Salvar" className="mt-4">
@@ -194,6 +199,7 @@ export default async function GroupsPage() {
                   <ConfirmButton action={deleteGroupAction.bind(null, g.id)} variant="ghost" className="px-0 text-red-600" confirm="Excluir este grupo?"><Trash2 className="size-4" /> Excluir grupo</ConfirmButton>
                 </div>
               </details>
+              )}
             </Drawer>
           );
         })}

@@ -68,13 +68,33 @@ export const READY_GROUP = "READY";
 /** Grupos que podem disparar: os criados por você e o automático "Prontas para disparo" (os de problema não). */
 export const usableGroupWhere = { OR: [{ system: null }, { system: READY_GROUP }] };
 
-/** O grupo "Prontas para disparo" fixo da conta: existe sempre (como o Aquecimento). Se já há um criado à mão, ele vira o automático. */
+const READY_NAME = "Prontas para disparo";
+const READY_DATA = { name: READY_NAME, color: "emerald", description: "BMs prontas para as campanhas. Entram e saem sozinhas." };
+
+/**
+ * O grupo "Prontas para disparo" fixo da conta: existe sempre (como o Aquecimento), com o nome e a cor padrão.
+ * Grupo criado à mão com "pront" no nome vira o automático; se os dois existirem, o manual é juntado no automático
+ * (campanhas, aquecimentos e templates padrão que usavam o manual passam a usar o automático).
+ */
 export async function ensureReadyGroup(workspaceId: string) {
-  const group = await prisma.bmGroup.findFirst({ where: { workspaceId, system: READY_GROUP } });
-  if (group) return group;
-  const manual = await prisma.bmGroup.findFirst({ where: { workspaceId, system: null, name: { contains: "pront", mode: "insensitive" } } });
-  if (manual) return prisma.bmGroup.update({ where: { id: manual.id }, data: { system: READY_GROUP } });
-  return prisma.bmGroup.create({ data: { workspaceId, system: READY_GROUP, name: "Prontas para disparo", color: "emerald", description: "BMs prontas para as campanhas. Entram e saem sozinhas." } });
+  let group = await prisma.bmGroup.findFirst({ where: { workspaceId, system: READY_GROUP }, orderBy: { createdAt: "asc" } });
+  const manuals = await prisma.bmGroup.findMany({ where: { workspaceId, system: null, name: { contains: "pront", mode: "insensitive" } }, orderBy: { createdAt: "asc" } });
+  if (!group && manuals.length) group = await prisma.bmGroup.update({ where: { id: manuals.shift()!.id }, data: { system: READY_GROUP, ...READY_DATA } });
+  if (!group) return prisma.bmGroup.create({ data: { workspaceId, system: READY_GROUP, ...READY_DATA } });
+  const extras = [...manuals, ...(await prisma.bmGroup.findMany({ where: { workspaceId, system: READY_GROUP, id: { not: group.id } } }))];
+  if (extras.length) {
+    const ids = extras.map((g) => g.id);
+    const to = group.id;
+    await prisma.$transaction([
+      prisma.campaign.updateMany({ where: { workspaceId, groupId: { in: ids } }, data: { groupId: to } }),
+      prisma.templateBlueprint.updateMany({ where: { workspaceId, groupId: { in: ids } }, data: { groupId: to } }),
+      prisma.funnel.updateMany({ where: { workspaceId, groupId: { in: ids } }, data: { groupId: to } }),
+      prisma.bmGroup.deleteMany({ where: { id: { in: ids }, workspaceId } }),
+    ]);
+  }
+  // Nome e cor sempre os padrão (é o grupo fixo do sistema)
+  if (group.name !== READY_NAME || group.color !== READY_DATA.color) group = await prisma.bmGroup.update({ where: { id: group.id }, data: READY_DATA });
+  return group;
 }
 
 /** Coloca no grupo "Prontas para disparo" toda BM pronta e tira a que deixou de estar pronta. Roda a cada sincronização. */

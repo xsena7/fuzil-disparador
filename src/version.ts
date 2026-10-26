@@ -2,6 +2,14 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "3.12",
+    date: "27/10/2026",
+    items: [
+      "Grupos: fica só o \"Prontas para disparo\" automático. Grupo de prontas criado à mão é juntado nele e apagado (as campanhas, aquecimentos e templates que usavam o manual passam a usar o automático)",
+      "Grupos: o automático aparece em primeiro, com a etiqueta \"Automático\", e não dá para editar nem excluir. Em Conexões a gaveta dele aparece sempre, mesmo vazia",
+    ],
+  },
+  {
     version: "3.11",
     date: "27/10/2026",
     items: ["Avisos no canto da tela: as atualizações de conta da Meta aparecem traduzidas e curtas (ex.: \"Parceiro adicionado\", \"Conta verificada\", \"Violação na conta\") com o nome da BM embaixo. Título comprido usa duas linhas em vez de ser cortado"],

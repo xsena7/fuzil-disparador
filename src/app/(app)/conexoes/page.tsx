@@ -17,7 +17,7 @@ import { TestWaba } from "./test-waba";
 import { EmbeddedSignup } from "@/components/embedded-signup";
 import { VerifyAllButton } from "@/components/verify-all-button";
 import { groupDot, groupTag } from "@/lib/group-colors";
-import { READY_GROUP, isProblemSystem } from "@/lib/bm-problems";
+import { READY_GROUP, ensureReadyGroup, isProblemSystem } from "@/lib/bm-problems";
 import { ConnectGuide } from "./connect-guide";
 import { ProfileEditor } from "./profile-editor";
 import { SmsBearPanel } from "./smsbear-panel";
@@ -88,6 +88,9 @@ export default async function ConnectionsPage() {
       });
     secs.get(key)!.items.push(b);
   }
+  // "Prontas para disparo" é fixo: aparece mesmo sem BM nenhuma dentro
+  const ready = await ensureReadyGroup(auth.workspace.id);
+  if (!secs.has(ready.id)) secs.set(ready.id, { key: ready.id, name: ready.name, color: ready.color, order: 0, items: [] });
   const sections = [...secs.values()].sort((a, b) => a.order - b.order || a.name.localeCompare(b.name, "pt-BR"));
 
   // WABAs para o painel do SMSBear (registrar número sozinho)
@@ -152,6 +155,7 @@ export default async function ConnectionsPage() {
               <span className="ml-auto rounded-full bg-white px-2.5 py-0.5 text-xs font-semibold text-zinc-600 ring-1 ring-zinc-200">{sec.items.length} BM{sec.items.length === 1 ? "" : "s"}</span>
             </summary>
             <div className="space-y-4 border-t border-zinc-200 p-3">
+        {sec.items.length === 0 && <p className="px-2 py-3 text-sm text-zinc-500">Nenhuma BM pronta agora. Elas entram aqui sozinhas quando têm número conectado, cartão e template aprovado.</p>}
         {sec.items.map((bm) => {
           // Cor da gaveta: vermelho se alguma conta não consegue disparar, amarelo se tem aviso, verde se está tudo certo
           const issues = bm.wabas.flatMap((w) => wabaReadiness({ ...w, usableTemplates: w.templates.length }));
