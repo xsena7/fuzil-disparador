@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "3.08",
+    date: "27/10/2026",
+    items: ["Conexões: número +1 (dos EUA) é tratado como número de teste da Meta, mesmo sem 555 (ex.: +1 711-670-0424). Ele não conta como número da BM, então ela fica em \"Sem número\" (que vem antes de Pagamento) até ter um número do Brasil"],
+  },
+  {
     version: "3.07",
     date: "27/10/2026",
     items: ["Conexões: as BMs ficam separadas em gavetas pelo grupo em que estão (Prontas para disparo, grupos de problema, seus grupos e Sem grupo), com a quantidade de BMs em cada. Abra a gaveta para ver as BMs daquela situação"],

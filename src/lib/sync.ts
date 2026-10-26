@@ -207,7 +207,9 @@ export function phoneInvalidReason(p: MetaPhone): string | null {
   const digits = p.display_phone_number.replace(/\D/g, "");
   // Número de teste da Meta (vem em toda WABA nova e não dá para apagar): +1 555..., nome "Test Number" ou conta SANDBOX
   const testName = /test\s*number|n[úu]mero\s+de\s+teste|^test$/i.test(String(p.verified_name ?? "").trim());
-  if (String(p.account_mode ?? "").toUpperCase() === "SANDBOX" || testName || /^1555\d{6,8}$/.test(digits)) return TEST_NUMBER;
+  // Todo número de teste da Meta é dos EUA (+1), e nem sempre com 555 (ex.: +1 711-670-0424). O Fuzil é para números do Brasil:
+  // número +1 é tratado como de teste (nunca conta como número da BM, então ela fica em "Sem número" e não pula para Pagamento)
+  if (String(p.account_mode ?? "").toUpperCase() === "SANDBOX" || testName || /^1\d{10}$/.test(digits)) return TEST_NUMBER;
   if (p.platform_type === "NOT_APPLICABLE") return "Número não registrado na API";
   return null;
 }

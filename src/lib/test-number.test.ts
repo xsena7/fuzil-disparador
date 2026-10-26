@@ -11,5 +11,7 @@ test("número de teste da Meta nunca conta como número de verdade", () => {
   assert.equal(reason({ verified_name: "test number" }), "Número de teste da Meta");
   assert.equal(reason({ account_mode: "sandbox" }), "Número de teste da Meta");
   assert.equal(reason({}), null);
-  assert.equal(reason({ display_phone_number: "+1 415 555 0101" }), null);
+  // Número de teste novo da Meta, sem 555
+  assert.equal(reason({ display_phone_number: "+1 711-670-0424" }), "Número de teste da Meta");
+  assert.equal(reason({ display_phone_number: "+55 62 98257-0672" }), null);
 });
