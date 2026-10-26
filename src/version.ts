@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "3.11",
+    date: "27/10/2026",
+    items: ["Avisos no canto da tela: as atualizações de conta da Meta aparecem traduzidas e curtas (ex.: \"Parceiro adicionado\", \"Conta verificada\", \"Violação na conta\") com o nome da BM embaixo. Título comprido usa duas linhas em vez de ser cortado"],
+  },
+  {
     version: "3.10",
     date: "27/10/2026",
     items: [

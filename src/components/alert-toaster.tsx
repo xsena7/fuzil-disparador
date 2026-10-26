@@ -88,7 +88,7 @@ export function AlertToaster() {
           <Link href="/alertas" className="flex items-center gap-3 px-3.5 py-3 pr-9" onClick={() => setItems((cur) => cur.filter((x) => x.id !== a.id))}>
             <span className={clsx("size-2.5 shrink-0 rounded-full", TONE[a.tone].dot)} />
             <span className="min-w-0">
-              <span className="block truncate text-sm font-semibold text-zinc-900">{a.head}</span>
+              <span className="line-clamp-2 block text-sm font-semibold leading-snug text-zinc-900">{a.head}</span>
               {a.who && <span className="block truncate text-xs text-zinc-500">{a.who}</span>}
             </span>
           </Link>

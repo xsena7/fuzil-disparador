@@ -5,7 +5,35 @@ export type AlertSummary = { head: string; who: string; tone: AlertTone; key: st
 
 const strip = (s: string) => s.replace(/[\p{Extended_Pictographic}️]/gu, "").replace(/\s+/g, " ").trim();
 
+// Avisos de conta da Meta (account_update / account_review_update), em poucas palavras
+const ACCOUNT_EVENTS: Record<string, [string, AlertTone]> = {
+  VERIFIED_ACCOUNT: ["Conta verificada", "green"],
+  APPROVED: ["Conta aprovada", "green"],
+  PARTNER_ADDED: ["Parceiro adicionado", "blue"],
+  PARTNER_REMOVED: ["Parceiro removido", "amber"],
+  PARTNER_APP_INSTALLED: ["App conectado na conta", "blue"],
+  PARTNER_APP_UNINSTALLED: ["App desconectado da conta", "amber"],
+  AD_ACCOUNT_LINKED: ["Conta de anúncios ligada", "blue"],
+  PHONE_NUMBER_ADDED: ["Número adicionado", "blue"],
+  PHONE_NUMBER_REMOVED: ["Número removido", "amber"],
+  PENDING: ["Conta em análise", "amber"],
+  REJECTED: ["Conta rejeitada", "red"],
+  DISABLED_UPDATE: ["Conta desativada", "red"],
+  ACCOUNT_DELETED: ["Conta excluída", "red"],
+  ACCOUNT_VIOLATION: ["Violação na conta", "red"],
+  ACCOUNT_RESTRICTION: ["Conta restrita", "red"],
+  ACCOUNT_OFFBOARDED: ["Conta desligada", "red"],
+};
+const accountEvent = (ev: string): [string, AlertTone] => {
+  const e = ev.trim().toUpperCase();
+  if (ACCOUNT_EVENTS[e]) return ACCOUNT_EVENTS[e];
+  if (/BAN|DISABLE|VIOLATION|RESTRICT|REJECT/.test(e)) return ["Restrição na conta", "red"];
+  return ["Aviso da Meta na conta", "blue"];
+};
+
 const RULES: Array<[RegExp, (m: RegExpMatchArray) => Omit<AlertSummary, "key">]> = [
+  [/^Atualização na WABA (.+?) \((.+)\): (.+)$/, (m) => { const [head, tone] = accountEvent(m[3]); return { head, who: m[2], tone }; }],
+  [/^Atualização na WABA (.+): (.+)$/, (m) => { const [head, tone] = accountEvent(m[2]); return { head, who: m[1], tone }; }],
   [/^(.+) foi para "(.+)"$/, (m) => ({ head: strip(m[2]), who: m[1], tone: /banid/i.test(m[2]) ? "red" : "amber" })],
   [/^(.+) voltou para "(.+)"$/, (m) => ({ head: `Voltou: ${strip(m[2])}`, who: m[1], tone: "green" })],
   [/^Campanha "(.+)" concluída$/, (m) => ({ head: "Campanha concluída", who: m[1], tone: "green" })],
