@@ -46,6 +46,8 @@ export async function GET() {
       waba: j.waba.name,
       log: j.log,
       error: j.error,
+      // Números ainda esperando cancelar no SMSBear (enquanto tiver, o registro não pode ser apagado)
+      pendingCancel: Array.isArray(j.toCancel) ? j.toCancel.length : 0,
     })),
   });
 }

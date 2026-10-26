@@ -2,8 +2,8 @@
 
 import { useActionState, useCallback, useEffect, useState, useTransition } from "react";
 import clsx from "clsx";
-import { CheckCircle2, Loader2, LogOut, MessageSquareText, Square, XCircle, Zap } from "lucide-react";
-import { connectSmsBearAction, disconnectSmsBearAction, startSmsJobAction, stopSmsJobAction } from "@/app/actions/smsbear";
+import { CheckCircle2, Loader2, LogOut, MessageSquareText, Square, Trash2, XCircle, Zap } from "lucide-react";
+import { clearSmsJobsAction, connectSmsBearAction, deleteSmsJobAction, disconnectSmsBearAction, startSmsJobAction, stopSmsJobAction } from "@/app/actions/smsbear";
 import { Button, Field, Input } from "@/components/ui";
 import { PasswordInput } from "@/components/password-input";
 import { toast, toastResult } from "@/components/toast";
@@ -21,6 +21,7 @@ type Job = {
   waba: string;
   log: Array<{ at: string; text: string; tone?: "ok" | "bad" | "info" }>;
   error: string | null;
+  pendingCancel: number;
 };
 type State = { connected: boolean; balance?: number | null; price?: { cost: number; stock: number } | null; error?: string | null; jobs?: Job[] };
 
@@ -139,14 +140,37 @@ function Connected({ st, wabas, now, reload }: { st: State; wabas: Array<{ id: s
         </form>
       )}
 
+      {jobs.some((j) => j.status !== "RUNNING") && (
+        <div className="flex justify-end">
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => start(async () => { toastResult(await clearSmsJobsAction()); reload(); })}
+            className="inline-flex items-center gap-1 text-xs font-medium text-zinc-500 hover:text-red-600"
+          >
+            <Trash2 className="size-3.5" /> Limpar histórico
+          </button>
+        </div>
+      )}
       {jobs.map((j) => {
         const left = j.status === "RUNNING" && j.step === "WAIT" ? Math.max(0, WAIT_MS - (now - new Date(j.stepAt).getTime())) : null;
+        const last = j.log.at(-1);
+        const lines = (
+          <ol className="mt-2 max-h-48 space-y-1 overflow-y-auto text-xs">
+            {[...j.log].reverse().map((l, i) => (
+              <li key={i} className={clsx(l.tone === "ok" ? "text-emerald-700" : l.tone === "bad" ? "text-red-600" : "text-zinc-600")}>
+                <span className="mr-1 text-zinc-400">{new Date(l.at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</span>
+                {l.text}
+              </li>
+            ))}
+          </ol>
+        );
         return (
           <div key={j.id} className={clsx("rounded-xl p-3 ring-1", j.status === "DONE" ? "bg-emerald-50 ring-emerald-200" : j.status === "RUNNING" ? "bg-white ring-orange-200" : "bg-zinc-50 ring-zinc-200")}>
             <div className="flex items-center gap-2">
               {j.status === "RUNNING" ? <Loader2 className="size-4 animate-spin text-orange-600" /> : j.status === "DONE" ? <CheckCircle2 className="size-4 text-emerald-600" /> : <XCircle className="size-4 text-zinc-400" />}
               <div className="min-w-0 flex-1 truncate text-sm font-semibold text-zinc-900">{j.bm}</div>
-              {j.status === "RUNNING" && (
+              {j.status === "RUNNING" ? (
                 <button
                   type="button"
                   disabled={busy}
@@ -155,21 +179,35 @@ function Connected({ st, wabas, now, reload }: { st: State; wabas: Array<{ id: s
                 >
                   <Square className="size-3" /> Parar
                 </button>
+              ) : (
+                <button
+                  type="button"
+                  disabled={busy || j.pendingCancel > 0}
+                  title={j.pendingCancel > 0 ? "Esperando cancelar número no SMSBear (o saldo volta)" : "Apagar do histórico"}
+                  onClick={() => start(async () => { toastResult(await deleteSmsJobAction(j.id)); reload(); })}
+                  className="rounded-lg p-1 text-zinc-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-40"
+                >
+                  <Trash2 className="size-3.5" />
+                </button>
               )}
             </div>
             <div className="mt-1 flex flex-wrap gap-x-3 text-xs text-zinc-500">
               <span>Tentativa {j.attempt} de {j.maxAttempts}</span>
               {j.spentCents > 0 && <span>Comprado: {brl(j.spentCents)}</span>}
               {left !== null && <span className="font-semibold text-orange-700">SMS: {Math.floor(left / 60000)}:{String(Math.floor((left % 60000) / 1000)).padStart(2, "0")}</span>}
+              {j.pendingCancel > 0 && <span className="font-medium text-amber-700">{j.pendingCancel} esperando cancelar</span>}
             </div>
-            <ol className="mt-2 max-h-48 space-y-1 overflow-y-auto text-xs">
-              {[...j.log].reverse().map((l, i) => (
-                <li key={i} className={clsx(l.tone === "ok" ? "text-emerald-700" : l.tone === "bad" ? "text-red-600" : "text-zinc-600")}>
-                  <span className="mr-1 text-zinc-400">{new Date(l.at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</span>
-                  {l.text}
-                </li>
-              ))}
-            </ol>
+            {j.status === "RUNNING" ? (
+              lines
+            ) : (
+              // Terminado: fica fechado, só com a última linha (clica para ver tudo)
+              <details className="group/log mt-1">
+                <summary className={clsx("cursor-pointer list-none truncate text-xs [&::-webkit-details-marker]:hidden", last?.tone === "ok" ? "text-emerald-700" : last?.tone === "bad" ? "text-red-600" : "text-zinc-600")}>
+                  {last?.text ?? "—"} <span className="text-zinc-400 group-open/log:hidden">· ver tudo</span>
+                </summary>
+                {lines}
+              </details>
+            )}
           </div>
         );
       })}

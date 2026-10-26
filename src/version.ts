@@ -2,6 +2,14 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.99",
+    date: "27/10/2026",
+    items: [
+      "SMSBear: dá para apagar do histórico cada registro que terminou (lixeira) ou todos de uma vez (\"Limpar histórico\"). Registro com número ainda esperando cancelar fica até o saldo voltar",
+      "SMSBear: os registros que terminaram ficam fechados, mostrando só a última linha (clique em \"ver tudo\" para abrir)",
+    ],
+  },
+  {
     version: "2.98",
     date: "27/10/2026",
     items: [

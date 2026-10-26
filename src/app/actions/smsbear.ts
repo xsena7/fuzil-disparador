@@ -55,6 +55,26 @@ export async function startSmsJobAction(_: FormState, form: FormData): Promise<F
   return { ok: "Registro automático começou! Acompanhe aqui no painel." };
 }
 
+const noPendingCancel = { toCancel: { equals: [] } } as const;
+
+/** Apaga um registro que já terminou (os que ainda esperam cancelar número no SMSBear ficam, para o saldo voltar). */
+export async function deleteSmsJobAction(jobId: string): Promise<FormState> {
+  const auth = await requireAuth();
+  const job = await prisma.smsJob.findFirst({ where: { id: jobId, workspaceId: auth.workspace.id } });
+  if (!job) return { ok: "Apagado." };
+  if (job.status === "RUNNING") return { error: "Pare o registro antes de apagar." };
+  const r = await prisma.smsJob.deleteMany({ where: { id: job.id, ...noPendingCancel } });
+  return r.count ? { ok: "Apagado." } : { error: "Ainda tem número esperando cancelar no SMSBear. Dá para apagar assim que o saldo voltar." };
+}
+
+/** Limpa o histórico: apaga todos os registros que já terminaram (menos os que ainda esperam cancelar número). */
+export async function clearSmsJobsAction(): Promise<FormState> {
+  const auth = await requireAuth();
+  const r = await prisma.smsJob.deleteMany({ where: { workspaceId: auth.workspace.id, status: { not: "RUNNING" }, ...noPendingCancel } });
+  const kept = await prisma.smsJob.count({ where: { workspaceId: auth.workspace.id, status: { not: "RUNNING" } } });
+  return { ok: `${r.count} registro(s) apagado(s).${kept ? ` ${kept} ficou(aram) porque ainda tem número esperando cancelar no SMSBear.` : ""}` };
+}
+
 export async function stopSmsJobAction(jobId: string): Promise<FormState> {
   const auth = await requireAuth();
   const job = await prisma.smsJob.findFirst({ where: { id: jobId, workspaceId: auth.workspace.id } });
