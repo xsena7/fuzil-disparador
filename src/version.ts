@@ -2,6 +2,14 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "3.02",
+    date: "27/10/2026",
+    items: [
+      "Conexões: os números que sobraram de tentativas do SMSBear aparecem de novo na lista (cinza), porque eles continuam ocupando vaga na Meta. Apague no WhatsApp Manager para liberar",
+      "Adicionar número: o erro diz se a Meta recusou ao colocar o número na WABA (normalmente BM no limite de números) ou ao mandar o código",
+    ],
+  },
+  {
     version: "3.01",
     date: "27/10/2026",
     items: [

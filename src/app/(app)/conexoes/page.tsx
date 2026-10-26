@@ -55,7 +55,7 @@ export default async function ConnectionsPage() {
   const businesses = await prisma.businessManager.findMany({
     where: { workspaceId: auth.workspace.id },
     include: {
-      wabas: { include: { phones: { where: { OR: [{ invalidReason: null }, { invalidReason: { notIn: [PHONE_REMOVED, PHONE_DISCARDED] } }] }, orderBy: { createdAt: "asc" } },
+      wabas: { include: { phones: { where: { OR: [{ invalidReason: null }, { invalidReason: { not: PHONE_REMOVED } }] }, orderBy: { createdAt: "asc" } },
           templates: { where: { status: "APPROVED", category: "UTILITY" }, select: { id: true } },
           _count: { select: { templates: true } },
         },
@@ -305,7 +305,9 @@ export default async function ConnectionsPage() {
                         <PhoneStatusBadge s={p.status} />
                         <Badge color="blue" dot={false}>{tierLabel(p.messagingLimitTier)}</Badge>
                         {p.isCoexistence && <Badge dot={false}>Coexistência</Badge>}
-                        {p.invalidReason ? <Badge color="red">{p.invalidReason}: não entra no rodízio</Badge> : !p.enabled && <Badge color="yellow">Fora do rodízio</Badge>}
+                        {p.invalidReason === PHONE_DISCARDED ? (
+                          <Badge color="gray">Sobra do SMSBear: ocupa vaga na Meta. Apague no WhatsApp Manager</Badge>
+                        ) : p.invalidReason ? <Badge color="red">{p.invalidReason}: não entra no rodízio</Badge> : !p.enabled && <Badge color="yellow">Fora do rodízio</Badge>}
                         <div className="ml-auto flex flex-wrap justify-end gap-2">
                           {p.status === "CONNECTED" && !p.invalidReason && <ProfileEditor phoneId={p.id} bmName={bm.name} currentName={p.verifiedName} pendingName={p.pendingName} />}
                           {p.status && p.status !== "CONNECTED" && !p.isCoexistence && (
@@ -314,7 +316,7 @@ export default async function ConnectionsPage() {
                           {!p.invalidReason && <ConfirmButton action={togglePhoneAction.bind(null, p.id)}>{p.enabled ? "Tirar do rodízio" : "Colocar no rodízio"}</ConfirmButton>}
                         </div>
                         {/* Número ainda não confirmado: digita o código que chegou e o Fuzil confirma e registra */}
-                        {p.status && p.status !== "CONNECTED" && !p.isCoexistence && (
+                        {p.status && p.status !== "CONNECTED" && !p.isCoexistence && p.invalidReason !== PHONE_DISCARDED && (
                           <details className="w-full rounded-xl bg-orange-50/60 px-3 py-2 ring-1 ring-orange-100" open={p.invalidReason === "Número não registrado na API"}>
                             <summary className="cursor-pointer text-sm font-medium text-orange-900">Confirmar o número pelo código (SMS ou ligação)</summary>
                             <div className="mt-3 flex flex-wrap items-end gap-3">

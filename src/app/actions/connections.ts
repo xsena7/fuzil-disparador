@@ -185,12 +185,21 @@ export async function addPhoneAction(wabaRecordId: string, _: FormState, form: F
   if (name.length < 3) return { error: "Escreva o nome de exibição (o nome que aparece no WhatsApp)." };
   const method = form.get("method") === "VOICE" ? "VOICE" : "SMS";
   const token = wabaToken(waba);
+  // Duas etapas na Meta: colocar o número na WABA e mandar o código. O erro diz em qual a Meta recusou
+  let added = false;
   try {
     const { id } = await meta.addPhone(token, waba.wabaId, "55", digits.slice(2), name);
+    added = true;
     await meta.requestCode(token, id, method);
     await syncWaba(waba.id);
   } catch (err) {
-    return { error: metaDetail(err) };
+    if (added) {
+      await syncWaba(waba.id).catch(() => undefined);
+      return { error: `O número entrou na WABA, mas a Meta recusou mandar o código: ${metaDetail(err)}. Tente pedir o código de novo no número, aqui embaixo.` };
+    }
+    return {
+      error: `A Meta recusou colocar o número na WABA: ${metaDetail(err)}. Se a BM já tem 2 números (incluindo pendentes), ela está no limite da Meta: apague os números que sobraram no WhatsApp Manager.`,
+    };
   }
   revalidatePath("/conexoes");
   return { ok: `Número adicionado! A Meta mandou um código ${method === "VOICE" ? "por ligação" : "por SMS"} para ele. Digite o código no número, logo abaixo, para terminar.` };
