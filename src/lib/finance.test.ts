@@ -100,3 +100,58 @@ test("acerto parcial deixa só o resto", () => {
   );
   assert.deepEqual(r.transfers, [{ from: "gui", to: "edu", amountCents: 35000 }]);
 });
+
+test("caixa: comprou perfil a 19 do bolso e vendeu a 50 no caixa → o caixa reembolsa os 19", () => {
+  const r = settle(
+    [
+      { kind: "EXPENSE", amountCents: 1900, userId: "gui", toUserId: null },
+      { kind: "INCOME", amountCents: 5000, userId: "gui", toUserId: null, cash: true },
+    ],
+    ["gui", "edu"],
+  );
+  assert.equal(r.profit, 3100);
+  assert.equal(r.cash, 5000);
+  assert.deepEqual(r.refunds, [{ to: "gui", amountCents: 1900 }]);
+  assert.deepEqual(r.transfers, []); // ninguém passa nada para ninguém
+});
+
+test("caixa: depois do reembolso, sobra o lucro no caixa e está tudo acertado", () => {
+  const r = settle(
+    [
+      { kind: "EXPENSE", amountCents: 1900, userId: "gui", toUserId: null },
+      { kind: "INCOME", amountCents: 5000, userId: "gui", toUserId: null, cash: true },
+      { kind: "WITHDRAW", amountCents: 1900, userId: "gui", toUserId: null },
+    ],
+    ["gui", "edu"],
+  );
+  assert.equal(r.cash, 3100);
+  assert.deepEqual(r.refunds, []);
+  assert.deepEqual(r.transfers, []);
+});
+
+test("caixa: compra e venda pelo caixa não mexem na conta de ninguém", () => {
+  const r = settle(
+    [
+      { kind: "EXPENSE", amountCents: 1900, userId: "edu", toUserId: null, cash: true },
+      { kind: "INCOME", amountCents: 5000, userId: "gui", toUserId: null, cash: true },
+    ],
+    ["gui", "edu"],
+  );
+  assert.equal(r.cash, 3100);
+  assert.deepEqual(r.refunds, []);
+  assert.deepEqual(r.transfers, []);
+});
+
+test("caixa sem dinheiro suficiente: reembolsa o que dá e o resto divide entre os sócios", () => {
+  const r = settle(
+    [
+      { kind: "INCOME", amountCents: 1000, userId: "gui", toUserId: null, cash: true },
+      { kind: "EXPENSE", amountCents: 3000, userId: "edu", toUserId: null },
+    ],
+    ["gui", "edu"],
+  );
+  assert.deepEqual(r.refunds, [{ to: "edu", amountCents: 1000 }]);
+  // Faltam 2.000 que o Edu pagou: cada um arca com 1.000
+  assert.deepEqual(r.transfers, [{ from: "gui", to: "edu", amountCents: 1000 }]);
+});
+

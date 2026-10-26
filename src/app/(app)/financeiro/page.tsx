@@ -1,11 +1,11 @@
 import Link from "next/link";
 import clsx from "clsx";
-import { ArrowDownLeft, ArrowLeftRight, ArrowUpRight, CheckCircle2, Paperclip, Wallet } from "lucide-react";
+import { ArrowDownLeft, ArrowLeftRight, ArrowUpRight, CheckCircle2, Landmark, Paperclip, Undo2, Wallet } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { FINANCE_CATEGORIES, brl, settle, type FinanceKind } from "@/lib/finance";
 import { financePartners, requireFinancePartner } from "@/lib/finance-partners";
 import { Card, Empty, PageHeader, Stat } from "@/components/ui";
-import { DeleteEntry, FinanceForm, PixKeyForm, SettleButton } from "./finance-form";
+import { DeleteEntry, FinanceForm, PixKeyForm, RefundButton, SettleButton } from "./finance-form";
 
 export const dynamic = "force-dynamic";
 
@@ -23,7 +23,7 @@ const monthLabel = (k: string) => {
 const when = (d: Date) => d.toLocaleString("pt-BR", { timeZone: TZ, day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit" });
 const first = (name: string) => name.split(" ")[0];
 
-/** Financeiro dos sócios: despesas, entradas e quem passa quanto para quem (partes iguais). Só para os administradores do Fuzil. */
+/** Financeiro dos sócios: caixa da empresa, despesas, entradas e reembolsos. Só para os administradores do Fuzil. */
 export default async function FinancePage({ searchParams }: { searchParams: Promise<{ mes?: string; cat?: string }> }) {
   const auth = await requireFinancePartner();
   const sp = await searchParams;
@@ -36,7 +36,7 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
 
   // Acerto: sempre com tudo o que já foi anotado (não por mês)
   const all = settle(
-    entries.map((e) => ({ kind: e.kind as FinanceKind, amountCents: e.amountCents, userId: e.userId, toUserId: e.toUserId })),
+    entries.map((e) => ({ kind: e.kind as FinanceKind, amountCents: e.amountCents, userId: e.userId, toUserId: e.toUserId, cash: e.cash })),
     partners.map((p) => p.id),
   );
 
@@ -64,44 +64,61 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
 
   return (
     <div className="mx-auto max-w-6xl space-y-5">
-      <PageHeader title="Financeiro" description="Despesas e entradas dos sócios, divididas meio a meio. O Fuzil soma tudo e diz quem passa quanto para quem." />
+      <PageHeader title="Financeiro" description="O lucro fica no caixa da empresa para reinvestir. Quem pagar algo do próprio bolso é reembolsado pelo caixa." />
 
       {/* Quem passa quanto para quem (com tudo o que já foi anotado) */}
       <div className="relative overflow-hidden rounded-3xl bg-ink p-6 text-white md:p-8">
         <div className="pointer-events-none absolute -right-20 -top-24 size-72 rounded-full bg-orange-500/25 blur-3xl" />
         <div className="relative flex flex-wrap items-center gap-6">
-          <span className="flex size-12 items-center justify-center rounded-2xl bg-brand-gradient"><Wallet className="size-6" /></span>
+          <span className="flex size-12 items-center justify-center rounded-2xl bg-brand-gradient"><Landmark className="size-6" /></span>
           <div className="min-w-0 flex-1">
-            <div className="text-xs font-semibold uppercase tracking-wider text-orange-200">Acerto entre os sócios</div>
-            {all.transfers.length ? (
-              all.transfers.map((t) => (
-                <div key={`${t.from}-${t.to}`} className="mt-1 text-2xl font-bold md:text-3xl">
-                  {t.from === auth.user.id ? "Você" : nm(t.from)} deve passar <span className="text-brand-gradient">{brl(t.amountCents)}</span> {t.to === auth.user.id ? "para você" : `para ${nm(t.to)}`}
-                </div>
-              ))
-            ) : (
-              <div className="mt-1 flex items-center gap-2 text-2xl font-bold md:text-3xl"><CheckCircle2 className="size-7 text-emerald-400" /> Tudo acertado</div>
-            )}
+            <div className="text-xs font-semibold uppercase tracking-wider text-orange-200">Caixa da empresa</div>
+            <div className={clsx("mt-1 text-4xl font-bold tabular-nums md:text-5xl", all.cash < 0 && "text-rose-300")}>{brl(all.cash)}</div>
             <div className="mt-2 text-sm text-zinc-400">
-              Lucro de tudo até agora: <b className="text-white">{brl(all.profit)}</b> · parte de cada um: <b className="text-white">{brl(all.share)}</b>
+              Lucro de tudo até agora: <b className="text-white">{brl(all.profit)}</b>
+              {all.cash < 0 && " · o caixa está negativo: anote as entradas que caíram nele"}
             </div>
           </div>
-          {all.transfers
-            .filter((t) => t.from === auth.user.id)
-            .map((t) => (
-              <SettleButton key={t.to} amount={(t.amountCents / 100).toFixed(2).replace(".", ",")} toUserId={t.to} toName={nm(t.to)} pixKey={partners.find((p) => p.id === t.to)?.pixKey ?? null} />
-            ))}
         </div>
-        <div className="relative mt-5 grid gap-3 sm:grid-cols-2">
+
+        {/* O que falta acertar: reembolsos do caixa e, se o caixa não cobrir, Pix entre os sócios */}
+        <div className="relative mt-5 space-y-3">
+          {all.refunds.map((r) => (
+            <div key={`r-${r.to}`} className="flex flex-wrap items-center gap-4 rounded-2xl bg-white/10 px-4 py-3 ring-1 ring-white/15">
+              <Undo2 className="size-5 shrink-0 text-orange-300" />
+              <div className="min-w-0 flex-1 text-lg font-semibold">
+                O caixa deve reembolsar <span className="text-brand-gradient">{brl(r.amountCents)}</span> {r.to === auth.user.id ? "para você" : `para ${nm(r.to)}`}
+                <div className="text-xs font-normal text-zinc-400">É o que {r.to === auth.user.id ? "você pagou" : `${nm(r.to)} pagou`} do próprio bolso. Faça o Pix da conta da empresa e clique no botão.</div>
+              </div>
+              {r.to === auth.user.id && <RefundButton amount={(r.amountCents / 100).toFixed(2).replace(".", ",")} />}
+            </div>
+          ))}
+          {all.transfers.map((t) => (
+            <div key={`${t.from}-${t.to}`} className="flex flex-wrap items-center gap-4 rounded-2xl bg-white/10 px-4 py-3 ring-1 ring-white/15">
+              <ArrowLeftRight className="size-5 shrink-0 text-sky-300" />
+              <div className="min-w-0 flex-1 text-lg font-semibold">
+                {t.from === auth.user.id ? "Você" : nm(t.from)} deve passar <span className="text-brand-gradient">{brl(t.amountCents)}</span> {t.to === auth.user.id ? "para você" : `para ${nm(t.to)}`}
+                <div className="text-xs font-normal text-zinc-400">O caixa não cobre tudo (ou o dinheiro ficou na conta de um sócio): a diferença é dividida meio a meio.</div>
+              </div>
+              {t.from === auth.user.id && (
+                <SettleButton amount={(t.amountCents / 100).toFixed(2).replace(".", ",")} toUserId={t.to} toName={nm(t.to)} pixKey={partners.find((p) => p.id === t.to)?.pixKey ?? null} />
+              )}
+            </div>
+          ))}
+          {!all.refunds.length && !all.transfers.length && (
+            <div className="flex items-center gap-2 text-lg font-semibold"><CheckCircle2 className="size-6 text-emerald-400" /> Tudo acertado: ninguém deve nada a ninguém</div>
+          )}
+        </div>
+        <div className="relative mt-4 grid gap-3 sm:grid-cols-2">
           {all.partners
             .filter((p) => nameOf.has(p.userId))
             .map((p) => (
               <div key={p.userId} className="rounded-2xl bg-white/5 px-4 py-3 text-sm ring-1 ring-white/10">
                 <div className="font-semibold">{nm(p.userId)}{p.userId === auth.user.id && " (você)"}</div>
                 <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-zinc-300">
-                  <span>Pagou <b className="text-rose-300">{brl(p.paid)}</b></span>
-                  <span>Recebeu <b className="text-emerald-300">{brl(p.received)}</b></span>
-                  {(p.sent > 0 || p.got > 0) && <span>Acertos: mandou {brl(p.sent)} · recebeu {brl(p.got)}</span>}
+                  <span>Pagou do bolso <b className="text-rose-300">{brl(p.paid)}</b></span>
+                  <span>Recebeu na conta <b className="text-emerald-300">{brl(p.received)}</b></span>
+                  {(p.sent > 0 || p.got > 0) && <span>Reembolsos e acertos: mandou {brl(p.sent)} · recebeu {brl(p.got)}</span>}
                 </div>
               </div>
             ))}
@@ -110,7 +127,7 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
 
       <Card className="flex flex-wrap items-center justify-between gap-4 p-5">
         <div className="text-sm text-zinc-600">
-          <b className="text-zinc-900">Sócios:</b> {partners.map((p) => first(p.name)).join(" e ")} · divisão em partes iguais
+          <b className="text-zinc-900">Sócios:</b> {partners.map((p) => first(p.name)).join(" e ")} · o que o caixa não cobre é dividido em partes iguais
         </div>
         <PixKeyForm current={partners.find((p) => p.id === auth.user.id)?.pixKey ?? null} />
       </Card>
@@ -135,7 +152,7 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
         <Stat label="Entradas" value={brl(income)} tone="green" icon={<ArrowDownLeft className="size-4" />} />
         <Stat label="Despesas" value={brl(expense)} tone="red" icon={<ArrowUpRight className="size-4" />} />
         <Stat label="Lucro" value={brl(profit)} tone={profit >= 0 ? "brand" : "red"} />
-        <Stat label="Parte de cada um" value={brl(Math.round(profit / Math.max(1, partners.length)))} tone="violet" sub={mes === "todos" ? "de tudo" : monthLabel(mes)} />
+        <Stat label="Caixa da empresa" value={brl(all.cash)} tone={all.cash >= 0 ? "violet" : "red"} sub="saldo de agora" />
       </div>
 
       {byCat.length > 0 && (
@@ -166,8 +183,15 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
         <div className="divide-y divide-zinc-100 overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm">
           {list.map((e) => {
             const k = e.kind as FinanceKind;
-            const Icon = k === "EXPENSE" ? ArrowUpRight : k === "INCOME" ? ArrowDownLeft : ArrowLeftRight;
-            const who = k === "EXPENSE" ? `${nm(e.userId)} pagou` : k === "INCOME" ? `${nm(e.userId)} recebeu` : `${nm(e.userId)} → ${e.toUserId ? nm(e.toUserId) : "?"}`;
+            const Icon = k === "EXPENSE" ? ArrowUpRight : k === "INCOME" ? ArrowDownLeft : k === "WITHDRAW" ? Undo2 : ArrowLeftRight;
+            const who =
+              k === "WITHDRAW"
+                ? `Caixa → ${nm(e.userId)} (reembolso)`
+                : k === "SETTLEMENT"
+                  ? `${nm(e.userId)} → ${e.toUserId ? nm(e.toUserId) : "?"}`
+                  : e.cash
+                    ? `${k === "EXPENSE" ? "Pago pelo" : "Entrou no"} caixa da empresa · anotado por ${nm(e.userId)}`
+                    : `${nm(e.userId)} ${k === "EXPENSE" ? "pagou do bolso" : "recebeu na conta dele"}`;
             return (
               <div key={e.id} className={clsx("flex flex-wrap items-center gap-3 border-l-4 px-4 py-3", k === "EXPENSE" ? "border-l-rose-400" : k === "INCOME" ? "border-l-emerald-500" : "border-l-sky-400")}>
                 <span className={clsx("flex size-9 shrink-0 items-center justify-center rounded-xl", k === "EXPENSE" ? "bg-rose-100 text-rose-700" : k === "INCOME" ? "bg-emerald-100 text-emerald-700" : "bg-sky-100 text-sky-700")}>

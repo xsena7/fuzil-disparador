@@ -830,8 +830,11 @@ model LinkSession {
 // Financeiro dos sócios (administradores do Fuzil), dividido em partes iguais. Não é de uma conta de cliente.
 model FinanceEntry {
   id             String    @id @default(cuid())
-  // EXPENSE = pagou uma despesa; INCOME = recebeu na conta dele; SETTLEMENT = passou Pix para o outro sócio (acerto)
+  // EXPENSE = pagou uma despesa; INCOME = recebeu; SETTLEMENT = passou Pix para o outro sócio (acerto);
+  // WITHDRAW = o caixa da empresa reembolsou o sócio
   kind           String
+  // Despesa/entrada do caixa da empresa (não passou pela conta de nenhum sócio)
+  cash           Boolean   @default(false)
   description    String
   amountCents    Int
   category       String?

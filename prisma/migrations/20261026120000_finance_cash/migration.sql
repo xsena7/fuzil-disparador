@@ -1,0 +1,1 @@
+ALTER TABLE "FinanceEntry" ADD COLUMN "cash" BOOLEAN NOT NULL DEFAULT false;

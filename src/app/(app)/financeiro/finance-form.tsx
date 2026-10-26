@@ -11,14 +11,15 @@ import { toast, toastResult } from "@/components/toast";
 import { confirmDialog } from "@/components/confirm-dialog";
 
 const KINDS: Array<{ kind: FinanceKind; label: string; hint: string; icon: typeof ArrowUpRight; on: string }> = [
-  { kind: "EXPENSE", label: "Despesa", hint: "Você pagou", icon: ArrowUpRight, on: "border-rose-300 bg-rose-50 text-rose-800 ring-2 ring-rose-100" },
-  { kind: "INCOME", label: "Entrada", hint: "Caiu na sua conta", icon: ArrowDownLeft, on: "border-emerald-300 bg-emerald-50 text-emerald-800 ring-2 ring-emerald-100" },
+  { kind: "EXPENSE", label: "Despesa", hint: "Compra, gasto da empresa", icon: ArrowUpRight, on: "border-rose-300 bg-rose-50 text-rose-800 ring-2 ring-rose-100" },
+  { kind: "INCOME", label: "Entrada", hint: "Venda, dinheiro que entrou", icon: ArrowDownLeft, on: "border-emerald-300 bg-emerald-50 text-emerald-800 ring-2 ring-emerald-100" },
   { kind: "SETTLEMENT", label: "Acerto", hint: "Você passou Pix pro sócio", icon: ArrowLeftRight, on: "border-sky-300 bg-sky-50 text-sky-800 ring-2 ring-sky-100" },
 ];
 
 /** Nova anotação: quem anota é quem pagou/recebeu; data e hora são as de agora. Limpa os campos depois de salvar. */
 export function FinanceForm({ others }: { others: Array<{ id: string; name: string }> }) {
   const [kind, setKind] = useState<FinanceKind>("EXPENSE");
+  const [where, setWhere] = useState<"cash" | "me">("cash");
   const [state, action, pending] = useActionState(addFinanceEntryAction, undefined);
   const ref = useRef<HTMLFormElement>(null);
   const router = useRouter();
@@ -32,6 +33,7 @@ export function FinanceForm({ others }: { others: Array<{ id: string; name: stri
   return (
     <form ref={ref} action={action} className="space-y-4">
       <input type="hidden" name="kind" value={kind} />
+      <input type="hidden" name="where" value={where} />
       <div className="grid gap-2 sm:grid-cols-3">
         {KINDS.map((k) => (
           <button
@@ -48,6 +50,24 @@ export function FinanceForm({ others }: { others: Array<{ id: string; name: stri
           </button>
         ))}
       </div>
+      {kind !== "SETTLEMENT" && (
+        <div className="flex flex-wrap items-center gap-2 text-sm">
+          <span className="font-medium text-zinc-700">{kind === "EXPENSE" ? "Pago com:" : "Caiu em:"}</span>
+          {([
+            ["cash", "Caixa da empresa"],
+            ["me", kind === "EXPENSE" ? "Meu bolso (o caixa me reembolsa)" : "Minha conta"],
+          ] as const).map(([v, label]) => (
+            <button
+              key={v}
+              type="button"
+              onClick={() => setWhere(v)}
+              className={clsx("rounded-full px-3.5 py-1.5 font-medium transition", where === v ? "bg-zinc-900 text-white" : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200")}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
       <div className="grid gap-4 md:grid-cols-[2fr_1fr_1fr]">
         <Field label={kind === "SETTLEMENT" ? "Descrição (opcional)" : "Descrição"}>
           <Input name="description" placeholder={kind === "EXPENSE" ? "Ex.: Compra de 5 BMs" : kind === "INCOME" ? "Ex.: Disparo cliente Ericky" : "Ex.: Pix do acerto de outubro"} required={kind !== "SETTLEMENT"} maxLength={200} />
@@ -146,6 +166,26 @@ export function SettleButton({ amount, toUserId, toName, pixKey }: { amount: str
         <button type="button" onClick={() => setOpen(false)} className="rounded-xl px-3 py-2 text-sm text-zinc-600 hover:bg-zinc-100">Cancelar</button>
         {state?.error && <span className="text-xs text-red-600">{state.error}</span>}
       </div>
+    </form>
+  );
+}
+
+/** "Já recebi do caixa": anota o reembolso que o caixa da empresa devia ao sócio (valor certinho, sem anotar em dobro). */
+export function RefundButton({ amount }: { amount: string }) {
+  const [state, action, pending] = useActionState(addFinanceEntryAction, undefined);
+  const router = useRouter();
+  useEffect(() => {
+    toastResult(state);
+    if (state?.ok) router.refresh();
+  }, [state, router]);
+  return (
+    <form action={action}>
+      <input type="hidden" name="kind" value="WITHDRAW" />
+      <input type="hidden" name="amount" value={amount} />
+      <input type="hidden" name="fromButton" value="1" />
+      <button disabled={pending} className="rounded-xl bg-white px-4 py-2 text-sm font-semibold text-zinc-900 shadow-sm hover:bg-orange-50 disabled:opacity-50">
+        {pending ? "Anotando..." : "Já recebi do caixa"}
+      </button>
     </form>
   );
 }

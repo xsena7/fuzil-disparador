@@ -2,6 +2,14 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.68",
+    date: "26/10/2026",
+    items: [
+      "Financeiro: caixa da empresa. Despesa e entrada podem ser do caixa (padrão) e o lucro fica nele para reinvestir, sem ir para a conta de ninguém",
+      "Financeiro: quem pagar algo do próprio bolso é reembolsado pelo caixa (botão \"Já recebi do caixa\"). Só o que o caixa não cobre é dividido meio a meio",
+    ],
+  },
+  {
     version: "2.67",
     date: "26/10/2026",
     items: ["Grupos: \"Prontas para disparo\" fica fixo em toda conta, como o Aquecimento, mesmo sem nenhuma BM pronta ainda"],
