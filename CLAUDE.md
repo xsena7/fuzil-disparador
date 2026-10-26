@@ -18,7 +18,7 @@ Produção: VM Oracle grátis, Docker Compose (db, app, worker, caddy). O servid
 - Aquecimento (landing de vagas + código + funil): `src/lib/funnels.ts`, `src/app/v/[key]/*` (página pública, também em domínio próprio pelo `src/middleware.ts` + on-demand TLS no Caddy), painel em `src/app/(app)/aquecimento/`. Cada passo é uma campanha interna (`Campaign.funnelId`).
 - Links externos (código fixo na variável do botão, para disparar por outra plataforma): site público em `src/app/site/links/` (fuzildisparador.com.br/links), login por WhatsApp = funil kind LINKS (`src/lib/links-login.ts`), `src/app/actions/links.ts`, resolvido em `src/app/r/[token]/route.ts`.
 - Relatório do cliente (métricas + valor + chaves Pix): `src/app/relatorio/report-view.tsx` (logado em `/relatorio/[id]`, público em `/relatorio/p/[token]`, 12h no ar), chaves em `src/lib/pix-keys.ts`, aba em `src/app/(app)/campanhas/[id]/client-report.tsx`.
-- SMSBear (comprar número BR e registrar na WABA sozinho, troca de número se o SMS não chegar em 2,5 min): `src/lib/smsbear.ts` (roda no worker), painel em `src/app/(app)/conexoes/smsbear-panel.tsx`, simulador `scripts/mock-smsbear.ts`.
+- Números BR (SMSBear e SMS24h, só WhatsApp Brasil; comprar e registrar na WABA sozinho, troca de número se o SMS não chegar em 2,5 min, modo manual): serviços em `src/lib/sms-providers.ts`, registro automático em `src/lib/smsbear.ts` (roda no worker), painel em `src/app/(app)/conexoes/smsbear-panel.tsx`, simuladores `scripts/mock-smsbear.ts` e `scripts/mock-sms24h.ts`.
 - Logo: `src/components/brand.tsx`. Gaveta padrão: `src/components/drawer.tsx`.
 - Server actions: `src/app/actions/*.ts`. Telas: `src/app/(app)/*`. Site público: `src/app/site/*`.
 

@@ -2,6 +2,14 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "3.03",
+    date: "27/10/2026",
+    items: [
+      "Conexões: o painel de números agora tem SMSBear e SMS24h (só WhatsApp Brasil). Escolha o serviço no topo; cada um conecta com a própria chave e mostra o saldo e o preço",
+      "SMS24h: funciona igual ao SMSBear no Automático (compra, registra na WABA, troca de número sem SMS em 2,5 min) e no Manual (código aparece ao vivo, Cancelar/Trocar liberam 2 minutos depois da compra)",
+    ],
+  },
+  {
     version: "3.02",
     date: "27/10/2026",
     items: [

@@ -61,6 +61,8 @@ model Workspace {
   name                String
   // Token da API do SMSBear da própria conta (criptografado): compra números BR para registrar nas WABAs
   smsbearTokenEnc     String?
+  // Chave da API do SMS24h da própria conta (criptografada)
+  sms24hKeyEnc        String?
   // Saldo em créditos (1 crédito = 1 mensagem por padrão)
   creditBalance       Int                 @default(0)
   creditsPerMessage   Int                 @default(1)
@@ -1034,6 +1036,8 @@ model CreditPurchase {
 model SmsJob {
   id            String          @id @default(cuid())
   workspaceId   String
+  // smsbear | sms24h
+  provider      String          @default("smsbear")
   wabaId        String
   verifiedName  String
   // RUNNING | DONE | FAILED | STOPPED
@@ -1067,6 +1071,7 @@ model SmsJob {
 model SmsOrder {
   id          String    @id @default(cuid())
   workspaceId String
+  provider    String    @default("smsbear")
   orderId     String
   number      String
   costCents   Int       @default(0)

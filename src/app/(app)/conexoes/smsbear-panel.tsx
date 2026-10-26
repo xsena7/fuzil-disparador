@@ -3,8 +3,8 @@
 import { useActionState, useCallback, useEffect, useState, useTransition } from "react";
 import clsx from "clsx";
 import { Check, CheckCircle2, Copy, Loader2, LogOut, MessageSquareText, RefreshCw, ShoppingCart, Square, Trash2, X, XCircle, Zap } from "lucide-react";
-import { buyManualAction, cancelManualAction, clearSmsJobsAction, connectSmsBearAction, deleteSmsJobAction, disconnectSmsBearAction, hideManualAction, startSmsJobAction, stopSmsJobAction, swapManualAction } from "@/app/actions/smsbear";
-import { cancelOpensIn } from "@/lib/smsbear-shared";
+import { buyManualAction, cancelManualAction, clearSmsJobsAction, connectSmsProviderAction, deleteSmsJobAction, disconnectSmsProviderAction, hideManualAction, startSmsJobAction, stopSmsJobAction, swapManualAction } from "@/app/actions/smsbear";
+import { SMS_PROVIDER_INFO, cancelOpensIn, type SmsProviderKey } from "@/lib/smsbear-shared";
 import { KeepInput } from "@/components/keep-input";
 import { Button, Field, Input } from "@/components/ui";
 import { PasswordInput } from "@/components/password-input";
@@ -12,6 +12,7 @@ import { toast, toastResult } from "@/components/toast";
 
 type Job = {
   id: string;
+  provider: SmsProviderKey;
   status: "RUNNING" | "DONE" | "FAILED" | "STOPPED";
   step: string;
   attempt: number;
@@ -25,15 +26,30 @@ type Job = {
   error: string | null;
   pendingCancel: number;
 };
-type Manual = { id: string; number: string; costCents: number; status: "PENDING" | "RECEIVED" | "CANCELLED"; code: string | null; smsText: string | null; createdAt: string };
-type State = { connected: boolean; balance?: number | null; price?: { cost: number; stock: number } | null; error?: string | null; jobs?: Job[]; manual?: Manual[] };
+type Manual = { id: string; provider: SmsProviderKey; number: string; costCents: number; status: "PENDING" | "RECEIVED" | "CANCELLED"; code: string | null; smsText: string | null; createdAt: string };
+type ProvState = { connected: boolean; balance?: number | null; price?: { cost: number; stock: number } | null; error?: string | null };
+type State = { providers: Record<SmsProviderKey, ProvState>; jobs: Job[]; manual: Manual[] };
+const PROVIDERS: SmsProviderKey[] = ["smsbear", "sms24h"];
 
 const brl = (cents: number) => (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 const WAIT_MS = 150_000;
 
-/** Painel do SMSBear em Conexões: conecta a conta, mostra o saldo e registra números BR na WABA sozinho. */
+/** Painel de números em Conexões (SMSBear ou SMS24h, só WhatsApp Brasil): conecta, mostra o saldo e registra números na WABA. */
 export function SmsBearPanel({ wabas }: { wabas: Array<{ id: string; label: string; name: string }> }) {
   const [st, setSt] = useState<State | null>(null);
+  const [provider, setProvider] = useState<SmsProviderKey>(() => {
+    try {
+      return localStorage.getItem("sms-provider") === "sms24h" ? "sms24h" : "smsbear";
+    } catch {
+      return "smsbear";
+    }
+  });
+  const pickProvider = (p: SmsProviderKey) => {
+    setProvider(p);
+    try {
+      localStorage.setItem("sms-provider", p);
+    } catch {}
+  };
   const [now, setNow] = useState(() => Date.now());
   // Ao vivo: registro automático rodando ou número manual esperando SMS
   const running = (st?.jobs?.some((j) => j.status === "RUNNING") ?? false) || (st?.manual?.some((m) => m.status === "PENDING") ?? false);
@@ -61,42 +77,61 @@ export function SmsBearPanel({ wabas }: { wabas: Array<{ id: string; label: stri
       <div className="flex items-center gap-3 border-b border-zinc-100 bg-zinc-50 px-4 py-3">
         <span className="flex size-8 items-center justify-center rounded-lg bg-brand-gradient text-white"><MessageSquareText className="size-4" /></span>
         <div className="min-w-0 flex-1">
-          <div className="font-semibold text-zinc-900">SMSBear</div>
-          <div className="text-xs text-zinc-500">Números BR para WhatsApp, registrados sozinhos</div>
+          <div className="font-semibold text-zinc-900">Números BR (WhatsApp)</div>
+          <div className="text-xs text-zinc-500">Compre e registre na WABA pelo SMSBear ou SMS24h</div>
         </div>
       </div>
       <div className="p-4">
+        {/* Qual serviço usar (cada um com a própria chave) */}
+        <div className="mb-4 grid grid-cols-2 gap-1 rounded-xl bg-zinc-100 p-1 text-sm">
+          {PROVIDERS.map((k) => (
+            <button key={k} type="button" onClick={() => pickProvider(k)} className={clsx("flex items-center justify-center gap-1.5 rounded-lg py-1.5 font-semibold transition", provider === k ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-500 hover:text-zinc-800")}>
+              <span className={clsx("size-1.5 rounded-full", st?.providers?.[k]?.connected ? "bg-emerald-500" : "bg-zinc-300")} />
+              {SMS_PROVIDER_INFO[k].label}
+            </button>
+          ))}
+        </div>
         {!st ? (
           <div className="flex items-center gap-2 text-sm text-zinc-500"><Loader2 className="size-4 animate-spin" /> Carregando...</div>
-        ) : !st.connected ? (
-          <Connect onDone={load} />
+        ) : !st.providers?.[provider]?.connected ? (
+          <Connect key={provider} provider={provider} onDone={load} />
         ) : (
-          <Connected st={st} wabas={wabas} now={now} reload={load} />
+          <Connected
+            key={provider}
+            provider={provider}
+            ps={st.providers[provider]}
+            jobs={st.jobs.filter((j) => j.provider === provider)}
+            manual={st.manual.filter((m) => m.provider === provider)}
+            wabas={wabas}
+            now={now}
+            reload={load}
+          />
         )}
       </div>
     </div>
   );
 }
 
-function Connect({ onDone }: { onDone: () => void }) {
-  const [state, action, pending] = useActionState(connectSmsBearAction, undefined);
+function Connect({ provider, onDone }: { provider: SmsProviderKey; onDone: () => void }) {
+  const info = SMS_PROVIDER_INFO[provider];
+  const [state, action, pending] = useActionState(connectSmsProviderAction.bind(null, provider), undefined);
   useEffect(() => {
     toastResult(state);
     if (state?.ok) onDone();
   }, [state, onDone]);
   return (
     <form action={action} className="space-y-3">
-      <p className="text-sm text-zinc-600">Conecte a sua conta do SMSBear: no painel do SMSBear, abra a parte de <b>API</b>, copie o <b>token</b> e cole aqui. Ele fica guardado criptografado, só nesta conta.</p>
-      <Field label="Token da API do SMSBear">
+      <p className="text-sm text-zinc-600">Conecte a sua conta do {info.label}. {info.keyHelp} Ela fica guardada criptografada, só nesta conta.</p>
+      <Field label={info.keyLabel}>
         <PasswordInput name="token" autoComplete="off" data-lpignore="true" data-1p-ignore="true" />
       </Field>
-      <Button disabled={pending} className="w-full">{pending ? "Conferindo..." : "Conectar SMSBear"}</Button>
+      <Button disabled={pending} className="w-full">{pending ? "Conferindo..." : `Conectar ${info.label}`}</Button>
       {state?.error && <p className="text-sm text-red-600">{state.error}</p>}
     </form>
   );
 }
 
-function Connected({ st, wabas, now, reload }: { st: State; wabas: Array<{ id: string; label: string; name: string }>; now: number; reload: () => void }) {
+function Connected({ provider, ps: st, jobs, manual, wabas, now, reload }: { provider: SmsProviderKey; ps: ProvState; jobs: Job[]; manual: Manual[]; wabas: Array<{ id: string; label: string; name: string }>; now: number; reload: () => void }) {
   const [wabaId, setWabaId] = useState(wabas[0]?.id ?? "");
   const [state, action, pending] = useActionState(startSmsJobAction, undefined);
   const [busy, start] = useTransition();
@@ -105,7 +140,6 @@ function Connected({ st, wabas, now, reload }: { st: State; wabas: Array<{ id: s
     toastResult(state);
     if (state?.ok) reload();
   }, [state, reload]);
-  const jobs = st.jobs ?? [];
   const [tab, setTab] = useState<"auto" | "manual">(() => {
     try {
       return localStorage.getItem("smsbear-tab") === "manual" ? "manual" : "auto";
@@ -141,13 +175,14 @@ function Connected({ st, wabas, now, reload }: { st: State; wabas: Array<{ id: s
         ))}
       </div>
 
-      {tab === "manual" && <ManualTab orders={st.manual ?? []} now={now} reload={reload} />}
+      {tab === "manual" && <ManualTab provider={provider} orders={manual} now={now} reload={reload} />}
 
       {tab === "auto" && (<>
       {wabas.length === 0 ? (
         <p className="text-sm text-zinc-500">Conecte uma BM primeiro para registrar números nela.</p>
       ) : (
         <form action={action} className="space-y-3 rounded-xl border border-orange-200 bg-orange-50/50 p-3">
+          <input type="hidden" name="provider" value={provider} />
           <Field label="Registrar na WABA">
             <select name="wabaId" value={wabaId} onChange={(e) => setWabaId(e.target.value)} className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm">
               {wabas.map((w) => <option key={w.id} value={w.id}>{w.label}</option>)}
@@ -171,7 +206,7 @@ function Connected({ st, wabas, now, reload }: { st: State; wabas: Array<{ id: s
           <button
             type="button"
             disabled={busy}
-            onClick={() => start(async () => { toastResult(await clearSmsJobsAction()); reload(); })}
+            onClick={() => start(async () => { toastResult(await clearSmsJobsAction(provider)); reload(); })}
             className="inline-flex items-center gap-1 text-xs font-medium text-zinc-500 hover:text-red-600"
           >
             <Trash2 className="size-3.5" /> Limpar histórico
@@ -209,7 +244,7 @@ function Connected({ st, wabas, now, reload }: { st: State; wabas: Array<{ id: s
                 <button
                   type="button"
                   disabled={busy || j.pendingCancel > 0}
-                  title={j.pendingCancel > 0 ? "Esperando cancelar número no SMSBear (o saldo volta)" : "Apagar do histórico"}
+                  title={j.pendingCancel > 0 ? "Esperando cancelar número (o saldo volta)" : "Apagar do histórico"}
                   onClick={() => start(async () => { toastResult(await deleteSmsJobAction(j.id)); reload(); })}
                   className="rounded-lg p-1 text-zinc-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-40"
                 >
@@ -243,10 +278,10 @@ function Connected({ st, wabas, now, reload }: { st: State; wabas: Array<{ id: s
       <button
         type="button"
         disabled={busy}
-        onClick={() => start(async () => { const r = await disconnectSmsBearAction(); if (r?.error) toast("error", r.error); else { toast("success", r?.ok ?? "SMSBear desconectado."); reload(); } })}
+        onClick={() => start(async () => { const r = await disconnectSmsProviderAction(provider); if (r?.error) toast("error", r.error); else { toast("success", r?.ok ?? "Desconectado."); reload(); } })}
         className="inline-flex items-center gap-1.5 text-xs text-zinc-500 hover:text-zinc-800"
       >
-        <LogOut className="size-3.5" /> Desconectar SMSBear
+        <LogOut className="size-3.5" /> Desconectar {SMS_PROVIDER_INFO[provider].label}
       </button>
     </div>
   );
@@ -273,7 +308,7 @@ function CopyBtn({ text, label }: { text: string; label: string }) {
 }
 
 /** Modo manual: compra o número, você coloca na WABA pelo "Adicionar número" e o código aparece aqui ao vivo. */
-function ManualTab({ orders, now, reload }: { orders: Manual[]; now: number; reload: () => void }) {
+function ManualTab({ provider, orders, now, reload }: { provider: SmsProviderKey; orders: Manual[]; now: number; reload: () => void }) {
   const [busy, start] = useTransition();
   const run = (fn: () => Promise<{ ok?: string; error?: string } | undefined>) =>
     start(async () => {
@@ -285,11 +320,11 @@ function ManualTab({ orders, now, reload }: { orders: Manual[]; now: number; rel
       <p className="text-xs text-zinc-500">
         Compre o número, copie e coloque na BM em <b>Adicionar número nesta WABA</b> (aqui em Conexões). Quando a Meta mandar o SMS, o código aparece aqui.
       </p>
-      <Button type="button" disabled={busy} className="w-full" onClick={() => run(() => buyManualAction())}>
+      <Button type="button" disabled={busy} className="w-full" onClick={() => run(() => buyManualAction(provider))}>
         {busy ? <Loader2 className="size-4 animate-spin" /> : <ShoppingCart className="size-4" />} Comprar número BR para WhatsApp
       </Button>
       {orders.map((o) => {
-        const opens = o.status === "PENDING" ? cancelOpensIn(o.createdAt, now) : 0;
+        const opens = o.status === "PENDING" ? cancelOpensIn(o.createdAt, o.provider, now) : 0;
         const locked = opens > 0;
         // Dígitos sem o 55 (é o que se digita no "Adicionar número")
         const local = o.number.replace(/\D/g, "").replace(/^55/, "");
