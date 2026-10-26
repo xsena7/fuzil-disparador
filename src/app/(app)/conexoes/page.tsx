@@ -20,6 +20,7 @@ import { groupDot, groupTag } from "@/lib/group-colors";
 import { ConnectGuide } from "./connect-guide";
 import { ProfileEditor } from "./profile-editor";
 import { SmsBearPanel } from "./smsbear-panel";
+import { KeepInput } from "@/components/keep-input";
 import { FUZIL_APP_ID, defaultAppSecret, isPlatformOwner, supportWhatsAppLink } from "@/lib/onboarding";
 import {
 
@@ -342,10 +343,10 @@ export default async function ConnectionsPage() {
                       <ActionForm action={addPhoneAction.bind(null, waba.id)} submit="Adicionar e mandar código" className="mt-3 space-y-3">
                         <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto]">
                           <Field label="Número com DDD">
-                            <Input name="phone" inputMode="tel" placeholder="11 91234-5678" required />
+                            <KeepInput name="phone" inputMode="tel" placeholder="11 91234-5678" required />
                           </Field>
                           <Field label="Nome de exibição" hint="O nome que aparece no WhatsApp (a Meta analisa)">
-                            <Input name="name" defaultValue={waba.phones.find((x) => x.verifiedName)?.verifiedName ?? bm.name} required maxLength={100} />
+                            <KeepInput name="name" remember={`nome-waba-${waba.id}`} defaultValue={waba.phones.find((x) => x.verifiedName)?.verifiedName ?? bm.name} required maxLength={100} />
                           </Field>
                           <Field label="Código por">
                             <select name="method" className="rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm">

@@ -5,6 +5,7 @@ import clsx from "clsx";
 import { Check, CheckCircle2, Copy, Loader2, LogOut, MessageSquareText, RefreshCw, ShoppingCart, Square, Trash2, X, XCircle, Zap } from "lucide-react";
 import { buyManualAction, cancelManualAction, clearSmsJobsAction, connectSmsBearAction, deleteSmsJobAction, disconnectSmsBearAction, hideManualAction, startSmsJobAction, stopSmsJobAction, swapManualAction } from "@/app/actions/smsbear";
 import { cancelOpensIn } from "@/lib/smsbear-shared";
+import { KeepInput } from "@/components/keep-input";
 import { Button, Field, Input } from "@/components/ui";
 import { PasswordInput } from "@/components/password-input";
 import { toast, toastResult } from "@/components/toast";
@@ -153,10 +154,10 @@ function Connected({ st, wabas, now, reload }: { st: State; wabas: Array<{ id: s
             </select>
           </Field>
           <Field label="Nome de exibição" hint="O nome que aparece no WhatsApp (a Meta analisa)">
-            <Input key={wabaId} name="name" defaultValue={chosen?.name ?? ""} maxLength={100} required />
+            <KeepInput key={wabaId} name="name" remember={`nome-waba-${wabaId}`} defaultValue={chosen?.name ?? ""} maxLength={100} required />
           </Field>
           <Field label="Máximo de tentativas" hint="Cada número sem SMS em 2,5 min é cancelado e o saldo volta">
-            <Input name="maxAttempts" type="number" min={1} max={20} defaultValue={10} className="w-24" />
+            <KeepInput name="maxAttempts" type="number" min={1} max={20} remember="smsbear-max" defaultValue={10} className="w-24" />
           </Field>
           <Button disabled={pending} className="w-full">
             {pending ? <Loader2 className="size-4 animate-spin" /> : <Zap className="size-4" />} {pending ? "Começando..." : "Registrar número automático"}

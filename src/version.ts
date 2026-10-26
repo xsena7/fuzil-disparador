@@ -2,6 +2,13 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "3.01",
+    date: "27/10/2026",
+    items: [
+      "Conexões: o nome de exibição (e o número) não somem mais quando dá erro ao adicionar número. O nome fica guardado por WABA para a próxima vez, tanto no \"Adicionar número\" quanto no SMSBear",
+    ],
+  },
+  {
     version: "3.00",
     date: "27/10/2026",
     items: [
