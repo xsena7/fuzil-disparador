@@ -52,7 +52,7 @@ type MpPayment = {
   point_of_interaction?: { transaction_data?: { qr_code?: string; qr_code_base64?: string } };
 };
 
-async function mp<T>(method: "GET" | "POST", path: string, body?: unknown, idempotency?: string): Promise<T> {
+async function mp<T>(method: "GET" | "POST" | "PUT", path: string, body?: unknown, idempotency?: string): Promise<T> {
   const token = env.mpAccessToken();
   if (!token) throw new Error("Mercado Pago não configurado (Admin → gaveta Vendas)");
   const res = await fetch(`${env.mpApiUrl()}${path}`, {
@@ -384,3 +384,20 @@ export async function publicOrder(token: string) {
   };
 }
 export type PublicOrder = NonNullable<Awaited<ReturnType<typeof publicOrder>>>;
+
+/** Testa o token do Mercado Pago: gera um Pix de R$ 1,00 e cancela na hora (ninguém paga nada). */
+export async function mpTestPix(email: string): Promise<{ ok: string } | { error: string }> {
+  try {
+    const pay = await mp<MpPayment>(
+      "POST",
+      "/v1/payments",
+      { transaction_amount: 1, description: "Teste do Fuzil (cancelado na hora)", payment_method_id: "pix", payer: { email }, date_of_expiration: mpDate(new Date(Date.now() + 30 * 60_000)) },
+      `teste-${Date.now()}`,
+    );
+    if (!pay.point_of_interaction?.transaction_data?.qr_code) return { error: "O Mercado Pago respondeu, mas não gerou o Pix. Confira se a chave Pix está cadastrada na conta." };
+    await mp("PUT", `/v1/payments/${pay.id}`, { status: "cancelled" }).catch(() => undefined);
+    return { ok: "Mercado Pago funcionando: o Pix de teste foi gerado e cancelado." };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : String(e) };
+  }
+}

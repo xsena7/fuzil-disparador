@@ -135,3 +135,10 @@ export async function replaceItemAction(orderId: string, itemId: string) {
   revalidatePath("/vendas");
   return r;
 }
+
+/** Botão "Testar o Mercado Pago" (Admin → Vendas). */
+export async function testMercadoPagoAction() {
+  const auth = await requireFinancePartner();
+  const { mpTestPix } = await import("@/lib/market");
+  return mpTestPix(auth.user.email);
+}

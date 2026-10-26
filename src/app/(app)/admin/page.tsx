@@ -23,6 +23,7 @@ import { stockMailbox } from "@/lib/mail";
 import { cachedSetting } from "@/lib/settings-cache";
 import { PasswordInput } from "@/components/password-input";
 import { adminDeleteLinkAction } from "@/app/actions/links";
+import { testMercadoPagoAction } from "@/app/actions/market";
 import { Trash2 } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -154,6 +155,12 @@ export default async function AdminPage() {
           Pagamento no Pix pelo Mercado Pago. Os convites das BMs chegam no e-mail do estoque, que é criado em <b>E-mails</b> (marcando &quot;e-mail do estoque&quot;):{" "}
           {stockBox ? <b className="text-emerald-700">{stockBox.address}</b> : <b className="text-amber-700">ainda não escolhido</b>}. Campos secretos em branco mantêm o valor atual.
         </p>
+        {env.mpAccessToken() && (
+          <div className="mb-4 flex flex-wrap items-center gap-3 rounded-xl bg-zinc-50 p-3 text-sm">
+            <span className="flex-1 text-zinc-600">Gera um Pix de R$ 1,00 e cancela na hora, só para conferir se o token funciona.</span>
+            <ConfirmButton action={testMercadoPagoAction} className="px-3 py-1.5 text-xs">Testar o Mercado Pago</ConfirmButton>
+          </div>
+        )}
         <ActionForm action={adminSavePlatformAction} submit="Salvar vendas">
           <div className="grid gap-4 md:grid-cols-2">
             {PLATFORM_KEYS.filter((k) => isSalesKey(k.key)).map((k) => (

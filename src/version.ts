@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "2.75",
+    date: "26/10/2026",
+    items: ["Admin → Vendas: botão \"Testar o Mercado Pago\" gera um Pix de R$ 1,00 e cancela na hora, para conferir se o token funciona"],
+  },
+  {
     version: "2.74",
     date: "26/10/2026",
     items: [
