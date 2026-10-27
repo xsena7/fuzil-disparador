@@ -21,7 +21,7 @@ const brl = (v: number) => v.toLocaleString("pt-BR", { style: "currency", curren
  * Relatório da campanha: interativo na tela e pronto para salvar em PDF.
  * `publicView` = link do cliente (sem login): esconde o grupo de BM e o botão Voltar.
  */
-export async function ReportView({ id, workspaceId, publicView = false, expiresAt, showDelivered = false }: { id: string; workspaceId?: string; publicView?: boolean; expiresAt?: Date | null; showDelivered?: boolean }) {
+export async function ReportView({ id, workspaceId, publicView = false, expiresAt }: { id: string; workspaceId?: string; publicView?: boolean; expiresAt?: Date | null }) {
   const campaign = await prisma.campaign.findFirst({
     where: { id, ...(workspaceId ? { workspaceId } : {}) },
     include: { group: { select: { name: true, system: true } }, workspace: { select: { pixKeys: true, reportPrice: true } } },
@@ -125,18 +125,6 @@ export async function ReportView({ id, workspaceId, publicView = false, expiresA
             </div>
           ))}
         </section>
-
-        {/* Entregues: só na visão logada (o link do cliente nunca mostra). Sempre o número real da Meta */}
-        {!publicView && showDelivered && (
-          <section className="report-card flex flex-wrap items-center gap-4 rounded-2xl border border-dashed border-emerald-300 bg-emerald-50/60 px-4 py-3 print:hidden">
-            <span className="rounded-full bg-white px-2 py-0.5 text-[11px] font-semibold text-emerald-700 ring-1 ring-emerald-200">só você vê</span>
-            <div>
-              <div className="text-xs font-medium text-emerald-800">Entregues (real)</div>
-              <div className="text-2xl font-bold tabular-nums text-emerald-900">{n(t.delivered)}</div>
-            </div>
-            <div className="text-xs text-emerald-800">{pct(t.delivered, t.sent)} das {n(t.sent)} enviadas de verdade · não aparece no link do cliente</div>
-          </section>
-        )}
 
         {keys.length ? (
           <section className="report-card overflow-hidden rounded-2xl border border-orange-200 bg-white shadow-sm">
