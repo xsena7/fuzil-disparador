@@ -1,4 +1,5 @@
-import { AlertTriangle, CheckCircle2, ChevronRight, KeyRound, MessagesSquare, RefreshCw, Phone, Plus, Trash2 } from "lucide-react";
+import { AlertTriangle, CheckCircle2, ChevronRight, CreditCard, KeyRound, MessagesSquare, RefreshCw, Phone, Plus, Trash2 } from "lucide-react";
+import { metaBillingUrl } from "@/lib/meta-links";
 import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { env } from "@/lib/env";
@@ -215,6 +216,16 @@ export default async function ConnectionsPage() {
                     <span className="ml-auto text-xs text-zinc-500">
                       {waba.lastSyncedAt ? `Sincronizado ${waba.lastSyncedAt.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}` : "Nunca sincronizado"}
                     </span>
+                    {/* Cartão: a Meta não deixa colocar pela API; o botão abre a página de pagamento dessa conta */}
+                    <a
+                      href={metaBillingUrl(waba.wabaId, bm.metaBusinessId)}
+                      target="_blank"
+                      rel="noreferrer"
+                      title="Abre a página de pagamento dessa conta na Meta (precisa estar logado com um perfil administrador da BM)"
+                      className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-medium ${waba.hasPaymentMethod === false ? "border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100" : "border-zinc-200 text-zinc-700 hover:bg-zinc-50"}`}
+                    >
+                      <CreditCard className="size-3.5" /> {waba.hasPaymentMethod === false ? "Colocar cartão na Meta" : "Pagamento na Meta"}
+                    </a>
                     <TestWaba id={waba.id} />
                     <ConfirmButton action={syncWabaAction.bind(null, waba.id)} className="px-2.5 py-1 text-xs"><RefreshCw className="size-3.5" /> Verificar</ConfirmButton>
                     <ConfirmButton action={deleteWabaAction.bind(null, waba.id)} variant="ghost" className="px-2 py-1 text-red-600" confirm={`Remover a WABA ${waba.name} do painel? (Nada é apagado na Meta)`}><Trash2 className="size-4" /></ConfirmButton>

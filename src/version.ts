@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "3.14",
+    date: "27/10/2026",
+    items: ["Conexões: botão \"Pagamento na Meta\" em cada conta do WhatsApp, que abre direto a página de cartão daquela conta na Meta (fica laranja, \"Colocar cartão na Meta\", quando a conta está sem cartão). Precisa estar logado com um perfil administrador da BM"],
+  },
+  {
     version: "3.13",
     date: "27/10/2026",
     items: ["Números BR: em \"Registrar na WABA\" aparecem só as BMs do grupo \"Sem número\""],
