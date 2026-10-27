@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "3.15",
+    date: "27/10/2026",
+    items: ["Relatório da campanha: \"Entregues\" voltou, só para você (visão logada, com a etiqueta \"só você vê\" e sempre o número real). O link do cliente nunca mostra"],
+  },
+  {
     version: "3.14",
     date: "27/10/2026",
     items: ["Conexões: botão \"Pagamento na Meta\" em cada conta do WhatsApp, que abre direto a página de cartão daquela conta na Meta (fica laranja, \"Colocar cartão na Meta\", quando a conta está sem cartão). Precisa estar logado com um perfil administrador da BM"],
