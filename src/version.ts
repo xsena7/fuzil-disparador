@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "3.17",
+    date: "27/10/2026",
+    items: ["Relatório do cliente: o quadro \"Números do relatório\" mostra a etiqueta \"só administradores veem\" (contas de clientes não veem nem conseguem mudar esses números)"],
+  },
+  {
     version: "3.16",
     date: "27/10/2026",
     items: [

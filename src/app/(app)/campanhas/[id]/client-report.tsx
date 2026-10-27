@@ -74,6 +74,7 @@ export async function ClientReportStep({ campaignId, workspaceId, canAdjust = fa
         <div className="mb-1 flex items-center gap-2 font-semibold">
           <SlidersHorizontal className="size-4 text-brand-500" /> Números do relatório
           {rn.adjusted && <span className="rounded-full bg-orange-50 px-2 py-0.5 text-xs font-medium text-orange-700">ajustados por você</span>}
+          <span className="ml-auto rounded-full bg-zinc-900 px-2 py-0.5 text-[11px] font-semibold text-white" title="Clientes não veem nem conseguem mudar estes números">só administradores veem</span>
         </div>
         <p className="mb-4 text-sm text-zinc-500">
           Se a Meta cobrou diferente do que o Fuzil contou (ex.: conta banida no meio do disparo), ajuste aqui. O valor cobrado usa as <b>Enviadas</b>, e o funil do relatório (inclusive o que aparece ao passar o mouse) usa todos estes números. Depois de salvar, eles continuam subindo ao vivo junto com os reais, na mesma proporção (ex.: real 200 cliques, você colocou 2.000; o real foi a 250, o relatório mostra 2.500). As Métricas continuam mostrando os números reais.
