@@ -179,7 +179,7 @@ function Connected({ provider, ps: st, jobs, manual, wabas, now, reload }: { pro
 
       {tab === "auto" && (<>
       {wabas.length === 0 ? (
-        <p className="text-sm text-zinc-500">Conecte uma BM primeiro para registrar números nela.</p>
+        <p className="text-sm text-zinc-500">Nenhuma BM no grupo &quot;Sem número&quot; agora. Quando alguma BM ficar sem número, ela aparece aqui para registrar.</p>
       ) : (
         <form action={action} className="space-y-3 rounded-xl border border-orange-200 bg-orange-50/50 p-3">
           <input type="hidden" name="provider" value={provider} />

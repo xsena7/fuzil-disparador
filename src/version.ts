@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "3.13",
+    date: "27/10/2026",
+    items: ["Números BR: em \"Registrar na WABA\" aparecem só as BMs do grupo \"Sem número\""],
+  },
+  {
     version: "3.12",
     date: "27/10/2026",
     items: [

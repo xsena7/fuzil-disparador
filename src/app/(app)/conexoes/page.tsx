@@ -17,7 +17,7 @@ import { TestWaba } from "./test-waba";
 import { EmbeddedSignup } from "@/components/embedded-signup";
 import { VerifyAllButton } from "@/components/verify-all-button";
 import { groupDot, groupTag } from "@/lib/group-colors";
-import { READY_GROUP, ensureReadyGroup, isProblemSystem } from "@/lib/bm-problems";
+import { PROBLEM_KINDS, READY_GROUP, ensureReadyGroup, isProblemSystem } from "@/lib/bm-problems";
 import { ConnectGuide } from "./connect-guide";
 import { ProfileEditor } from "./profile-editor";
 import { SmsBearPanel } from "./smsbear-panel";
@@ -94,7 +94,8 @@ export default async function ConnectionsPage() {
   const sections = [...secs.values()].sort((a, b) => a.order - b.order || a.name.localeCompare(b.name, "pt-BR"));
 
   // WABAs para o painel do SMSBear (registrar número sozinho)
-  const smsWabas = businesses.flatMap((b) => b.wabas.map((w) => ({ id: w.id, label: `${b.name} · ${w.name}`, name: w.phones.find((p) => p.verifiedName)?.verifiedName ?? b.name })));
+  // Só as BMs do grupo "Sem número" (são as que precisam de número)
+  const smsWabas = businesses.filter((b) => b.groups.some((g) => g.group.system === PROBLEM_KINDS.NO_PHONE.system)).flatMap((b) => b.wabas.map((w) => ({ id: w.id, label: `${b.name} · ${w.name}`, name: w.phones.find((p) => p.verifiedName)?.verifiedName ?? b.name })));
 
   return (
     <div className="mx-auto max-w-[1520px] xl:grid xl:grid-cols-[minmax(0,1fr)_360px] xl:gap-6">
