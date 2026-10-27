@@ -63,6 +63,8 @@ type Extra = {
 
 /** De quanto em quanto tempo a lista de conversas é atualizada. */
 const LIST_POLL_MS = 1500;
+// Quantas conversas a lista mostra (as mais antigas saem por baixo; guarda mais na memória para a fila de entrada)
+const LIST_KEEP = 120;
 
 const TABS = [
   { key: "sending", label: "Disparando", hint: "Quem recebeu o disparo e ainda não respondeu nem clicou" },
@@ -172,7 +174,13 @@ export function ChatApp({
             return shown;
           });
         }
-        return data.conversations;
+        if (prev === null) return data.conversations;
+        // Esteira: o que já está na tela fica (só desce). No disparo rápido chegam mais conversas do que a lista traz
+        // de uma vez, e as antigas saíam todas juntas da resposta: a lista esvaziava e recomeçava a encher
+        const oldest = data.conversations.length ? Math.min(...data.conversations.map((c) => new Date(c.lastMessageAt).getTime())) : 0;
+        const ids = new Set(data.conversations.map((c) => c.id));
+        const kept = prev.filter((c) => !ids.has(c.id) && new Date(c.lastMessageAt).getTime() <= oldest);
+        return [...data.conversations, ...kept].slice(0, LIST_KEEP * 5);
       });
       setUnreadByPhone(data.unreadByPhone);
     }
@@ -364,7 +372,7 @@ export function ChatApp({
               {showClosed ? "Nenhuma conversa finalizada." : tab === "active" ? "Ninguém respondeu nem clicou ainda. Quando um cliente responder ou clicar no botão do disparo, a conversa aparece aqui na hora." : "Nenhum disparo aguardando resposta."}
             </div>
           )}
-          {convs?.filter((c) => revealed.has(c.id)).map((c) => {
+          {convs?.filter((c) => revealed.has(c.id)).slice(0, LIST_KEEP).map((c) => {
             const p = phoneById.get(c.phoneId);
             return (
               <button

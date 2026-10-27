@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "3.15",
+    date: "27/10/2026",
+    items: ["Chat: no disparo rápido a lista não some mais nem recarrega do zero. Os contatos entram um por um no topo e os antigos vão descendo, como uma esteira"],
+  },
+  {
     version: "3.14",
     date: "27/10/2026",
     items: ["Conexões: botão \"Pagamento na Meta\" em cada conta do WhatsApp, que abre direto a página de cartão daquela conta na Meta (fica laranja, \"Colocar cartão na Meta\", quando a conta está sem cartão). Precisa estar logado com um perfil administrador da BM"],
