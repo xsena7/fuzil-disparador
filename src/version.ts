@@ -2,6 +2,14 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "3.16",
+    date: "27/10/2026",
+    items: [
+      "Início: conta nova mostra os \"Primeiros passos\" (conectar a BM, colocar créditos, ter um template aprovado e criar a primeira campanha), com o próximo passo em destaque. Some sozinho quando tudo estiver feito",
+      "Conexões: conta sem BM não mostra mais a gaveta \"Prontas para disparo\" vazia, e o aviso de conexão pelo botão não manda mais para uma configuração manual que não existe",
+    ],
+  },
+  {
     version: "3.15",
     date: "27/10/2026",
     items: ["Chat: no disparo rápido a lista não some mais nem recarrega do zero. Os contatos entram um por um no topo e os antigos vão descendo, como uma esteira"],

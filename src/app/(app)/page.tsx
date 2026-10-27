@@ -60,6 +60,19 @@ export default async function HomePage() {
   const usedRaw = readyStats.totalLimit ? Math.min(100, (readyStats.usedToday / readyStats.totalLimit) * 100) : 0;
   const usedPct = usedRaw < 10 ? Math.round(usedRaw * 10) / 10 : Math.round(usedRaw);
 
+  // Primeiros passos (conta nova): some sozinho quando tudo estiver feito
+  const [approvedTpl, campaignsCount] = await Promise.all([
+    prisma.template.count({ where: { workspaceId: wsId, status: "APPROVED", category: "UTILITY" } }),
+    prisma.campaign.count({ where: { workspaceId: wsId, funnelId: null } }),
+  ]);
+  const steps = [
+    { done: businesses.length > 0, title: "Conecte sua BM", text: "Pelo botão, em poucos minutos", href: "/conexoes" },
+    { done: auth.workspace.creditBalance > 0, title: "Coloque créditos", text: "1 crédito = 1 disparo, pelo Pix", href: "/saldo" },
+    { done: approvedTpl > 0, title: "Tenha um template aprovado", text: "Crie um template de utilidade", href: "/templates-padrao/novo" },
+    { done: campaignsCount > 0, title: "Crie sua primeira campanha", text: "Suba a lista e dispare", href: "/campanhas/nova" },
+  ];
+  const nextStep = steps.findIndex((s) => !s.done);
+
   return (
     <div className="mx-auto max-w-6xl space-y-6">
       <PageHeader
@@ -67,6 +80,35 @@ export default async function HomePage() {
         description="Resumo da sua operação nas últimas 24 horas."
         actions={<LinkButton href="/campanhas/nova"><Plus className="size-4" /> Criar campanha</LinkButton>}
       />
+
+      {nextStep >= 0 && (
+        <Card className="p-5">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <h2 className="font-semibold">Primeiros passos</h2>
+            <span className="text-xs font-medium text-zinc-500">{steps.filter((s) => s.done).length} de {steps.length} feitos</span>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+            {steps.map((s, i) => (
+              <Link
+                key={s.title}
+                href={s.href}
+                className={clsx(
+                  "flex items-start gap-3 rounded-xl border p-3 transition",
+                  s.done ? "border-emerald-200 bg-emerald-50/60" : i === nextStep ? "border-orange-300 bg-orange-50 ring-2 ring-orange-100 hover:bg-orange-100/60" : "border-zinc-200 hover:bg-zinc-50",
+                )}
+              >
+                <span className={clsx("flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-bold", s.done ? "bg-emerald-500 text-white" : i === nextStep ? "bg-brand-gradient text-white" : "bg-zinc-200 text-zinc-600")}>
+                  {s.done ? "✓" : i + 1}
+                </span>
+                <span className="min-w-0">
+                  <span className={clsx("block text-sm font-semibold", s.done ? "text-emerald-800" : "text-zinc-900")}>{s.title}</span>
+                  <span className="block text-xs text-zinc-500">{s.text}</span>
+                </span>
+              </Link>
+            ))}
+          </div>
+        </Card>
+      )}
 
       {marketing > 0 && (
         <Link href="/templates?cat=MARKETING" className="flex items-center gap-3 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-rose-700 transition hover:bg-rose-100/70">

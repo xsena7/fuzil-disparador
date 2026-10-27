@@ -139,7 +139,7 @@ export function EmbeddedSignup({ appId, configId, graphVersion }: { appId: strin
       </div>
       {!enabled && (
         <p className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-800">
-          Conexão automática ainda não está liberada na plataforma. Enquanto isso, use a configuração manual abaixo.
+          A conexão pelo botão ainda não está liberada nesta plataforma. Fale com o suporte para liberar.
         </p>
       )}
       {msg.error && <p className="mt-3 text-red-600">{msg.error}</p>}

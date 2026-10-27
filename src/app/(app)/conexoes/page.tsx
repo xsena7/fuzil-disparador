@@ -91,7 +91,7 @@ export default async function ConnectionsPage() {
   }
   // "Prontas para disparo" é fixo: aparece mesmo sem BM nenhuma dentro
   const ready = await ensureReadyGroup(auth.workspace.id);
-  if (!secs.has(ready.id)) secs.set(ready.id, { key: ready.id, name: ready.name, color: ready.color, order: 0, items: [] });
+  if (businesses.length && !secs.has(ready.id)) secs.set(ready.id, { key: ready.id, name: ready.name, color: ready.color, order: 0, items: [] });
   const sections = [...secs.values()].sort((a, b) => a.order - b.order || a.name.localeCompare(b.name, "pt-BR"));
 
   // WABAs para o painel do SMSBear (registrar número sozinho)
