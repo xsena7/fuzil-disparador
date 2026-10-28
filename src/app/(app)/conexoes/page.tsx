@@ -20,6 +20,7 @@ import { VerifyAllButton } from "@/components/verify-all-button";
 import { groupDot, groupTag } from "@/lib/group-colors";
 import { PROBLEM_KINDS, READY_GROUP, ensureReadyGroup, isProblemSystem } from "@/lib/bm-problems";
 import { ConnectGuide } from "./connect-guide";
+import { ManualGuide } from "./manual-guide";
 import { ProfileEditor } from "./profile-editor";
 import { SmsBearPanel } from "./smsbear-panel";
 import { KeepInput } from "@/components/keep-input";
@@ -117,17 +118,16 @@ export default async function ConnectionsPage() {
           <span className="flex size-8 items-center justify-center rounded-lg bg-zinc-900 text-white"><KeyRound className="size-4" /></span>
           <span className="flex-1">
             <span className="block font-semibold text-zinc-900">Conectar manualmente</span>
-            <span className="block text-xs text-zinc-600">Com o token do usuário do sistema da BM (e o ID da conta do WhatsApp, se quiser)</span>
+            <span className="block text-xs text-zinc-600">Libera o app do Fuzil na sua BM, gera o token e cola aqui. Leva uns 5 minutos</span>
           </span>
           <ChevronRight className="size-4 text-zinc-400 transition-transform group-open:rotate-90" />
         </summary>
         <div className="border-t border-zinc-100 p-5">
-          <ol className="mb-4 list-decimal space-y-1 pl-5 text-sm text-zinc-600">
-            <li>Na BM: <b>Configurações do negócio → Usuários → Usuários do sistema</b>. Crie um (admin) ou use o que já tem.</li>
-            <li>Em <b>Atribuir ativos</b>, dê ao usuário do sistema a conta do WhatsApp com controle total.</li>
-            <li>Clique em <b>Gerar token</b>, escolha o app do Fuzil, validade <b>Nunca</b> e marque <b>whatsapp_business_messaging</b>, <b>whatsapp_business_management</b> e <b>business_management</b>.</li>
-            <li>Cole o token aqui. O ID da conta do WhatsApp é opcional: sem ele, o Fuzil conecta todas as contas que o token enxerga.</li>
-          </ol>
+          <ManualGuide
+            appId={FUZIL_APP_ID}
+            admin={auth.user.isSuperAdmin}
+            whatsappUrl={supportWhatsAppLink(`Oi! Pedi acesso ao app do Fuzil (ID ${FUZIL_APP_ID}) na minha BM. Pode aprovar? Conta: ${auth.workspace.name}`)}
+          />
           <ActionForm action={connectManualAction} submit="Conectar" celebrateOk="BM conectada! 🎉">
             <div className="grid gap-4 md:grid-cols-2">
               <Field label="ID da conta do WhatsApp (opcional)" hint="Na BM: Contas → Contas do WhatsApp → clique na conta: o número em ID">
