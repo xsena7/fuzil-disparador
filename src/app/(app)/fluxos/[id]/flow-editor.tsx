@@ -4,7 +4,8 @@ import clsx from "clsx";
 import Link from "next/link";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, useTransition, type PointerEvent as RPointerEvent, type ReactNode } from "react";
 import { ArrowLeft, Clock, FileText, GitBranch, GripVertical, Loader2, Maximize2, Megaphone, MessageSquare, Minus, MousePointerClick, Paperclip, Plus, Save, Sparkles, Trash2, X } from "lucide-react";
-import { saveFlowAction, uploadFlowMediaAction } from "@/app/actions/flows";
+import { flowCampaignPreviewAction, saveFlowAction, uploadFlowMediaAction } from "@/app/actions/flows";
+import { WhatsAppPreview, type PreviewData } from "@/components/whatsapp-preview";
 import { toast } from "@/components/toast";
 import { NODE_INFO, nodePorts, UNIT_LABEL, validateGraph, type FlowEdge, type FlowGraph, type FlowNode, type FlowNodeType, type FlowOption, type FlowUnit } from "@/lib/flow-types";
 
@@ -49,7 +50,10 @@ function summary(n: FlowNode, campaigns: FlowCampaign[]): string {
   return names.length ? `Começa quando responderem: ${names.join(", ")}` : "Clique e escolha o disparo que começa este fluxo";
 }
 
-export function FlowEditor({ id, initialName, initialGraph, campaigns, waiting }: { id: string; initialName: string; initialGraph: FlowGraph; campaigns: FlowCampaign[]; waiting: Record<string, number> }) {
+type Previews = Record<string, PreviewData | null>;
+
+export function FlowEditor({ id, initialName, initialGraph, campaigns, initialPreviews, waiting }: { id: string; initialName: string; initialGraph: FlowGraph; campaigns: FlowCampaign[]; initialPreviews: Previews; waiting: Record<string, number> }) {
+  const [previews, setPreviews] = useState<Previews>(initialPreviews);
   const [name, setName] = useState(initialName);
   const [graph, setGraph] = useState<FlowGraph>(initialGraph);
   const [selected, setSelected] = useState<string | null>(null);
@@ -63,6 +67,16 @@ export function FlowEditor({ id, initialName, initialGraph, campaigns, waiting }
   const boxRef = useRef<HTMLDivElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
   const drag = useRef<Drag | null>(null);
+
+  // Campanha nova no bloco Disparo: busca a prévia do template dela
+  const chosenIds = graph.nodes.find((n) => n.type === "start")?.data.campaignIds ?? [];
+  useEffect(() => {
+    for (const cid of chosenIds) {
+      if (cid in previews) continue;
+      setPreviews((p) => ({ ...p, [cid]: null }));
+      flowCampaignPreviewAction(cid).then((pv) => setPreviews((p) => ({ ...p, [cid]: pv })));
+    }
+  }, [chosenIds.join(","), previews]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const change = useCallback((fn: (g: FlowGraph) => FlowGraph) => {
     setGraph(fn);
@@ -302,6 +316,7 @@ export function FlowEditor({ id, initialName, initialGraph, campaigns, waiting }
                 selected={selected === n.id}
                 waiting={waiting[n.id] ?? 0}
                 campaigns={campaigns}
+                previews={previews}
                 linked={(port) => graph.edges.some((e) => e.from === n.id && e.port === port)}
                 onGrab={(e) => {
                   e.stopPropagation();
@@ -376,7 +391,7 @@ export function FlowEditor({ id, initialName, initialGraph, campaigns, waiting }
               </div>
               <button onClick={() => setSelected(null)} className="rounded-lg p-1.5 text-zinc-400 hover:bg-zinc-100"><X className="size-4" /></button>
             </div>
-            <NodeForm node={sel} campaigns={campaigns} update={(d) => updateNode(sel.id, d)} />
+            <NodeForm node={sel} campaigns={campaigns} previews={previews} update={(d) => updateNode(sel.id, d)} />
             {sel.type !== "start" && (
               <button onClick={() => deleteNode(sel.id)} className="mt-5 flex items-center gap-1.5 text-sm text-red-600 hover:underline">
                 <Trash2 className="size-4" /> Apagar bloco
@@ -402,6 +417,7 @@ function NodeCard({
   selected,
   waiting,
   campaigns,
+  previews,
   linked,
   onGrab,
   onPort,
@@ -411,6 +427,7 @@ function NodeCard({
   selected: boolean;
   waiting: number;
   campaigns: FlowCampaign[];
+  previews: Previews;
   linked: (port: string) => boolean;
   onGrab: (e: RPointerEvent) => void;
   onPort: (port: string, e: RPointerEvent) => void;
@@ -443,6 +460,11 @@ function NodeCard({
           <img src={node.data.media.url} alt="" className="mb-2 max-h-28 w-full rounded-lg object-cover" />
         )}
         <p className="line-clamp-4 whitespace-pre-line text-[13px] leading-snug text-zinc-600">{text}</p>
+        {node.type === "start" &&
+          (node.data.campaignIds ?? []).map((cid) => {
+            const pv = previews[cid];
+            return pv ? <MiniTemplate key={cid} pv={pv} /> : null;
+          })}
       </div>
       <div className="border-t border-zinc-100 py-1">
         {ports.map((p) => (
@@ -524,11 +546,11 @@ const VARS_HINT = (
   </p>
 );
 
-function NodeForm({ node, campaigns, update }: { node: FlowNode; campaigns: FlowCampaign[]; update: (d: Partial<FlowNode["data"]>) => void }) {
+function NodeForm({ node, campaigns, previews, update }: { node: FlowNode; campaigns: FlowCampaign[]; previews: Previews; update: (d: Partial<FlowNode["data"]>) => void }) {
   const [uploading, startUpload] = useTransition();
   const d = node.data;
 
-  if (node.type === "start") return <StartForm node={node} campaigns={campaigns} update={update} />;
+  if (node.type === "start") return <StartForm node={node} campaigns={campaigns} previews={previews} update={update} />;
 
   if (node.type === "message")
     return (
@@ -605,7 +627,7 @@ function NodeForm({ node, campaigns, update }: { node: FlowNode; campaigns: Flow
 const STATUS_LABEL: Record<string, string> = { DRAFT: "rascunho", SCHEDULED: "agendada", RUNNING: "disparando", PAUSED: "pausada", COMPLETED: "concluída" };
 
 /** Bloco Disparo: escolhe as campanhas que começam o fluxo e separa os caminhos pela resposta. */
-function StartForm({ node, campaigns, update }: { node: FlowNode; campaigns: FlowCampaign[]; update: (d: Partial<FlowNode["data"]>) => void }) {
+function StartForm({ node, campaigns, previews, update }: { node: FlowNode; campaigns: FlowCampaign[]; previews: Previews; update: (d: Partial<FlowNode["data"]>) => void }) {
   const d = node.data;
   const chosen = (d.campaignIds ?? []).map((cid) => campaigns.find((c) => c.id === cid)).filter((c): c is FlowCampaign => Boolean(c));
   const free = campaigns.filter((c) => !(d.campaignIds ?? []).includes(c.id));
@@ -640,6 +662,18 @@ function StartForm({ node, campaigns, update }: { node: FlowNode; campaigns: Flo
           </option>
         ))}
       </select>
+      {chosen.map((c) =>
+        c.id in previews ? (
+          <div key={c.id} className="my-4">
+            <div className="mb-2 text-xs font-medium text-zinc-500">Template de &quot;{c.name}&quot;, como a campanha manda</div>
+            {previews[c.id] ? (
+              <div className="origin-top scale-90"><WhatsAppPreview data={previews[c.id]!} /></div>
+            ) : (
+              <p className="text-xs text-zinc-400">Carregando... (se não aparecer, a campanha ainda não tem template escolhido)</p>
+            )}
+          </div>
+        ) : null,
+      )}
       <p className="mt-1.5 text-xs text-zinc-500">Quem responder esse disparo (ou clicar num botão de resposta do template) entra no fluxo. Vale ao salvar.</p>
 
       <div className="mb-2 mt-5 font-medium">Caminhos pela resposta</div>
@@ -654,6 +688,30 @@ function StartForm({ node, campaigns, update }: { node: FlowNode; campaigns: Flo
       )}
       <OptionsEditor items={d.options ?? []} onChange={(options) => update({ options })} placeholder="Ex.: Quero saber mais" max={20} addLabel="Adicionar resposta" />
       <p className="mt-3 text-xs text-zinc-500">Coloque o texto de cada botão do template ou palavras separadas por vírgula (ex.: <i>sim, quero, pode</i>). O que não combinar vai por &quot;Qualquer outra resposta&quot;.</p>
+    </div>
+  );
+}
+
+/** Template da campanha em miniatura, dentro do bloco Disparo (com as variáveis já preenchidas). */
+function MiniTemplate({ pv }: { pv: PreviewData }) {
+  const media = pv.headerType && ["IMAGE", "VIDEO", "DOCUMENT"].includes(pv.headerType);
+  return (
+    <div className="mt-2.5 rounded-xl bg-[#efeae2] p-2">
+      <div className="rounded-lg rounded-tl-none bg-white p-1.5 text-[12px] leading-snug text-zinc-800 shadow-sm">
+        {media &&
+          (pv.headerMediaUrl && pv.headerType === "IMAGE" ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={pv.headerMediaUrl} alt="" className="mb-1 max-h-24 w-full rounded object-cover" />
+          ) : (
+            <div className="mb-1 grid h-12 place-items-center rounded bg-zinc-100 text-[10px] text-zinc-400">{pv.headerType === "VIDEO" ? "vídeo" : pv.headerType === "DOCUMENT" ? "PDF" : "imagem"}</div>
+          ))}
+        {pv.headerText && <div className="mb-0.5 font-semibold">{pv.headerText}</div>}
+        <p className="line-clamp-6 whitespace-pre-line px-0.5">{pv.body}</p>
+        {pv.footer && <div className="mt-0.5 px-0.5 text-[10px] text-zinc-400">{pv.footer}</div>}
+      </div>
+      {pv.buttons.map((b, i) => (
+        <div key={i} className="mt-1 rounded-lg bg-white py-1 text-center text-[12px] font-medium text-sky-600 shadow-sm">{b.text}</div>
+      ))}
     </div>
   );
 }

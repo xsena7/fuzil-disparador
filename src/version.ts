@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "3.23",
+    date: "28/10/2026",
+    items: ["Fluxos: o bloco Disparo mostra o template da campanha escolhida já preenchido do jeito que a campanha manda (variáveis, imagem do cabeçalho e botões), no bloco e na prévia de celular ao lado"],
+  },
+  {
     version: "3.22",
     date: "28/10/2026",
     items: [

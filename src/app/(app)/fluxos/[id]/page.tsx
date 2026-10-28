@@ -3,6 +3,7 @@ import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { flowGraph } from "@/lib/flows";
 import { getComponent, type TComponent } from "@/lib/template-utils";
+import { campaignPreview } from "@/lib/flow-preview";
 import { FlowEditor, type FlowCampaign } from "./flow-editor";
 
 export const dynamic = "force-dynamic";
@@ -35,5 +36,7 @@ export default async function FlowPage({ params }: { params: Promise<{ id: strin
   const using = camps.filter((c) => c.flowId === flow.id).map((c) => c.id);
   graph.nodes = graph.nodes.map((n) => (n.type === "start" ? { ...n, data: { ...n.data, campaignIds: using } } : n));
 
-  return <FlowEditor id={flow.id} initialName={flow.name} initialGraph={graph} campaigns={campaigns} waiting={Object.fromEntries(runs.map((r) => [r.nodeId, r._count]))} />;
+  const previews = Object.fromEntries(await Promise.all(using.map(async (cid) => [cid, await campaignPreview(ws, cid)] as const)));
+
+  return <FlowEditor id={flow.id} initialName={flow.name} initialGraph={graph} campaigns={campaigns} initialPreviews={previews} waiting={Object.fromEntries(runs.map((r) => [r.nodeId, r._count]))} />;
 }

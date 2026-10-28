@@ -9,6 +9,8 @@ import { prisma } from "@/lib/db";
 import { friendlyError } from "@/lib/meta-errors";
 import { saveUpload } from "@/lib/uploads";
 import { emptyGraph, validateGraph, type FlowGraph, type FlowNode, type FlowNodeType, type FlowOption, type FlowUnit } from "@/lib/flow-types";
+import { campaignPreview } from "@/lib/flow-preview";
+import type { PreviewData } from "@/components/whatsapp-preview";
 import type { FormState } from "./auth";
 
 const TYPES: FlowNodeType[] = ["start", "message", "buttons", "wait", "condition"];
@@ -124,4 +126,10 @@ export async function setCampaignFlowAction(campaignId: string, _: FormState, fo
   await prisma.campaign.update({ where: { id: c.id }, data: { flowId: flow?.id ?? null } });
   revalidatePath(`/campanhas/${c.id}`);
   return { ok: flow ? `Fluxo "${flow.name}" ligado: quem responder este disparo entra nele.` : "Fluxo desligado." };
+}
+
+/** Prévia do template da campanha escolhida no bloco Disparo. */
+export async function flowCampaignPreviewAction(campaignId: string): Promise<PreviewData | null> {
+  const auth = await requireAuth();
+  return campaignPreview(auth.workspace.id, campaignId);
 }
