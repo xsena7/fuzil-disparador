@@ -29,3 +29,13 @@ test("coloca o 9 nos celulares que a Meta manda sem ele", () => {
   assert.equal(canonicalWaId("551133334444"), "551133334444"); // fixo continua igual
   assert.equal(canonicalWaId("14155550000"), "14155550000");
 });
+
+test("números internacionais sem + e sem coluna de DDI", () => {
+  assert.equal(normalizePhone("33744635335"), "33744635335"); // França
+  assert.equal(normalizePhone("32467815993"), "32467815993"); // Bélgica
+  assert.equal(normalizePhone("41767374507"), "41767374507"); // Suíça
+  assert.equal(normalizePhone("15069625913"), "15069625913"); // Canadá/EUA
+  assert.equal(normalizePhone("+351 912 345 678"), "351912345678"); // Portugal
+  assert.equal(normalizePhone("11987888187"), "5511987888187"); // Brasil continua Brasil
+  assert.equal(normalizePhone("3399887766"), "5533999887766"); // celular BR antigo, sem o 9
+});

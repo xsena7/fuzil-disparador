@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "3.37",
+    date: "28/10/2026",
+    items: ["Audiência: números internacionais na planilha (ex.: 33744635335 da França, 15069625913 do Canadá) são reconhecidos mesmo sem o + na frente. Antes o Fuzil achava que eram do Brasil e marcava como inválidos"],
+  },
+  {
     version: "3.36",
     date: "28/10/2026",
     items: ["Números BR (SMSBear e SMS24h): registre número em várias BMs ao mesmo tempo. Marque as BMs (ou \"Marcar todas\"), confira o nome de exibição de cada uma e clique em Registrar: cada uma roda o registro automático dela em paralelo"],
