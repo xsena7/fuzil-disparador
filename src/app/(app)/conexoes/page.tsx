@@ -25,6 +25,7 @@ import { SmsBearPanel } from "./smsbear-panel";
 import { KeepInput } from "@/components/keep-input";
 import { FUZIL_APP_ID, defaultAppSecret, isPlatformOwner, supportWhatsAppLink } from "@/lib/onboarding";
 import {
+  connectManualAction,
 
   deleteWabaAction,
   deleteBusinessAction,
@@ -110,6 +111,41 @@ export default async function ConnectionsPage() {
       <h2 className="mb-4 text-base font-semibold">Nova conexão</h2>
       <ConnectGuide open={businesses.length === 0} />
       <EmbeddedSignup appId={env.metaAppId()} configId={env.metaConfigId()} graphVersion={env.metaGraphVersion()} />
+
+      <details className="group mt-4 overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm" data-tour="connect-form">
+        <summary className="flex cursor-pointer list-none items-center gap-3 px-5 py-3.5 [&::-webkit-details-marker]:hidden">
+          <span className="flex size-8 items-center justify-center rounded-lg bg-zinc-900 text-white"><KeyRound className="size-4" /></span>
+          <span className="flex-1">
+            <span className="block font-semibold text-zinc-900">Conectar manualmente</span>
+            <span className="block text-xs text-zinc-600">Com o token do usuário do sistema da BM (e o ID da conta do WhatsApp, se quiser)</span>
+          </span>
+          <ChevronRight className="size-4 text-zinc-400 transition-transform group-open:rotate-90" />
+        </summary>
+        <div className="border-t border-zinc-100 p-5">
+          <ol className="mb-4 list-decimal space-y-1 pl-5 text-sm text-zinc-600">
+            <li>Na BM: <b>Configurações do negócio → Usuários → Usuários do sistema</b>. Crie um (admin) ou use o que já tem.</li>
+            <li>Em <b>Atribuir ativos</b>, dê ao usuário do sistema a conta do WhatsApp com controle total.</li>
+            <li>Clique em <b>Gerar token</b>, escolha o app do Fuzil, validade <b>Nunca</b> e marque <b>whatsapp_business_messaging</b>, <b>whatsapp_business_management</b> e <b>business_management</b>.</li>
+            <li>Cole o token aqui. O ID da conta do WhatsApp é opcional: sem ele, o Fuzil conecta todas as contas que o token enxerga.</li>
+          </ol>
+          <ActionForm action={connectManualAction} submit="Conectar" celebrateOk="BM conectada! 🎉">
+            <div className="grid gap-4 md:grid-cols-2">
+              <Field label="ID da conta do WhatsApp (opcional)" hint="Na BM: Contas → Contas do WhatsApp → clique na conta: o número em ID">
+                <Input name="wabaId" placeholder="1673861331112475" autoComplete="off" inputMode="numeric" />
+              </Field>
+              <Field label="Token de acesso" hint="Token do usuário do sistema com as 3 permissões">
+                <PasswordInput name="token" placeholder="EAAG..." autoComplete="new-password" data-lpignore="true" data-1p-ignore="true" />
+              </Field>
+              {!usesDefaultSecret && isOwner && (
+                <Field label="Chave secreta do app (opcional)" hint="Configurações do app → Básico. Sem ela, as respostas dessa BM não aparecem no Chat">
+                  <PasswordInput name="appSecret" autoComplete="new-password" data-lpignore="true" data-1p-ignore="true" />
+                </Field>
+              )}
+            </div>
+            {usesDefaultSecret && <p className="mt-3 text-xs font-medium text-emerald-700">✓ A chave secreta padrão entra sozinha nessa conexão.</p>}
+          </ActionForm>
+        </div>
+      </details>
 
       {showDefaultSecret && (
         <details className="group mt-4 overflow-hidden rounded-2xl border border-orange-200 bg-orange-50" open={!hasDefaultSecret}>

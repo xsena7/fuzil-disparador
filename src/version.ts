@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "3.26",
+    date: "28/10/2026",
+    items: ["Conexões: voltou a opção \"Conectar manualmente\", com o token do usuário do sistema da BM (o ID da conta do WhatsApp é opcional: sem ele, o Fuzil conecta todas as contas que o token enxerga). O botão de conexão da Meta continua igual"],
+  },
+  {
     version: "3.25",
     date: "28/10/2026",
     items: [

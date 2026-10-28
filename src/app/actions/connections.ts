@@ -17,6 +17,50 @@ import { FUZIL_APP_ID, defaultAppSecret, isPlatformOwner } from "@/lib/onboardin
 const errMsg = friendlyError;
 import { metaDetail, metaErrorText } from "@/lib/meta-errors";
 
+/** Conexão manual: ID da conta do WhatsApp (opcional) + token do usuário do sistema da BM. Sem ID, o Fuzil acha as contas pelo token. */
+export async function connectManualAction(_: FormState, form: FormData): Promise<FormState> {
+  const auth = await requireAuth();
+  if (auth.role === "MEMBER" && !auth.user.isSuperAdmin) return { error: "Só o dono ou um admin da conta pode conectar BMs." };
+  const typedId = String(form.get("wabaId") ?? "").trim();
+  const token = String(form.get("token") ?? "").trim();
+  if (typedId && !/^\d+$/.test(typedId)) return { error: "O ID da conta do WhatsApp tem só números (ou deixe em branco que o Fuzil acha pelo token)." };
+  if (!token) return { error: "Cole o token de acesso (do usuário do sistema da sua BM)." };
+
+  // Chave no formulário só vale para o dono do Fuzil; os outros sempre usam a chave padrão
+  let appSecret = (await isPlatformOwner(auth.user.id)) ? String(form.get("appSecret") ?? "").trim() : "";
+  if (!appSecret) appSecret = (await defaultAppSecret(auth.workspace.id)) ?? "";
+
+  let ids = typedId ? [typedId] : [];
+  if (!ids.length) {
+    const found = await meta.wabaIdsOfSystemToken(token, appSecret ? { [FUZIL_APP_ID]: appSecret } : {}).catch((e) => ({ ids: [] as string[], why: friendlyError(e) }));
+    ids = found.ids;
+    if (!ids.length)
+      return {
+        error: `Não achei nenhuma conta do WhatsApp nesse token. Confira se o usuário do sistema tem a conta do WhatsApp em "Atribuir ativos" e gere o token de novo depois disso (token antigo não enxerga conta nova).${found.why ? ` ${found.why}` : ""}`,
+      };
+  }
+  const ok: string[] = [];
+  const failed: string[] = [];
+  for (const wabaId of ids) {
+    try {
+      await connectWaba({ workspaceId: auth.workspace.id, wabaId, accessTokenEnc: encrypt(token), connectionType: "MANUAL" });
+      if (/^[a-f0-9]{32}$/i.test(appSecret)) {
+        await prisma.whatsAppAccount.updateMany({ where: { workspaceId: auth.workspace.id, wabaId }, data: { appSecretEnc: encrypt(appSecret) } });
+        resetBmSecrets();
+        const saved = await prisma.whatsAppAccount.findFirst({ where: { workspaceId: auth.workspace.id, wabaId }, select: { id: true } });
+        if (saved) await configureBmAppWebhook(saved.id, appSecret);
+      }
+      ok.push(wabaId);
+    } catch (err) {
+      failed.push(`${wabaId}: ${errMsg(err)}`);
+    }
+  }
+  if (ok.length) deployBlueprints(auth.workspace.id).catch(() => undefined);
+  revalidatePath("/conexoes");
+  if (!ok.length) return { error: `Não foi possível conectar. ${failed.join(" · ")}` };
+  if (typedId) return { ok: "BM conectada e sincronizada!" };
+  return { ok: `${ok.length} conta(s) do WhatsApp achada(s) pelo token e conectada(s)${failed.length ? `. Não deu em ${failed.length}: ${failed.join(" · ")}` : ""}` };
+}
 
 async function ownWaba(id: string) {
   const auth = await requireAuth();
