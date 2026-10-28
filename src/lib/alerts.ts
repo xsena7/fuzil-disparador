@@ -5,6 +5,7 @@ import { env } from "./env";
 import { DISCORD_COLORS, sendDiscord } from "./discord";
 import { webhookFor, type DiscordWebhooks } from "./alert-channels";
 import { explainAlert, URGENCY_LABEL, type Urgency } from "./explain";
+import { alertSeverity } from "./alert-severity";
 
 const EMOJI: Record<Urgency, string> = { URGENTE: "🚨", ATENCAO: "⚠️", INFO: "ℹ️" };
 const COLOR: Record<Urgency, number> = { URGENTE: DISCORD_COLORS.CRITICAL, ATENCAO: DISCORD_COLORS.WARNING, INFO: DISCORD_COLORS.INFO };
@@ -21,6 +22,7 @@ export async function createAlert(input: {
   message: string;
   data?: Prisma.InputJsonValue;
 }) {
+  input = { ...input, severity: alertSeverity(input.title, input.severity) };
   const alert = await prisma.alert.create({ data: input });
   notifyDiscord(input).catch((err) => console.error("[alert-discord]", err));
   if (input.severity === "CRITICAL") {

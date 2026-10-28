@@ -26,6 +26,7 @@ Produção: VM Oracle grátis, Docker Compose (db, app, worker, caddy). O servid
 - Toda mudança visível: subir a versão e adicionar o item em `src/version.ts` (lista de novidades, em português).
 - Mudou o schema: criar migration em `prisma/migrations/<timestamp>_<nome>/migration.sql` (gerar com `npx prisma migrate diff --from-schema-datasource prisma/schema.prisma --to-schema-datamodel prisma/schema.prisma --script`). O app roda `migrate deploy` ao subir.
 - Erros para o cliente: usar `friendlyError`/`metaErrorText` (`src/lib/meta-errors.ts`). Todo erro da Meta aparece em português simples, para leigo: códigos e frases em inglês ficam traduzidos em `src/lib/meta-errors-text.ts` (roda no navegador também). Erro novo da Meta → adicionar lá.
+- Alerta vermelho (CRITICAL) só para template que virou marketing, template excluído e banimento: a regra fica em `src/lib/alert-severity.ts` e vale para todo `createAlert`.
 - Toda consulta filtra pelo `workspaceId` da conta logada (isolamento entre clientes).
 - Visual: minimalista, gavetas com bolinha de status e resumo objetivo do lado de fora.
 

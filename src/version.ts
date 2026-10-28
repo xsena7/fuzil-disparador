@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "3.38",
+    date: "28/10/2026",
+    items: ["Alertas: vermelho agora é só para o que é grave de verdade: template que virou marketing, template excluído e banimento (número, BM ou conta). BM indo para Template em análise, Pagamento ou Sem número, número tirado da campanha e afins ficam amarelos. Os alertas antigos também foram corrigidos"],
+  },
+  {
     version: "3.37",
     date: "28/10/2026",
     items: ["Audiência: números internacionais na planilha (ex.: 33744635335 da França, 15069625913 do Canadá) são reconhecidos mesmo sem o + na frente. Antes o Fuzil achava que eram do Brasil e marcava como inválidos"],
