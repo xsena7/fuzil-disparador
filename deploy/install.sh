@@ -37,7 +37,11 @@ id ubuntu >/dev/null 2>&1 && usermod -aG docker ubuntu || true
 # Codigo
 if [ ! -d "$DIR/.git" ]; then
   if [[ "$GITHUB_TOKEN" == github_pat_* || "$GITHUB_TOKEN" == ghp_* ]]; then
+    # Sem "set -x" aqui: o token não pode ir para o log. Depois do clone, o token sai da configuração do git
+    set +x
     git clone --branch "$BRANCH" "https://x-access-token:${GITHUB_TOKEN}@github.com/${REPO}.git" "$DIR"
+    git -C "$DIR" remote set-url origin "https://github.com/${REPO}.git"
+    set -x
   else
     # Sem token: so funciona com o repositorio publico
     git clone --branch "$BRANCH" "https://github.com/${REPO}.git" "$DIR"

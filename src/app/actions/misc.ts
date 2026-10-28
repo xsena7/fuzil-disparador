@@ -44,7 +44,11 @@ export async function saveProfileAction(_: FormState, form: FormData): Promise<F
     if (await prisma.user.findUnique({ where: { email } })) return { error: "Esse e-mail já está em uso por outro usuário." };
   }
   await prisma.user.update({ where: { id: user.id }, data: { name, email } });
-  if (email !== user.email) await revokeOtherSessions(user.id);
+  if (email !== user.email) {
+    await revokeOtherSessions(user.id);
+    // Links de senha mandados para o e-mail antigo deixam de valer
+    await prisma.passwordToken.updateMany({ where: { userId: user.id, usedAt: null }, data: { usedAt: new Date() } });
+  }
   revalidatePath("/", "layout");
   return { ok: email !== user.email ? `Dados salvos. Agora você entra com ${email}.` : "Dados salvos" };
 }
@@ -60,6 +64,7 @@ export async function changePasswordAction(_: FormState, form: FormData): Promis
   if (!(await verifyPassword(current, user.passwordHash))) return { error: "Senha atual incorreta" };
   await prisma.user.update({ where: { id: user.id }, data: { passwordHash: await hashPassword(next) } });
   await revokeOtherSessions(user.id);
+  await prisma.passwordToken.updateMany({ where: { userId: user.id, usedAt: null }, data: { usedAt: new Date() } });
   return { ok: "Senha alterada. Os outros aparelhos conectados foram desconectados." };
 }
 
@@ -69,17 +74,12 @@ export async function addMemberAction(_: FormState, form: FormData): Promise<For
   const email = String(form.get("email") ?? "").trim().toLowerCase();
   const name = String(form.get("name") ?? "").trim();
   if (!email || !name) return { error: "Preencha nome e e-mail" };
-  let user = await prisma.user.findUnique({ where: { email } });
-  if (user?.isSuperAdmin) return { error: "Esse e-mail não pode ser adicionado." };
-  const isNew = !user;
-  if (!user) user = await prisma.user.create({ data: { email, name, passwordHash: await hashPassword(randomToken()) } });
-  await prisma.membership.upsert({
-    where: { userId_workspaceId: { userId: user.id, workspaceId: auth.workspace.id } },
-    create: { userId: user.id, workspaceId: auth.workspace.id, role: "MEMBER" },
-    update: {},
-  });
+  const existing = await prisma.user.findUnique({ where: { email }, select: { id: true } });
+  // E-mail que já tem cadastro no Fuzil não entra sem a pessoa concordar, e a resposta é igual para não revelar quem tem conta
+  if (existing) return { ok: `Convite enviado para ${email}. Se a pessoa já usa o Fuzil com esse e-mail, peça para ela falar com o suporte para entrar na sua equipe.` };
+  const user = await prisma.user.create({ data: { email, name, passwordHash: await hashPassword(randomToken()) } });
+  await prisma.membership.create({ data: { userId: user.id, workspaceId: auth.workspace.id, role: "MEMBER" } });
   revalidatePath("/configuracoes");
-  if (!isNew) return { ok: "Usuário já tinha conta e foi adicionado. Ele entra com a senha que já usa." };
   const link = await createPasswordLink(user.id, "INVITE");
   const sent = await sendInviteEmail(email, name, auth.workspace.name, link, auth.user.name);
   return sent ? { ok: `Convite enviado para ${email}.` } : { ok: `E-mail não configurado. Envie este link para a pessoa: ${link}` };
@@ -208,13 +208,27 @@ export async function testErrorsDiscordAction(): Promise<FormState> {
 
 // ---------------- Usuários (Admin) ----------------
 
+/** Mexer em outro administrador da plataforma ou sócio (senha, exclusão, conta dele) só o dono do Fuzil pode. */
+async function guardAdminTarget(callerId: string, targetUserIds: string[]): Promise<string | null> {
+  const { platformOwnerId } = await import("@/lib/onboarding");
+  const owner = await platformOwnerId();
+  // Administradores, sócios do Financeiro e o dono só são mexidos pelo dono
+  const admins = await prisma.user.count({ where: { id: { in: targetUserIds }, OR: [{ isSuperAdmin: true }, { financePartner: true }, ...(owner ? [{ id: owner }] : [])] } });
+  if (!admins) return null;
+  const { isPlatformOwner } = await import("@/lib/onboarding");
+  return (await isPlatformOwner(callerId)) ? null : "Só o dono do Fuzil pode fazer isso com outro administrador da plataforma.";
+}
+
 export async function adminResendInviteAction(userId: string): Promise<{ ok?: string; error?: string; link?: string }> {
-  await requireSuperAdmin();
+  const auth = await requireSuperAdmin();
   const user = await prisma.user.findUnique({ where: { id: userId }, include: { memberships: { include: { workspace: true } } } });
   if (!user) return { error: "Usuário não encontrado" };
+  const denied = await guardAdminTarget(auth.user.id, [user.id]);
+  if (denied) return { error: denied };
   const link = await createPasswordLink(user.id, user.lastLoginAt ? "RESET" : "INVITE");
   const sent = await sendInviteEmail(user.email, user.name, user.memberships[0]?.workspace.name ?? "", link);
-  return sent ? { ok: `Convite reenviado para ${user.email}`, link } : { ok: "E-mail não configurado. Copie o link e envie para a pessoa.", link };
+  // Com o e-mail enviado, o link fica só com a pessoa (o admin não precisa e não deve ver)
+  return sent ? { ok: `Convite reenviado para ${user.email}` } : { ok: "E-mail não configurado. Copie o link e envie para a pessoa.", link };
 }
 
 /** Dono do Fuzil dá ou tira o acesso de administrador da plataforma de um usuário. */
@@ -235,6 +249,10 @@ export async function adminDeleteUserAction(userId: string): Promise<{ ok?: stri
   if (userId === auth.user.id) return { error: "Você não pode excluir o seu próprio usuário." };
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user) return { error: "Usuário não encontrado" };
+  const denied = await guardAdminTarget(auth.user.id, [user.id]);
+  if (denied) return { error: denied };
+  const { platformOwnerId } = await import("@/lib/onboarding");
+  if (user.id === (await platformOwnerId())) return { error: "O dono do Fuzil não pode ser excluído." };
   // Sócio com anotações no Financeiro não é excluído (o histórico do acerto não pode sumir)
   if (await prisma.financeEntry.count({ where: { OR: [{ userId }, { toUserId: userId }] } }))
     return { error: `${user.name} tem anotações no Financeiro e não pode ser excluído (o histórico do acerto não pode sumir).` };
@@ -265,6 +283,9 @@ type Result = { ok?: string; error?: string; link?: string };
 export async function adminBlockWorkspaceAction(workspaceId: string, reason: string): Promise<Result> {
   const auth = await requireSuperAdmin();
   if (await prisma.membership.findFirst({ where: { workspaceId, userId: auth.user.id, role: "OWNER" } })) return { error: "Você não pode bloquear a sua própria conta." };
+  const members = await prisma.membership.findMany({ where: { workspaceId }, select: { userId: true } });
+  const denied = await guardAdminTarget(auth.user.id, members.map((m) => m.userId));
+  if (denied) return { error: denied };
   const ws = await prisma.workspace.update({ where: { id: workspaceId }, data: { blockedAt: new Date(), blockedReason: reason.trim() || null } });
   // Para tudo que estava rodando ou agendado; ao desbloquear, o cliente retoma pela tela da campanha
   const paused = await prisma.campaign.updateMany({
@@ -287,6 +308,8 @@ export async function adminDeleteWorkspaceAction(workspaceId: string, confirmNam
   const ws = await prisma.workspace.findUnique({ where: { id: workspaceId }, include: { memberships: { include: { user: { include: { _count: { select: { memberships: true } } } } } } } });
   if (!ws) return { error: "Conta não encontrada" };
   if (ws.memberships.some((m) => m.userId === auth.user.id && m.role === "OWNER")) return { error: "Você não pode excluir a sua própria conta." };
+  const denied = await guardAdminTarget(auth.user.id, ws.memberships.map((m) => m.userId));
+  if (denied) return { error: denied };
   if (confirmName.trim() !== ws.name) return { error: "O nome digitado não confere. Nada foi excluído." };
   // Usuários que só tinham essa conta saem junto (o admin da plataforma nunca)
   const orphanUsers = ws.memberships.filter((m) => m.user._count.memberships === 1 && !m.user.isSuperAdmin).map((m) => m.userId);
@@ -309,9 +332,11 @@ export async function adminRenameWorkspaceAction(workspaceId: string, name: stri
 
 /** Link para o dono definir uma nova senha e entrar (não envia e-mail, só devolve para copiar). */
 export async function adminLoginLinkAction(workspaceId: string): Promise<Result> {
-  await requireSuperAdmin();
+  const auth = await requireSuperAdmin();
   const owner = await prisma.membership.findFirst({ where: { workspaceId }, orderBy: { role: "asc" }, include: { user: true } });
   if (!owner) return { error: "Conta sem usuário" };
+  const denied = await guardAdminTarget(auth.user.id, [owner.userId]);
+  if (denied) return { error: denied };
   const link = await createPasswordLink(owner.userId, owner.user.lastLoginAt ? "RESET" : "INVITE");
   return { ok: `Link para ${owner.user.email} (vale ${owner.user.lastLoginAt ? "2 horas" : "7 dias"}, uso único)`, link };
 }

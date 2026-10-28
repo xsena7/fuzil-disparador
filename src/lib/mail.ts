@@ -39,7 +39,7 @@ async function saveAttachments(mail: ParsedMail): Promise<MailAttachment[]> {
 }
 
 /** Guarda um e-mail recebido em cada caixa de destino. A caixa do estoque também manda os convites para as Vendas. */
-export async function storeIncoming(mail: ParsedMail, recipients: string[], size: number) {
+export async function storeIncoming(mail: ParsedMail, recipients: string[], size: number, fromMeta = false) {
   const boxes = await prisma.mailBox.findMany({ where: { address: { in: recipients.map((r) => r.toLowerCase()) } } });
   if (!boxes.length) return 0;
   const attachments = await saveAttachments(mail);
@@ -60,11 +60,13 @@ export async function storeIncoming(mail: ParsedMail, recipients: string[], size
         html,
         attachments: attachments.length ? attachments : undefined,
         size,
+        fromMeta,
         receivedAt: mail.date && !Number.isNaN(mail.date.getTime()) ? mail.date : new Date(),
       },
     });
-    // Caixa de estoque (a geral ou a de um produto): o convite entra nas Vendas
-    if (box.purpose === "STOCK" || box.productId) {
+    // Caixa de estoque (a geral ou a de um produto): o convite entra nas Vendas. Só e-mail comprovado da Meta:
+    // qualquer um consegue mandar e-mail para cá, e um convite falso seria vendido para um cliente
+    if ((box.purpose === "STOCK" || box.productId) && fromMeta) {
       await ingestInviteEmail({ messageId: mail.messageId ?? `${box.address}-${Date.now()}`, subject, from: mail.from?.text ?? "", text, html, date: mail.date ?? new Date(), productId: box.productId }).catch((e) =>
         console.error("[mail] convite do estoque", e),
       );

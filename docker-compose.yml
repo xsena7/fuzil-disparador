@@ -78,7 +78,11 @@ services:
     ports:
       - "80:80"
       - "443:443"
-    env_file: .env
+    # O Caddy só precisa dos domínios (não recebe as chaves do .env)
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN}
+      LINK_DOMAIN: ${LINK_DOMAIN}
+      SITE_DOMAIN: ${SITE_DOMAIN:-fuzildisparador.com.br}
     volumes:
       - ./deploy:/etc/caddy/conf:ro
       - caddy_data:/data

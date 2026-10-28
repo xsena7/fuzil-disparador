@@ -1026,6 +1026,8 @@ model MailMessage {
   html        String?
   // [{ name, mime, size, path }]
   attachments Json?
+  // Veio mesmo da Meta (assinatura DKIM/DMARC do facebookmail.com): só esses viram BM no estoque
+  fromMeta    Boolean   @default(false)
   size        Int       @default(0)
   readAt      DateTime?
   receivedAt  DateTime  @default(now())
@@ -1165,4 +1167,12 @@ model FlowRun {
   @@index([conversationId, status])
   @@index([status, waitUntil])
   @@index([flowId, createdAt])
+}
+
+// De qual conta do Fuzil é cada conta do WhatsApp (fica mesmo depois de desconectar):
+// a conexão com cadeado não deixa outra conta puxar uma WABA que já foi de alguém
+model WabaClaim {
+  wabaId      String   @id
+  workspaceId String
+  createdAt   DateTime @default(now())
 }

@@ -19,31 +19,40 @@ function signedWith(raw: string, header: string, secret: string) {
   return a.length === b.length && timingSafeEqual(a, b);
 }
 
-/** App Secrets dos apps das BMs (conexão manual). Cache de 1 min para não ir ao banco a cada evento. */
-let bmSecrets: { at: number; list: string[] } = { at: 0, list: [] };
-async function bmAppSecrets(): Promise<string[]> {
+/** App Secrets dos apps das BMs (conexão manual), cada um com as WABAs que usam ele. Cache de 1 min. */
+let bmSecrets: { at: number; list: Array<{ secret: string; wabaIds: Set<string> }> } = { at: 0, list: [] };
+async function bmAppSecrets() {
   if (Date.now() - bmSecrets.at < 60_000) return bmSecrets.list;
-  const rows = await prisma.whatsAppAccount.findMany({ where: { appSecretEnc: { not: null } }, select: { appSecretEnc: true } });
-  const list = [...new Set(rows.flatMap((r) => {
+  const rows = await prisma.whatsAppAccount.findMany({ where: { appSecretEnc: { not: null } }, select: { appSecretEnc: true, wabaId: true } });
+  const bySecret = new Map<string, Set<string>>();
+  for (const r of rows) {
     try {
-      return [decrypt(r.appSecretEnc!)];
+      const sec = decrypt(r.appSecretEnc!);
+      bySecret.set(sec, (bySecret.get(sec) ?? new Set()).add(r.wabaId));
     } catch {
-      return [];
+      /* chave que não abre: ignora */
     }
-  }))];
-  bmSecrets = { at: Date.now(), list };
-  return list;
+  }
+  bmSecrets = { at: Date.now(), list: [...bySecret].map(([secret, wabaIds]) => ({ secret, wabaIds })) };
+  return bmSecrets.list;
 }
 export const resetBmSecrets = () => (bmSecrets = { at: 0, list: [] });
 
-/** Confere se o evento veio da Meta: assinado pelo app do Fuzil ou pelo app de alguma BM conectada manualmente. */
-export async function verifySignature(raw: string, header: string | null): Promise<boolean> {
+/**
+ * Confere se o evento veio da Meta. Assinado pelo app do Fuzil: vale para todas as WABAs.
+ * Assinado pelo app de uma BM (conexão manual): só vale para as WABAs que usam aquela chave
+ * (o cliente conhece a chave dele, então não pode mandar evento falso para a WABA de outro).
+ * `wabaIds` null = todas.
+ */
+export async function verifyWebhook(raw: string, header: string | null): Promise<{ ok: boolean; wabaIds: Set<string> | null }> {
   const secret = env.metaAppSecret();
   const others = await bmAppSecrets();
   // Sem nenhum App Secret não dá para saber se o evento veio da Meta: em produção, recusa tudo
-  if (!secret && !others.length) return process.env.NODE_ENV !== "production";
-  if (!header?.startsWith("sha256=")) return false;
-  return [secret, ...others].some((s) => s && signedWith(raw, header, s));
+  if (!secret && !others.length) return { ok: process.env.NODE_ENV !== "production", wabaIds: null };
+  if (!header?.startsWith("sha256=")) return { ok: false, wabaIds: null };
+  if (secret && signedWith(raw, header, secret)) return { ok: true, wabaIds: null };
+  const hit = others.find((o) => signedWith(raw, header, o.secret));
+  return hit ? { ok: true, wabaIds: hit.wabaIds } : { ok: false, wabaIds: null };
 }
 
 const OPT_OUT_WORDS = ["sair", "parar", "pare", "stop", "cancelar", "descadastrar", "remover", "nao quero", "não quero", "bloquear"];
@@ -56,10 +65,12 @@ export function isOptOut(text?: string | null): boolean {
 
 const RANK: Record<RecipientStatus, number> = { PENDING: 0, SENDING: 1, SENT: 2, DELIVERED: 3, READ: 4, FAILED: 5, SKIPPED: 5 };
 
-export async function processWebhook(payload: any) {
+export async function processWebhook(payload: any, onlyWabaIds: Set<string> | null = null) {
   if (payload?.object !== "whatsapp_business_account") return;
   for (const entry of payload.entry ?? []) {
     const wabaMetaId: string = entry.id;
+    // Assinado com a chave de uma BM: ignora o que for de WABA que não usa essa chave
+    if (onlyWabaIds && !onlyWabaIds.has(String(wabaMetaId))) continue;
     const wabas = await prisma.whatsAppAccount.findMany({ where: { wabaId: wabaMetaId }, include: { business: { select: { name: true } } } });
     for (const change of entry.changes ?? []) {
       const value = change.value ?? {};

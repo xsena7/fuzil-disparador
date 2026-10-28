@@ -20,6 +20,8 @@ const newCode = () => Array.from({ length: 7 }, () => ALPHABET[randomInt(ALPHABE
 export type LoginState = { error?: string; ok?: string; done?: boolean } | undefined;
 
 const MIN_PASSWORD = 8;
+// Hash bcrypt de uma senha qualquer (só para gastar o mesmo tempo quando o e-mail não existe)
+const DUMMY_HASH = "$2b$10$I1JSMa9P88lr7oMUf2rb4eChLMSDUYoup8aOVv07DfrG1k8oiXJWq";
 const RESET_MINUTES = 60;
 const validEmail = (e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
 
@@ -47,9 +49,9 @@ export async function loginLinksAction(_: LoginState, form: FormData): Promise<L
   const email = normEmail(String(form.get("email") ?? ""));
   if (tooMany(`lk:login:${ip}`, 20, 15 * 60_000) || tooMany(`lk:login:${email}`, 8, 15 * 60_000)) return { error: "Muitas tentativas. Espere alguns minutos." };
   const account = await prisma.linksAccount.findUnique({ where: { email } });
-  const ok = account ? await verifyPassword(String(form.get("password") ?? ""), account.passwordHash) : false;
-  if (!account || !ok) return { error: "E-mail ou senha incorretos." };
-  if (account.blockedAt) return { error: "Essa conta foi bloqueada." };
+  // Mesmo tempo de resposta com ou sem conta (não revela quais e-mails estão cadastrados)
+  const ok = await verifyPassword(String(form.get("password") ?? ""), account?.passwordHash ?? DUMMY_HASH);
+  if (!account || !ok || account.blockedAt) return { error: "E-mail ou senha incorretos." };
   await startLinksSession(account.id, (await headers()).get("user-agent"));
   return { done: true };
 }

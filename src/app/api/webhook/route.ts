@@ -1,7 +1,7 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { env } from "@/lib/env";
-import { processWebhook, verifySignature } from "@/lib/webhook";
+import { processWebhook, verifyWebhook } from "@/lib/webhook";
 import { reportError } from "@/lib/report";
 
 /** Verificação do webhook (feita uma vez pelo painel da Meta). */
@@ -14,23 +14,26 @@ export async function GET(req: Request) {
 }
 
 const lastMark = new Map<string, number>();
-async function markWebhook(raw: string, ok: boolean) {
-  const ids = [...raw.matchAll(/"entry"\s*:\s*\[\s*\{\s*"id"\s*:\s*"(\d+)"/g)].map((m) => m[1]);
+/** Marca na WABA que os eventos estão chegando (aparece em Conexões). Só depois de conferir a assinatura. */
+async function markWebhook(raw: string, allowed: Set<string> | null) {
+  const ids = [...new Set([...raw.matchAll(/"entry"\s*:\s*\[\s*\{\s*"id"\s*:\s*"(\d+)"/g)].map((m) => m[1]))].slice(0, 20);
+  if (lastMark.size > 5000) lastMark.clear();
   for (const wabaId of ids) {
-    const key = `${wabaId}:${ok}`;
-    if (Date.now() - (lastMark.get(key) ?? 0) < 60_000) continue;
-    lastMark.set(key, Date.now());
-    await prisma.whatsAppAccount.updateMany({ where: { wabaId }, data: ok ? { webhookLastAt: new Date() } : { webhookRejectedAt: new Date() } });
+    if (allowed && !allowed.has(wabaId)) continue;
+    if (Date.now() - (lastMark.get(wabaId) ?? 0) < 60_000) continue;
+    lastMark.set(wabaId, Date.now());
+    await prisma.whatsAppAccount.updateMany({ where: { wabaId }, data: { webhookLastAt: new Date() } });
   }
 }
 
 /** Eventos da Meta: status de mensagens, respostas, templates, qualidade, conta. */
 export async function POST(req: Request) {
   const raw = await req.text();
-  const ok = await verifySignature(raw, req.headers.get("x-hub-signature-256"));
-  // Marca na WABA se os eventos estão chegando (e se estão sendo recusados): aparece em Conexões
-  void markWebhook(raw, ok).catch(() => undefined);
+  // Evento gigante não é da Meta
+  if (raw.length > 2_000_000) return new Response("Too large", { status: 413 });
+  const { ok, wabaIds } = await verifyWebhook(raw, req.headers.get("x-hub-signature-256"));
   if (!ok) return new Response("Invalid signature", { status: 401 });
+  void markWebhook(raw, wabaIds).catch(() => undefined);
   let payload: unknown;
   try {
     payload = JSON.parse(raw);
@@ -39,7 +42,7 @@ export async function POST(req: Request) {
   }
   const event = await prisma.webhookEvent.create({ data: { payload: payload as Prisma.InputJsonValue } });
   try {
-    await processWebhook(payload);
+    await processWebhook(payload, wabaIds);
     await prisma.webhookEvent.update({ where: { id: event.id }, data: { processedAt: new Date() } });
   } catch (err) {
     await reportError("webhook", err, { path: "POST /api/webhook", detail: raw.slice(0, 500) });

@@ -71,7 +71,8 @@ export async function reingestStockMailbox() {
   const boxes = await prisma.mailBox.findMany({ where: { OR: [{ purpose: "STOCK" }, { productId: { not: null } }] } });
   for (const box of boxes) {
     const msgs = await prisma.mailMessage.findMany({
-      where: { mailboxId: box.id, direction: "IN", receivedAt: { gt: new Date(Date.now() - 30 * 86_400_000) } },
+      // Só os comprovados da Meta (ver fromMeta)
+      where: { mailboxId: box.id, direction: "IN", fromMeta: true, receivedAt: { gt: new Date(Date.now() - 30 * 86_400_000) } },
       orderBy: { receivedAt: "asc" },
       take: 300,
       select: { id: true, messageId: true, subject: true, fromAddr: true, fromName: true, text: true, html: true, receivedAt: true },

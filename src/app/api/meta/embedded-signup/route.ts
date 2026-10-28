@@ -12,6 +12,7 @@ import { prisma } from "@/lib/db";
 export async function POST(req: Request) {
   const auth = await getActiveAuth();
   if (!auth) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
+  if (auth.role === "MEMBER" && !auth.user.isSuperAdmin) return NextResponse.json({ error: "Só o dono ou um admin da conta pode conectar BMs." }, { status: 403 });
   const body = (await req.json()) as { code?: string; wabaId?: string; phoneNumberId?: string; type?: "CLOUD_API" | "COEXISTENCE" };
   if (!body.code) return NextResponse.json({ error: "Dados do cadastro incompletos" }, { status: 400 });
 

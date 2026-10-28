@@ -12,12 +12,20 @@ import type { FormState } from "./auth";
 
 // Serviços de número (SMSBear e SMS24h, só WhatsApp Brasil): conectar, registro automático e modo manual
 
+/** Conectar o serviço, gastar o saldo dele e desconectar: só o dono ou um admin da conta. */
+async function requireManager() {
+  const auth = await requireAuth();
+  if (auth.role === "MEMBER" && !auth.user.isSuperAdmin) throw new Error("Só o dono ou um admin da conta pode fazer isso.");
+  return auth;
+}
+
 const keyField = (p: SmsProviderKey) => (p === "sms24h" ? "sms24hKeyEnc" : "smsbearTokenEnc");
 const pick = (v: unknown): SmsProviderKey => (isSmsProvider(v) ? v : "smsbear");
 
 /** Conecta a conta do serviço nesta conta do Fuzil (a chave é conferida na hora, pelo saldo). */
 export async function connectSmsProviderAction(provider: SmsProviderKey, _: FormState, form: FormData): Promise<FormState> {
-  const auth = await requireAuth();
+  const auth = await requireManager().catch(() => null);
+  if (!auth) return { error: "Só o dono ou um admin da conta pode fazer isso." };
   const p = pick(provider);
   const token = String(form.get("token") ?? "").trim();
   if (token.length < 10) return { error: `Cole a ${SMS_PROVIDER_INFO[p].keyLabel.toLowerCase()}.` };
@@ -32,7 +40,8 @@ export async function connectSmsProviderAction(provider: SmsProviderKey, _: Form
 }
 
 export async function disconnectSmsProviderAction(provider: SmsProviderKey): Promise<FormState> {
-  const auth = await requireAuth();
+  const auth = await requireManager().catch(() => null);
+  if (!auth) return { error: "Só o dono ou um admin da conta pode fazer isso." };
   const p = pick(provider);
   const running = await prisma.smsJob.count({ where: { workspaceId: auth.workspace.id, provider: p, status: "RUNNING" } });
   if (running) return { error: "Tem registro automático em andamento. Pare ele antes de desconectar." };
@@ -43,7 +52,8 @@ export async function disconnectSmsProviderAction(provider: SmsProviderKey): Pro
 
 /** Começa o registro automático: compra, coloca na WABA, espera o SMS, confirma (e troca de número se não chegar). */
 export async function startSmsJobAction(_: FormState, form: FormData): Promise<FormState> {
-  const auth = await requireAuth();
+  const auth = await requireManager().catch(() => null);
+  if (!auth) return { error: "Só o dono ou um admin da conta pode fazer isso." };
   const p = pick(form.get("provider"));
   if (!(await providerToken(auth.workspace.id, p))) return { error: `Conecte o ${SMS_PROVIDER_INFO[p].label} primeiro.` };
   const waba = await prisma.whatsAppAccount.findFirst({ where: { id: String(form.get("wabaId") ?? ""), workspaceId: auth.workspace.id }, include: { business: true } });
@@ -121,7 +131,8 @@ export async function clearSmsJobsAction(provider: SmsProviderKey): Promise<Form
 // ---------------------------------------------------------------------------
 
 export async function buyManualAction(provider: SmsProviderKey): Promise<FormState> {
-  const auth = await requireAuth();
+  const auth = await requireManager().catch(() => null);
+  if (!auth) return { error: "Só o dono ou um admin da conta pode fazer isso." };
   const p = pick(provider);
   const token = await providerToken(auth.workspace.id, p);
   if (!token) return { error: `Conecte o ${SMS_PROVIDER_INFO[p].label} primeiro.` };

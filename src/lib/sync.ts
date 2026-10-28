@@ -415,6 +415,8 @@ export async function connectWaba(input: {
   await meta.getWaba(token, input.wabaId).catch(() => {
     throw new Error("A Meta não deu acesso a essa WABA com esse token. Confira o ID da WABA e se o token tem acesso a ela.");
   });
+  // Primeira conta do Fuzil que conectou essa WABA fica registrada (ver conexão com cadeado)
+  await prisma.wabaClaim.upsert({ where: { wabaId: input.wabaId }, create: { wabaId: input.wabaId, workspaceId: input.workspaceId }, update: {} });
 
   let waba = await prisma.whatsAppAccount.findUnique({
     where: { workspaceId_wabaId: { workspaceId: input.workspaceId, wabaId: input.wabaId } },

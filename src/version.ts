@@ -2,6 +2,17 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "3.39",
+    date: "28/10/2026",
+    items: [
+      "Segurança: revisão completa antes de começar a vender. Administrador da plataforma não consegue mais mexer na senha, na conta ou no usuário do dono, dos sócios e de outros administradores",
+      "Segurança: Conectar com cadeado não deixa uma conta do Fuzil puxar uma conta do WhatsApp que já é (ou já foi) de outra",
+      "Segurança: avisos falsos da Meta são recusados (cada chave só vale para as contas dela) e só e-mail comprovado da Meta vira BM no estoque da loja",
+      "Segurança: membro comum da equipe não apaga BM, não troca token nem gasta o saldo do SMSBear/SMS24h. Adicionar alguém na equipe não revela mais quem já tem conta",
+      "Segurança: proteções do servidor (cabeçalhos contra clickjacking e HTTPS forçado, limites no servidor de e-mail e na loja, bibliotecas atualizadas)",
+    ],
+  },
+  {
     version: "3.38",
     date: "28/10/2026",
     items: ["Alertas: vermelho agora é só para o que é grave de verdade: template que virou marketing, template excluído e banimento (número, BM ou conta). BM indo para Template em análise, Pagamento ou Sem número, número tirado da campanha e afins ficam amarelos. Os alertas antigos também foram corrigidos"],

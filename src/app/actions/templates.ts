@@ -145,6 +145,7 @@ export async function createTemplateAction(_: FormState, form: FormData): Promis
 /** Apaga o template direto na Meta e, se deu certo (ou ele já não existia lá), tira da plataforma. */
 export async function deleteTemplateAction(templateId: string): Promise<{ ok?: boolean; error?: string }> {
   const auth = await requireAuth();
+  if (auth.role === "MEMBER" && !auth.user.isSuperAdmin) return { error: "Só o dono ou um admin da conta pode excluir template." };
   const tpl = await prisma.template.findFirst({ where: { id: templateId, workspaceId: auth.workspace.id }, include: { waba: true } });
   if (!tpl) return { ok: true };
   const token = wabaToken(tpl.waba);
@@ -199,6 +200,7 @@ export async function deployNowAction() {
 
 export async function updateAutoDeleteAction(form: FormData) {
   const auth = await requireAuth();
+  if (auth.role === "MEMBER" && !auth.user.isSuperAdmin) return;
   await prisma.workspace.update({ where: { id: auth.workspace.id }, data: { autoDeleteMarketing: form.get("autoDelete") === "on" } });
   revalidatePath("/templates");
 }

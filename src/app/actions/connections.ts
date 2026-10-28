@@ -149,6 +149,8 @@ async function restoreHealthyBms(workspaceId: string) {
 }
 
 export async function deleteWabaAction(id: string) {
+  const who = await requireAuth();
+  if (who.role === "MEMBER" && !who.user.isSuperAdmin) return;
   const waba = await ownWaba(id);
   await prisma.whatsAppAccount.delete({ where: { id } });
   const left = await prisma.whatsAppAccount.count({ where: { businessId: waba.businessId } });
@@ -354,6 +356,8 @@ export async function saveDefaultAppSecretAction(_: FormState, form: FormData): 
 
 /** Troca o token e/ou a chave secreta de uma WABA já conectada (o ID da WABA continua o mesmo). Campo em branco = mantém. */
 export async function updateWabaCredentialsAction(id: string, _: FormState, form: FormData): Promise<FormState> {
+  const who = await requireAuth();
+  if (who.role === "MEMBER" && !who.user.isSuperAdmin) return { error: "Só o dono ou um admin da conta pode fazer isso." };
   const waba = await ownWaba(id).catch(() => null);
   if (!waba) return { error: "Conta não encontrada" };
   const token = String(form.get("token") ?? "").trim();
@@ -546,6 +550,16 @@ export async function connectSharedWabaAction(wabaId: string): Promise<FormState
   const token = env.metaSystemToken();
   if (!token) return { error: "A conexão com cadeado ainda não está liberada nesta plataforma. Fale com o suporte." };
   if (!/^\d{6,20}$/.test(wabaId)) return { error: "O ID da conta do WhatsApp tem só números (ex.: 1089435753910494)." };
+  // A conta compartilhada é vista pelo usuário do sistema do Fuzil: sem estas travas, um cliente que soubesse o ID
+  // de outro conseguiria puxar a conta. O dono do Fuzil pode tudo (resolve casos de suporte)
+  const owner = await isPlatformOwner(auth.user.id);
+  if (!owner) {
+    const claim = await prisma.wabaClaim.findUnique({ where: { wabaId } });
+    if (claim && claim.workspaceId !== auth.workspace.id) return { error: "Essa conta do WhatsApp já é de outra conta do Fuzil. Se ela for sua, fale com o suporte." };
+    const info = await meta.getWaba(token, wabaId).catch(() => null);
+    // Conta da própria BM do Fuzil não é conectada por cliente
+    if (info?.owner_business_info?.id === FUZIL_BUSINESS_ID) return { error: "Essa conta do WhatsApp não pode ser conectada por aqui. Fale com o suporte." };
+  }
   try {
     const userId = await meta.systemUserId(token).catch(() => null);
     // Sem essa atribuição o usuário do sistema enxerga a conta mas não manda mensagem (se já tiver, a Meta só confirma)
