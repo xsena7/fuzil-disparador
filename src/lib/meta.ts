@@ -450,6 +450,25 @@ export const meta = {
     return { ids: [], why };
   },
 
+  /** Contas do WhatsApp que clientes compartilharam com a BM do token (parceria). */
+  async sharedWabas(token: string) {
+    const me = await graph<{ id: string; name?: string }>(token, "GET", "me", { query: { fields: "id,name" } });
+    const biz = await graph<{ data: Array<{ id: string; name: string }> }>(token, "GET", "me/businesses", { query: { fields: "id,name", limit: 50 } });
+    const out: Array<{ id: string; name: string; owner: string | null; via: string }> = [];
+    for (const b of biz.data ?? []) {
+      const r = await graph<{ data: Array<{ id: string; name?: string; owner_business_info?: { id: string; name: string } }> }>(token, "GET", `${b.id}/client_whatsapp_business_accounts`, {
+        query: { fields: "id,name,owner_business_info", limit: 200 },
+      });
+      for (const w of r.data ?? []) if (!out.some((o) => o.id === w.id)) out.push({ id: w.id, name: w.name ?? `WABA ${w.id}`, owner: w.owner_business_info?.name ?? null, via: b.name });
+    }
+    return { userId: me.id, wabas: out };
+  },
+
+  /** Dá ao usuário do sistema acesso total à conta compartilhada (sem isso ele não manda mensagem por ela). */
+  assignSystemUser(token: string, wabaId: string, userId: string) {
+    return graph<{ success: boolean }>(token, "POST", `${wabaId}/assigned_users`, { query: { user: userId, tasks: JSON.stringify(["MANAGE"]) } });
+  },
+
   /** WABAs liberadas para um token (usado quando o evento do cadastro não trouxe o waba_id). */
   async wabaIdsFromToken(token: string): Promise<string[]> {
     const url = new URL(`${env.metaGraphUrl()}/${env.metaGraphVersion()}/debug_token`);

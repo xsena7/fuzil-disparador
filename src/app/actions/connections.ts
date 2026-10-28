@@ -506,3 +506,51 @@ export async function testWabaAction(id: string): Promise<{ ok?: boolean; text: 
     return { text: "Não consegui falar com a Meta agora. Tente de novo em instantes." };
   }
 }
+
+// ---------------- Contas compartilhadas com a BM do Fuzil (parceria) · só o dono do Fuzil ----------------
+
+export type SharedWaba = { id: string; name: string; owner: string | null; via: string; connectedIn: string | null; here: boolean };
+
+async function requireOwner() {
+  const auth = await requireAuth();
+  if (!(await isPlatformOwner(auth.user.id))) throw new Error("Só o dono do Fuzil pode fazer isso.");
+  return auth;
+}
+
+/** Lista as contas do WhatsApp que clientes compartilharam com a BM do Fuzil (adicionando como parceira). */
+export async function listSharedWabasAction(): Promise<{ wabas?: SharedWaba[]; error?: string }> {
+  const auth = await requireOwner();
+  const token = env.metaSystemToken();
+  if (!token) return { error: "Falta o token do usuário do sistema da BM do Fuzil (Admin → Plataforma → Token do System User)." };
+  try {
+    const { wabas } = await meta.sharedWabas(token);
+    const known = await prisma.whatsAppAccount.findMany({ where: { wabaId: { in: wabas.map((w) => w.id) } }, select: { wabaId: true, workspaceId: true, workspace: { select: { name: true } } } });
+    return {
+      wabas: wabas.map((w) => {
+        const k = known.find((x) => x.wabaId === w.id);
+        return { ...w, connectedIn: k?.workspace.name ?? null, here: k?.workspaceId === auth.workspace.id };
+      }),
+    };
+  } catch (e) {
+    return { error: friendlyError(e) };
+  }
+}
+
+/** Conecta uma conta compartilhada nesta conta do Fuzil: dá acesso ao usuário do sistema e sincroniza. */
+export async function connectSharedWabaAction(wabaId: string): Promise<FormState> {
+  const auth = await requireOwner();
+  const token = env.metaSystemToken();
+  if (!token) return { error: "Falta o token do usuário do sistema da BM do Fuzil." };
+  if (!/^\d+$/.test(wabaId)) return { error: "Conta inválida." };
+  try {
+    const { userId } = await meta.sharedWabas(token).catch(() => ({ userId: null as string | null }));
+    // Sem essa atribuição o usuário do sistema enxerga a conta mas não manda mensagem (se já tiver, a Meta só confirma)
+    if (userId) await meta.assignSystemUser(token, wabaId, userId).catch((e) => console.error("[parceria] atribuir", wabaId, friendlyError(e)));
+    await connectWaba({ workspaceId: auth.workspace.id, wabaId, accessTokenEnc: null, connectionType: "MANUAL" });
+  } catch (e) {
+    return { error: friendlyError(e) };
+  }
+  deployBlueprints(auth.workspace.id).catch(() => undefined);
+  revalidatePath("/conexoes");
+  return { ok: `Conta conectada em ${auth.workspace.name}!` };
+}

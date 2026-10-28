@@ -21,6 +21,7 @@ import { groupDot, groupTag } from "@/lib/group-colors";
 import { PROBLEM_KINDS, READY_GROUP, ensureReadyGroup, isProblemSystem } from "@/lib/bm-problems";
 import { ConnectGuide } from "./connect-guide";
 import { ManualGuide } from "./manual-guide";
+import { SharedWabas } from "./shared-wabas";
 import { ProfileEditor } from "./profile-editor";
 import { SmsBearPanel } from "./smsbear-panel";
 import { KeepInput } from "@/components/keep-input";
@@ -112,6 +113,8 @@ export default async function ConnectionsPage() {
       <h2 className="mb-4 text-base font-semibold">Nova conexão</h2>
       <ConnectGuide open={businesses.length === 0} />
       <EmbeddedSignup appId={env.metaAppId()} configId={env.metaConfigId()} graphVersion={env.metaGraphVersion()} />
+
+      {isOwner && <SharedWabas workspace={auth.workspace.name} />}
 
       <details className="group mt-4 overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm" data-tour="connect-form">
         <summary className="flex cursor-pointer list-none items-center gap-3 px-5 py-3.5 [&::-webkit-details-marker]:hidden">

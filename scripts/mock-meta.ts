@@ -95,6 +95,12 @@ createServer(async (req, res) => {
     return json(res, 200, { events_received: body.data?.length ?? 0 });
   }
 
+  // BM do Fuzil (parceira): o usuário do sistema e as contas que clientes compartilharam (a 1003 chega por parceria)
+  if (id === "me" && !edge) return json(res, 200, { id: "77001", name: "fuzil-api" });
+  if (id === "me" && edge === "businesses") return json(res, 200, { data: [{ id: "9999", name: "BM do Fuzil" }] });
+  if (id === "9999" && edge === "client_whatsapp_business_accounts") return json(res, 200, { data: [{ id: "1003", name: wabas["1003"].name, owner_business_info: wabas["1003"].business }] });
+  if (wabas[id] && edge === "assigned_users" && req.method === "POST") return json(res, 200, { success: true });
+
   const waba = wabas[id];
   if (waba && !edge && req.method === "GET") {
     return json(res, 200, { id, name: waba.name, currency: "USD", timezone_id: "1", account_review_status: "APPROVED", primary_funding_id: "mock-cartao", owner_business_info: waba.business, health_status: { can_send_message: "AVAILABLE" } });

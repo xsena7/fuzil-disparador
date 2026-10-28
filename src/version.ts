@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "3.28",
+    date: "28/10/2026",
+    items: ["Conexões (só o dono do Fuzil): \"Contas compartilhadas com o Fuzil\" lista as contas do WhatsApp que clientes compartilharam adicionando a BM do Fuzil como parceira, e conecta com um clique (sem token do cliente)"],
+  },
+  {
     version: "3.27",
     date: "28/10/2026",
     items: ["Conexões → Conectar manualmente: voltou o passo a passo completo, com o ID do app do Fuzil para copiar (pedir acesso na BM), o botão de pedir aprovação no WhatsApp e o nome fuzil-api do usuário do sistema"],
