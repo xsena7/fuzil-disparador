@@ -77,7 +77,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       });
     }
   }
-  const withLayout = messages.map((m) => (m.campaignId && layouts.has(m.campaignId) ? { ...m, layout: layouts.get(m.campaignId) } : m));
+  // Só a mensagem do template ganha o visual do disparo (imagem e botões); fluxo e resposta automática também levam o id da campanha
+  const withLayout = messages.map((m) => (m.kind === "template" && m.campaignId && layouts.has(m.campaignId) ? { ...m, layout: layouts.get(m.campaignId) } : m));
 
   let extra = null;
   if (!after && !before) {
