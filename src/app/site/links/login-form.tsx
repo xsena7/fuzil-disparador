@@ -1,82 +1,105 @@
 "use client";
 
-import { useActionState, useEffect, useState, useTransition } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Loader2, MessageCircle, ShieldCheck } from "lucide-react";
-import { requestLinksCodeAction, resendLinksCodeAction, verifyLinksCodeAction, type LoginState } from "@/app/actions/links";
+import { Loader2, Lock } from "lucide-react";
+import { forgotLinksAction, loginLinksAction, resetLinksAction, signupLinksAction, type LoginState } from "@/app/actions/links";
 
 const inp = "w-full rounded-xl border border-zinc-200 bg-white px-3.5 py-3 text-[15px] outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-100";
 const btn = "flex w-full items-center justify-center gap-2 rounded-xl bg-brand-gradient px-4 py-3 font-semibold text-white shadow-lg shadow-orange-500/20 transition hover:opacity-90 disabled:opacity-60";
-const fmt = (p: string) => p.replace(/^55(\d{2})(\d{4,5})(\d{4})$/, "($1) $2-$3");
 
-/** Login pelo WhatsApp: número (e nome no primeiro acesso) → código → dentro. */
+type Mode = "login" | "signup" | "forgot";
+
+function Field({ label, ...props }: { label: string } & React.ComponentProps<"input">) {
+  return (
+    <label className="mb-4 block">
+      <span className="mb-1.5 block text-sm font-medium text-zinc-700">{label}</span>
+      <input {...props} className={inp} />
+    </label>
+  );
+}
+
+function Msg({ s }: { s: LoginState }) {
+  if (s?.error) return <p className="mb-4 rounded-xl bg-rose-50 px-3 py-2.5 text-sm text-rose-700 ring-1 ring-rose-200">{s.error}</p>;
+  if (s?.ok) return <p className="mb-4 rounded-xl bg-emerald-50 px-3 py-2.5 text-sm text-emerald-700 ring-1 ring-emerald-200">{s.ok}</p>;
+  return null;
+}
+
+/** Entrar, criar conta ou pedir senha nova (e-mail e senha). */
 export function LoginForm() {
   const router = useRouter();
-  const [req, requestAction, requesting] = useActionState<LoginState, FormData>(requestLinksCodeAction, undefined);
-  const [ver, verifyAction, verifying] = useActionState<LoginState, FormData>(verifyLinksCodeAction, undefined);
-  const [phone, setPhone] = useState("");
-  const [name, setName] = useState("");
-  const [code, setCode] = useState("");
-  const [back, setBack] = useState(false);
-  const [resendMsg, setResendMsg] = useState<string | null>(null);
-  const [resending, startResend] = useTransition();
+  const [mode, setMode] = useState<Mode>("login");
+  const [email, setEmail] = useState("");
+  const [login, loginAction, logging] = useActionState<LoginState, FormData>(loginLinksAction, undefined);
+  const [signup, signupAction, signing] = useActionState<LoginState, FormData>(signupLinksAction, undefined);
+  const [forgot, forgotAction, sending] = useActionState<LoginState, FormData>(forgotLinksAction, undefined);
 
-  useEffect(() => { if (ver?.ok) router.refresh(); }, [ver, router]);
-  useEffect(() => { setBack(false); setResendMsg(null); }, [req]);
+  useEffect(() => {
+    if (login?.done || signup?.done) router.refresh();
+  }, [login, signup, router]);
 
-  const step = back ? "phone" : ver?.step === "code" || req?.step === "code" ? "code" : req?.step === "name" ? "name" : "phone";
-  const target = ver?.phone ?? req?.phone ?? "";
+  const tab = (m: Mode, label: string) => (
+    <button type="button" onClick={() => setMode(m)} className={`flex-1 rounded-lg py-2 text-sm font-semibold transition ${mode === m ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-500 hover:text-zinc-800"}`}>
+      {label}
+    </button>
+  );
 
   return (
     <div className="rounded-3xl bg-white p-6 text-zinc-700 shadow-2xl ring-1 ring-black/5 sm:p-7">
-      {step === "code" ? (
-        <form action={verifyAction}>
-          <input type="hidden" name="phone" value={target} />
-          <button type="button" onClick={() => setBack(true)} className="mb-3 inline-flex items-center gap-1 text-sm text-zinc-500 hover:text-zinc-800"><ArrowLeft className="size-4" /> Trocar número</button>
-          <div className="mb-1 flex items-center gap-2 text-sm font-semibold text-emerald-600"><MessageCircle className="size-4" /> Código enviado</div>
-          <h2 className="text-xl font-semibold text-zinc-900">Confira seu WhatsApp</h2>
-          <p className="mb-5 mt-1 text-sm text-zinc-500">Mandamos um código de 6 números para <b className="text-zinc-800">{fmt(target)}</b>.</p>
-          <input
-            name="code"
-            value={code}
-            onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            autoFocus
-            placeholder="000000"
-            className={`${inp} text-center font-mono text-2xl tracking-[.5em]`}
-          />
-          {ver?.error && <p className="mt-3 rounded-xl bg-rose-50 px-3 py-2.5 text-sm text-rose-700 ring-1 ring-rose-200">{ver.error}</p>}
-          {resendMsg && <p className="mt-3 rounded-xl bg-zinc-50 px-3 py-2.5 text-sm text-zinc-600 ring-1 ring-zinc-200">{resendMsg}</p>}
-          <button disabled={verifying || code.length !== 6} className={`${btn} mt-4`}>{verifying && <Loader2 className="size-4 animate-spin" />} Entrar</button>
-          <button
-            type="button"
-            disabled={resending}
-            onClick={() => startResend(async () => { const r = await resendLinksCodeAction(target); setResendMsg(r.error ?? "Mandamos um código novo. Confira o WhatsApp."); })}
-            className="mt-3 w-full text-center text-sm font-medium text-orange-600 hover:underline disabled:opacity-50"
-          >
-            Mandar outro código
-          </button>
-        </form>
-      ) : (
-        <form action={requestAction}>
-          <h2 className="text-xl font-semibold text-zinc-900">{step === "name" ? "Primeiro acesso" : "Entrar"}</h2>
-          <p className="mb-5 mt-1 text-sm text-zinc-500">{step === "name" ? "Como podemos te chamar? É só desta vez." : "Sem senha: você entra com um código no WhatsApp."}</p>
-          <label className="mb-4 block">
-            <span className="mb-1.5 block text-sm font-medium text-zinc-700">Seu WhatsApp</span>
-            <input name="phone" value={phone} onChange={(e) => setPhone(e.target.value)} required inputMode="tel" placeholder="(11) 99999-8888" className={inp} />
-          </label>
-          {step === "name" && (
-            <label className="mb-4 block">
-              <span className="mb-1.5 block text-sm font-medium text-zinc-700">Seu nome</span>
-              <input name="name" value={name} onChange={(e) => setName(e.target.value)} required autoFocus placeholder="Ex.: João Silva" className={inp} />
-            </label>
-          )}
-          {req?.error && <p className="mb-4 rounded-xl bg-rose-50 px-3 py-2.5 text-sm text-rose-700 ring-1 ring-rose-200">{req.error}</p>}
-          <button disabled={requesting} className={btn}>{requesting && <Loader2 className="size-4 animate-spin" />} Receber código no WhatsApp</button>
-          <p className="mt-4 flex items-start gap-2 text-xs text-zinc-500"><ShieldCheck className="mt-0.5 size-4 shrink-0 text-emerald-600" /> A cada acesso você recebe um aviso no WhatsApp. Se não foi você, toque em &quot;Não fui eu&quot; e desconectamos tudo.</p>
+      {mode !== "forgot" && (
+        <div className="mb-5 flex gap-1 rounded-xl bg-zinc-100 p-1">
+          {tab("login", "Entrar")}
+          {tab("signup", "Criar conta")}
+        </div>
+      )}
+      {mode === "login" && (
+        <form action={loginAction}>
+          <Field label="E-mail" name="email" type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="voce@email.com" />
+          <Field label="Senha" name="password" type="password" required autoComplete="current-password" />
+          <Msg s={login} />
+          <button disabled={logging} className={btn}>{logging && <Loader2 className="size-4 animate-spin" />} Entrar</button>
+          <button type="button" onClick={() => setMode("forgot")} className="mt-3 w-full text-center text-sm font-medium text-orange-600 hover:underline">Esqueci minha senha</button>
         </form>
       )}
+      {mode === "signup" && (
+        <form action={signupAction}>
+          <Field label="Seu nome" name="name" required autoComplete="name" placeholder="Ex.: João Silva" />
+          <Field label="E-mail" name="email" type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="voce@email.com" />
+          <Field label="Senha (mínimo 8 caracteres)" name="password" type="password" required minLength={8} autoComplete="new-password" />
+          <Msg s={signup} />
+          <button disabled={signing} className={btn}>{signing && <Loader2 className="size-4 animate-spin" />} Criar conta</button>
+        </form>
+      )}
+      {mode === "forgot" && (
+        <form action={forgotAction}>
+          <h2 className="text-xl font-semibold text-zinc-900">Esqueci minha senha</h2>
+          <p className="mb-5 mt-1 text-sm text-zinc-500">Mandamos um link no seu e-mail para criar uma senha nova.</p>
+          <Field label="E-mail" name="email" type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="voce@email.com" />
+          <Msg s={forgot} />
+          <button disabled={sending} className={btn}>{sending && <Loader2 className="size-4 animate-spin" />} Mandar link</button>
+          <button type="button" onClick={() => setMode("login")} className="mt-3 w-full text-center text-sm font-medium text-orange-600 hover:underline">Voltar para entrar</button>
+        </form>
+      )}
+      <p className="mt-4 flex items-start gap-2 text-xs text-zinc-500"><Lock className="mt-0.5 size-4 shrink-0 text-emerald-600" /> Cada conta vê só os próprios links.</p>
     </div>
+  );
+}
+
+/** Senha nova pelo link do e-mail. */
+export function ResetForm({ token }: { token: string }) {
+  const router = useRouter();
+  const [state, action, pending] = useActionState<LoginState, FormData>(resetLinksAction, undefined);
+  useEffect(() => {
+    if (state?.done) router.push("/links");
+  }, [state, router]);
+  return (
+    <form action={action} className="rounded-3xl bg-white p-6 text-zinc-700 shadow-2xl ring-1 ring-black/5 sm:p-7">
+      <h2 className="text-xl font-semibold text-zinc-900">Criar senha nova</h2>
+      <p className="mb-5 mt-1 text-sm text-zinc-500">Depois de salvar você já entra na sua conta.</p>
+      <input type="hidden" name="token" value={token} />
+      <Field label="Senha nova (mínimo 8 caracteres)" name="password" type="password" required minLength={8} autoComplete="new-password" />
+      <Msg s={state} />
+      <button disabled={pending} className={btn}>{pending && <Loader2 className="size-4 animate-spin" />} Salvar senha</button>
+    </form>
   );
 }

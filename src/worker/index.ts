@@ -9,7 +9,6 @@ import { recheckInvites, reingestStockMailbox } from "../lib/market-inbox";
 import { startSettingsRefresh } from "../lib/platform-settings";
 import { checkLimitAlerts } from "../lib/limit-alerts";
 import { reportError } from "../lib/report";
-import { runFunnels } from "../lib/funnels";
 import { runFlows } from "../lib/flows";
 import { smsJobsTick } from "../lib/smsbear";
 
@@ -89,7 +88,6 @@ async function main() {
   void every(BLUEPRINT_EVERY_MS, "blueprints", () => deployBlueprints());
   void every(60_000, "housekeeping", housekeeping);
   void every(60_000, "limites", checkLimitAlerts);
-  void every(10_000, "funis", runFunnels);
   void every(5_000, "fluxos", runFlows);
   void every(5_000, "smsbear", smsJobsTick);
   void every(20_000, "vendas", marketTick);

@@ -22,8 +22,7 @@ import { env } from "@/lib/env";
 import { stockMailbox } from "@/lib/mail";
 import { cachedSetting } from "@/lib/settings-cache";
 import { PasswordInput } from "@/components/password-input";
-import { adminDeleteLinkAction, setupLinksLoginAction, toggleLinksLoginAction } from "@/app/actions/links";
-import { usableGroupWhere } from "@/lib/bm-problems";
+import { adminBlockLinksAccountAction, adminDeleteLinkAction } from "@/app/actions/links";
 import { testMercadoPagoAction } from "@/app/actions/market";
 import { Trash2 } from "lucide-react";
 
@@ -38,9 +37,8 @@ export default async function AdminPage() {
     prisma.user.findMany({ where: { memberships: { none: {} } }, orderBy: { createdAt: "desc" } }),
     platformDiscordHooks(),
   ]);
-  const extLinks = await prisma.externalLink.findMany({ orderBy: { createdAt: "desc" }, take: 200, include: { lead: { select: { name: true, phone: true } } } });
-  const linksFunnel = await prisma.funnel.findFirst({ where: { kind: "LINKS", workspaceId: auth.workspace.id }, select: { id: true, status: true, groupId: true } });
-  const linkGroups = await prisma.bmGroup.findMany({ where: { workspaceId: auth.workspace.id, ...usableGroupWhere }, select: { id: true, name: true }, orderBy: { name: "asc" } });
+  const extLinks = await prisma.externalLink.findMany({ orderBy: { createdAt: "desc" }, take: 200, include: { lead: { select: { name: true, phone: true } }, account: { select: { name: true, email: true } } } });
+  const linkAccounts = await prisma.linksAccount.findMany({ orderBy: { createdAt: "desc" }, take: 200, include: { _count: { select: { links: true } } } });
   const bugs = await prisma.bugReport.findMany({ orderBy: [{ status: "asc" }, { createdAt: "desc" }], take: 50 });
   const openBugs = bugs.filter((b) => b.status === "OPEN").length;
   const discordHooks = (hooks ?? {}) as Record<string, string>;
@@ -181,28 +179,31 @@ export default async function AdminPage() {
 
       <Drawer
         title="Gerador de links do botão (site público)"
-        tone={linksFunnel?.status === "ACTIVE" ? "green" : "amber"}
-        meta={<span>{linksFunnel ? `${linksFunnel.status === "ACTIVE" ? "No ar" : "Pausado"} · ${extLinks.length} link(s)` : "Desligado"}</span>}
+        tone="green"
+        meta={<span>{linkAccounts.length} conta(s) · {extLinks.length} link(s)</span>}
       >
         <p className="mb-4 text-sm text-zinc-500">
-          Página sem senha onde seus clientes entram pelo WhatsApp e criam o código do botão:{" "}
+          Página onde seus clientes criam conta com e-mail e senha e geram o código do botão (cada um vê só os seus):{" "}
           <a href={`${company().siteUrl}/links`} target="_blank" rel="noreferrer" className="font-medium text-brand-600 hover:underline">{company().siteUrl.replace(/^https:\/\//, "")}/links</a>.{" "}
         </p>
-        <ActionForm action={setupLinksLoginAction} submit={linksFunnel ? "Trocar grupo" : "Ligar o login por WhatsApp"} variant={linksFunnel ? "secondary" : "primary"}>
-          <Field label="Grupo de BM que manda o código e o aviso de acesso">
-            <select name="groupId" defaultValue={linksFunnel?.groupId ?? ""} className="w-full rounded-xl border border-zinc-200 bg-white px-3.5 py-2.5 text-sm shadow-soft outline-none focus:border-brand-400">
-              <option value="" disabled>Escolha o grupo</option>
-              {linkGroups.map((g) => (
-                <option key={g.id} value={g.id}>{g.name}</option>
+        {linkAccounts.length > 0 && (
+          <div className="mt-2">
+            <div className="mb-2 text-sm font-semibold">Contas</div>
+            <Table head={["Nome", "E-mail", "Links", "Último acesso", ""]}>
+              {linkAccounts.map((a) => (
+                <tr key={a.id}>
+                  <Td className="font-medium">{a.name}{a.blockedAt && <span className="ml-2 text-xs text-red-600">bloqueada</span>}</Td>
+                  <Td className="text-xs">{a.email}</Td>
+                  <Td>{a._count.links}</Td>
+                  <Td className="text-xs text-zinc-500">{(a.lastLoginAt ?? a.createdAt).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", dateStyle: "short", timeStyle: "short" })}</Td>
+                  <Td>
+                    <ConfirmButton action={adminBlockLinksAccountAction.bind(null, a.id, !a.blockedAt)} variant="ghost" className="px-2 py-1 text-xs" confirm={a.blockedAt ? undefined : `Bloquear a conta ${a.email}?\nEla não consegue mais entrar. Os links continuam funcionando (apague abaixo se precisar).`}>
+                      {a.blockedAt ? "Liberar" : "Bloquear"}
+                    </ConfirmButton>
+                  </Td>
+                </tr>
               ))}
-            </select>
-          </Field>
-        </ActionForm>
-        {linksFunnel && (
-          <div className="mt-3">
-            <ConfirmButton action={toggleLinksLoginAction.bind(null, linksFunnel.status !== "ACTIVE")} variant="secondary" className="px-3 py-1.5 text-sm">
-              {linksFunnel.status === "ACTIVE" ? "Pausar o login" : "Religar o login"}
-            </ConfirmButton>
+            </Table>
           </div>
         )}
         {extLinks.length > 0 && (
@@ -212,7 +213,7 @@ export default async function AdminPage() {
               {extLinks.map((l) => (
                 <tr key={l.id}>
                   <Td className="font-medium">{l.name}</Td>
-                  <Td className="text-xs">{l.lead ? `${l.lead.name} · ${l.lead.phone}` : "—"}</Td>
+                  <Td className="text-xs">{l.account ? `${l.account.name} · ${l.account.email}` : l.lead ? `${l.lead.name} · ${l.lead.phone} (login antigo)` : "—"}</Td>
                   <Td className="font-mono">{l.code}</Td>
                   <Td className="max-w-xs truncate text-xs text-zinc-500" title={l.url}>{l.url}</Td>
                   <Td>{l.clicks.toLocaleString("pt-BR")}</Td>

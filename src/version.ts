@@ -2,6 +2,14 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "3.21",
+    date: "28/10/2026",
+    items: [
+      "Gerador de links: agora cada pessoa cria a própria conta com e-mail e senha (com \"Esqueci minha senha\" por e-mail) e vê só os links dela. O login por código no WhatsApp saiu",
+      "Admin: lista das contas do gerador de links (com quantos links cada uma tem e o último acesso) e botão para bloquear uma conta",
+    ],
+  },
+  {
     version: "3.20",
     date: "28/10/2026",
     items: [

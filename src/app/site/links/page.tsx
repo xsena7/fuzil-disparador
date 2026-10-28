@@ -3,7 +3,7 @@ import { MousePointerClick, PencilLine, Send } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { trackedUrlBase } from "@/lib/env";
 import { firstName } from "@/lib/template-utils";
-import { linksAuth, linksFunnel } from "@/lib/links-login";
+import { linksAuth } from "@/lib/links-auth";
 import { LoginForm } from "./login-form";
 import { LinkCard, NewLinkForm } from "./my-links";
 import { LogoutButton } from "./logout";
@@ -19,13 +19,13 @@ const STEPS = [
 
 const BG = { background: "radial-gradient(700px circle at 10% 0%, rgba(249,115,22,.22), transparent 65%), radial-gradient(600px circle at 95% 100%, rgba(225,29,72,.18), transparent 65%)" };
 
-/** Gerador de links (site público): o cliente entra pelo WhatsApp e cria o código do botão. */
+/** Gerador de links (site público): o cliente entra com e-mail e senha e cria o código do botão. */
 export default async function PublicLinksPage() {
   const base = trackedUrlBase();
-  const [funnel, auth] = await Promise.all([linksFunnel(), linksAuth()]);
+  const auth = await linksAuth();
 
   if (auth) {
-    const links = await prisma.externalLink.findMany({ where: { leadId: auth.lead.id }, orderBy: { createdAt: "desc" } });
+    const links = await prisma.externalLink.findMany({ where: { accountId: auth.account.id }, orderBy: { createdAt: "desc" } });
     return (
       <section className="relative min-h-[80vh] overflow-hidden bg-ink text-white">
         <div className="pointer-events-none absolute inset-0" style={BG} />
@@ -33,7 +33,7 @@ export default async function PublicLinksPage() {
           <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
             <div>
               <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-medium text-orange-200">Gerador de links do botão</div>
-              <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">Olá, {firstName(auth.lead.name) || auth.lead.name}!</h1>
+              <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">Olá, {firstName(auth.account.name) || auth.account.name}!</h1>
               <p className="mt-2 text-zinc-400">
                 Cole o código na variável do botão ({"{{1}}"}). O botão abre <code className="text-zinc-300">https://{base}/</code> + o código.
               </p>
@@ -79,14 +79,7 @@ export default async function PublicLinksPage() {
             ))}
           </ol>
         </div>
-        {funnel && funnel.status === "ACTIVE" ? (
-          <LoginForm />
-        ) : (
-          <div className="rounded-3xl bg-white p-7 text-center text-zinc-700 shadow-2xl">
-            <h2 className="text-xl font-semibold text-zinc-900">Em manutenção</h2>
-            <p className="mt-2 text-sm">O gerador de links volta em instantes. Tente de novo daqui a pouco.</p>
-          </div>
-        )}
+        <LoginForm />
       </div>
     </section>
   );

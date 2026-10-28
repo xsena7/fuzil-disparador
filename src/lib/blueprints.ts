@@ -1,7 +1,6 @@
 import { readFile } from "node:fs/promises";
 import type { Prisma, WhatsAppAccount } from "@prisma/client";
 import { prisma } from "./db";
-import { ensureLinksBlueprints } from "./links-templates";
 import { meta, MetaError, type TemplateComponent } from "./meta";
 import { syncWaba, wabaToken } from "./sync";
 import { createAlert } from "./alerts";
@@ -99,8 +98,6 @@ const CONNECT_WAIT_MS = 5 * 60_000;
 
 /** Garante que todo template padrão ativo exista em todas as WABAs do seu escopo. */
 export async function deployBlueprints(workspaceId?: string) {
-  // Funil do gerador de links: garante que o código e o aviso de acesso existem antes de subir
-  await ensureLinksBlueprints().catch((e) => console.error("[links] templates", e));
   const blueprints = await prisma.templateBlueprint.findMany({
     where: { active: true, ...(workspaceId ? { workspaceId } : {}) },
     include: { deployments: true },

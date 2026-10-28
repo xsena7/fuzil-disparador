@@ -2,7 +2,6 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import type { Prisma, RecipientStatus } from "@prisma/client";
 import { prisma } from "./db";
 import { handleFlowInbound } from "./flows";
-import { handleLoginReply } from "./links-login";
 import { env } from "./env";
 import { decrypt } from "./crypto";
 import { createAlert } from "./alerts";
@@ -232,10 +231,7 @@ async function handleMessages(value: any, workspaceIds: string[]) {
     if (phone) {
       try {
         const conv = await ingestInbound(phone.waba.workspaceId, phone, msg, contactName);
-        // Botões do aviso de "novo acesso" do gerador de links (Fui eu / Não fui eu)
-        const loginReply = conv && !optOut ? await handleLoginReply(recipient, text).catch(() => null) : null;
-        if (conv && loginReply) await sendChatMessage(conv.id, { source: "AUTO_REPLY", text: loginReply }).catch((e) => console.error("[webhook] links", e));
-        else if (conv && !optOut && msg.type !== "reaction") {
+        if (conv && !optOut && msg.type !== "reaction") {
           // Fluxo da campanha (ou alguém no meio de um fluxo) vem antes da resposta automática
           const byFlow = await handleFlowInbound(conv, recipient, msg, text).catch((e) => (console.error("[webhook] fluxo", e), false));
           if (!byFlow) await maybeAutoReply(conv.id, recipient);

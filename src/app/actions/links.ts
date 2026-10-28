@@ -1,94 +1,92 @@
 "use server";
 
-import { randomBytes, randomInt, timingSafeEqual } from "node:crypto";
+import { randomBytes, randomInt } from "node:crypto";
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
-import { requireSuperAdmin } from "@/lib/auth";
+import { hashPassword, requireSuperAdmin, verifyPassword } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { trackedUrlBase } from "@/lib/env";
-import { normalizePhone } from "@/lib/phone";
+import { company } from "@/lib/company";
+import { emailLayout, sendEmail } from "@/lib/email";
 import { clientIp, tooMany } from "@/lib/rate-limit";
-import { CODE_COOLDOWN_S, FUNNEL_PAUSED, hashCode, MAX_CODE_ATTEMPTS, MAX_CODE_SENDS, advanceLead, sendCode } from "@/lib/funnels";
-import { createLinksFunnel, endLinksSession, linksAuth, linksFunnelFor, startLinksSession } from "@/lib/links-login";
+import { endLinksSession, linksAuth, normEmail, sha, startLinksSession } from "@/lib/links-auth";
 import type { FormState } from "./auth";
 
-import { usableGroupWhere } from "@/lib/bm-problems";
 const ALPHABET = "abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 const newCode = () => Array.from({ length: 7 }, () => ALPHABET[randomInt(ALPHABET.length)]).join("");
 
-// ---------------- Login pelo WhatsApp ----------------
+// ---------------- Conta: e-mail e senha ----------------
 
-export type LoginState = { step?: "phone" | "name" | "code"; phone?: string; error?: string; ok?: boolean } | undefined;
+export type LoginState = { error?: string; ok?: string; done?: boolean } | undefined;
 
-/** Passo 1: número (e o nome, no primeiro acesso). Manda o código pelo WhatsApp. */
-export async function requestLinksCodeAction(_: LoginState, form: FormData): Promise<LoginState> {
+const MIN_PASSWORD = 8;
+const RESET_MINUTES = 60;
+const validEmail = (e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
+
+/** Cria a conta e já entra. */
+export async function signupLinksAction(_: LoginState, form: FormData): Promise<LoginState> {
   const ip = await clientIp();
-  if (tooMany(`lk:code:${ip}`, 15, 15 * 60_000)) return { error: "Muitos pedidos de código. Espere alguns minutos." };
-  const phone = normalizePhone(String(form.get("phone") ?? ""));
-  if (!phone) return { error: "WhatsApp inválido. Digite com DDD, ex.: (11) 99999-8888." };
-  const funnel = await linksFunnelFor(phone);
-  if (!funnel || funnel.status !== "ACTIVE") return { error: "O login está fora do ar agora. Tente de novo em alguns minutos." };
+  if (tooMany(`lk:signup:${ip}`, 5, 60 * 60_000)) return { error: "Muitas contas criadas daqui. Tente de novo mais tarde." };
   const name = String(form.get("name") ?? "").replace(/\s+/g, " ").trim().slice(0, 80);
-
-  let lead = await prisma.lead.findUnique({ where: { funnelId_phone: { funnelId: funnel.id, phone } } });
-  if (lead?.status === "STOPPED") return { error: "Esse número não tem acesso ao gerador de links." };
-  if (!lead) {
-    if (name.length < 2) return { step: "name", phone };
-    await prisma.contact.upsert({
-      where: { workspaceId_phone: { workspaceId: funnel.workspaceId, phone } },
-      create: { workspaceId: funnel.workspaceId, phone, name },
-      update: { name, optedOut: false, optedOutAt: null },
-    });
-    lead = await prisma.lead
-      .create({ data: { funnelId: funnel.id, workspaceId: funnel.workspaceId, name, phone, formToken: randomBytes(18).toString("base64url"), ip } })
-      .catch(() => prisma.lead.findUniqueOrThrow({ where: { funnelId_phone: { funnelId: funnel.id, phone } } }));
-  }
-  // Acabou de receber um código: não manda outro
-  if (lead.lastCodeAt && Date.now() - lead.lastCodeAt.getTime() < CODE_COOLDOWN_S * 1000 && lead.codeHash) return { step: "code", phone };
-  // Limite de códigos por dia (zera depois de 24h)
-  const sends = lead.lastCodeAt && Date.now() - lead.lastCodeAt.getTime() > 86400_000 ? 0 : lead.codeSends;
-  if (sends >= MAX_CODE_SENDS * 2) return { error: "Você já pediu vários códigos hoje. Tente de novo amanhã." };
-  if (sends !== lead.codeSends) lead = await prisma.lead.update({ where: { id: lead.id }, data: { codeSends: 0 } });
-  await sendCode(funnel, lead);
-  return { step: "code", phone };
+  const email = normEmail(String(form.get("email") ?? ""));
+  const password = String(form.get("password") ?? "");
+  if (name.length < 2) return { error: "Escreva seu nome." };
+  if (!validEmail(email)) return { error: "E-mail inválido." };
+  if (password.length < MIN_PASSWORD) return { error: `A senha precisa ter pelo menos ${MIN_PASSWORD} caracteres.` };
+  if (await prisma.linksAccount.findUnique({ where: { email }, select: { id: true } })) return { error: "Já existe uma conta com esse e-mail. Entre com a sua senha." };
+  const account = await prisma.linksAccount
+    .create({ data: { name, email, passwordHash: await hashPassword(password) } })
+    .catch(() => null);
+  if (!account) return { error: "Já existe uma conta com esse e-mail. Entre com a sua senha." };
+  await startLinksSession(account.id, (await headers()).get("user-agent"));
+  return { done: true };
 }
 
-/** Passo 2: confere o código e abre o login (salvo neste navegador, neste IP). */
-export async function verifyLinksCodeAction(_: LoginState, form: FormData): Promise<LoginState> {
-  const phone = normalizePhone(String(form.get("phone") ?? ""));
-  const funnel = phone ? await linksFunnelFor(phone) : null;
-  if (!funnel || !phone) return { error: "Recarregue a página e tente de novo." };
-  if (tooMany(`lk:ver:${phone}`, 15, 10 * 60_000)) return { step: "code", phone, error: "Muitas tentativas. Espere alguns minutos." };
-  const lead = await prisma.lead.findUnique({ where: { funnelId_phone: { funnelId: funnel.id, phone } } });
-  if (!lead || lead.status === "STOPPED") return { error: "Recarregue a página e tente de novo." };
-  const digits = String(form.get("code") ?? "").replace(/\D/g, "");
-  if (digits.length !== 6) return { step: "code", phone, error: "Digite os 6 números do código." };
-  if (!lead.codeHash || !lead.codeExpiresAt || lead.codeExpiresAt < new Date()) return { step: "code", phone, error: "O código expirou. Toque em \"Mandar outro código\"." };
-  if (lead.codeAttempts >= MAX_CODE_ATTEMPTS) return { step: "code", phone, error: "Muitas tentativas erradas. Peça outro código." };
-  if (!timingSafeEqual(Buffer.from(hashCode(lead.id, digits)), Buffer.from(lead.codeHash))) {
-    await prisma.lead.update({ where: { id: lead.id }, data: { codeAttempts: { increment: 1 } } });
-    return { step: "code", phone, error: "Código incorreto. Confira no WhatsApp e tente de novo." };
-  }
-  const first = lead.status === "CODE_SENT";
-  const updated = await prisma.lead.update({
-    where: { id: lead.id },
-    data: { codeHash: null, codeAttempts: 0, ...(first ? { status: "VERIFIED" as const, verifiedAt: new Date(), stepIndex: 0, nextStepAt: new Date() } : {}) },
+export async function loginLinksAction(_: LoginState, form: FormData): Promise<LoginState> {
+  const ip = await clientIp();
+  const email = normEmail(String(form.get("email") ?? ""));
+  if (tooMany(`lk:login:${ip}`, 20, 15 * 60_000) || tooMany(`lk:login:${email}`, 8, 15 * 60_000)) return { error: "Muitas tentativas. Espere alguns minutos." };
+  const account = await prisma.linksAccount.findUnique({ where: { email } });
+  const ok = account ? await verifyPassword(String(form.get("password") ?? ""), account.passwordHash) : false;
+  if (!account || !ok) return { error: "E-mail ou senha incorretos." };
+  if (account.blockedAt) return { error: "Essa conta foi bloqueada." };
+  await startLinksSession(account.id, (await headers()).get("user-agent"));
+  return { done: true };
+}
+
+/** "Esqueci minha senha": manda o link por e-mail. Responde sempre igual (não revela quais e-mails existem). */
+export async function forgotLinksAction(_: LoginState, form: FormData): Promise<LoginState> {
+  const ip = await clientIp();
+  if (tooMany(`lk:forgot:${ip}`, 5, 60 * 60_000)) return { error: "Muitos pedidos. Tente de novo mais tarde." };
+  const email = normEmail(String(form.get("email") ?? ""));
+  const msg = { ok: "Se esse e-mail tiver conta, mandamos um link para criar uma senha nova. Confira a caixa de entrada e o spam." };
+  const account = validEmail(email) ? await prisma.linksAccount.findUnique({ where: { email } }) : null;
+  if (!account || account.blockedAt) return msg;
+  const token = randomBytes(24).toString("base64url");
+  await prisma.linksAccount.update({ where: { id: account.id }, data: { resetTokenHash: sha(token), resetExpiresAt: new Date(Date.now() + RESET_MINUTES * 60_000) } });
+  const url = `${company().siteUrl}/links/senha?t=${token}`;
+  const mail = emailLayout({
+    preheader: "Crie uma senha nova para o gerador de links",
+    title: "Senha nova do gerador de links",
+    paragraphs: [`Olá, ${account.name}!`, `Clique no botão para criar uma senha nova. O link vale por ${RESET_MINUTES} minutos.`],
+    cta: { label: "Criar senha nova", url },
+    note: "Se não foi você que pediu, pode ignorar este e-mail: sua senha continua a mesma.",
   });
-  await startLinksSession(funnel, updated, (await headers()).get("user-agent"));
-  // Primeiro acesso: entra nos passos do funil do login (mensagem de boas-vindas)
-  if (first) await advanceLead(funnel, updated).catch((e) => console.error("[links] funil", e));
-  return { ok: true };
+  await sendEmail({ to: account.email, subject: "Senha nova do gerador de links", ...mail });
+  return msg;
 }
 
-export async function resendLinksCodeAction(phoneRaw: string): Promise<{ ok?: true; error?: string }> {
-  const form = new FormData();
-  form.set("phone", phoneRaw);
-  const phone = normalizePhone(phoneRaw);
-  const funnel = phone ? await linksFunnelFor(phone) : null;
-  const lead = funnel && phone ? await prisma.lead.findUnique({ where: { funnelId_phone: { funnelId: funnel.id, phone } } }) : null;
-  if (lead?.lastCodeAt && Date.now() - lead.lastCodeAt.getTime() < CODE_COOLDOWN_S * 1000) return { error: "Espere um minutinho antes de pedir outro código." };
-  const r = await requestLinksCodeAction(undefined, form);
-  return r?.error ? { error: r.error } : { ok: true };
+export async function resetLinksAction(_: LoginState, form: FormData): Promise<LoginState> {
+  const token = String(form.get("token") ?? "");
+  const password = String(form.get("password") ?? "");
+  if (password.length < MIN_PASSWORD) return { error: `A senha precisa ter pelo menos ${MIN_PASSWORD} caracteres.` };
+  const account = token ? await prisma.linksAccount.findUnique({ where: { resetTokenHash: sha(token) } }) : null;
+  if (!account || !account.resetExpiresAt || account.resetExpiresAt < new Date()) return { error: "Esse link expirou. Peça outro em \"Esqueci minha senha\"." };
+  await prisma.linksAccount.update({ where: { id: account.id }, data: { passwordHash: await hashPassword(password), resetTokenHash: null, resetExpiresAt: null } });
+  // Senha nova derruba os outros aparelhos
+  await prisma.linkSession.updateMany({ where: { accountId: account.id, revokedAt: null }, data: { revokedAt: new Date() } });
+  await startLinksSession(account.id, (await headers()).get("user-agent"));
+  return { done: true };
 }
 
 export async function logoutLinksAction() {
@@ -112,12 +110,12 @@ function readForm(form: FormData): { name: string; url: string } | { error: stri
 export async function createMyLinkAction(_: FormState, form: FormData): Promise<FormState> {
   const auth = await linksAuth();
   if (!auth) return { error: "Sua sessão expirou. Recarregue a página e entre de novo." };
-  if (tooMany(`lk:new:${auth.lead.id}`, 30, 60 * 60_000)) return { error: "Muitos links criados em pouco tempo. Espere um pouco." };
+  if (tooMany(`lk:new:${auth.account.id}`, 30, 60 * 60_000)) return { error: "Muitos links criados em pouco tempo. Espere um pouco." };
   const data = readForm(form);
   if ("error" in data) return data;
   for (let i = 0; i < 5; i++) {
     try {
-      const link = await prisma.externalLink.create({ data: { ...data, code: newCode(), leadId: auth.lead.id, creatorIp: auth.session.ip } });
+      const link = await prisma.externalLink.create({ data: { ...data, code: newCode(), accountId: auth.account.id, creatorIp: await clientIp() } });
       revalidatePath("/site/links");
       return { ok: `Link criado! O código é ${link.code}. Copie e cole na variável do botão.` };
     } catch {
@@ -132,7 +130,7 @@ export async function updateMyLinkAction(id: string, _: FormState, form: FormDat
   if (!auth) return { error: "Sua sessão expirou. Recarregue a página e entre de novo." };
   const data = readForm(form);
   if ("error" in data) return data;
-  const r = await prisma.externalLink.updateMany({ where: { id, leadId: auth.lead.id }, data });
+  const r = await prisma.externalLink.updateMany({ where: { id, accountId: auth.account.id }, data });
   if (!r.count) return { error: "Link não encontrado" };
   revalidatePath("/site/links");
   return { ok: "Salvo! Quem clicar a partir de agora já vai para o destino novo." };
@@ -141,42 +139,20 @@ export async function updateMyLinkAction(id: string, _: FormState, form: FormDat
 export async function deleteMyLinkAction(id: string): Promise<{ ok?: true; error?: string }> {
   const auth = await linksAuth();
   if (!auth) return { error: "Sua sessão expirou. Recarregue a página e entre de novo." };
-  await prisma.externalLink.deleteMany({ where: { id, leadId: auth.lead.id } });
+  await prisma.externalLink.deleteMany({ where: { id, accountId: auth.account.id } });
   revalidatePath("/site/links");
   return { ok: true };
 }
 
 // ---------------- Admin ----------------
 
-/** Liga o login por WhatsApp: cria o funil (e os 2 templates padrão) no grupo escolhido, ou troca o grupo. */
-export async function setupLinksLoginAction(_: FormState, form: FormData): Promise<FormState> {
-  const auth = await requireSuperAdmin();
-  const groupId = String(form.get("groupId") ?? "");
-  const group = await prisma.bmGroup.findFirst({ where: { id: groupId, workspaceId: auth.workspace.id, ...usableGroupWhere } });
-  if (!group) return { error: "Escolha um grupo de BM." };
-  // O funil do login desta conta (cada conta de administrador tem o seu)
-  const existing = await prisma.funnel.findFirst({ where: { kind: "LINKS", workspaceId: auth.workspace.id } });
-  if (existing) {
-    await prisma.funnel.update({ where: { id: existing.id }, data: { groupId } });
-    await prisma.templateBlueprint.updateMany({ where: { id: { in: [existing.codeBlueprintId, existing.loginBlueprintId].filter((x): x is string => Boolean(x)) } }, data: { groupId } });
-    await prisma.campaign.updateMany({ where: { funnelId: existing.id }, data: { groupId } });
-    revalidatePath("/admin");
-    return { ok: `Pronto! Os códigos e avisos do gerador de links agora saem pelo grupo ${group.name}.` };
-  }
-  await createLinksFunnel(auth.workspace.id, groupId);
+/** Admin: bloqueia (ou libera) uma conta do gerador de links. Bloqueada não entra; os links dela continuam funcionando. */
+export async function adminBlockLinksAccountAction(id: string, block: boolean) {
+  await requireSuperAdmin();
+  await prisma.linksAccount.update({ where: { id }, data: { blockedAt: block ? new Date() : null } });
+  if (block) await prisma.linkSession.updateMany({ where: { accountId: id, revokedAt: null }, data: { revokedAt: new Date() } });
   revalidatePath("/admin");
-  return { ok: `Login por WhatsApp ligado no grupo ${group.name}! Os 2 templates (código e aviso de acesso) foram enviados para a Meta aprovar nas BMs do grupo. Quando aprovarem, o site já funciona.` };
-}
-
-/** Pausa ou religa o login por WhatsApp desta conta (e os envios internos dele). */
-export async function toggleLinksLoginAction(active: boolean): Promise<FormState> {
-  const auth = await requireSuperAdmin();
-  const f = await prisma.funnel.findFirst({ where: { kind: "LINKS", workspaceId: auth.workspace.id } });
-  if (!f) return { error: "O login ainda não foi ligado." };
-  await prisma.funnel.update({ where: { id: f.id }, data: { status: active ? "ACTIVE" : "PAUSED" } });
-  await prisma.campaign.updateMany({ where: { funnelId: f.id }, data: active ? { status: "RUNNING", pausedReason: null } : { status: "PAUSED", pausedReason: FUNNEL_PAUSED } });
-  revalidatePath("/admin");
-  return { ok: active ? "Login religado." : "Login pausado: o site não manda mais código." };
+  return { ok: block ? "Conta bloqueada." : "Conta liberada." };
 }
 
 /** Admin: apaga qualquer link (ex.: alguém usando para golpe). */

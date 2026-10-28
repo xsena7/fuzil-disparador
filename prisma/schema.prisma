@@ -824,29 +824,51 @@ model ExternalLink {
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
   workspace   Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  // Dono do link (cliente logado pelo WhatsApp no gerador de links)
+  // Dono antigo do link (login pelo WhatsApp, desligado)
   leadId      String?
   lead        Lead?      @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  // Dono do link (conta de e-mail e senha do gerador de links)
+  accountId   String?
+  account     LinksAccount? @relation(fields: [accountId], references: [id], onDelete: Cascade)
 
   @@index([workspaceId])
   @@index([leadId])
+  @@index([accountId])
 }
 
 // Login salvo no navegador do gerador de links. Vale só no mesmo IP; IP novo pede código de novo.
 model LinkSession {
-  id         String    @id @default(cuid())
-  leadId     String
-  tokenHash  String    @unique
+  id         String        @id @default(cuid())
+  leadId     String?
+  accountId  String?
+  tokenHash  String        @unique
   ip         String
   userAgent  String?
-  createdAt  DateTime  @default(now())
-  lastSeenAt DateTime  @default(now())
-  // Último aviso de "novo acesso" mandado no WhatsApp
+  createdAt  DateTime      @default(now())
+  lastSeenAt DateTime      @default(now())
+  // Último aviso de "novo acesso" mandado no WhatsApp (login antigo)
   alertedAt  DateTime?
   revokedAt  DateTime?
-  lead       Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  lead       Lead?         @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  account    LinksAccount? @relation(fields: [accountId], references: [id], onDelete: Cascade)
 
   @@index([leadId])
+  @@index([accountId])
+}
+
+// Conta do gerador de links (site público): e-mail e senha, cada um vê só os próprios links
+model LinksAccount {
+  id             String         @id @default(cuid())
+  email          String         @unique
+  name           String
+  passwordHash   String
+  resetTokenHash String?        @unique
+  resetExpiresAt DateTime?
+  blockedAt      DateTime?
+  lastLoginAt    DateTime?
+  createdAt      DateTime       @default(now())
+  sessions       LinkSession[]
+  links          ExternalLink[]
 }
 
 // Financeiro dos sócios (administradores do Fuzil), dividido em partes iguais. Não é de uma conta de cliente.
