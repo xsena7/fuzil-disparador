@@ -25,7 +25,7 @@ import { SharedWabas } from "./shared-wabas";
 import { ProfileEditor } from "./profile-editor";
 import { SmsBearPanel } from "./smsbear-panel";
 import { KeepInput } from "@/components/keep-input";
-import { FUZIL_APP_ID, defaultAppSecret, isPlatformOwner, supportWhatsAppLink } from "@/lib/onboarding";
+import { FUZIL_APP_ID, FUZIL_BUSINESS_ID, defaultAppSecret, isPlatformOwner, supportWhatsAppLink } from "@/lib/onboarding";
 import {
   connectManualAction,
 
@@ -114,7 +114,7 @@ export default async function ConnectionsPage() {
       <ConnectGuide open={businesses.length === 0} />
       <EmbeddedSignup appId={env.metaAppId()} configId={env.metaConfigId()} graphVersion={env.metaGraphVersion()} />
 
-      {isOwner && <SharedWabas workspace={auth.workspace.name} />}
+      <SharedWabas workspace={auth.workspace.name} partnerId={FUZIL_BUSINESS_ID} owner={isOwner} />
 
       <details className="group mt-4 overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm" data-tour="connect-form">
         <summary className="flex cursor-pointer list-none items-center gap-3 px-5 py-3.5 [&::-webkit-details-marker]:hidden">

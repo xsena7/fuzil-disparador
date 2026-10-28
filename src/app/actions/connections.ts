@@ -507,7 +507,7 @@ export async function testWabaAction(id: string): Promise<{ ok?: boolean; text: 
   }
 }
 
-// ---------------- Contas compartilhadas com a BM do Fuzil (parceria) · só o dono do Fuzil ----------------
+// ---------------- Conectar com cadeado: contas compartilhadas com a BM do Fuzil (parceria) ----------------
 
 export type SharedWaba = { id: string; name: string; owner: string | null; via: string; connectedIn: string | null; here: boolean };
 
@@ -536,19 +536,26 @@ export async function listSharedWabasAction(): Promise<{ wabas?: SharedWaba[]; e
   }
 }
 
-/** Conecta uma conta compartilhada nesta conta do Fuzil: dá acesso ao usuário do sistema e sincroniza. */
+/**
+ * Conexão com cadeado: o cliente atribui a BM do Fuzil como parceira na conta do WhatsApp e digita o ID aqui.
+ * Dá acesso ao usuário do sistema do Fuzil e sincroniza. A conta só entra se foi compartilhada com o Fuzil (a Meta confere).
+ */
 export async function connectSharedWabaAction(wabaId: string): Promise<FormState> {
-  const auth = await requireOwner();
+  const auth = await requireAuth();
+  if (auth.role === "MEMBER" && !auth.user.isSuperAdmin) return { error: "Só o dono ou um admin da conta pode conectar BMs." };
   const token = env.metaSystemToken();
-  if (!token) return { error: "Falta o token do usuário do sistema da BM do Fuzil." };
-  if (!/^\d+$/.test(wabaId)) return { error: "Conta inválida." };
+  if (!token) return { error: "A conexão com cadeado ainda não está liberada nesta plataforma. Fale com o suporte." };
+  if (!/^\d{6,20}$/.test(wabaId)) return { error: "O ID da conta do WhatsApp tem só números (ex.: 1089435753910494)." };
   try {
     const userId = await meta.systemUserId(token).catch(() => null);
     // Sem essa atribuição o usuário do sistema enxerga a conta mas não manda mensagem (se já tiver, a Meta só confirma)
     if (userId) await meta.assignSystemUser(token, wabaId, userId).catch((e) => console.error("[parceria] atribuir", wabaId, friendlyError(e)));
     await connectWaba({ workspaceId: auth.workspace.id, wabaId, accessTokenEnc: null, connectionType: "MANUAL" });
   } catch (e) {
-    return { error: friendlyError(e) };
+    const msg = friendlyError(e);
+    if (/não deu acesso a essa WABA/.test(msg))
+      return { error: `A Meta ainda não liberou essa conta para o Fuzil. Confira se o ID está certo e se você atribuiu o parceiro ${FUZIL_BUSINESS_ID} com controle total nessa conta do WhatsApp.` };
+    return { error: msg };
   }
   deployBlueprints(auth.workspace.id).catch(() => undefined);
   revalidatePath("/conexoes");

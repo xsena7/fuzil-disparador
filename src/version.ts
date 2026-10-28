@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "3.31",
+    date: "28/10/2026",
+    items: ["Conexões: novo \"Conectar contas com cadeado\" para todo mundo. Sem token: na conta do WhatsApp da BM, clique em Atribuir parceiro, cole o ID do Fuzil (1045096945185345) com controle total, e no Fuzil cole o ID da conta do WhatsApp. Tem o passo a passo na própria tela"],
+  },
+  {
     version: "3.30",
     date: "28/10/2026",
     items: [

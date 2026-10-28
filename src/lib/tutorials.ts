@@ -64,6 +64,7 @@ export const TUTORIALS: Tutorial[] = [
         ],
       },
       { kind: "tip", text: "Passo a passo do botão, com o que esperar na tela: veja o tutorial \"Conectar pelo botão (Cloud API / Coexistência)\"." },
+      { kind: "text", text: "Conectar contas com cadeado (sem token): na BM, abra Configurações do negócio → Contas → Contas do WhatsApp, clique na conta, em Atribuir parceiro cole o ID 1045096945185345 (a BM do Fuzil) com Controle total. Depois, em Conexões → Conectar contas com cadeado, cole o ID da conta do WhatsApp e clique em Conectar." },
       { kind: "text", text: "A tela de Conexões tem \"Nova conexão\" em cima e as BMs embaixo, em gavetas: a última conectada fica sempre no topo. A bolinha da gaveta mostra o estado de cada BM sem precisar abrir: verde (tudo certo), amarela (atenção) ou vermelha (algo impede o disparo)." },
       {
         kind: "steps",
