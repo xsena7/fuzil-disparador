@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui";
 import { deleteBlueprintAction, deployNowAction, editBlueprintTextAction, toggleBlueprintAction, toggleKeepReadyAction } from "@/app/actions/templates";
 import type { TComponent } from "@/lib/template-utils";
 import { templateRejectReason, translateMetaText } from "@/lib/meta-errors";
+import { READY_GROUP } from "@/lib/bm-problems";
 
 export const dynamic = "force-dynamic";
 
@@ -53,7 +54,12 @@ export default async function BlueprintsPage() {
       {blueprints.length === 0 && <Empty>Nenhum template padrão. Crie um e ele será replicado em todas as BMs.</Empty>}
       <div className="space-y-3">
         {blueprints.map((bp) => {
-          const scope = wabas.filter((w) => !bp.groupId || w.business.groups.some((g) => g.groupId === bp.groupId));
+          // Mesma regra do envio: BMs que saíram do grupo por problema continuam recebendo; banidas não
+          const scope = wabas.filter(
+            (w) =>
+              w.business.problemKind !== "BANNED" &&
+              (!bp.groupId || bp.group?.system === READY_GROUP || w.business.groups.some((g) => g.groupId === bp.groupId) || w.business.problemPrevGroups.includes(bp.groupId)),
+          );
           const body = (bp.components as unknown as TComponent[]).find((c) => c.type === "BODY")?.text ?? "";
           const deps = scope.map((w) => bp.deployments.find((d) => d.wabaId === w.id));
           const approved = deps.filter((d) => d?.status === "APPROVED").length;

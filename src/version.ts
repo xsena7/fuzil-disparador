@@ -2,6 +2,13 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "3.25",
+    date: "28/10/2026",
+    items: [
+      "Templates padrão: corrigido o template reprovado que não era apagado e reenviado. Quando a BM saía de \"Prontas para disparo\" (por estar sem template aprovado, sem número ou com problema de pagamento), o Fuzil parava de mandar template para ela. Agora o template padrão continua indo para todas as BMs da conta (menos as banidas), e o reprovado é apagado e reenviado com o próximo nome (ex.: fzl_disp1 → fzl_disp2)",
+    ],
+  },
+  {
     version: "3.24",
     date: "28/10/2026",
     items: [

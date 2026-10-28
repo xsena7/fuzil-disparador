@@ -5,6 +5,7 @@ import { meta, MetaError, type TemplateComponent } from "./meta";
 import { friendlyError, metaErrorText } from "./meta-errors";
 import { syncWaba, wabaToken } from "./sync";
 import { createAlert } from "./alerts";
+import { READY_GROUP } from "./bm-problems";
 
 export type CreateResult =
   | { ok: true; status: string; category: string }
@@ -85,13 +86,21 @@ export async function templateAliases(workspaceId: string): Promise<Map<string, 
   return out;
 }
 
+const notBanned: Prisma.BusinessManagerWhereInput = { OR: [{ problemKind: null }, { problemKind: { not: "BANNED" } }] };
+
+/**
+ * WABAs que recebem o template padrão. Conta também as BMs que saíram do grupo por um problema
+ * (sem template aprovado, sem número, pagamento...): senão a BM com template reprovado nunca recebe o novo.
+ * Grupo "Prontas para disparo" = todas as BMs da conta (é para lá que elas vão quando ficam prontas). Banidas ficam de fora.
+ */
 async function wabasInScope(workspaceId: string, groupId: string | null) {
-  return prisma.whatsAppAccount.findMany({
-    where: groupId
-      ? { workspaceId, business: { groups: { some: { groupId } } } }
-      : { workspaceId },
-    include: { business: true },
-  });
+  if (!groupId) return prisma.whatsAppAccount.findMany({ where: { workspaceId, business: notBanned }, include: { business: true } });
+  const group = await prisma.bmGroup.findFirst({ where: { id: groupId, workspaceId }, select: { system: true } });
+  const business: Prisma.BusinessManagerWhereInput =
+    group?.system === READY_GROUP
+      ? { workspaceId, ...notBanned }
+      : { workspaceId, AND: [notBanned, { OR: [{ groups: { some: { groupId } } }, { problemPrevGroups: { has: groupId } }] }] };
+  return prisma.whatsAppAccount.findMany({ where: { workspaceId, business }, include: { business: true } });
 }
 
 /** Depois que a BM é conectada, espera esse tempo antes de mandar os templates padrão. */
