@@ -23,6 +23,20 @@ export default async function ChatPage() {
     prisma.campaign.findMany({ where: { workspaceId: ws }, select: { id: true, name: true }, orderBy: { createdAt: "desc" }, take: 500 }),
   ]);
 
+  // Números por campanha (as mais recentes): para a coluna da esquerda mostrar "qual campanha usou quais números"
+  const recent = await prisma.campaign.findMany({
+    where: { workspaceId: ws, funnelId: null, startedAt: { not: null, gte: new Date(Date.now() - 14 * 86400_000) } },
+    select: { id: true, name: true, status: true },
+    orderBy: { startedAt: "desc" },
+    take: 15,
+  });
+  const used = recent.length
+    ? await prisma.campaignRecipient.groupBy({ by: ["campaignId", "senderId"], where: { campaignId: { in: recent.map((c) => c.id) }, senderId: { not: null } } })
+    : [];
+  const campaignPhones = recent
+    .map((c) => ({ id: c.id, name: c.name, status: c.status, phoneIds: used.filter((u) => u.campaignId === c.id && u.senderId).map((u) => u.senderId!) }))
+    .filter((c) => c.phoneIds.length);
+
   const chatPhones: ChatPhone[] = phones.map((p) => ({
     id: p.id,
     display: formatPhone(p.displayPhoneNumber.replace(/\D/g, "")),
@@ -62,6 +76,7 @@ export default async function ChatPage() {
       templates={chatTemplates}
       quickReplies={quickReplies.map((q) => ({ id: q.id, shortcut: q.shortcut, text: q.text }))}
       campaignNames={Object.fromEntries(campaigns.map((c) => [c.id, c.name]))}
+      campaignPhones={campaignPhones}
     />
   );
 }

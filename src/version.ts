@@ -2,6 +2,14 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "3.19",
+    date: "28/10/2026",
+    items: [
+      "Chat: as mensagens que você manda (disparo, resposta automática e as suas) ficam com o fundo laranja do Fuzil e letra branca. Fundo da conversa num tom quente e letras maiores na lista",
+      "Chat: na coluna de números, escolha \"Por campanha\" (os números agrupados pela campanha que disparou por eles, com a bolinha verde na que está disparando agora) ou \"Por BM\"",
+    ],
+  },
+  {
     version: "3.18",
     date: "28/10/2026",
     items: ["Templates: as contas ficam separadas em gavetas pelo grupo da BM (Prontas para disparo, grupos de problema, seus grupos e Sem grupo), igual em Conexões, com quantas contas, templates e aptos tem em cada"],

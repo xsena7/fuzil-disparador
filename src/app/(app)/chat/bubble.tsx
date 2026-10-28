@@ -66,7 +66,7 @@ const time = (iso: string) => new Date(iso).toLocaleTimeString("pt-BR", { hour: 
 
 function Ticks({ m }: { m: ChatMsg }) {
   if (m.status === "failed") return <span title={m.error ?? "Falhou"}><AlertCircle className="size-3.5 text-rose-500" /></span>;
-  if (m.status === "read") return <CheckCheck className="size-3.5 text-sky-500" />;
+  if (m.status === "read") return <CheckCheck className="size-3.5 text-sky-200" />;
   if (m.status === "delivered") return <CheckCheck className="size-3.5 opacity-60" />;
   if (m.status === "sent") return <Check className="size-3.5 opacity-60" />;
   return <Clock className="size-3 opacity-60" />;
@@ -100,27 +100,26 @@ function Media({ m }: { m: ChatMsg }) {
 /** Uma mensagem do chat. Disparos e respostas automáticas ganham um selo próprio. */
 export function Bubble({ m, campaignName }: { m: ChatMsg; campaignName?: string }) {
   const out = m.direction === "OUT";
-  const agent = out && m.source === "AGENT";
+  // Tudo que sai (disparo, resposta automática, você) é laranja do Fuzil, com letra branca
+  const agent = out;
   const hasMedia = ["image", "sticker", "audio", "video", "document", "location"].includes(m.kind);
   return (
     <div className={clsx("flex", out ? "justify-end" : "justify-start")}>
       <div
         className={clsx(
-          "relative max-w-[min(34rem,85%)] rounded-2xl px-3.5 py-2 text-[14px] leading-relaxed shadow-sm",
+          "relative max-w-[min(34rem,85%)] rounded-2xl px-3.5 py-2 text-[15px] leading-relaxed shadow-sm",
           !out && "rounded-bl-md bg-white text-zinc-800 ring-1 ring-zinc-200/70",
-          agent && "rounded-br-md bg-brand-gradient text-white",
-          out && m.source === "CAMPAIGN" && "rounded-br-md bg-orange-50 text-zinc-800 ring-1 ring-orange-200/80",
-          out && m.source === "AUTO_REPLY" && "rounded-br-md bg-violet-50 text-zinc-800 ring-1 ring-violet-200/80",
+          out && "rounded-br-md bg-brand-gradient text-white shadow-orange-500/20",
           m.status === "failed" && "ring-2 ring-rose-300",
         )}
       >
         {out && m.source === "CAMPAIGN" && (
-          <div className="mb-1 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-orange-600">
+          <div className="mb-1 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-white/85">
             <Megaphone className="size-3.5" /> Disparo{campaignName ? ` · ${campaignName}` : ""}
           </div>
         )}
         {out && m.source === "AUTO_REPLY" && (
-          <div className="mb-1 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-violet-600">
+          <div className="mb-1 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-white/85">
             <Zap className="size-3.5" /> Resposta automática
           </div>
         )}
@@ -130,22 +129,22 @@ export function Bubble({ m, campaignName }: { m: ChatMsg; campaignName?: string 
         {m.layout && <TemplateHeader l={m.layout} />}
         {hasMedia && <div className={clsx(m.text && "mb-1.5")}><Media m={m} /></div>}
         {m.kind === "reaction" ? <span className="text-2xl">{m.text}</span> : m.text ? <WaText text={m.text} /> : !hasMedia && <span className="italic opacity-60">Mensagem não suportada</span>}
-        {m.layout?.footer && <div className="mt-1 text-[12px] text-zinc-500">{m.layout.footer}</div>}
+        {m.layout?.footer && <div className={clsx("mt-1 text-[12px]", out ? "text-white/75" : "text-zinc-500")}>{m.layout.footer}</div>}
         <div className={clsx("mt-0.5 flex items-center justify-end gap-1 text-[11px]", agent ? "text-white/75" : "text-zinc-400")}>
           {time(m.createdAt)}
           {out && <Ticks m={m} />}
         </div>
         {m.status === "failed" && m.error && <div className={clsx("mt-1 text-[11px]", agent ? "text-white" : "text-rose-600")}>Não enviada: {m.error}</div>}
         {m.layout && m.layout.buttons.length > 0 && (
-          <div className="-mx-3.5 -mb-2 mt-2 divide-y divide-orange-200/70 border-t border-orange-200/70">
+          <div className="-mx-3.5 -mb-2 mt-2 divide-y divide-white/25 border-t border-white/25">
             {m.layout.buttons.map((b, i) =>
               b.url ? (
                 // Abre o mesmo link que a pessoa recebeu, sem contar como clique dela
-                <a key={i} href={b.url} target="_blank" rel="noreferrer" title="Abre o link do disparo (não conta como clique)" className="block py-2 text-center text-[13px] font-medium text-sky-600 hover:bg-orange-100/40 hover:underline">
+                <a key={i} href={b.url} target="_blank" rel="noreferrer" title="Abre o link do disparo (não conta como clique)" className="block py-2 text-center text-[14px] font-semibold text-white hover:bg-white/10 hover:underline">
                   {b.text}
                 </a>
               ) : (
-                <div key={i} className="py-2 text-center text-[13px] font-medium text-sky-600">{b.text}</div>
+                <div key={i} className="py-2 text-center text-[14px] font-semibold text-white">{b.text}</div>
               ),
             )}
           </div>

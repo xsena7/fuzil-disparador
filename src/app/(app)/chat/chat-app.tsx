@@ -111,16 +111,32 @@ export function ChatApp({
   templates,
   quickReplies,
   campaignNames,
+  campaignPhones = [],
 }: {
   me: { id: string; name: string };
   phones: ChatPhone[];
   groups: Group[];
   templates: ChatTemplate[];
   quickReplies: QuickReply[];
+  campaignPhones?: Array<{ id: string; name: string; status: string; phoneIds: string[] }>;
   campaignNames: Record<string, string>;
 }) {
   const router = useRouter();
   const [group, setGroup] = useState("");
+  // Coluna de números: agrupada pela campanha que disparou por eles, ou pela BM
+  const [groupBy, setGroupBy] = useState<"campaign" | "bm">(() => {
+    try {
+      return localStorage.getItem("chat-groupby") === "bm" ? "bm" : "campaign";
+    } catch {
+      return "campaign";
+    }
+  });
+  const pickGroupBy = (g: "campaign" | "bm") => {
+    setGroupBy(g);
+    try {
+      localStorage.setItem("chat-groupby", g);
+    } catch {}
+  };
   const [phone, setPhone] = useState("");
   const [tab, setTab] = useState<(typeof TABS)[number]["key"]>("active");
   const [showClosed, setShowClosed] = useState(false);
@@ -283,7 +299,7 @@ export function ChatApp({
   return (
     <div className="-mx-10 -my-9 flex h-[100dvh] overflow-hidden bg-[#f4f4f7]">
       {/* Caixas: grupos e números */}
-      <aside className="flex w-56 shrink-0 flex-col border-r border-zinc-200 bg-white max-md:hidden">
+      <aside className="flex w-64 shrink-0 flex-col border-r border-zinc-200 bg-white max-md:hidden">
         <div className="border-b border-zinc-100 p-4">
           <div className="mb-3 flex items-center gap-2 text-lg font-semibold"><Inbox className="size-5 text-brand-500" /> Chat</div>
           <select
@@ -298,31 +314,46 @@ export function ChatApp({
         <div className="scrollbar-thin flex-1 space-y-0.5 overflow-y-auto p-2">
           <button
             onClick={() => setPhone("")}
-            className={clsx("flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-sm transition", !phone ? "bg-ink text-white" : "text-zinc-600 hover:bg-zinc-100")}
+            className={clsx("mb-1 flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-sm transition", !phone ? "bg-ink text-white" : "text-zinc-600 hover:bg-zinc-100")}
           >
             <Inbox className="size-4 shrink-0" />
             <span className="flex-1 font-medium">Todos os números</span>
             {totalUnread > 0 && <span className="rounded-full bg-brand-gradient px-1.5 text-[11px] font-semibold text-white">{totalUnread}</span>}
           </button>
-          {visiblePhones.map((p, i) => {
-            const newBm = i === 0 || visiblePhones[i - 1].bmId !== p.bmId;
-            return (
-              <div key={p.id}>
-                {newBm && <div className="truncate px-3 pb-1 pt-3 text-[11px] font-medium uppercase tracking-wide text-zinc-400">{p.bm}</div>}
-                <button
-                  onClick={() => setPhone(p.id)}
-                  className={clsx("flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left transition", phone === p.id ? "bg-ink text-white" : "text-zinc-700 hover:bg-zinc-100")}
-                >
-                  <span className={clsx("size-2 shrink-0 rounded-full", QUALITY_DOT[p.quality] ?? QUALITY_DOT.UNKNOWN)} title={`Qualidade ${p.quality}`} />
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-[13px] font-medium">{p.display}</span>
-                    {p.name && <span className={clsx("block truncate text-[11px]", phone === p.id ? "text-zinc-400" : "text-zinc-400")}>{p.name}</span>}
-                  </span>
-                  {(unreadByPhone[p.id] ?? 0) > 0 && <span className="rounded-full bg-brand-gradient px-1.5 text-[11px] font-semibold text-white">{unreadByPhone[p.id]}</span>}
-                </button>
+          <div className="grid grid-cols-2 gap-1 rounded-xl bg-zinc-100 p-1 text-xs font-semibold">
+            {([["campaign", "Por campanha"], ["bm", "Por BM"]] as const).map(([k, l]) => (
+              <button key={k} onClick={() => pickGroupBy(k)} className={clsx("rounded-lg py-1.5 transition", groupBy === k ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-500 hover:text-zinc-800")}>{l}</button>
+            ))}
+          </div>
+          {groupBy === "campaign" && campaignPhones.length === 0 && <p className="px-3 py-3 text-xs text-zinc-400">Nenhuma campanha nos últimos 14 dias.</p>}
+          {(groupBy === "campaign"
+            ? campaignPhones.map((c) => ({ key: c.id, title: c.name, live: c.status === "RUNNING", items: c.phoneIds.map((id) => phoneById.get(id)).filter((p): p is ChatPhone => Boolean(p && visiblePhones.includes(p))) }))
+            : [...new Set(visiblePhones.map((p) => p.bmId))].map((bmId) => ({ key: bmId, title: visiblePhones.find((p) => p.bmId === bmId)!.bm, live: false, items: visiblePhones.filter((p) => p.bmId === bmId) }))
+          )
+            .filter((sec) => sec.items.length)
+            .map((sec) => (
+              <div key={sec.key}>
+                <div className="flex items-center gap-1.5 px-3 pb-1 pt-3">
+                  {groupBy === "campaign" ? <Megaphone className={clsx("size-3.5 shrink-0", sec.live ? "text-orange-500" : "text-zinc-400")} /> : <span className="size-1.5 shrink-0 rounded-full bg-brand-500" />}
+                  <span className={clsx("truncate text-[12px] font-semibold", sec.live ? "text-orange-600" : "text-zinc-500")}>{sec.title}</span>
+                  {sec.live && <span className="ml-auto size-1.5 shrink-0 animate-pulse rounded-full bg-emerald-500" title="Disparando agora" />}
+                </div>
+                {sec.items.map((p) => (
+                  <button
+                    key={`${sec.key}-${p.id}`}
+                    onClick={() => setPhone(p.id)}
+                    className={clsx("flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left transition", phone === p.id ? "bg-brand-gradient text-white shadow-sm" : "text-zinc-700 hover:bg-orange-50")}
+                  >
+                    <span className={clsx("size-2.5 shrink-0 rounded-full ring-2 ring-white", QUALITY_DOT[p.quality] ?? QUALITY_DOT.UNKNOWN)} title={`Qualidade ${p.quality}`} />
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-[14px] font-semibold">{p.display}</span>
+                      <span className={clsx("block truncate text-[12px]", phone === p.id ? "text-white/80" : "text-zinc-500")}>{groupBy === "campaign" ? p.bm : p.name}</span>
+                    </span>
+                    {(unreadByPhone[p.id] ?? 0) > 0 && <span className={clsx("rounded-full px-1.5 text-[11px] font-semibold", phone === p.id ? "bg-white text-orange-600" : "bg-brand-gradient text-white")}>{unreadByPhone[p.id]}</span>}
+                  </button>
+                ))}
               </div>
-            );
-          })}
+            ))}
           {phones.length === 0 && <p className="px-3 py-4 text-sm text-zinc-400">Conecte uma BM em Conexões para começar.</p>}
         </div>
       </aside>
@@ -380,26 +411,26 @@ export function ChatApp({
                 onClick={() => openConversation(c.id)}
                 className={clsx("flex w-full items-start gap-3 border-b border-zinc-100 px-4 py-3 text-left transition", fresh.has(c.id) && "animate-chat-in", c.id === activeId ? "bg-brand-50/70" : "hover:bg-zinc-50")}
               >
-                <span className={clsx("flex size-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br text-sm font-semibold text-white", avatarColor(c.contactPhone))}>
+                <span className={clsx("flex size-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br text-[15px] font-bold text-white shadow-sm", avatarColor(c.contactPhone))}>
                   {initials(c.contactName, c.contactPhone)}
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="flex items-baseline gap-2">
-                    <span className={clsx("flex-1 truncate text-sm", c.unread ? "font-semibold text-zinc-900" : "font-medium text-zinc-800")}>{c.contactName || fmtPhone(c.contactPhone)}</span>
+                    <span className={clsx("flex-1 truncate text-[15px]", c.unread ? "font-bold text-zinc-900" : "font-semibold text-zinc-800")}>{c.contactName || fmtPhone(c.contactPhone)}</span>
                     <span className={clsx("shrink-0 text-[11px]", c.unread ? "font-semibold text-brand-600" : "text-zinc-400")}>{shortTime(c.lastMessageAt)}</span>
                   </span>
                   <span className="mt-0.5 flex items-center gap-2">
-                    <span className={clsx("flex-1 truncate text-[13px]", c.unread ? "text-zinc-700" : "text-zinc-500")}>
+                    <span className={clsx("flex-1 truncate text-[14px]", c.unread ? "text-zinc-800" : "text-zinc-500")}>
                       {c.lastDirection === "OUT" && <span className="text-zinc-400">Você: </span>}
                       {c.lastMessageText}
                     </span>
                     {c.unread > 0 && <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-gradient px-1.5 text-[11px] font-semibold text-white">{c.unread}</span>}
                   </span>
-                  <span className="mt-1 flex items-center gap-1.5 text-[11px] text-zinc-400">
+                  <span className="mt-1 flex flex-wrap items-center gap-1.5 text-[12px] text-zinc-500">
                     {!phone && p && <span className="truncate">{p.display}</span>}
-                    {c.status === "ATTENDING" && <span className="rounded bg-sky-50 px-1.5 text-sky-700">em atendimento</span>}
+                    {c.status === "ATTENDING" && <span className="rounded-full bg-sky-100 px-2 font-medium text-sky-700">em atendimento</span>}
                     {c.status === "CLOSED" && <span className="rounded bg-zinc-100 px-1.5 text-zinc-500">finalizada</span>}
-                    {c.clickedAt && <span className="flex items-center gap-0.5 rounded bg-sky-50 px-1.5 text-sky-700"><MousePointerClick className="size-3" /> clicou</span>}
+                    {c.clickedAt && <span className="flex items-center gap-0.5 rounded-full bg-violet-100 px-2 font-medium text-violet-700"><MousePointerClick className="size-3" /> clicou</span>}
                   </span>
                 </span>
               </button>
@@ -460,7 +491,7 @@ export function ChatApp({
                 const el = e.currentTarget;
                 stickBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
               }}
-              className="scrollbar-thin flex-1 overflow-y-auto bg-[radial-gradient(circle_at_1px_1px,rgb(0_0_0/0.045)_1px,transparent_0)] bg-[length:18px_18px] px-5 py-4"
+              className="scrollbar-thin flex-1 overflow-y-auto bg-[#faf6f2] bg-[radial-gradient(circle_at_1px_1px,rgb(234_88_12/0.07)_1px,transparent_0)] bg-[length:18px_18px] px-5 py-4"
             >
               {messages.length === 0 && <p className="py-10 text-center text-sm text-zinc-400">Nenhuma mensagem ainda.</p>}
               <MessageList messages={messages} campaignNames={campaignNames} />
