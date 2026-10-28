@@ -117,11 +117,13 @@ export default async function BlueprintsPage() {
               <div className="divide-y divide-zinc-100 rounded-lg border border-zinc-100">
                 {scope.map((w) => {
                   const dep = bp.deployments.find((d) => d.wabaId === w.id);
-                  const [color, label] = dep ? DEP[dep.status] : (["gray", "Aguardando"] as [BadgeColor, string]);
+                  // BM recém-conectada espera 5 min antes de receber template; a conferência roda a cada 5 min
+                  const fresh = !dep && Date.now() - w.createdAt.getTime() < 10 * 60_000;
+                  const [color, label] = dep ? DEP[dep.status] : ([fresh ? "amber" : "gray", fresh ? "BM nova: sobe em até 10 min" : "Aguardando"] as [BadgeColor, string]);
                   return (
                     <div key={w.id} className="flex flex-wrap items-center gap-2 px-3 py-2">
                       <span className="flex-1">{w.business.name} <span className="text-zinc-400">/ {w.name}</span></span>
-                      {dep?.currentName && dep.currentName !== bp.name && <span className="rounded-full bg-orange-50 px-2 py-0.5 text-xs font-medium text-orange-700" title="O nome anterior foi reclassificado pela Meta nessa conta, então o Fuzil criou a próxima versão">usando {dep.currentName}</span>}
+                      {dep?.currentName && dep.currentName !== bp.name && <span className="rounded-full bg-orange-50 px-2 py-0.5 text-xs font-medium text-orange-700" title="O nome anterior foi reprovado ou reclassificado pela Meta nessa conta, então o Fuzil criou a próxima versão">usando {dep.currentName}</span>}
                       {dep?.submittedAt && <span className="text-xs text-zinc-500">Enviado em {sentAt(dep.submittedAt)}</span>}
                       <Badge color={color}>{label}</Badge>
                       {dep?.error && <span className="text-xs text-red-600">{dep.status === "REJECTED" ? `Motivo: ${templateRejectReason(dep.error)}` : translateMetaText(dep.error)}</span>}

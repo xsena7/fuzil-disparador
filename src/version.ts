@@ -2,6 +2,14 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "3.30",
+    date: "28/10/2026",
+    items: [
+      "Templates padrão: BM que reprovou 10 versões seguidas (ex.: fzl_disp10) volta a receber quando você edita o texto do template (mais 10 tentativas com o texto novo). Antes ela ficava travada",
+      "Templates padrão: BM recém-conectada mostra \"BM nova: sobe em até 10 min\" em vez de só \"Aguardando\"",
+    ],
+  },
+  {
     version: "3.29",
     date: "28/10/2026",
     items: ["Contas compartilhadas com o Fuzil: corrigido o erro \"Dado inválido\" ao procurar (a Meta não deixa o usuário do sistema listar as BMs dele; agora o Fuzil procura direto na BM do Fuzil) e novo campo para conectar pelo ID da conta do WhatsApp"],

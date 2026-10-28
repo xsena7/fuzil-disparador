@@ -123,8 +123,10 @@ export async function deployBlueprints(workspaceId?: string) {
 
       let name = dep?.currentName ?? bp.name;
       let version = dep?.version ?? 1;
-      // Rejeitado: apaga o rejeitado na Meta e sobe de novo com o próximo nome (até MAX_VERSIONS)
-      const rejected = dep?.status === "REJECTED" && version < MAX_VERSIONS;
+      // Texto editado depois de reprovar (RETRY): ganha mais MAX_VERSIONS tentativas a partir da versão atual
+      const cap = dep?.status === "RETRY" ? version + MAX_VERSIONS : Math.max(MAX_VERSIONS, dep?.versionCap ?? 0);
+      // Rejeitado: apaga o rejeitado na Meta e sobe de novo com o próximo nome (até o limite)
+      const rejected = dep?.status === "REJECTED" && version < cap;
       if (rejected) {
         try {
           await meta.deleteTemplate(wabaToken(waba), waba.wabaId, name);
@@ -135,14 +137,14 @@ export async function deployBlueprints(workspaceId?: string) {
       }
       // Queimou o nome (virou marketing, rejeitou, foi pausado) ou o texto foi editado depois de rejeitar: sobe com o próximo nome
       // Pausado não é apagado: a Meta pode despausar, e aí ele volta a servir junto com o novo
-      const burned = rejected || dep?.status === "RECATEGORIZED_DELETED" || dep?.status === "RETRY" || (dep?.status === "PAUSED" && version < MAX_VERSIONS);
+      const burned = rejected || dep?.status === "RECATEGORIZED_DELETED" || dep?.status === "RETRY" || (dep?.status === "PAUSED" && version < cap);
       if (burned) {
         // O nome queimou nessa WABA: tenta o próximo número (pulando nomes que já existem nela)
-        if (version >= MAX_VERSIONS) continue;
+        if (version >= cap) continue;
         do {
           name = nextTemplateName(name);
           version++;
-        } while (version < MAX_VERSIONS && (await prisma.template.findUnique({ where: { wabaId_name_language: { wabaId: waba.id, name, language: bp.language } } })));
+        } while (version < cap && (await prisma.template.findUnique({ where: { wabaId_name_language: { wabaId: waba.id, name, language: bp.language } } })));
         // Acabaram as tentativas e o nome ainda existe nessa WABA: para aqui
         if (await prisma.template.findUnique({ where: { wabaId_name_language: { wabaId: waba.id, name, language: bp.language } } })) continue;
       }
@@ -173,7 +175,7 @@ export async function deployBlueprints(workspaceId?: string) {
         category: bp.category === "AUTHENTICATION" ? "AUTHENTICATION" : "UTILITY",
       });
       const where = { blueprintId_wabaId: { blueprintId: bp.id, wabaId: waba.id } };
-      const naming = { currentName: name, version };
+      const naming = { currentName: name, version, ...(dep?.status === "RETRY" ? { versionCap: cap } : {}) };
       if (result.ok) {
         await prisma.templateDeployment.upsert({
           where,
