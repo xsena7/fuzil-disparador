@@ -1,6 +1,6 @@
 "use server";
 
-import { friendlyError } from "@/lib/meta-errors";
+import { friendlyError, metaErrorText, translateMetaText } from "@/lib/meta-errors";
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -406,7 +406,8 @@ export async function testCampaignSendAction(id: string, _: { ok?: string; error
         // A Meta diz que a conta ou o número foi banido/bloqueado: tira a BM do disparo na hora (vai para Banidas)
         const banned = own && (own.status === "BANNED" || own.entidades.some((e) => e.entity_type === "WABA" && e.can_send_message === "BLOCKED"));
         if (banned) {
-          const why = own.entidades.flatMap((e) => ((e as { errors?: Array<{ error_description?: string }> }).errors ?? []).map((x) => x.error_description)).find((t) => /ban|block|restrict/i.test(t ?? "")) ?? "conta ou número bloqueado pela Meta";
+          const raw = own.entidades.flatMap((e) => ((e as { errors?: Array<{ error_description?: string }> }).errors ?? []).map((x) => x.error_description)).find((t) => /ban|block|restrict/i.test(t ?? ""));
+          const why = translateMetaText(raw) ?? "conta ou número bloqueado pela Meta";
           await prisma.phoneNumber.update({ where: { id: sender.phoneId }, data: { status: own.status ?? "BANNED" } }).catch(() => undefined);
           await prisma.whatsAppAccount.update({ where: { id: sender.wabaId }, data: { status: "BLOCKED" } }).catch(() => undefined);
           const { flagBusinessProblem, problemFix } = await import("@/lib/bm-problems");
@@ -425,9 +426,9 @@ export async function testCampaignSendAction(id: string, _: { ok?: string; error
             : own && own.mesma_waba_do_template === false
             ? ` O número ${sender.display} está na WABA ${own.waba_do_numero}, mas o template está na WABA ${wabaRec?.wabaId}. Clique em "Puxar da Meta" em Conexões para o Fuzil corrigir.`
             : own && own.pode_enviar && own.pode_enviar !== "AVAILABLE"
-              ? ` A Meta diz que esse número não pode enviar agora (${own.pode_enviar}). Veja o motivo em "entidades" abaixo.`
+              ? ` A Meta diz que esse número não pode enviar agora (${own.pode_enviar === "BLOCKED" ? "bloqueado" : own.pode_enviar === "LIMITED" ? "limitado" : own.pode_enviar}). Veja o motivo em "entidades" abaixo.`
               : "";
-        return { error: `A Meta recusou (${used}).${hint}`, raw: JSON.stringify(diag, null, 2) };
+        return { error: `A Meta recusou (${used}). ${metaErrorText(err.code, err.message, err.details)}${hint}`, raw: JSON.stringify(diag, null, 2) };
       }
       return { error: `Erro inesperado (${used}): ${err instanceof Error ? err.message : String(err)}` };
     }

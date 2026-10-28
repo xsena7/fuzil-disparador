@@ -2,6 +2,15 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "3.24",
+    date: "28/10/2026",
+    items: [
+      "Erros da Meta em português simples em todo o Fuzil: o que aconteceu e o que fazer, sem termo técnico (disparo, teste de envio, chat, conexões, templates, números, perfil e planilha de resultados)",
+      "Métricas: em \"Falhas por motivo\", cada motivo vem com a explicação embaixo",
+      "Motivos de reprovação de template explicados (ex.: \"A Meta achou o texto promocional\")",
+    ],
+  },
+  {
     version: "3.23",
     date: "28/10/2026",
     items: ["Fluxos: o bloco Disparo mostra o template da campanha escolhida já preenchido do jeito que a campanha manda (variáveis, imagem do cabeçalho e botões), no bloco e na prévia de celular ao lado"],

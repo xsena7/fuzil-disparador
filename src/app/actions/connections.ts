@@ -15,7 +15,7 @@ import { resetBmSecrets } from "@/lib/webhook";
 import { FUZIL_APP_ID, defaultAppSecret, isPlatformOwner } from "@/lib/onboarding";
 
 const errMsg = friendlyError;
-import { metaDetail } from "@/lib/meta-errors";
+import { metaDetail, metaErrorText } from "@/lib/meta-errors";
 
 
 async function ownWaba(id: string) {
@@ -378,7 +378,7 @@ async function checkWebhookChain(waba: { id: string; wabaId: string; appSecretEn
       secret = c;
       break;
     } catch (e) {
-      lastErr = e instanceof Error ? e.message : String(e);
+      lastErr = friendlyError(e);
     }
   }
   if (!secret) return `Avisos da Meta: nenhuma chave secreta cadastrada é do app que gerou o token (${lastErr}). O dono do Fuzil precisa cadastrar a chave desse app.`;
@@ -445,10 +445,10 @@ export async function testWabaAction(id: string): Promise<{ ok?: boolean; text: 
   try {
     const info = await meta.getWaba(token, waba.wabaId);
     const scopes = await checkTokenScopes(waba, token).catch(() => null);
-    const hooks = await checkWebhookChain(waba, token).catch((e) => `Não consegui conferir os avisos da Meta: ${e instanceof Error ? e.message : String(e)}`);
+    const hooks = await checkWebhookChain(waba, token).catch((e) => `Não consegui conferir os avisos da Meta: ${friendlyError(e)}`);
     return {
       ok: !hooksFailed(hooks) && scopes?.ok !== false,
-      text: `A Meta reconhece a conta "${info.name}" e o token tem acesso a ela.${info.account_review_status ? ` Status de análise: ${info.account_review_status}.` : ""}${scopes ? ` ${scopes.text}` : ""} ${hooks}`,
+      text: `A Meta reconhece a conta "${info.name}" e o token tem acesso a ela.${info.account_review_status ? ` Análise da Meta: ${({ APPROVED: "aprovada", PENDING: "em análise", REJECTED: "reprovada" } as Record<string, string>)[info.account_review_status] ?? info.account_review_status}.` : ""}${scopes ? ` ${scopes.text}` : ""} ${hooks}`,
     };
   } catch (err) {
     if (err instanceof MetaError) {
@@ -457,7 +457,7 @@ export async function testWabaAction(id: string): Promise<{ ok?: boolean; text: 
         return { text: "A Meta bloqueou o app dessa BM (API access blocked), e ela não dispara assim. Entre em developers.facebook.com com a conta dona do app e conclua a verificação que a Meta pedir (código no e-mail/celular ou identidade). Depois, clique em Testar conexão de novo." };
       if (err.code === 190) return { text: "O token expirou ou foi revogado. Gere um token novo (System User, sem validade) e conecte de novo." };
       if (err.code === 10 || err.code === 200) return { text: "O token não tem permissão para essa conta. Gere o token do fuzil-api de novo, com o app do Fuzil e as 3 permissões: whatsapp_business_messaging, whatsapp_business_management e business_management." };
-      return { text: `A Meta respondeu com erro: ${err.message}` };
+      return { text: `A Meta respondeu com erro. ${metaErrorText(err.code, err.message, err.details)}` };
     }
     return { text: "Não consegui falar com a Meta agora. Tente de novo em instantes." };
   }

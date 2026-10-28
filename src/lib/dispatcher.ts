@@ -16,7 +16,7 @@ const signature = (components: unknown) => {
   const header = getComponent(c, "HEADER");
   return JSON.stringify({ body, buttons, header: header ? { format: header.format ?? null, text: header.text ?? null } : null });
 };
-import { metaErrorLabel, RETRYABLE_CODES, SENDER_FATAL_CODES, TEMPLATE_FATAL_CODES } from "./meta-errors";
+import { metaErrorLabel, metaErrorText, RETRYABLE_CODES, SENDER_FATAL_CODES, TEMPLATE_FATAL_CODES, translateMetaText } from "./meta-errors";
 import { formatPhone } from "./phone";
 import { recordCampaignSends, renderCampaignText } from "./chat";
 import { templateFamily } from "./blueprints";
@@ -250,11 +250,11 @@ async function sendOne(sender: Sender, campaign: Campaign, r: CampaignRecipient)
     return { kind: "sent", wamid };
   } catch (err) {
     if (err instanceof MetaError) {
-      const title = metaErrorLabel(err.code) + (err.code !== null ? ` (código ${err.code})` : "") + (err.message ? ` — ${err.message}` : "") + ` [enviado: ${sender.template.name} · ${sender.template.language}]`;
+      const title = `${metaErrorText(err.code, err.message, err.details)} [template ${sender.template.name}]`;
       if (err.code !== null && SENDER_FATAL_CODES.has(err.code)) return { kind: "sender_fatal", code: err.code, title };
       if (err.code !== null && TEMPLATE_FATAL_CODES.has(err.code)) return { kind: "template_fatal", code: err.code, title };
       if ((err.code !== null && RETRYABLE_CODES.has(err.code)) || err.httpStatus >= 500) return { kind: "retry", code: err.code };
-      return { kind: "failed", code: err.code, title, detail: err.details };
+      return { kind: "failed", code: err.code, title, detail: translateMetaText(err.details) ?? undefined };
     }
     return { kind: "retry", code: null };
   }

@@ -6,7 +6,7 @@ import type { Campaign, CampaignRecipient, Conversation, PhoneNumber, WhatsAppAc
 import { prisma } from "./db";
 import { meta, MetaError } from "./meta";
 import { wabaToken } from "./sync";
-import { metaErrorLabel } from "./meta-errors";
+import { metaErrorText } from "./meta-errors";
 import { firstName, getComponent, renderText, type TComponent, type VariableMapping } from "./template-utils";
 
 export const WINDOW_MS = 24 * 3600_000;
@@ -181,7 +181,7 @@ export async function applyChatStatus(st: any) {
   const e = st.errors?.[0];
   await prisma.chatMessage.update({
     where: { id: m.id },
-    data: { status: next, ...(next === "failed" ? { error: e ? `${metaErrorLabel(e.code)}${e.code ? ` (código ${e.code})` : ""}` : "Falhou" } : {}) },
+    data: { status: next, ...(next === "failed" ? { error: e ? metaErrorText(e.code, e.error_data?.details, e.message) : "Não foi entregue" } : {}) },
   });
 }
 
@@ -233,7 +233,7 @@ export async function sendChatMessage(conversationId: string, out: OutMessage) {
     try {
       wamid = (await s.call()).messages?.[0]?.id ?? null;
     } catch (e) {
-      error = e instanceof MetaError ? `${metaErrorLabel(e.code)}${e.code ? ` (código ${e.code})` : ""}${e.message ? ` — ${e.message}` : ""}` : String(e);
+      error = e instanceof MetaError ? metaErrorText(e.code, e.message, e.details) : String(e);
     }
     created.push(
       await prisma.chatMessage.create({
@@ -311,7 +311,7 @@ export async function sendChatTemplate(conversationId: string, templateId: strin
   try {
     wamid = (await meta.sendTemplate(wabaToken(conv.phone.waba), conv.phone.phoneNumberId, conv.contactPhone, { name: tpl.name, language: tpl.language, components: sendComponents })).messages?.[0]?.id ?? null;
   } catch (e) {
-    error = e instanceof MetaError ? `${metaErrorLabel(e.code)}${e.code ? ` (código ${e.code})` : ""}` : String(e);
+    error = e instanceof MetaError ? metaErrorText(e.code, e.message, e.details) : String(e);
   }
   const m = await prisma.chatMessage.create({
     data: {

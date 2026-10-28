@@ -7,6 +7,7 @@ import { createAlert } from "./alerts";
 import { checkBusinessAfterSync, syncReadyGroup } from "./bm-problems";
 import { tierLabel, tierToLimit } from "./limits";
 import { formatPhone } from "./phone";
+import { friendlyError, templateRejectReason, translateMetaText } from "./meta-errors";
 
 export function wabaToken(waba: Pick<WhatsAppAccount, "accessTokenEnc">): string {
   if (waba.accessTokenEnc) return decrypt(waba.accessTokenEnc);
@@ -33,14 +34,14 @@ export async function syncWaba(wabaRecordId: string) {
     try {
       await fn();
     } catch (err) {
-      errors.push(err instanceof Error ? err.message : String(err));
+      errors.push(friendlyError(err));
     }
   };
   await step(async () => {
     const info = await meta.getWaba(token, waba.wabaId);
     const hasPaymentMethod = await meta.wabaHasPayment(token, waba.wabaId);
     const healthIssues = (info.health_status?.entities ?? []).flatMap((e) =>
-      (e.errors ?? []).map((er) => ({ entity: e.entity_type ?? "", id: e.id ?? "", code: er.error_code ?? null, text: er.error_description ?? "", fix: er.possible_solution ?? "" })),
+      (e.errors ?? []).map((er) => ({ entity: e.entity_type ?? "", id: e.id ?? "", code: er.error_code ?? null, text: translateMetaText(er.error_description) ?? "", fix: translateMetaText(er.possible_solution) ?? "" })),
     );
     // Conta banida: a Meta marca na saúde da WABA (erro 141014 "The WABA is banned" ou entidade WABA bloqueada)
     // Só o erro 141014 ("The WABA is banned") conta como banimento. Pagamento/outros bloqueios NÃO são banimento
@@ -362,7 +363,7 @@ export async function onStatusChanged(
     type,
     severity,
     title: `Template "${name}" (${language}): ${from} → ${to}`,
-    message: `WABA ${label}.${reason ? ` Motivo: ${reason}` : ""}`,
+    message: `WABA ${label}.${reason ? ` Motivo: ${templateRejectReason(reason)}` : ""}`,
     data: { wabaId: wabaRecordId, name, language, from, to },
   });
 }
@@ -431,7 +432,7 @@ export async function ensureWebhook(wabaRecordId: string) {
         type: "SYNC_ERROR",
         severity: "WARNING",
         title: `Webhook não inscrito: ${waba.business.name} / ${waba.name}`,
-        message: `Sem o webhook, entregas, leituras, respostas e recategorizações dessa WABA não chegam ao painel. Erro: ${err instanceof Error ? err.message : err}`,
+        message: `Sem o webhook, entregas, leituras, respostas e recategorizações dessa WABA não chegam ao painel. Erro: ${friendlyError(err)}`,
       });
     }
     await prisma.whatsAppAccount.update({ where: { id: waba.id }, data: { webhookSubscribed: false } });
@@ -462,7 +463,7 @@ export async function configureBmAppWebhook(wabaRecordId: string, appSecret: str
     // Liga o webhook do app (inclusive o app do Fuzil): sem isso a Meta não manda entregue/lida/resposta
     await meta.setAppWebhook(appId, appSecret, `${env.appUrl()}/api/webhook`, env.metaVerifyToken(), WEBHOOK_FIELDS);
   } catch (err) {
-    return err instanceof Error ? err.message : String(err);
+    return friendlyError(err);
   }
   await ensureWebhook(waba.id).catch(() => undefined);
   return null;

@@ -6,7 +6,7 @@ import { env } from "./env";
 import { decrypt } from "./crypto";
 import { createAlert } from "./alerts";
 import { onCategoryChanged, onStatusChanged, syncWaba } from "./sync";
-import { metaErrorLabel, SENDER_FATAL_CODES } from "./meta-errors";
+import { metaErrorLabel, metaErrorText, SENDER_FATAL_CODES } from "./meta-errors";
 import { settleRecipients } from "./credits";
 import { flagBusinessProblem, kindForCode, problemFix } from "./bm-problems";
 import { canonicalWaId, formatPhone } from "./phone";
@@ -135,7 +135,7 @@ async function rerouteFailed(
     await prisma.campaign.update({ where: { id: campaign.id }, data: { excludedSenders: { push: r.senderId } } });
     if (sender) {
       const display = formatPhone(sender.displayPhoneNumber.replace(/\D/g, ""));
-      const reason = `${metaErrorLabel(code)} (código ${code})${err?.error_data?.details ? ` — ${err.error_data.details}` : ""}`;
+      const reason = metaErrorText(code, err?.error_data?.details, err?.message);
       await flagBusinessProblem(sender.waba.businessId, `${display}: ${reason}`, problemFix(code), kindForCode(code)).catch(() => undefined);
       await createAlert({
         workspaceId: campaign.workspaceId,
@@ -170,7 +170,7 @@ async function handleMessages(value: any, workspaceIds: string[]) {
       data.failedAt = at;
       data.errorCode = e?.code ?? null;
       data.errorTitle = metaErrorLabel(e?.code) ;
-      data.errorDetail = e?.error_data?.details ?? e?.message ?? e?.title ?? null;
+      data.errorDetail = e ? metaErrorText(e.code, e.error_data?.details, e.message, e.title) : null;
     }
     if (!next) continue;
     // Falha por problema da BM (pagamento, bloqueio, restrição) que chega depois do envio: manda por outra BM do grupo

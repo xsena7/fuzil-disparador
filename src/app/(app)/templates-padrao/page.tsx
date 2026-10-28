@@ -8,6 +8,7 @@ import { ActionForm, ConfirmButton } from "@/components/action-form";
 import { Textarea } from "@/components/ui";
 import { deleteBlueprintAction, deployNowAction, editBlueprintTextAction, toggleBlueprintAction, toggleKeepReadyAction } from "@/app/actions/templates";
 import type { TComponent } from "@/lib/template-utils";
+import { templateRejectReason, translateMetaText } from "@/lib/meta-errors";
 
 export const dynamic = "force-dynamic";
 
@@ -25,14 +26,6 @@ const DEP: Record<string, [BadgeColor, string]> = {
 };
 
 // Motivos de rejeição da Meta, em português
-const REASON: Record<string, string> = {
-  INVALID_FORMAT: "formato inválido",
-  TAG_CONTENT_MISMATCH: "o texto não combina com a categoria (a Meta achou que não é utilidade)",
-  PROMOTIONAL: "texto promocional",
-  SCAM: "a Meta achou que pode ser golpe",
-  ABUSIVE_CONTENT: "conteúdo não permitido",
-  INCORRECT_CATEGORY: "categoria errada",
-};
 
 export default async function BlueprintsPage() {
   const auth = await requireAuth();
@@ -125,7 +118,7 @@ export default async function BlueprintsPage() {
                       {dep?.currentName && dep.currentName !== bp.name && <span className="rounded-full bg-orange-50 px-2 py-0.5 text-xs font-medium text-orange-700" title="O nome anterior foi reclassificado pela Meta nessa conta, então o Fuzil criou a próxima versão">usando {dep.currentName}</span>}
                       {dep?.submittedAt && <span className="text-xs text-zinc-500">Enviado em {sentAt(dep.submittedAt)}</span>}
                       <Badge color={color}>{label}</Badge>
-                      {dep?.error && <span className="text-xs text-red-600">{dep.status === "REJECTED" ? `Motivo: ${REASON[dep.error] ?? dep.error}` : dep.error}</span>}
+                      {dep?.error && <span className="text-xs text-red-600">{dep.status === "REJECTED" ? `Motivo: ${templateRejectReason(dep.error)}` : translateMetaText(dep.error)}</span>}
                     </div>
                   );
                 })}

@@ -11,6 +11,7 @@ import { ago, templateUsage } from "@/lib/limit-windows";
 import { TemplateFilters } from "./filters";
 import { READY_GROUP, isProblemSystem } from "@/lib/bm-problems";
 import { groupDot } from "@/lib/group-colors";
+import { templateRejectReason } from "@/lib/meta-errors";
 
 export const dynamic = "force-dynamic";
 
@@ -185,7 +186,7 @@ export default async function TemplatesPage({ searchParams }: { searchParams: Pr
                           {t.qualityScore && t.qualityScore !== "UNKNOWN" && <span className="text-xs text-zinc-500">qualidade {t.qualityScore}</span>}
                         </div>
                         {body && <p className="mt-1 line-clamp-2 whitespace-pre-wrap text-sm text-zinc-600">{body}</p>}
-                        {t.rejectedReason && t.rejectedReason !== "NONE" && <p className="mt-1 text-xs text-red-600">{t.rejectedReason}</p>}
+                        {t.rejectedReason && t.rejectedReason !== "NONE" && <p className="mt-1 text-xs text-red-600">{templateRejectReason(t.rejectedReason)}</p>}
                         <p className="mt-1 text-xs text-zinc-500">
                           {t.submittedAt && <>Enviado para a Meta em <b className="font-medium text-zinc-700">{sentAt(t.submittedAt)}</b> · </>}
                           Último disparo: <b className="font-medium text-zinc-700">{ago(u?.last)}</b>

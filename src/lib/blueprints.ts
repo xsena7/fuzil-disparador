@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 import type { Prisma, WhatsAppAccount } from "@prisma/client";
 import { prisma } from "./db";
 import { meta, MetaError, type TemplateComponent } from "./meta";
+import { friendlyError, metaErrorText } from "./meta-errors";
 import { syncWaba, wabaToken } from "./sync";
 import { createAlert } from "./alerts";
 
@@ -48,7 +49,7 @@ export async function createUtilityTemplate(
     await prisma.template.updateMany({ where: { wabaId: waba.id, name: input.name, language: input.language }, data: { submittedAt: new Date() } });
     return { ok: true, status: res.status, category: res.category ?? category };
   } catch (err) {
-    return { ok: false, recategorized: false, error: err instanceof MetaError ? `${err.message}${err.details ? ` (${err.details})` : ""}` : String(err) };
+    return { ok: false, recategorized: false, error: err instanceof MetaError ? metaErrorText(err.code, err.message, err.details) : String(err) };
   }
 }
 
@@ -242,7 +243,7 @@ export async function handleRecategorized(workspaceId: string, wabaRecordId: str
       type: "TEMPLATE_DELETE_FAILED",
       severity: "CRITICAL",
       title,
-      message: `WABA ${waba.business.name} / ${waba.name}: ${err instanceof Error ? err.message : err}. Ele continua bloqueado para disparos.`,
+      message: `WABA ${waba.business.name} / ${waba.name}: ${friendlyError(err)}. Ele continua bloqueado para disparos.`,
     });
     return;
   }

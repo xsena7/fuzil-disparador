@@ -1,5 +1,5 @@
 import { prisma } from "./db";
-import { metaErrorLabel } from "./meta-errors";
+import { errorTitlePt, metaErrorExplain, metaErrorLabel } from "./meta-errors";
 import { formatPhone } from "./phone";
 
 export type CampaignMetrics = Awaited<ReturnType<typeof campaignMetrics>>;
@@ -92,7 +92,7 @@ export async function campaignMetrics(campaignId: string) {
   return {
     totals: t,
     undeliverable,
-    errors: errors.map((e) => ({ code: e.code, title: e.title ?? metaErrorLabel(e.code), count: n(e.n) })),
+    errors: errors.map((e) => ({ code: e.code, title: e.code !== null ? metaErrorLabel(e.code) : errorTitlePt(e.code, e.title), explain: metaErrorExplain(e.code), count: n(e.n) })),
     senders: senders.map((s) => ({
       ...s,
       display: formatPhone(s.display.replace(/\D/g, "")),

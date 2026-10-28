@@ -7,6 +7,7 @@ import { prisma } from "@/lib/db";
 import { formatPhone } from "@/lib/phone";
 import { Card, Stat, Table, Td } from "@/components/ui";
 import { QualityBadge } from "@/components/status";
+import { errorTitlePt } from "@/lib/meta-errors-text";
 
 const RESULT: Record<string, { label: string; cls: string }> = {
   READ: { label: "Lida", cls: "text-emerald-700" },
@@ -24,7 +25,7 @@ export async function Metrics({ campaignId }: { campaignId: string }) {
   const canRetry = ["COMPLETED", "PAUSED"].includes(campaignRow?.status ?? "") && Number(m.totals.failed) > 0;
   const recipients = await prisma.campaignRecipient.findMany({
     where: { campaignId },
-    select: { phone: true, status: true, errorTitle: true, sentAt: true, sender: { select: { displayPhoneNumber: true } } },
+    select: { phone: true, status: true, errorCode: true, errorTitle: true, sentAt: true, sender: { select: { displayPhoneNumber: true } } },
     // Mesma ordem da planilha
     orderBy: [{ position: "asc" }, { createdAt: "asc" }],
     take: 300,
@@ -89,7 +90,7 @@ export async function Metrics({ campaignId }: { campaignId: string }) {
               <Td className="whitespace-nowrap py-2 font-medium">{formatPhone(r.phone)}</Td>
               <Td className="whitespace-nowrap py-2">{r.sender?.displayPhoneNumber ?? "—"}</Td>
               <Td className={`whitespace-nowrap py-2 font-medium ${RESULT[r.status]?.cls ?? ""}`}>{RESULT[r.status]?.label ?? r.status}</Td>
-              <Td className="py-2 text-xs text-zinc-600">{r.errorTitle ?? ""}</Td>
+              <Td className="py-2 text-xs text-zinc-600">{r.errorTitle || r.errorCode ? errorTitlePt(r.errorCode, r.errorTitle) : ""}</Td>
             </tr>
           ))}
         </Table>
@@ -125,7 +126,10 @@ export async function Metrics({ campaignId }: { campaignId: string }) {
             {m.errors.map((e) => (
               <tr key={String(e.code) + e.title}>
                 <Td className="font-mono text-xs">{e.code ?? "—"}</Td>
-                <Td>{e.title}</Td>
+                <Td>
+                  <div className="font-medium">{e.title}</div>
+                  {e.explain && <div className="mt-0.5 text-xs text-zinc-500">{e.explain}</div>}
+                </Td>
                 <Td>{n(e.count)}</Td>
               </tr>
             ))}

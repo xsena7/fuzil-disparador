@@ -2,6 +2,7 @@ import Papa from "papaparse";
 import { getActiveAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { formatPhone } from "@/lib/phone";
+import { errorTitlePt, metaErrorExplain, translateMetaText } from "@/lib/meta-errors-text";
 
 const STATUS_PT: Record<string, string> = {
   PENDING: "Pendente", SENDING: "Enviando", SENT: "Enviada", DELIVERED: "Entregue", READ: "Lida", FAILED: "Falhou", SKIPPED: "Ignorada",
@@ -38,8 +39,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       respondeu_em: fmt(r.repliedAt),
       descadastrou: r.optedOutAt ? "sim" : "não",
       erro_codigo: r.errorCode ?? "",
-      erro: r.errorTitle ?? "",
-      erro_detalhe: r.errorDetail ?? "",
+      erro: r.errorTitle || r.errorCode ? errorTitlePt(r.errorCode, r.errorTitle) : "",
+      erro_detalhe: r.errorDetail ? translateMetaText(r.errorDetail) ?? "" : metaErrorExplain(r.errorCode) ?? "",
     })),
     { delimiter: ";" },
   );

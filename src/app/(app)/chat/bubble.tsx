@@ -3,6 +3,7 @@
 import { Fragment, type ReactNode } from "react";
 import clsx from "clsx";
 import { AlertCircle, Check, CheckCheck, Clock, FileText, MapPin, Megaphone, MousePointerClick, Workflow, Zap } from "lucide-react";
+import { translateMetaText } from "@/lib/meta-errors-text";
 
 export type ChatMsg = {
   id: string;
@@ -65,7 +66,7 @@ export function WaText({ text }: { text: string }) {
 const time = (iso: string) => new Date(iso).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo" });
 
 function Ticks({ m }: { m: ChatMsg }) {
-  if (m.status === "failed") return <span title={m.error ?? "Falhou"}><AlertCircle className="size-3.5 text-rose-500" /></span>;
+  if (m.status === "failed") return <span title={m.error ? translateMetaText(m.error) ?? m.error : "Falhou"}><AlertCircle className="size-3.5 text-rose-500" /></span>;
   if (m.status === "read") return <CheckCheck className="size-3.5 text-sky-200" />;
   if (m.status === "delivered") return <CheckCheck className="size-3.5 opacity-60" />;
   if (m.status === "sent") return <Check className="size-3.5 opacity-60" />;
@@ -139,7 +140,7 @@ export function Bubble({ m, campaignName }: { m: ChatMsg; campaignName?: string 
           {time(m.createdAt)}
           {out && <Ticks m={m} />}
         </div>
-        {m.status === "failed" && m.error && <div className={clsx("mt-1 text-[11px]", agent ? "text-white" : "text-rose-600")}>Não enviada: {m.error}</div>}
+        {m.status === "failed" && m.error && <div className={clsx("mt-1 text-[11px]", agent ? "text-white" : "text-rose-600")}>Não enviada: {translateMetaText(m.error) ?? m.error}</div>}
         {m.layout && m.layout.buttons.length > 0 && (
           <div className="-mx-3.5 -mb-2 mt-2 divide-y divide-white/25 border-t border-white/25">
             {m.layout.buttons.map((b, i) =>
