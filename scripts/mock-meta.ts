@@ -97,8 +97,9 @@ createServer(async (req, res) => {
 
   // BM do Fuzil (parceira): o usuário do sistema e as contas que clientes compartilharam (a 1003 chega por parceria)
   if (id === "me" && !edge) return json(res, 200, { id: "77001", name: "fuzil-api" });
-  if (id === "me" && edge === "businesses") return json(res, 200, { data: [{ id: "9999", name: "BM do Fuzil" }] });
-  if (id === "9999" && edge === "client_whatsapp_business_accounts") return json(res, 200, { data: [{ id: "1003", name: wabas["1003"].name, owner_business_info: wabas["1003"].business }] });
+  // Usuário do sistema não tem me/businesses na Meta de verdade (erro 100): a BM vem pelo ID do Fuzil
+  if (id === "me" && edge === "businesses") return json(res, 400, { error: { message: "(#100) Tried accessing nonexisting field (businesses) on node type (SystemUser)", code: 100 } });
+  if ((id === "9999" || id === "1045096945185345") && edge === "client_whatsapp_business_accounts") return json(res, 200, { data: [{ id: "1003", name: wabas["1003"].name, owner_business_info: wabas["1003"].business }] });
   if (wabas[id] && edge === "assigned_users" && req.method === "POST") return json(res, 200, { success: true });
 
   const waba = wabas[id];

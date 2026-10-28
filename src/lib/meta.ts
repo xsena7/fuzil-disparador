@@ -450,18 +450,42 @@ export const meta = {
     return { ids: [], why };
   },
 
-  /** Contas do WhatsApp que clientes compartilharam com a BM do token (parceria). */
-  async sharedWabas(token: string) {
-    const me = await graph<{ id: string; name?: string }>(token, "GET", "me", { query: { fields: "id,name" } });
-    const biz = await graph<{ data: Array<{ id: string; name: string }> }>(token, "GET", "me/businesses", { query: { fields: "id,name", limit: 50 } });
-    const out: Array<{ id: string; name: string; owner: string | null; via: string }> = [];
-    for (const b of biz.data ?? []) {
-      const r = await graph<{ data: Array<{ id: string; name?: string; owner_business_info?: { id: string; name: string } }> }>(token, "GET", `${b.id}/client_whatsapp_business_accounts`, {
-        query: { fields: "id,name,owner_business_info", limit: 200 },
-      });
-      for (const w of r.data ?? []) if (!out.some((o) => o.id === w.id)) out.push({ id: w.id, name: w.name ?? `WABA ${w.id}`, owner: w.owner_business_info?.name ?? null, via: b.name });
+  /**
+   * Contas do WhatsApp que clientes compartilharam com a BM do token (parceria).
+   * A BM sai das permissões do token (business_management), de me/businesses ou da lista `businessIds` (a BM do Fuzil).
+   */
+  async sharedWabas(token: string, businessIds: string[] = []) {
+    const errors: unknown[] = [];
+    const me = await graph<{ id: string }>(token, "GET", "me", { query: { fields: "id" } }).catch((e) => (errors.push(e), null));
+    const biz = new Set(businessIds.filter(Boolean));
+    if (env.metaAppId() && env.metaAppSecret()) {
+      const url = new URL(`${env.metaGraphUrl()}/${env.metaGraphVersion()}/debug_token`);
+      url.searchParams.set("input_token", token);
+      url.searchParams.set("access_token", `${env.metaAppId()}|${env.metaAppSecret()}`);
+      const dbg: any = await fetch(url, { signal: AbortSignal.timeout(20_000) }).then((r) => r.json()).catch(() => ({}));
+      for (const sc of dbg?.data?.granular_scopes ?? []) if (sc.scope === "business_management") for (const t of sc.target_ids ?? []) biz.add(String(t));
     }
-    return { userId: me.id, wabas: out };
+    await graph<{ data: Array<{ id: string }> }>(token, "GET", "me/businesses", { query: { fields: "id", limit: 50 } })
+      .then((r) => r.data?.forEach((b) => biz.add(b.id)))
+      .catch((e) => errors.push(e));
+    const out: Array<{ id: string; name: string; owner: string | null; via: string }> = [];
+    let okCalls = 0;
+    for (const b of biz) {
+      const r = await graph<{ data: Array<{ id: string; name?: string; owner_business_info?: { id: string; name: string } }> }>(token, "GET", `${b}/client_whatsapp_business_accounts`, {
+        query: { fields: "id,name,owner_business_info", limit: 200 },
+      }).catch((e) => (errors.push(e), null));
+      if (!r) continue;
+      okCalls++;
+      for (const w of r.data ?? []) if (!out.some((o) => o.id === w.id)) out.push({ id: w.id, name: w.name ?? `WABA ${w.id}`, owner: w.owner_business_info?.name ?? null, via: b });
+    }
+    // Nenhuma BM respondeu: mostra o motivo da Meta
+    if (!okCalls && errors.length) throw errors[errors.length - 1];
+    return { userId: me?.id ?? null, wabas: out };
+  },
+
+  /** Id do usuário do sistema dono do token. */
+  systemUserId(token: string) {
+    return graph<{ id: string }>(token, "GET", "me", { query: { fields: "id" } }).then((r) => r.id);
   },
 
   /** Dá ao usuário do sistema acesso total à conta compartilhada (sem isso ele não manda mensagem por ela). */

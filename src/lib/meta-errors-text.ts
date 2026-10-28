@@ -89,6 +89,7 @@ const META_TEXTS: Array<[RegExp, string | ((m: RegExpMatchArray) => string)]> = 
   [/the parameter (\S+) is required|missing (required )?param(eter)?s?:? ?(\S+)?/i, "Faltou preencher uma informação obrigatória."],
   [/(error validating|invalid oauth|expired) .*access token|session has expired|access token .*(expired|invalid)/i, "A autorização do Fuzil nessa BM venceu ou foi tirada. Reconecte a BM em Conexões."],
   [/does not have (the )?(capability|permission)|permissions? (error|denied)|not authorized|requires .*permission/i, "O Fuzil não tem permissão para fazer isso nessa conta. Reconecte a BM marcando todas as permissões."],
+  [/nonexist(ing|ent) field|tried accessing/i, "A Meta não tem essa informação para esse tipo de conta (o token pode não ser do usuário do sistema certo)."],
   [/unsupported (post|get|delete) request|object with id .* does not exist|cannot be loaded due to missing permissions/i, "A Meta não encontrou esse item (número, conta ou template) ou o Fuzil não tem acesso a ele."],
   [/payment|billing|credit line|payment method/i, "Problema de pagamento na Meta: a conta está sem cartão válido ou com conta em aberto."],
   [/account (has been |is )?(locked|restricted|disabled|banned|suspended)|violat/i, "A Meta bloqueou ou restringiu essa conta por quebra de regra."],

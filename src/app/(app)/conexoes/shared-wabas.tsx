@@ -13,6 +13,7 @@ export function SharedWabas({ workspace }: { workspace: string }) {
   const [error, setError] = useState<string | null>(null);
   const [loading, startLoad] = useTransition();
   const [busy, setBusy] = useState<string | null>(null);
+  const [typed, setTyped] = useState("");
 
   const load = () =>
     startLoad(async () => {
@@ -21,13 +22,14 @@ export function SharedWabas({ workspace }: { workspace: string }) {
       setList(r.wabas ?? []);
     });
 
-  const connect = async (w: SharedWaba) => {
+  const connect = async (w: Pick<SharedWaba, "id">) => {
     setBusy(w.id);
     const r = await connectSharedWabaAction(w.id);
     setBusy(null);
     if (r?.error) return toast("error", r.error);
     toast("success", r?.ok ?? "Conectada!");
     setList((l) => l?.map((x) => (x.id === w.id ? { ...x, connectedIn: workspace, here: true } : x)) ?? null);
+    setTyped("");
     router.refresh();
   };
 
@@ -51,7 +53,21 @@ export function SharedWabas({ workspace }: { workspace: string }) {
         </div>
         {error && <p className="rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-700 ring-1 ring-rose-200">{error}</p>}
         {list && !error && list.length === 0 && <p className="text-sm text-zinc-500">Nenhuma conta compartilhada ainda. Na BM do cliente: Configurações do negócio → Parceiros → adicionar a BM do Fuzil e compartilhar a conta do WhatsApp.</p>}
-        <div className="space-y-2">
+        <form
+          className="mt-3 flex flex-wrap items-center gap-2"
+          onSubmit={(e) => {
+            e.preventDefault();
+            const id = typed.replace(/\D/g, "");
+            if (id) void connect({ id });
+          }}
+        >
+          <span className="text-sm text-zinc-600">Ou pelo ID da conta do WhatsApp:</span>
+          <input value={typed} onChange={(e) => setTyped(e.target.value)} inputMode="numeric" placeholder="1089435753910494" className="w-56 rounded-xl border border-zinc-200 px-3 py-1.5 text-sm outline-none focus:border-violet-400" />
+          <button disabled={busy !== null || !typed.trim()} className="inline-flex items-center gap-1.5 rounded-xl bg-zinc-900 px-3.5 py-1.5 text-sm font-semibold text-white disabled:opacity-50">
+            {busy && busy === typed.replace(/\D/g, "") && <Loader2 className="size-4 animate-spin" />} Conectar pelo ID
+          </button>
+        </form>
+        <div className="mt-3 space-y-2">
           {list?.map((w) => (
             <div key={w.id} className="flex flex-wrap items-center gap-3 rounded-xl bg-zinc-50 px-4 py-2.5 ring-1 ring-zinc-200/70">
               <span className="min-w-0 flex-1">

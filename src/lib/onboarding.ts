@@ -3,6 +3,8 @@ import { decrypt, encrypt } from "@/lib/crypto";
 
 // App do Fuzil que os clientes pedem acesso na BM deles (o ID de app é público)
 export const FUZIL_APP_ID = "1810134293359501";
+/** BM do Fuzil na Meta (a que os clientes adicionam como parceira). Dá para trocar com META_BUSINESS_ID. */
+export const FUZIL_BUSINESS_ID = process.env.META_BUSINESS_ID || "1045096945185345";
 // WhatsApp do Fuzil para o cliente pedir a aprovação do acesso ao app
 export const SUPPORT_WHATSAPP = "5562994790340";
 

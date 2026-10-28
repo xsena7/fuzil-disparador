@@ -12,7 +12,7 @@ import { meta } from "@/lib/meta";
 import { env } from "@/lib/env";
 import type { FormState } from "./auth";
 import { resetBmSecrets } from "@/lib/webhook";
-import { FUZIL_APP_ID, defaultAppSecret, isPlatformOwner } from "@/lib/onboarding";
+import { FUZIL_APP_ID, FUZIL_BUSINESS_ID, defaultAppSecret, isPlatformOwner } from "@/lib/onboarding";
 
 const errMsg = friendlyError;
 import { metaDetail, metaErrorText } from "@/lib/meta-errors";
@@ -523,7 +523,7 @@ export async function listSharedWabasAction(): Promise<{ wabas?: SharedWaba[]; e
   const token = env.metaSystemToken();
   if (!token) return { error: "Falta o token do usuário do sistema da BM do Fuzil (Admin → Plataforma → Token do System User)." };
   try {
-    const { wabas } = await meta.sharedWabas(token);
+    const { wabas } = await meta.sharedWabas(token, [FUZIL_BUSINESS_ID]);
     const known = await prisma.whatsAppAccount.findMany({ where: { wabaId: { in: wabas.map((w) => w.id) } }, select: { wabaId: true, workspaceId: true, workspace: { select: { name: true } } } });
     return {
       wabas: wabas.map((w) => {
@@ -543,7 +543,7 @@ export async function connectSharedWabaAction(wabaId: string): Promise<FormState
   if (!token) return { error: "Falta o token do usuário do sistema da BM do Fuzil." };
   if (!/^\d+$/.test(wabaId)) return { error: "Conta inválida." };
   try {
-    const { userId } = await meta.sharedWabas(token).catch(() => ({ userId: null as string | null }));
+    const userId = await meta.systemUserId(token).catch(() => null);
     // Sem essa atribuição o usuário do sistema enxerga a conta mas não manda mensagem (se já tiver, a Meta só confirma)
     if (userId) await meta.assignSystemUser(token, wabaId, userId).catch((e) => console.error("[parceria] atribuir", wabaId, friendlyError(e)));
     await connectWaba({ workspaceId: auth.workspace.id, wabaId, accessTokenEnc: null, connectionType: "MANUAL" });
