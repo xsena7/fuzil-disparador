@@ -2,7 +2,6 @@ import { prisma } from "./db";
 
 /** Grupos de disparo que toda conta ganha de início (o cliente pode renomear ou apagar depois). */
 const DEFAULT_GROUPS = [
-  { name: "Aquecimento", color: "orange", description: "BMs que estão sendo aquecidas pelo funil de aquecimento.", like: /aquec/i },
   { name: "Prontas para disparo", color: "emerald", description: "BMs prontas para as campanhas.", like: /pront/i },
 ];
 

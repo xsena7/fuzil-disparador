@@ -1,11 +1,3 @@
-# Domínios das landing pages do Aquecimento: o certificado é gerado na hora,
-# só para domínios cadastrados num funil (o app responde em /api/funnel-domain).
-{
-	on_demand_tls {
-		ask http://app:3000/api/funnel-domain
-	}
-}
-
 # HTTPS automático (Let's Encrypt) para o painel, o domínio dos links e o site.
 {$APP_DOMAIN}, {$LINK_DOMAIN} {
 	encode gzip
@@ -20,17 +12,4 @@
 
 www.{$SITE_DOMAIN:fuzildisparador.com.br} {
 	redir https://{$SITE_DOMAIN:fuzildisparador.com.br}{uri} permanent
-}
-
-https:// {
-	tls {
-		on_demand
-	}
-	encode gzip
-	reverse_proxy app:3000
-}
-
-# Quem digitar o domínio da landing sem https cai no https
-http:// {
-	redir https://{host}{uri} permanent
 }

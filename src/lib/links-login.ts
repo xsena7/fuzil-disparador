@@ -4,7 +4,7 @@ import { createHash, randomBytes } from "node:crypto";
 import type { CampaignRecipient, Funnel, Lead, Prisma } from "@prisma/client";
 import { cookies } from "next/headers";
 import { prisma } from "./db";
-import { DEFAULT_PAGE, sendLoginAlert } from "./funnels";
+import { sendLoginAlert } from "./funnels";
 import { makeLinksBlueprint } from "./links-templates";
 import { clientIp } from "./rate-limit";
 
@@ -51,7 +51,7 @@ export async function createLinksFunnel(workspaceId: string, groupId: string, na
       name,
       slug: `gerador-links-${suffix}`,
       groupId,
-      page: DEFAULT_PAGE as unknown as Prisma.InputJsonValue,
+      page: {},
       formFields: [],
       steps: [{ id: randomBytes(5).toString("hex"), type: "send", blueprintId: welcome.id, mapping: { body: [{ type: "field", field: "firstName" }] } }],
       codeBlueprintId: code.id,

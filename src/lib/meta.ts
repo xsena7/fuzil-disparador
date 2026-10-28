@@ -351,6 +351,23 @@ export const meta = {
     });
   },
 
+  /** Pergunta com até 3 botões de resposta (o clique volta como mensagem "interactive"). */
+  sendButtons(token: string, phoneNumberId: string, to: string, body: string, buttons: Array<{ id: string; title: string }>) {
+    return graph<{ messages: Array<{ id: string }> }>(token, "POST", `${phoneNumberId}/messages`, {
+      body: {
+        messaging_product: "whatsapp",
+        recipient_type: "individual",
+        to,
+        type: "interactive",
+        interactive: {
+          type: "button",
+          body: { text: body.slice(0, 1024) },
+          action: { buttons: buttons.slice(0, 3).map((b) => ({ type: "reply", reply: { id: b.id.slice(0, 256), title: b.title.slice(0, 20) } })) },
+        },
+      },
+    });
+  },
+
   /** Marca a mensagem recebida como lida (os tracinhos azuis para o cliente). */
   markRead(token: string, phoneNumberId: string, wamid: string) {
     return graph<{ success: boolean }>(token, "POST", `${phoneNumberId}/messages`, {

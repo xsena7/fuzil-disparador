@@ -49,6 +49,7 @@ export async function duplicateCampaignAction(id: string) {
       buttonUrl: c.buttonUrl,
       ratePerSecond: c.ratePerSecond,
       skipRedQuality: c.skipRedQuality,
+      flowId: c.flowId,
     },
   });
   redirect(`/campanhas/${copy.id}?etapa=audiencia`);
@@ -288,6 +289,7 @@ export async function quickDuplicateCampaignAction(id: string) {
       buttonUrl: c.buttonUrl,
       ratePerSecond: c.ratePerSecond,
       skipRedQuality: c.skipRedQuality,
+      flowId: c.flowId,
     },
   });
   revalidatePath("/campanhas");

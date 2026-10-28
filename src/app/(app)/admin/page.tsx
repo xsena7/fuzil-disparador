@@ -22,7 +22,8 @@ import { env } from "@/lib/env";
 import { stockMailbox } from "@/lib/mail";
 import { cachedSetting } from "@/lib/settings-cache";
 import { PasswordInput } from "@/components/password-input";
-import { adminDeleteLinkAction } from "@/app/actions/links";
+import { adminDeleteLinkAction, setupLinksLoginAction, toggleLinksLoginAction } from "@/app/actions/links";
+import { usableGroupWhere } from "@/lib/bm-problems";
 import { testMercadoPagoAction } from "@/app/actions/market";
 import { Trash2 } from "lucide-react";
 
@@ -38,7 +39,8 @@ export default async function AdminPage() {
     platformDiscordHooks(),
   ]);
   const extLinks = await prisma.externalLink.findMany({ orderBy: { createdAt: "desc" }, take: 200, include: { lead: { select: { name: true, phone: true } } } });
-  const linksFunnel = await prisma.funnel.findFirst({ where: { kind: "LINKS", workspaceId: auth.workspace.id }, select: { id: true, status: true } });
+  const linksFunnel = await prisma.funnel.findFirst({ where: { kind: "LINKS", workspaceId: auth.workspace.id }, select: { id: true, status: true, groupId: true } });
+  const linkGroups = await prisma.bmGroup.findMany({ where: { workspaceId: auth.workspace.id, ...usableGroupWhere }, select: { id: true, name: true }, orderBy: { name: "asc" } });
   const bugs = await prisma.bugReport.findMany({ orderBy: [{ status: "asc" }, { createdAt: "desc" }], take: 50 });
   const openBugs = bugs.filter((b) => b.status === "OPEN").length;
   const discordHooks = (hooks ?? {}) as Record<string, string>;
@@ -180,17 +182,29 @@ export default async function AdminPage() {
       <Drawer
         title="Gerador de links do botão (site público)"
         tone={linksFunnel?.status === "ACTIVE" ? "green" : "amber"}
-        meta={<span>{linksFunnel ? `${linksFunnel.status === "ACTIVE" ? "No ar" : "Pausado"} · ${extLinks.length} link(s)` : "Desligado: falta criar o funil"}</span>}
+        meta={<span>{linksFunnel ? `${linksFunnel.status === "ACTIVE" ? "No ar" : "Pausado"} · ${extLinks.length} link(s)` : "Desligado"}</span>}
       >
         <p className="mb-4 text-sm text-zinc-500">
           Página sem senha onde seus clientes entram pelo WhatsApp e criam o código do botão:{" "}
           <a href={`${company().siteUrl}/links`} target="_blank" rel="noreferrer" className="font-medium text-brand-600 hover:underline">{company().siteUrl.replace(/^https:\/\//, "")}/links</a>.{" "}
-          {linksFunnel ? (
-            <LinkButton href={`/aquecimento/${linksFunnel.id}`} variant="secondary" className="ml-1 px-3 py-1 text-xs">Abrir o funil do login</LinkButton>
-          ) : (
-            <>Para ligar, vá em <b>Aquecimento → Novo funil → Login do gerador de links</b>.</>
-          )}
         </p>
+        <ActionForm action={setupLinksLoginAction} submit={linksFunnel ? "Trocar grupo" : "Ligar o login por WhatsApp"} variant={linksFunnel ? "secondary" : "primary"}>
+          <Field label="Grupo de BM que manda o código e o aviso de acesso">
+            <select name="groupId" defaultValue={linksFunnel?.groupId ?? ""} className="w-full rounded-xl border border-zinc-200 bg-white px-3.5 py-2.5 text-sm shadow-soft outline-none focus:border-brand-400">
+              <option value="" disabled>Escolha o grupo</option>
+              {linkGroups.map((g) => (
+                <option key={g.id} value={g.id}>{g.name}</option>
+              ))}
+            </select>
+          </Field>
+        </ActionForm>
+        {linksFunnel && (
+          <div className="mt-3">
+            <ConfirmButton action={toggleLinksLoginAction.bind(null, linksFunnel.status !== "ACTIVE")} variant="secondary" className="px-3 py-1.5 text-sm">
+              {linksFunnel.status === "ACTIVE" ? "Pausar o login" : "Religar o login"}
+            </ConfirmButton>
+          </div>
+        )}
         {extLinks.length > 0 && (
           <div className="mt-6">
             <div className="mb-2 text-sm font-semibold">Links criados</div>

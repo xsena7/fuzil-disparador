@@ -40,7 +40,7 @@ const RULES: Array<[RegExp, (m: RegExpMatchArray) => Omit<AlertSummary, "key">]>
   [/^Campanha "(.+)" (iniciada|agendada começou)$/, (m) => ({ head: "Campanha começou", who: m[1], tone: "blue" })],
   [/^Campanha "(.+)" pausada$/, (m) => ({ head: "Campanha pausada", who: m[1], tone: "amber" })],
   [/^Campanha "(.+)" aguardando limite$/, (m) => ({ head: "Esperando limite", who: m[1], tone: "amber" })],
-  [/^Aquecimento "(.+)" sem BM apta$/, (m) => ({ head: "Aquecimento sem BM", who: m[1], tone: "amber" })],
+  [/^(?:Aquecimento|Envio automático) "(.+)" sem BM apta$/, (m) => ({ head: "Envio automático sem BM", who: m[1], tone: "amber" })],
   [/^Número (.+?) \((.+)\) retirado da campanha "(.+)"$/, (m) => ({ head: "Número tirado da campanha", who: `${m[1]} · ${m[2]}`, tone: "red" })],
   [/^Número (.+?) banido \((.+)\)$/, (m) => ({ head: "Número banido", who: `${m[1]} · ${m[2]}`, tone: "red" })],
   [/^Qualidade do número (.+?) \((.+)\) (caiu|subiu)$/, (m) => ({ head: `Qualidade ${m[3]}`, who: `${m[1]} · ${m[2]}`, tone: m[3] === "caiu" ? "amber" : "green" })],

@@ -2,6 +2,15 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "3.20",
+    date: "28/10/2026",
+    items: [
+      "Novo: Fluxos. Monte a conversa em blocos ligados por setas: Mensagem (texto, foto, áudio, vídeo ou PDF), Botões (até 3, cada um com o seu caminho), Esperar e Condição pela resposta. Quem responde o disparo segue o caminho do botão que clicou ou do que escreveu",
+      "Campanhas: na etapa Conteúdo, escolha o fluxo da campanha (com fluxo ligado, a resposta automática não vai). No chat, as mensagens do fluxo aparecem com a etiqueta Fluxo",
+      "O Aquecimento (página de vagas) saiu da plataforma. O login por WhatsApp do gerador de links continua e agora é ligado em Admin",
+    ],
+  },
+  {
     version: "3.19",
     date: "28/10/2026",
     items: [

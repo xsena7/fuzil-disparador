@@ -293,17 +293,17 @@ export async function runCampaignTick(campaignId: string) {
   if (!plan.senders.length) {
     const reasons = [...new Set(plan.skipped.map((s) => s.reason))].join("; ");
     if (campaign.funnelId) {
-      // Aquecimento: não pausa (senão o funil religa e pausa de novo, sem parar). Fica esperando uma BM do grupo ficar apta
+      // Envio automático (login do gerador de links): não pausa (senão o funil religa e pausa de novo, sem parar). Fica esperando uma BM do grupo ficar apta
       const waiting = `Aguardando BM apta no grupo.${reasons ? ` Motivos: ${reasons}` : ""}`;
       if (campaign.pausedReason !== waiting) await prisma.campaign.update({ where: { id: campaign.id }, data: { pausedReason: waiting } });
-      const title = `Aquecimento "${campaign.name}" sem BM apta`;
+      const title = `Envio automático "${campaign.name}" sem BM apta`;
       if (!(await prisma.alert.findFirst({ where: { workspaceId: campaign.workspaceId, title, createdAt: { gte: new Date(Date.now() - 24 * 3600_000) } }, select: { id: true } })))
         await createAlert({
           workspaceId: campaign.workspaceId,
           type: "CAMPAIGN_PAUSED",
           severity: "WARNING",
           title,
-          message: `Nenhuma BM do grupo está apta agora. O aquecimento continua ligado e volta a mandar sozinho quando alguma ficar pronta.${reasons ? ` Motivos: ${reasons}` : ""}`,
+          message: `Nenhuma BM do grupo está apta agora. O envio automático continua ligado e volta a mandar sozinho quando alguma ficar pronta.${reasons ? ` Motivos: ${reasons}` : ""}`,
           data: { campaignId: campaign.id },
         });
       return;

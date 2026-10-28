@@ -29,15 +29,6 @@ export function middleware(req: NextRequest) {
     return NextResponse.rewrite(url);
   }
 
-  // Domínio próprio de um funil de aquecimento (landing page sem a marca do Fuzil)
-  const known = [appHost, redirectHost, siteHost, `www.${siteHost}`, ...aliases].map((h) => h.replace(/:\d+$/, ""));
-  if (host.includes(".") && !/^[\d.]+$/.test(host) && !known.includes(host) && host !== "localhost") {
-    if (/\.[a-z0-9]+$/i.test(path) || path.startsWith("/v/")) return NextResponse.next();
-    const url = req.nextUrl.clone();
-    url.pathname = `/v/${host}${path === "/" ? "" : path}`;
-    return NextResponse.rewrite(url);
-  }
-
   if (!redirectHost || redirectHost === appHost || host !== redirectHost) return NextResponse.next();
 
   const m = path.match(/^\/([A-Za-z0-9]{4,32})\/?$/);

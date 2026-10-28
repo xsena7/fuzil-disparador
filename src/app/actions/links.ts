@@ -8,7 +8,7 @@ import { prisma } from "@/lib/db";
 import { trackedUrlBase } from "@/lib/env";
 import { normalizePhone } from "@/lib/phone";
 import { clientIp, tooMany } from "@/lib/rate-limit";
-import { CODE_COOLDOWN_S, hashCode, MAX_CODE_ATTEMPTS, MAX_CODE_SENDS, advanceLead, sendCode } from "@/lib/funnels";
+import { CODE_COOLDOWN_S, FUNNEL_PAUSED, hashCode, MAX_CODE_ATTEMPTS, MAX_CODE_SENDS, advanceLead, sendCode } from "@/lib/funnels";
 import { createLinksFunnel, endLinksSession, linksAuth, linksFunnelFor, startLinksSession } from "@/lib/links-login";
 import type { FormState } from "./auth";
 
@@ -75,7 +75,7 @@ export async function verifyLinksCodeAction(_: LoginState, form: FormData): Prom
     data: { codeHash: null, codeAttempts: 0, ...(first ? { status: "VERIFIED" as const, verifiedAt: new Date(), stepIndex: 0, nextStepAt: new Date() } : {}) },
   });
   await startLinksSession(funnel, updated, (await headers()).get("user-agent"));
-  // Primeiro acesso: entra nos passos do funil (se você configurou algum no Aquecimento)
+  // Primeiro acesso: entra nos passos do funil do login (mensagem de boas-vindas)
   if (first) await advanceLead(funnel, updated).catch((e) => console.error("[links] funil", e));
   return { ok: true };
 }
@@ -166,6 +166,17 @@ export async function setupLinksLoginAction(_: FormState, form: FormData): Promi
   await createLinksFunnel(auth.workspace.id, groupId);
   revalidatePath("/admin");
   return { ok: `Login por WhatsApp ligado no grupo ${group.name}! Os 2 templates (código e aviso de acesso) foram enviados para a Meta aprovar nas BMs do grupo. Quando aprovarem, o site já funciona.` };
+}
+
+/** Pausa ou religa o login por WhatsApp desta conta (e os envios internos dele). */
+export async function toggleLinksLoginAction(active: boolean): Promise<FormState> {
+  const auth = await requireSuperAdmin();
+  const f = await prisma.funnel.findFirst({ where: { kind: "LINKS", workspaceId: auth.workspace.id } });
+  if (!f) return { error: "O login ainda não foi ligado." };
+  await prisma.funnel.update({ where: { id: f.id }, data: { status: active ? "ACTIVE" : "PAUSED" } });
+  await prisma.campaign.updateMany({ where: { funnelId: f.id }, data: active ? { status: "RUNNING", pausedReason: null } : { status: "PAUSED", pausedReason: FUNNEL_PAUSED } });
+  revalidatePath("/admin");
+  return { ok: active ? "Login religado." : "Login pausado: o site não manda mais código." };
 }
 
 /** Admin: apaga qualquer link (ex.: alguém usando para golpe). */

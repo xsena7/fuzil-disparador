@@ -198,7 +198,9 @@ async function loadConversation(conversationId: string): Promise<ConvWithPhone> 
 export type OutMessage = {
   text?: string;
   media?: { url: string; kind: "image" | "video" | "audio" | "document"; mime?: string; name?: string };
-  source: "AGENT" | "AUTO_REPLY";
+  source: "AGENT" | "AUTO_REPLY" | "FLOW";
+  // Botões de resposta (vão junto com o texto, como uma pergunta)
+  buttons?: Array<{ id: string; title: string }>;
   userId?: string;
   campaignId?: string;
   replyTo?: string;
@@ -216,7 +218,11 @@ export async function sendChatMessage(conversationId: string, out: OutMessage) {
     const media = out.media;
     sends.push({ kind: media.kind, text: caption ?? null, media, call: () => meta.sendMedia(token, pnid, conv.contactPhone, media.kind, media.url, caption, media.name) });
   }
-  if (out.text && !caption) {
+  if (out.buttons?.length && out.text) {
+    const text = out.text;
+    const buttons = out.buttons;
+    sends.push({ kind: "buttons", text: `${text}\n\n${buttons.map((b) => `[ ${b.title} ]`).join("  ")}`, call: () => meta.sendButtons(token, pnid, conv.contactPhone, text, buttons) });
+  } else if (out.text && !caption) {
     const text = out.text;
     sends.push({ kind: "text", text, call: () => meta.sendText(token, pnid, conv.contactPhone, text, out.replyTo) });
   }

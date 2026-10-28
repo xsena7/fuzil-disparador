@@ -2,7 +2,7 @@
 
 import { Fragment, type ReactNode } from "react";
 import clsx from "clsx";
-import { AlertCircle, Check, CheckCheck, Clock, FileText, MapPin, Megaphone, MousePointerClick, Zap } from "lucide-react";
+import { AlertCircle, Check, CheckCheck, Clock, FileText, MapPin, Megaphone, MousePointerClick, Workflow, Zap } from "lucide-react";
 
 export type ChatMsg = {
   id: string;
@@ -15,7 +15,7 @@ export type ChatMsg = {
   mediaName: string | null;
   status: string | null;
   error: string | null;
-  source: "CAMPAIGN" | "AUTO_REPLY" | "AGENT" | "CUSTOMER" | "SYSTEM";
+  source: "CAMPAIGN" | "AUTO_REPLY" | "AGENT" | "CUSTOMER" | "SYSTEM" | "FLOW";
   campaignId: string | null;
   createdAt: string;
   /** Disparo: como o template chegou (imagem do cabeçalho, rodapé e botões) */
@@ -121,6 +121,11 @@ export function Bubble({ m, campaignName }: { m: ChatMsg; campaignName?: string 
         {out && m.source === "AUTO_REPLY" && (
           <div className="mb-1 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-white/85">
             <Zap className="size-3.5" /> Resposta automática
+          </div>
+        )}
+        {out && m.source === "FLOW" && (
+          <div className="mb-1 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-white/85">
+            <Workflow className="size-3.5" /> Fluxo
           </div>
         )}
         {out && m.source === "AGENT" && m.kind === "template" && (

@@ -101,6 +101,7 @@ model Workspace {
   conversations       Conversation[]
   quickReplies        QuickReply[]
   funnels             Funnel[]
+  flows               Flow[]
   externalLinks       ExternalLink[]
   creditPurchases     CreditPurchase[]
 }
@@ -401,6 +402,8 @@ model Campaign {
   funnelId           String?
   // Qual passo do funil essa campanha envia ("code", "done" ou o id do passo)
   funnelStep         String?
+  // Fluxo que roda quando o contato responde este disparo (substitui a resposta automática)
+  flowId             String?
   // Categoria exigida do template: UTILITY (padrão) ou AUTHENTICATION (código de confirmação)
   templateCategory   String              @default("UTILITY")
   // Origem dos disparos: GROUP (grupo de BMs) ou BM (uma BM só)
@@ -420,6 +423,7 @@ model Campaign {
   group              BmGroup?            @relation(fields: [groupId], references: [id], onDelete: SetNull)
   folder             CampaignFolder?     @relation(fields: [folderId], references: [id], onDelete: SetNull)
   funnel             Funnel?             @relation(fields: [funnelId], references: [id], onDelete: Cascade)
+  flow               Flow?               @relation(fields: [flowId], references: [id], onDelete: SetNull)
   recipients         CampaignRecipient[]
   clicks             LinkClick[]
 
@@ -1087,4 +1091,54 @@ model SmsOrder {
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@index([workspaceId, createdAt])
+}
+
+// ---------------------------------------------------------------------------
+// Fluxos: blocos ligados por setas que rodam quando o contato responde um disparo
+// ---------------------------------------------------------------------------
+
+model Flow {
+  id          String     @id @default(cuid())
+  workspaceId String
+  name        String
+  // { nodes: [{ id, type: start|message|buttons|wait|condition, x, y, data }], edges: [{ id, from, port, to }] }
+  graph       Json
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  workspace   Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  campaigns   Campaign[]
+  runs        FlowRun[]
+
+  @@index([workspaceId])
+}
+
+enum FlowRunStatus {
+  RUNNING
+  WAITING_REPLY
+  WAITING_TIME
+  DONE
+  STOPPED
+  FAILED
+}
+
+// Uma pessoa passando por um fluxo (uma por destinatário do disparo)
+model FlowRun {
+  id             String        @id @default(cuid())
+  workspaceId    String
+  flowId         String
+  conversationId String
+  campaignId     String?
+  recipientId    String?       @unique
+  nodeId         String
+  status         FlowRunStatus @default(RUNNING)
+  waitUntil      DateTime?
+  error          String?
+  steps          Int           @default(0)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  flow           Flow          @relation(fields: [flowId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, status])
+  @@index([status, waitUntil])
+  @@index([flowId, createdAt])
 }

@@ -16,7 +16,8 @@ import {
   retryFailedAction, saveAutoReplyAction, saveContentStepAction, saveTemplateStepAction, startCampaignAction,
 } from "@/app/actions/campaigns";
 import { ActionForm } from "@/components/action-form";
-import { Zap } from "lucide-react";
+import { Workflow, Zap } from "lucide-react";
+import { setCampaignFlowAction } from "@/app/actions/flows";
 import { StepTemplate, type TemplateOption } from "./step-template";
 import { StepContent } from "./step-content";
 import { StepAudience, type AudienceStats } from "./step-audience";
@@ -46,8 +47,8 @@ export default async function CampaignPage({ params, searchParams }: { params: P
   const { id } = await params;
   const campaign = await prisma.campaign.findFirst({ where: { id, workspaceId: auth.workspace.id }, include: { group: true } });
   if (!campaign) notFound();
-  // Campanha interna de um funil de aquecimento: o lugar dela é a tela do funil
-  if (campaign.funnelId) redirect(`/aquecimento/${campaign.funnelId}`);
+  // Campanha interna do login do gerador de links: não aparece na lista
+  if (campaign.funnelId) redirect("/campanhas");
   const started = !["DRAFT", "SCHEDULED"].includes(campaign.status);
   const step = (await searchParams).etapa ?? (started ? "metricas" : "template");
 
@@ -90,6 +91,7 @@ export default async function CampaignPage({ params, searchParams }: { params: P
           {step === "conteudo" && (
             <>
               <ContentStep campaignId={id} locked={started} />
+              <FlowCard campaignId={id} workspaceId={auth.workspace.id} />
               <AutoReplyCard campaignId={id} />
             </>
           )}
@@ -108,6 +110,7 @@ export default async function CampaignPage({ params, searchParams }: { params: P
               {/* Entregas, leituras, cliques e respostas continuam chegando depois do envio: atualiza sempre */}
               <AutoRefresh every={campaign.status === "RUNNING" ? 3000 : 8000} live />
               <Metrics campaignId={id} />
+              <FlowCard campaignId={id} workspaceId={auth.workspace.id} />
               <AutoReplyCard campaignId={id} />
             </>
           )}
@@ -275,6 +278,42 @@ async function SendStep({ campaignId }: { campaignId: string }) {
         <p className="text-zinc-500">Campanha já iniciada. Acompanhe em <Link href={`/campanhas/${campaignId}?etapa=metricas`} className="underline">Métricas</Link>.</p>
       )}
     </div>
+  );
+}
+
+/** Fluxo: quem responder este disparo segue os blocos do fluxo escolhido (no lugar da resposta automática). */
+async function FlowCard({ campaignId, workspaceId }: { campaignId: string; workspaceId: string }) {
+  const [c, flows, runs] = await Promise.all([
+    prisma.campaign.findUniqueOrThrow({ where: { id: campaignId }, select: { flowId: true } }),
+    prisma.flow.findMany({ where: { workspaceId }, select: { id: true, name: true }, orderBy: { updatedAt: "desc" } }),
+    prisma.flowRun.groupBy({ by: ["status"], where: { campaignId }, _count: true }),
+  ]);
+  const total = runs.reduce((a, r) => a + r._count, 0);
+  const done = runs.find((r) => r.status === "DONE")?._count ?? 0;
+  return (
+    <Card className="mt-6 p-5">
+      <div className="mb-1 flex items-center gap-2 font-semibold">
+        <Workflow className="size-4 text-brand-500" /> Fluxo
+        {c.flowId ? <Badge color="green">Ligado</Badge> : <Badge color="gray">Sem fluxo</Badge>}
+        {total > 0 && <span className="ml-auto text-xs font-normal text-zinc-500">{total.toLocaleString("pt-BR")} entraram · {done.toLocaleString("pt-BR")} terminaram</span>}
+      </div>
+      <p className="mb-4 text-sm text-zinc-500">
+        Quando o cliente responder este disparo (ou clicar num botão de resposta do template), ele entra no fluxo e segue o caminho da resposta. Com fluxo ligado, a resposta automática abaixo não vai.{" "}
+        <Link href="/fluxos" className="font-medium text-brand-600 hover:underline">Criar ou editar fluxos</Link>
+      </p>
+      {flows.length ? (
+        <ActionForm action={setCampaignFlowAction.bind(null, campaignId)} submit="Salvar fluxo">
+          <select name="flowId" defaultValue={c.flowId ?? ""} className="w-full rounded-xl border border-zinc-200 bg-white px-3.5 py-2.5 text-sm shadow-soft outline-none focus:border-brand-400">
+            <option value="">Sem fluxo</option>
+            {flows.map((f) => (
+              <option key={f.id} value={f.id}>{f.name}</option>
+            ))}
+          </select>
+        </ActionForm>
+      ) : (
+        <p className="text-sm text-zinc-500">Você ainda não tem fluxo. <Link href="/fluxos" className="font-medium text-brand-600 hover:underline">Crie o primeiro</Link>.</p>
+      )}
+    </Card>
   );
 }
 
