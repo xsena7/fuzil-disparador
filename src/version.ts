@@ -2,6 +2,14 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "3.22",
+    date: "28/10/2026",
+    items: [
+      "Fluxos: os blocos ficam na direita, cada um com a explicação do que faz e um exemplo. Arraste para o quadro ou clique para adicionar",
+      "Fluxos: o primeiro bloco agora é o Disparo: escolha ali a campanha que começa o fluxo (dá para ter mais de uma). Se o template tiver botões de resposta, um clique já cria um caminho para cada botão",
+    ],
+  },
+  {
     version: "3.21",
     date: "28/10/2026",
     items: [

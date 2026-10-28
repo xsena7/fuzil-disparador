@@ -23,7 +23,7 @@ export default async function FlowsPage() {
     <div className="space-y-4">
       <PageHeader
         title="Fluxos"
-        description="Monte a conversa em blocos: quando o contato responde o disparo, ele segue o caminho do botão que clicou ou da resposta que deu. Escolha o fluxo na campanha, na etapa Disparo."
+        description="Monte a conversa em blocos: quando o contato responde o disparo, ele segue o caminho do botão que clicou ou da resposta que deu. Escolha o disparo no bloco Disparo do fluxo (ou na campanha, etapa Conteúdo)."
       />
 
       {flows.length ? (

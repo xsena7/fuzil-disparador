@@ -30,7 +30,7 @@ function clean(raw: unknown): FlowGraph {
     const timeout = { timeoutAmount: num(d.timeoutAmount) || undefined, timeoutUnit: unit(d.timeoutUnit, "hours") };
     switch (n.type) {
       case "start":
-        return [{ ...base, data: { options: opts(d.options, 20) } }];
+        return [{ ...base, data: { options: opts(d.options, 20), campaignIds: (Array.isArray(d.campaignIds) ? d.campaignIds : []).slice(0, 50).map((c) => str(c, 40)).filter(Boolean) } }];
       case "message":
         return [{ ...base, data: { text: str(d.text, 4096), media } }];
       case "buttons":
@@ -77,6 +77,10 @@ export async function saveFlowAction(id: string, name: string, graph: unknown): 
   if (err) return { error: err };
   const n = name.trim().slice(0, 80);
   await prisma.flow.update({ where: { id: flow.id }, data: { graph: g as unknown as Prisma.InputJsonValue, ...(n.length >= 2 ? { name: n } : {}) } });
+  // Disparos do bloco Disparo: essas campanhas passam a usar este fluxo (as que saíram do bloco ficam sem fluxo)
+  const ids = g.nodes.find((x) => x.type === "start")?.data.campaignIds ?? [];
+  await prisma.campaign.updateMany({ where: { workspaceId: flow.workspaceId, id: { in: ids } }, data: { flowId: flow.id } });
+  await prisma.campaign.updateMany({ where: { workspaceId: flow.workspaceId, flowId: flow.id, id: { notIn: ids } }, data: { flowId: null } });
   revalidatePath("/fluxos");
   return { ok: "Fluxo salvo!" };
 }

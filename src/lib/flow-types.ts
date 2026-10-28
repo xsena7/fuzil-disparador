@@ -5,6 +5,8 @@ export type FlowOption = { id: string; label: string };
 export type FlowMedia = { url: string; kind: "image" | "video" | "audio" | "document"; name?: string };
 
 export type FlowNodeData = {
+  // start: disparos (campanhas) que começam este fluxo
+  campaignIds?: string[];
   // start / condition: respostas que levam a caminhos diferentes (palavras separadas por vírgula)
   options?: FlowOption[];
   // message / buttons
@@ -29,7 +31,7 @@ export const UNIT_MS: Record<FlowUnit, number> = { seconds: 1000, minutes: 60_00
 export const UNIT_LABEL: Record<FlowUnit, string> = { seconds: "segundos", minutes: "minutos", hours: "horas", days: "dias" };
 
 export const NODE_INFO: Record<FlowNodeType, { label: string; hint: string }> = {
-  start: { label: "Início", hint: "Quando o contato responde o disparo" },
+  start: { label: "Disparo", hint: "Começa quando o contato responde o disparo escolhido" },
   message: { label: "Mensagem", hint: "Texto, foto, áudio, vídeo ou PDF" },
   buttons: { label: "Botões", hint: "Pergunta com até 3 botões" },
   wait: { label: "Esperar", hint: "Um tempo antes de seguir" },

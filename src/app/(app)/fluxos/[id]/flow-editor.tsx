@@ -3,7 +3,7 @@
 import clsx from "clsx";
 import Link from "next/link";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, useTransition, type PointerEvent as RPointerEvent, type ReactNode } from "react";
-import { ArrowLeft, Clock, FileText, GitBranch, Loader2, Maximize2, MessageSquare, Minus, MousePointerClick, Paperclip, Play, Plus, Save, Trash2, X } from "lucide-react";
+import { ArrowLeft, Clock, FileText, GitBranch, GripVertical, Loader2, Maximize2, Megaphone, MessageSquare, Minus, MousePointerClick, Paperclip, Plus, Save, Sparkles, Trash2, X } from "lucide-react";
 import { saveFlowAction, uploadFlowMediaAction } from "@/app/actions/flows";
 import { toast } from "@/components/toast";
 import { NODE_INFO, nodePorts, UNIT_LABEL, validateGraph, type FlowEdge, type FlowGraph, type FlowNode, type FlowNodeType, type FlowOption, type FlowUnit } from "@/lib/flow-types";
@@ -12,7 +12,7 @@ const NODE_W = 264;
 const uid = () => Math.random().toString(36).slice(2, 10);
 
 const STYLE: Record<FlowNodeType, { head: string; ring: string; icon: ReactNode }> = {
-  start: { head: "bg-emerald-500", ring: "ring-emerald-400", icon: <Play className="size-4" /> },
+  start: { head: "bg-emerald-500", ring: "ring-emerald-400", icon: <Megaphone className="size-4" /> },
   message: { head: "bg-brand-gradient", ring: "ring-brand-400", icon: <MessageSquare className="size-4" /> },
   buttons: { head: "bg-violet-500", ring: "ring-violet-400", icon: <MousePointerClick className="size-4" /> },
   wait: { head: "bg-amber-500", ring: "ring-amber-400", icon: <Clock className="size-4" /> },
@@ -26,19 +26,30 @@ const NEW_DATA: Record<Exclude<FlowNodeType, "start">, () => FlowNode["data"]> =
   condition: () => ({ options: [{ id: uid(), label: "" }] }),
 };
 
+// Explicação de cada bloco na paleta da direita
+const PALETTE: Array<{ type: Exclude<FlowNodeType, "start">; text: string; example: string }> = [
+  { type: "message", text: "Manda uma mensagem: texto, foto, áudio, vídeo ou PDF. Depois segue para o próximo bloco.", example: "Ex.: \"Oi Maria! Segue o catálogo 👇\" + foto" },
+  { type: "buttons", text: "Faz uma pergunta com até 3 botões. Cada botão leva para um caminho diferente.", example: "Ex.: \"Quer participar?\" [Sim] [Não]" },
+  { type: "wait", text: "Espera um tempo antes de seguir (segundos, minutos, horas ou dias).", example: "Ex.: esperar 2 minutos e mandar a próxima" },
+  { type: "condition", text: "Espera a pessoa escrever e escolhe o caminho pelas palavras da resposta.", example: "Ex.: se contém \"pix\" → manda a chave" },
+];
+
+export type FlowCampaign = { id: string; name: string; status: string; buttons: string[]; other: boolean };
+
 type Pt = { x: number; y: number };
 type Drag = { kind: "node"; id: string; start: Pt; orig: Pt; moved: boolean } | { kind: "pan"; start: Pt; orig: Pt } | { kind: "link"; from: string; port: string };
 
-function summary(n: FlowNode): string {
+function summary(n: FlowNode, campaigns: FlowCampaign[]): string {
   const d = n.data;
   if (n.type === "message") return [d.media?.url ? `📎 ${d.media.name || "anexo"}` : "", d.text?.trim() ?? ""].filter(Boolean).join("\n") || "Clique para escrever a mensagem";
   if (n.type === "buttons") return d.text?.trim() || "Clique para escrever a pergunta";
   if (n.type === "wait") return `Espera ${d.amount ?? 1} ${UNIT_LABEL[d.unit ?? "minutes"]}`;
   if (n.type === "condition") return "Espera a próxima resposta e segue pelo caminho que ela combinar";
-  return "Quando o contato responder o disparo. Separe por resposta (ex.: os botões do template).";
+  const names = (d.campaignIds ?? []).map((id) => campaigns.find((c) => c.id === id)?.name).filter(Boolean);
+  return names.length ? `Começa quando responderem: ${names.join(", ")}` : "Clique e escolha o disparo que começa este fluxo";
 }
 
-export function FlowEditor({ id, initialName, initialGraph, campaigns, waiting }: { id: string; initialName: string; initialGraph: FlowGraph; campaigns: Array<{ id: string; name: string }>; waiting: Record<string, number> }) {
+export function FlowEditor({ id, initialName, initialGraph, campaigns, waiting }: { id: string; initialName: string; initialGraph: FlowGraph; campaigns: FlowCampaign[]; waiting: Record<string, number> }) {
   const [name, setName] = useState(initialName);
   const [graph, setGraph] = useState<FlowGraph>(initialGraph);
   const [selected, setSelected] = useState<string | null>(null);
@@ -138,12 +149,12 @@ export function FlowEditor({ id, initialName, initialGraph, campaigns, waiting }
     }
   }
 
-  function addNode(type: Exclude<FlowNodeType, "start">) {
+  function addNode(type: Exclude<FlowNodeType, "start">, at?: Pt) {
     const src = graph.nodes.find((n) => n.id === selected);
     const freePort = src ? nodePorts(src).find((p) => !graph.edges.some((e) => e.from === src.id && e.port === p.id)) : undefined;
     const r = boxRef.current!.getBoundingClientRect();
     const center = toCanvas(r.left + r.width / 2 - NODE_W / 2, r.top + r.height / 3);
-    const pos = src ? { x: src.x + NODE_W + 90, y: src.y + (freePort ? nodePorts(src).indexOf(freePort) * 40 : 0) } : center;
+    const pos = at ? { x: at.x - NODE_W / 2, y: at.y - 20 } : src ? { x: src.x + NODE_W + 90, y: src.y + (freePort ? nodePorts(src).indexOf(freePort) * 40 : 0) } : center;
     const node: FlowNode = { id: uid(), type, x: Math.max(0, Math.round(pos.x)), y: Math.max(0, Math.round(pos.y)), data: NEW_DATA[type]() };
     change((g) => ({ nodes: [...g.nodes, node], edges: src && freePort ? [...g.edges, { id: uid(), from: src.id, port: freePort.id, to: node.id }] : g.edges }));
     setSelected(node.id);
@@ -195,7 +206,7 @@ export function FlowEditor({ id, initialName, initialGraph, campaigns, waiting }
           className="min-w-0 flex-1 rounded-lg border border-transparent px-2 py-1 text-lg font-semibold outline-none hover:border-zinc-200 focus:border-brand-400 md:max-w-xs"
           aria-label="Nome do fluxo"
         />
-        <div className="flex flex-wrap items-center gap-1.5">
+        <div className="flex flex-wrap items-center gap-1.5 md:hidden">
           {(["message", "buttons", "wait", "condition"] as const).map((t) => (
             <button key={t} onClick={() => addNode(t)} className="flex items-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-3 py-1.5 text-sm font-medium hover:bg-zinc-50" title={NODE_INFO[t].hint}>
               <span className={clsx("grid size-5 place-items-center rounded-md text-white", STYLE[t].head)}>{STYLE[t].icon}</span>
@@ -217,13 +228,20 @@ export function FlowEditor({ id, initialName, initialGraph, campaigns, waiting }
         {/* Área dos blocos */}
         <div
           ref={boxRef}
-          className="absolute inset-0 touch-none select-none overflow-hidden bg-[#f6f6f9] [background-image:radial-gradient(#d4d4d8_1px,transparent_1px)]"
+          className="absolute inset-0 touch-none select-none overflow-hidden md:right-80 bg-[#f6f6f9] [background-image:radial-gradient(#d4d4d8_1px,transparent_1px)]"
           style={{ backgroundSize: `${20 * zoom}px ${20 * zoom}px`, backgroundPosition: `${pan.x}px ${pan.y}px`, cursor: drag.current?.kind === "pan" ? "grabbing" : "grab" }}
           onPointerDown={(e) => {
             if ((e.target as HTMLElement).closest("[data-node], [data-edge]")) return;
             drag.current = { kind: "pan", start: { x: e.clientX, y: e.clientY }, orig: pan };
             setSelected(null);
             setSelEdge(null);
+          }}
+          onDragOver={(e) => e.dataTransfer.types.includes("fz/block") && e.preventDefault()}
+          onDrop={(e) => {
+            const t = e.dataTransfer.getData("fz/block") as Exclude<FlowNodeType, "start">;
+            if (!PALETTE.some((x) => x.type === t)) return;
+            e.preventDefault();
+            addNode(t, toCanvas(e.clientX, e.clientY));
           }}
           onPointerMove={onMove}
           onPointerUp={onUp}
@@ -283,6 +301,7 @@ export function FlowEditor({ id, initialName, initialGraph, campaigns, waiting }
                 node={n}
                 selected={selected === n.id}
                 waiting={waiting[n.id] ?? 0}
+                campaigns={campaigns}
                 linked={(port) => graph.edges.some((e) => e.from === n.id && e.port === port)}
                 onGrab={(e) => {
                   e.stopPropagation();
@@ -309,17 +328,46 @@ export function FlowEditor({ id, initialName, initialGraph, campaigns, waiting }
           <button className="rounded-lg p-1.5 hover:bg-zinc-100" onClick={fit} title="Ver tudo"><Maximize2 className="size-4" /></button>
         </div>
 
-        {/* Ajuda rápida */}
-        {!sel && (
-          <div className="pointer-events-none absolute bottom-4 right-4 hidden max-w-xs rounded-xl border border-zinc-200 bg-white/90 p-3 text-xs leading-relaxed text-zinc-500 shadow-sm md:block">
-            Arraste da <b className="text-zinc-700">bolinha</b> de uma saída até outro bloco para ligar. Clique numa seta para apagar. Arraste o fundo para andar; Ctrl + rolar para zoom.
-            {campaigns.length > 0 && <div className="mt-1.5">Usado em: {campaigns.map((c) => c.name).join(", ")}</div>}
+        {/* Blocos (paleta da direita): clique ou arraste para o quadro */}
+        <aside className="absolute inset-y-0 right-0 hidden w-80 flex-col overflow-y-auto border-l border-zinc-200 bg-white md:flex">
+          <div className="border-b border-zinc-100 px-4 py-3">
+            <div className="font-semibold">Blocos</div>
+            <div className="text-xs text-zinc-500">Arraste para o quadro ou clique para adicionar</div>
           </div>
-        )}
+          <div className="space-y-2.5 p-3">
+            {PALETTE.map((b) => (
+              <button
+                key={b.type}
+                draggable
+                onDragStart={(e) => {
+                  e.dataTransfer.setData("fz/block", b.type);
+                  e.dataTransfer.effectAllowed = "copy";
+                }}
+                onClick={() => addNode(b.type)}
+                className="group flex w-full cursor-grab gap-3 rounded-2xl border border-zinc-200 bg-white p-3 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-zinc-300 hover:shadow-md active:cursor-grabbing"
+              >
+                <span className={clsx("grid size-9 shrink-0 place-items-center rounded-xl text-white", STYLE[b.type].head)}>{STYLE[b.type].icon}</span>
+                <span className="min-w-0 flex-1">
+                  <span className="flex items-center gap-1 font-semibold text-zinc-900">
+                    {NODE_INFO[b.type].label}
+                    <GripVertical className="ml-auto size-4 text-zinc-300 group-hover:text-zinc-400" />
+                  </span>
+                  <span className="mt-0.5 block text-[13px] leading-snug text-zinc-600">{b.text}</span>
+                  <span className="mt-1 block text-xs italic text-zinc-400">{b.example}</span>
+                </span>
+              </button>
+            ))}
+          </div>
+          <div className="mt-auto space-y-2 border-t border-zinc-100 p-4 text-xs leading-relaxed text-zinc-500">
+            <div className="flex items-center gap-1.5 font-semibold text-zinc-700"><Sparkles className="size-3.5 text-brand-500" /> Como ligar</div>
+            <p>Arraste da <b className="text-zinc-700">bolinha</b> de uma saída até outro bloco. Clique numa seta para apagar. Com um bloco escolhido, o próximo que você adicionar já nasce ligado nele.</p>
+            <p>Arraste o fundo para andar; Ctrl + rolar para zoom.</p>
+          </div>
+        </aside>
 
         {/* Painel do bloco escolhido */}
         {sel && (
-          <aside className="absolute inset-x-0 bottom-0 z-10 max-h-[60%] overflow-y-auto border-t border-zinc-200 bg-white p-4 shadow-xl md:inset-x-auto md:bottom-auto md:right-0 md:top-0 md:h-full md:max-h-none md:w-[22rem] md:border-l md:border-t-0">
+          <aside className="absolute inset-x-0 bottom-0 z-10 max-h-[60%] overflow-y-auto border-t border-zinc-200 bg-white p-4 shadow-xl md:inset-x-auto md:bottom-auto md:right-80 md:top-0 md:h-full md:max-h-none md:w-[22rem] md:border-l md:border-t-0">
             <div className="mb-3 flex items-center gap-2">
               <span className={clsx("grid size-7 place-items-center rounded-lg text-white", STYLE[sel.type].head)}>{STYLE[sel.type].icon}</span>
               <div className="min-w-0 flex-1">
@@ -328,7 +376,7 @@ export function FlowEditor({ id, initialName, initialGraph, campaigns, waiting }
               </div>
               <button onClick={() => setSelected(null)} className="rounded-lg p-1.5 text-zinc-400 hover:bg-zinc-100"><X className="size-4" /></button>
             </div>
-            <NodeForm node={sel} update={(d) => updateNode(sel.id, d)} />
+            <NodeForm node={sel} campaigns={campaigns} update={(d) => updateNode(sel.id, d)} />
             {sel.type !== "start" && (
               <button onClick={() => deleteNode(sel.id)} className="mt-5 flex items-center gap-1.5 text-sm text-red-600 hover:underline">
                 <Trash2 className="size-4" /> Apagar bloco
@@ -353,6 +401,7 @@ function NodeCard({
   node,
   selected,
   waiting,
+  campaigns,
   linked,
   onGrab,
   onPort,
@@ -361,6 +410,7 @@ function NodeCard({
   node: FlowNode;
   selected: boolean;
   waiting: number;
+  campaigns: FlowCampaign[];
   linked: (port: string) => boolean;
   onGrab: (e: RPointerEvent) => void;
   onPort: (port: string, e: RPointerEvent) => void;
@@ -368,7 +418,7 @@ function NodeCard({
 }) {
   const st = STYLE[node.type];
   const ports = nodePorts(node);
-  const text = summary(node);
+  const text = summary(node, campaigns);
   return (
     <div
       data-node={node.id}
@@ -474,20 +524,11 @@ const VARS_HINT = (
   </p>
 );
 
-function NodeForm({ node, update }: { node: FlowNode; update: (d: Partial<FlowNode["data"]>) => void }) {
+function NodeForm({ node, campaigns, update }: { node: FlowNode; campaigns: FlowCampaign[]; update: (d: Partial<FlowNode["data"]>) => void }) {
   const [uploading, startUpload] = useTransition();
   const d = node.data;
 
-  if (node.type === "start")
-    return (
-      <div className="text-sm">
-        <p className="mb-3 text-zinc-600">
-          O fluxo começa quando o contato responde o disparo. Para cada resposta diferente, um caminho: coloque o <b>texto dos botões do template</b> (ex.: <i>Quero saber mais</i>) ou palavras separadas por vírgula (ex.: <i>sim, quero, pode</i>).
-        </p>
-        <OptionsEditor items={d.options ?? []} onChange={(options) => update({ options })} placeholder="Ex.: Quero saber mais" max={20} addLabel="Adicionar resposta" />
-        <p className="mt-3 text-xs text-zinc-500">O que não combinar com nenhuma vai por &quot;Qualquer outra resposta&quot;.</p>
-      </div>
-    );
+  if (node.type === "start") return <StartForm node={node} campaigns={campaigns} update={update} />;
 
   if (node.type === "message")
     return (
@@ -557,6 +598,62 @@ function NodeForm({ node, update }: { node: FlowNode; update: (d: Partial<FlowNo
       <p className="mb-3 text-zinc-600">Espera a pessoa responder e segue pelo caminho da primeira regra que combinar. Separe várias palavras por vírgula.</p>
       <OptionsEditor items={d.options ?? []} onChange={(options) => update({ options })} placeholder="Ex.: sim, quero, pode" max={20} addLabel="Adicionar regra" />
       <TimeoutField node={node} update={update} />
+    </div>
+  );
+}
+
+const STATUS_LABEL: Record<string, string> = { DRAFT: "rascunho", SCHEDULED: "agendada", RUNNING: "disparando", PAUSED: "pausada", COMPLETED: "concluída" };
+
+/** Bloco Disparo: escolhe as campanhas que começam o fluxo e separa os caminhos pela resposta. */
+function StartForm({ node, campaigns, update }: { node: FlowNode; campaigns: FlowCampaign[]; update: (d: Partial<FlowNode["data"]>) => void }) {
+  const d = node.data;
+  const chosen = (d.campaignIds ?? []).map((cid) => campaigns.find((c) => c.id === cid)).filter((c): c is FlowCampaign => Boolean(c));
+  const free = campaigns.filter((c) => !(d.campaignIds ?? []).includes(c.id));
+  const buttons = [...new Set(chosen.flatMap((c) => c.buttons))];
+  const missing = buttons.filter((b) => !(d.options ?? []).some((o) => o.label.trim().toLowerCase() === b.trim().toLowerCase()));
+  return (
+    <div className="text-sm">
+      <div className="mb-2 font-medium">Qual disparo começa este fluxo?</div>
+      {chosen.length > 0 && (
+        <div className="mb-2 space-y-1.5">
+          {chosen.map((c) => (
+            <div key={c.id} className="flex items-center gap-2 rounded-xl bg-emerald-50 px-3 py-2 ring-1 ring-emerald-200">
+              <Megaphone className="size-4 shrink-0 text-emerald-600" />
+              <span className="min-w-0 flex-1 truncate font-medium text-zinc-800" title={c.name}>{c.name}</span>
+              <span className="text-xs text-zinc-500">{STATUS_LABEL[c.status] ?? ""}</span>
+              <button onClick={() => update({ campaignIds: (d.campaignIds ?? []).filter((x) => x !== c.id) })} className="rounded p-0.5 text-zinc-400 hover:text-red-600" title="Tirar">
+                <X className="size-4" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+      <select
+        value=""
+        onChange={(e) => e.target.value && update({ campaignIds: [...(d.campaignIds ?? []), e.target.value] })}
+        className={input}
+      >
+        <option value="">{chosen.length ? "+ Adicionar outro disparo" : "Escolha a campanha"}</option>
+        {free.map((c) => (
+          <option key={c.id} value={c.id}>
+            {c.name}{STATUS_LABEL[c.status] ? ` (${STATUS_LABEL[c.status]})` : ""}{c.other ? " · usa outro fluxo" : ""}
+          </option>
+        ))}
+      </select>
+      <p className="mt-1.5 text-xs text-zinc-500">Quem responder esse disparo (ou clicar num botão de resposta do template) entra no fluxo. Vale ao salvar.</p>
+
+      <div className="mb-2 mt-5 font-medium">Caminhos pela resposta</div>
+      {missing.length > 0 && (
+        <button
+          onClick={() => update({ options: [...(d.options ?? []), ...missing.map((label) => ({ id: uid(), label }))] })}
+          className="mb-3 flex w-full items-center gap-2 rounded-xl border border-dashed border-violet-300 bg-violet-50 px-3 py-2 text-left text-violet-700 hover:bg-violet-100"
+        >
+          <MousePointerClick className="size-4 shrink-0" />
+          <span>Usar os botões do template: <b>{missing.join(", ")}</b></span>
+        </button>
+      )}
+      <OptionsEditor items={d.options ?? []} onChange={(options) => update({ options })} placeholder="Ex.: Quero saber mais" max={20} addLabel="Adicionar resposta" />
+      <p className="mt-3 text-xs text-zinc-500">Coloque o texto de cada botão do template ou palavras separadas por vírgula (ex.: <i>sim, quero, pode</i>). O que não combinar vai por &quot;Qualquer outra resposta&quot;.</p>
     </div>
   );
 }
