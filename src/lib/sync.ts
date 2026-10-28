@@ -80,16 +80,22 @@ export async function syncWaba(wabaRecordId: string) {
     const phones = await meta.listPhones(token, waba.wabaId);
     // Números de teste da Meta nem entram no Fuzil (e os que já estavam saem)
     let real = phones.filter((p) => phoneInvalidReason(p) !== TEST_NUMBER);
-    // Qualidade vermelha: o número sai da BM (na Meta) e ela volta para "Sem número"
+    // Qualidade vermelha: o número sai da BM (na Meta) e some do Fuzil. Se a Meta não deixar apagar, fica descadastrado e escondido
     const red = real.filter((p) => p.quality_rating === "RED");
-    for (const p of red) {
-      const removed = await meta.deletePhone(token, p.id).then(() => true).catch((e) => {
-        console.error("[sync] tirar número vermelho", p.id, e);
-        return false;
-      });
-      if (removed) {
-        real = real.filter((x) => x.id !== p.id);
-        await alertRedRemoved(waba.workspaceId, waba.id, p).catch(() => undefined);
+    if (red.length) {
+      const known = await prisma.phoneNumber.findMany({ where: { phoneNumberId: { in: red.map((p) => p.id) } }, select: { phoneNumberId: true, invalidReason: true } });
+      for (const p of red) {
+        // Já foi tirado antes (a Meta ainda lista porque não deixou apagar): só continua escondido
+        if (known.some((k) => k.phoneNumberId === p.id && k.invalidReason === PHONE_REMOVED)) {
+          real = real.filter((x) => x.id !== p.id);
+          continue;
+        }
+        const r = await meta.deletePhone(token, p.id).catch(() => ({ deregistered: false, deleted: false }));
+        // Já desconectado (descadastrado antes) também conta como tirado: não dispara mais por ele
+        if (r.deregistered || r.deleted || p.status !== "CONNECTED") {
+          real = real.filter((x) => x.id !== p.id);
+          await alertRedRemoved(waba.workspaceId, waba.id, p).catch(() => undefined);
+        } else console.error("[sync] não deu para tirar o número vermelho", p.id);
       }
     }
     for (const p of real) await upsertPhone(waba.workspaceId, waba.id, p);
@@ -174,7 +180,7 @@ async function alertRedRemoved(workspaceId: string, wabaRecordId: string, p: Met
     type: "NUMBER_STATUS",
     severity: "WARNING",
     title: `Número ${num} (${bm.split(" / ")[0]}) removido: qualidade baixa`,
-    message: `${/^bm\b/i.test(bm) ? "" : "BM "}${bm}: a qualidade do número ficou vermelha e o Fuzil tirou ele da conta do WhatsApp. A BM volta para "Sem número": coloque um número novo nela.`,
+    message: `${/^bm\b/i.test(bm) ? "" : "BM "}${bm}: a qualidade do número ficou vermelha e o Fuzil tirou ele da conta do WhatsApp (e do Fuzil). Se a BM não tiver outro número, ela vai para "Sem número": coloque um número novo nela.`,
   });
 }
 // Número que o registro automático (SMSBear) largou porque o SMS não chegou: some da tela e nunca entra no rodízio

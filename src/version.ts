@@ -2,6 +2,14 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "3.34",
+    date: "28/10/2026",
+    items: [
+      "Números: o número vermelho que o Fuzil tirou some de Conexões mesmo quando a Meta não deixa apagar ele da conta (fica descadastrado e escondido)",
+      "BM com um número novo conectado sai de \"Sem número\", mesmo que ainda tenha um número antigo desconectado na conta",
+    ],
+  },
+  {
     version: "3.33",
     date: "28/10/2026",
     items: ["Números: quando a qualidade de um número fica vermelha, o Fuzil tira ele da conta do WhatsApp na Meta sozinho e a BM volta para \"Sem número\", pronta para receber um número novo. Chega um aviso dizendo qual número e de qual BM"],

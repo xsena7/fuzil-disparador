@@ -255,7 +255,9 @@ export async function checkBusinessAfterSync(wabaRecordId: string) {
     reason = `WABA ${waba.name} rejeitada na análise da Meta`;
     fix = problemFix(null, "REVIEW");
   } else {
-    const bad = waba.phones.find((p) => p.status && BAD_PHONE[p.status]);
+    // Número desconectado não conta como problema se a conta já tem outro número conectado
+    const connected = waba.phones.some((p) => p.status === "CONNECTED");
+    const bad = waba.phones.find((p) => p.status && BAD_PHONE[p.status] && !(connected && BAD_PHONE[p.status].kind === "REGISTER"));
     const red = waba.phones.find((p) => p.qualityRating === "RED");
     if (bad) {
       reason = `${BAD_PHONE[bad.status!].label}: ${bad.displayPhoneNumber}`;

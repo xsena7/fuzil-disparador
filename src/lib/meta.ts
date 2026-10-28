@@ -231,10 +231,11 @@ export const meta = {
     return graph<{ success: boolean }>(token, "POST", `${phoneNumberId}/verify_code`, { body: { code } });
   },
 
-  /** Tira o número da conta do WhatsApp: descadastra da Cloud API e apaga da WABA. */
-  async deletePhone(token: string, phoneNumberId: string) {
-    await graph<{ success: boolean }>(token, "POST", `${phoneNumberId}/deregister`, { body: {} }).catch(() => undefined);
-    return graph<{ success: boolean }>(token, "DELETE", phoneNumberId);
+  /** Tira o número da conta do WhatsApp: descadastra da Cloud API e tenta apagar da WABA (a Meta nem sempre deixa apagar). */
+  async deletePhone(token: string, phoneNumberId: string): Promise<{ deregistered: boolean; deleted: boolean }> {
+    const deregistered = await graph<{ success: boolean }>(token, "POST", `${phoneNumberId}/deregister`, { body: {} }).then(() => true).catch(() => false);
+    const deleted = await graph<{ success: boolean }>(token, "DELETE", phoneNumberId).then(() => true).catch(() => false);
+    return { deregistered, deleted };
   },
 
   registerPhone(token: string, phoneNumberId: string, pin: string) {

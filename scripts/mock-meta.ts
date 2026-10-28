@@ -49,6 +49,10 @@ const wabas: Record<string, { name: string; business: { id: string; name: string
   },
 };
 
+// Teste: um número novo conectado na WABA 1002 (como depois de trocar o número vermelho)
+if (process.env.MOCK_EXTRA_PHONE === "1")
+  wabas["1002"].phones.push({ id: "5006", display_phone_number: "+55 77 93301-7645", verified_name: "Erick Novo", quality_rating: "UNKNOWN", whatsapp_business_manager_messaging_limit: "TIER_2K", status: "CONNECTED", name_status: "APPROVED", throughput: { level: "STANDARD" } });
+
 let msgSeq = 0;
 export const sent: Array<{ phone: string; to: string; body: any }> = [];
 
@@ -130,6 +134,7 @@ createServer(async (req, res) => {
   const phone = Object.values(wabas).flatMap((w) => w.phones).find((p) => p.id === id);
   // Tirar número da WABA (descadastrar + apagar)
   if (phone && edge === "deregister") return json(res, 200, { success: true });
+  if (phone && !edge && req.method === "DELETE" && process.env.MOCK_NO_DELETE === "1") return json(res, 400, { error: { message: "(#100) Unsupported delete request", code: 100 } });
   if (phone && !edge && req.method === "DELETE") {
     for (const w of Object.values(wabas)) w.phones = w.phones.filter((x) => x.id !== id);
     return json(res, 200, { success: true });
