@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "3.36",
+    date: "28/10/2026",
+    items: ["Números BR (SMSBear e SMS24h): registre número em várias BMs ao mesmo tempo. Marque as BMs (ou \"Marcar todas\"), confira o nome de exibição de cada uma e clique em Registrar: cada uma roda o registro automático dela em paralelo"],
+  },
+  {
     version: "3.35",
     date: "28/10/2026",
     items: ["Conectar contas com cadeado: quando a BM conecta, aparece a comemoração \"BM conectada! 🎉\" com confete, igual nas outras formas de conectar"],

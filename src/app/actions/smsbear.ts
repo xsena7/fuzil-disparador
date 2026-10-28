@@ -66,6 +66,27 @@ export async function startSmsJobAction(_: FormState, form: FormData): Promise<F
   return { ok: "Registro automático começou! Acompanhe aqui no painel." };
 }
 
+/** Vários de uma vez: um registro automático por WABA marcada (cada uma com o seu nome de exibição). */
+export async function startSmsJobsAction(_: FormState, form: FormData): Promise<FormState> {
+  const ids = [...new Set(form.getAll("wabaIds").map(String))].filter(Boolean);
+  if (!ids.length) return { error: "Marque pelo menos uma BM." };
+  const ok: string[] = [];
+  const failed: string[] = [];
+  for (const id of ids) {
+    const one = new FormData();
+    one.set("provider", String(form.get("provider") ?? ""));
+    one.set("wabaId", id);
+    one.set("name", String(form.get(`name-${id}`) ?? ""));
+    one.set("maxAttempts", String(form.get("maxAttempts") ?? ""));
+    const r = await startSmsJobAction(undefined, one);
+    const label = String(form.get(`label-${id}`) ?? "BM");
+    if (r?.error) failed.push(`${label}: ${r.error}`);
+    else ok.push(label);
+  }
+  if (!ok.length) return { error: failed.join(" · ") };
+  return { ok: `Registro automático começou em ${ok.length} BM${ok.length > 1 ? "s" : ""}!${failed.length ? ` Não começou em: ${failed.join(" · ")}` : " Acompanhe aqui no painel."}` };
+}
+
 export async function stopSmsJobAction(jobId: string): Promise<FormState> {
   const auth = await requireAuth();
   const job = await prisma.smsJob.findFirst({ where: { id: jobId, workspaceId: auth.workspace.id } });

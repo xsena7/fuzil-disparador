@@ -3,7 +3,7 @@
 import { useActionState, useCallback, useEffect, useState, useTransition } from "react";
 import clsx from "clsx";
 import { Check, CheckCircle2, Copy, Loader2, LogOut, MessageSquareText, RefreshCw, ShoppingCart, Square, Trash2, X, XCircle, Zap } from "lucide-react";
-import { buyManualAction, cancelManualAction, clearManualAction, clearSmsJobsAction, connectSmsProviderAction, deleteSmsJobAction, disconnectSmsProviderAction, hideManualAction, startSmsJobAction, stopSmsJobAction, swapManualAction } from "@/app/actions/smsbear";
+import { buyManualAction, cancelManualAction, clearManualAction, clearSmsJobsAction, connectSmsProviderAction, deleteSmsJobAction, disconnectSmsProviderAction, hideManualAction, startSmsJobsAction, stopSmsJobAction, swapManualAction } from "@/app/actions/smsbear";
 import { SMS_PROVIDER_INFO, cancelOpensIn, type SmsProviderKey } from "@/lib/smsbear-shared";
 import { KeepInput } from "@/components/keep-input";
 import { Button, Field, Input } from "@/components/ui";
@@ -25,6 +25,7 @@ type Job = {
   log: Array<{ at: string; text: string; tone?: "ok" | "bad" | "info" }>;
   error: string | null;
   pendingCancel: number;
+  wabaId: string;
 };
 type Manual = { id: string; provider: SmsProviderKey; number: string; costCents: number; status: "PENDING" | "RECEIVED" | "CANCELLED"; code: string | null; smsText: string | null; createdAt: string };
 type ProvState = { connected: boolean; balance?: number | null; price?: { cost: number; stock: number } | null; error?: string | null };
@@ -132,10 +133,14 @@ function Connect({ provider, onDone }: { provider: SmsProviderKey; onDone: () =>
 }
 
 function Connected({ provider, ps: st, jobs, manual, wabas, now, reload }: { provider: SmsProviderKey; ps: ProvState; jobs: Job[]; manual: Manual[]; wabas: Array<{ id: string; label: string; name: string }>; now: number; reload: () => void }) {
-  const [wabaId, setWabaId] = useState(wabas[0]?.id ?? "");
-  const [state, action, pending] = useActionState(startSmsJobAction, undefined);
+  const busyWabas = new Set(jobs.filter((j) => j.status === "RUNNING").map((j) => j.wabaId));
+  const free = wabas.filter((w) => !busyWabas.has(w.id));
+  const [picked, setPicked] = useState<string[]>(() => (free[0] ? [free[0].id] : []));
+  const [state, action, pending] = useActionState(startSmsJobsAction, undefined);
+  // A que começou a registrar sai da seleção (não dá para começar duas vezes na mesma BM)
+  const busyKey = [...busyWabas].join(",");
+  useEffect(() => setPicked((p) => p.filter((id) => !busyWabas.has(id))), [busyKey]); // eslint-disable-line react-hooks/exhaustive-deps
   const [busy, start] = useTransition();
-  const chosen = wabas.find((w) => w.id === wabaId);
   useEffect(() => {
     toastResult(state);
     if (state?.ok) reload();
@@ -183,19 +188,50 @@ function Connected({ provider, ps: st, jobs, manual, wabas, now, reload }: { pro
       ) : (
         <form action={action} className="space-y-3 rounded-xl border border-orange-200 bg-orange-50/50 p-3">
           <input type="hidden" name="provider" value={provider} />
-          <Field label="Registrar na WABA">
-            <select name="wabaId" value={wabaId} onChange={(e) => setWabaId(e.target.value)} className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm">
-              {wabas.map((w) => <option key={w.id} value={w.id}>{w.label}</option>)}
-            </select>
-          </Field>
-          <Field label="Nome de exibição" hint="O nome que aparece no WhatsApp (a Meta analisa)">
-            <KeepInput key={wabaId} name="name" remember={`nome-waba-${wabaId}`} defaultValue={chosen?.name ?? ""} maxLength={100} required />
-          </Field>
+          <div>
+            <div className="mb-1.5 flex items-center justify-between text-sm font-medium text-zinc-700">
+              <span>Registrar nas BMs</span>
+              {free.length > 1 && (
+                <button type="button" onClick={() => setPicked(picked.length === free.length ? [] : free.map((w) => w.id))} className="text-xs font-semibold text-orange-600 hover:underline">
+                  {picked.length === free.length ? "Desmarcar todas" : "Marcar todas"}
+                </button>
+              )}
+            </div>
+            <div className="max-h-80 space-y-2 overflow-y-auto">
+              {wabas.map((w) => {
+                const on = picked.includes(w.id);
+                const runningHere = busyWabas.has(w.id);
+                return (
+                  <div key={w.id} className={clsx("rounded-xl bg-white p-2.5 ring-1", on ? "ring-orange-300" : "ring-zinc-200", runningHere && "opacity-60")}>
+                    <label className="flex items-center gap-2 text-sm">
+                      <input
+                        type="checkbox"
+                        name="wabaIds"
+                        value={w.id}
+                        checked={on}
+                        disabled={runningHere}
+                        onChange={(e) => setPicked((p) => (e.target.checked ? [...p, w.id] : p.filter((x) => x !== w.id)))}
+                      />
+                      <span className="min-w-0 flex-1 truncate font-medium">{w.label}</span>
+                      {runningHere && <span className="text-xs text-orange-600">registrando...</span>}
+                    </label>
+                    <input type="hidden" name={`label-${w.id}`} value={w.label} />
+                    {on && (
+                      <div className="mt-2">
+                        <span className="mb-1 block text-xs text-zinc-500">Nome de exibição (o nome que aparece no WhatsApp)</span>
+                        <KeepInput name={`name-${w.id}`} remember={`nome-waba-${w.id}`} defaultValue={w.name} maxLength={100} required />
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
           <Field label="Máximo de tentativas" hint="Cada número sem SMS em 2,5 min é cancelado e o saldo volta">
             <KeepInput name="maxAttempts" type="number" min={1} max={20} remember="smsbear-max" defaultValue={10} className="w-24" />
           </Field>
-          <Button disabled={pending} className="w-full">
-            {pending ? <Loader2 className="size-4 animate-spin" /> : <Zap className="size-4" />} {pending ? "Começando..." : "Registrar número automático"}
+          <Button disabled={pending || !picked.length} className="w-full">
+            {pending ? <Loader2 className="size-4 animate-spin" /> : <Zap className="size-4" />} {pending ? "Começando..." : picked.length > 1 ? `Registrar em ${picked.length} BMs ao mesmo tempo` : "Registrar número automático"}
           </Button>
           {state?.error && <p className="text-sm text-red-600">{state.error}</p>}
         </form>

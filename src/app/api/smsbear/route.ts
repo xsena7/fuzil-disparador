@@ -55,6 +55,7 @@ export async function GET() {
       number: j.number,
       stepAt: j.stepAt,
       spentCents: j.spentCents,
+      wabaId: j.wabaId,
       bm: j.waba.business.name,
       waba: j.waba.name,
       log: j.log,
