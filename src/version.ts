@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "3.33",
+    date: "28/10/2026",
+    items: ["Números: quando a qualidade de um número fica vermelha, o Fuzil tira ele da conta do WhatsApp na Meta sozinho e a BM volta para \"Sem número\", pronta para receber um número novo. Chega um aviso dizendo qual número e de qual BM"],
+  },
+  {
     version: "3.32",
     date: "28/10/2026",
     items: ["Chat: as mensagens do fluxo e da resposta automática não aparecem mais com a imagem e o botão do template do disparo (era só a exibição no chat: o contato recebia certo)"],

@@ -128,6 +128,12 @@ createServer(async (req, res) => {
   }
 
   const phone = Object.values(wabas).flatMap((w) => w.phones).find((p) => p.id === id);
+  // Tirar número da WABA (descadastrar + apagar)
+  if (phone && edge === "deregister") return json(res, 200, { success: true });
+  if (phone && !edge && req.method === "DELETE") {
+    for (const w of Object.values(wabas)) w.phones = w.phones.filter((x) => x.id !== id);
+    return json(res, 200, { success: true });
+  }
   if (phone && edge === "messages" && id === "5002" && process.env.MOCK_PAYDUE === "1") {
     return json(res, 400, { error: { message: "Payment method issue", code: 131042, error_data: { details: "Problema de pagamento" } } });
   }

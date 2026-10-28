@@ -231,6 +231,12 @@ export const meta = {
     return graph<{ success: boolean }>(token, "POST", `${phoneNumberId}/verify_code`, { body: { code } });
   },
 
+  /** Tira o número da conta do WhatsApp: descadastra da Cloud API e apaga da WABA. */
+  async deletePhone(token: string, phoneNumberId: string) {
+    await graph<{ success: boolean }>(token, "POST", `${phoneNumberId}/deregister`, { body: {} }).catch(() => undefined);
+    return graph<{ success: boolean }>(token, "DELETE", phoneNumberId);
+  },
+
   registerPhone(token: string, phoneNumberId: string, pin: string) {
     return graph<{ success: boolean }>(token, "POST", `${phoneNumberId}/register`, {
       body: { messaging_product: "whatsapp", pin },

@@ -79,7 +79,19 @@ export async function syncWaba(wabaRecordId: string) {
   await step(async () => {
     const phones = await meta.listPhones(token, waba.wabaId);
     // Números de teste da Meta nem entram no Fuzil (e os que já estavam saem)
-    const real = phones.filter((p) => phoneInvalidReason(p) !== TEST_NUMBER);
+    let real = phones.filter((p) => phoneInvalidReason(p) !== TEST_NUMBER);
+    // Qualidade vermelha: o número sai da BM (na Meta) e ela volta para "Sem número"
+    const red = real.filter((p) => p.quality_rating === "RED");
+    for (const p of red) {
+      const removed = await meta.deletePhone(token, p.id).then(() => true).catch((e) => {
+        console.error("[sync] tirar número vermelho", p.id, e);
+        return false;
+      });
+      if (removed) {
+        real = real.filter((x) => x.id !== p.id);
+        await alertRedRemoved(waba.workspaceId, waba.id, p).catch(() => undefined);
+      }
+    }
     for (const p of real) await upsertPhone(waba.workspaceId, waba.id, p);
     await removeGonePhones(waba.id, real.map((p) => p.id));
     await checkPendingNames(waba.id, token).catch((e) => console.error("[sync] troca de nome", e));
@@ -152,6 +164,19 @@ async function refreshBusinessTier(wabaRecordId: string) {
 }
 
 export const PHONE_REMOVED = "Número removido da Meta";
+
+/** Aviso de número tirado da BM por qualidade vermelha. */
+async function alertRedRemoved(workspaceId: string, wabaRecordId: string, p: MetaPhone) {
+  const num = formatPhone(p.display_phone_number.replace(/\D/g, ""));
+  const bm = await wabaLabel(wabaRecordId);
+  await createAlert({
+    workspaceId,
+    type: "NUMBER_STATUS",
+    severity: "WARNING",
+    title: `Número ${num} (${bm.split(" / ")[0]}) removido: qualidade baixa`,
+    message: `${/^bm\b/i.test(bm) ? "" : "BM "}${bm}: a qualidade do número ficou vermelha e o Fuzil tirou ele da conta do WhatsApp. A BM volta para "Sem número": coloque um número novo nela.`,
+  });
+}
 // Número que o registro automático (SMSBear) largou porque o SMS não chegou: some da tela e nunca entra no rodízio
 export const PHONE_DISCARDED = "Número descartado (o SMS não chegou)";
 const TEST_NUMBER = "Número de teste da Meta";
