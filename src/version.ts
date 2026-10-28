@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "3.35",
+    date: "28/10/2026",
+    items: ["Conectar contas com cadeado: quando a BM conecta, aparece a comemoração \"BM conectada! 🎉\" com confete, igual nas outras formas de conectar"],
+  },
+  {
     version: "3.34",
     date: "28/10/2026",
     items: [

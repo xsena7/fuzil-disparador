@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Check, ChevronRight, Copy, ExternalLink, Loader2, Lock, RefreshCw } from "lucide-react";
 import { connectSharedWabaAction, listSharedWabasAction, type SharedWaba } from "@/app/actions/connections";
 import { toast } from "@/components/toast";
+import { celebrate } from "@/components/celebration";
 
 function CopyId({ value }: { value: string }) {
   const [done, setDone] = useState(false);
@@ -48,7 +49,7 @@ export function SharedWabas({ workspace, partnerId, owner }: { workspace: string
     const r = await connectSharedWabaAction(id);
     setBusy(null);
     if (r?.error) return toast("error", r.error);
-    toast("success", r?.ok ?? "Conectada!");
+    celebrate("BM conectada! 🎉", r?.ok);
     setList((l) => l?.map((x) => (x.id === id ? { ...x, connectedIn: workspace, here: true } : x)) ?? null);
     setTyped("");
     router.refresh();
