@@ -9,6 +9,8 @@ import { deleteTemplateAction, updateAutoDeleteAction } from "@/app/actions/temp
 import type { TComponent } from "@/lib/template-utils";
 import { ago, templateUsage } from "@/lib/limit-windows";
 import { TemplateFilters } from "./filters";
+import { READY_GROUP, isProblemSystem } from "@/lib/bm-problems";
+import { groupDot } from "@/lib/group-colors";
 
 export const dynamic = "force-dynamic";
 
@@ -45,7 +47,7 @@ export default async function TemplatesPage({ searchParams }: { searchParams: Pr
         ? { OR: [{ business: { name: { contains: q, mode: "insensitive" as const } } }, { name: { contains: q, mode: "insensitive" as const } }, { wabaId: { contains: q } }] }
         : {}),
     },
-    include: { business: true },
+    include: { business: { include: { groups: { include: { group: true } } } } },
     // A última conectada fica em cima, a primeira lá embaixo
     orderBy: { createdAt: "desc" },
   });
@@ -60,6 +62,18 @@ export default async function TemplatesPage({ searchParams }: { searchParams: Pr
   for (const t of templates) byWaba.set(t.wabaId, [...(byWaba.get(t.wabaId) ?? []), t]);
   const filtering = Boolean(q || group);
   const shown = wabas;
+  // Gavetas por grupo (igual Conexões): cada conta fica no grupo principal da BM dela
+  type Sec = { key: string; name: string; color: string | null; order: number; items: typeof wabas };
+  const secs = new Map<string, Sec>();
+  for (const w of shown) {
+    const gs = w.business.groups.map((g) => g.group).filter((g) => !g.system?.startsWith("BM:"));
+    const main = gs.find((g) => isProblemSystem(g.system)) ?? gs.find((g) => g.system === READY_GROUP) ?? gs.find((g) => !g.system) ?? null;
+    const key = main?.id ?? "none";
+    if (!secs.has(key))
+      secs.set(key, { key, name: main?.name ?? "Sem grupo", color: main?.color ?? null, order: !main ? 3 : main.system === READY_GROUP ? 0 : isProblemSystem(main.system) ? 1 : 2, items: [] });
+    secs.get(key)!.items.push(w);
+  }
+  const sections = [...secs.values()].sort((a, b) => a.order - b.order || a.name.localeCompare(b.name, "pt-BR"));
   const marketingCount = templates.filter((t) => t.category === "MARKETING").length;
 
   return (
@@ -95,7 +109,23 @@ export default async function TemplatesPage({ searchParams }: { searchParams: Pr
       {shown.length === 0 && <Empty>{filtering ? "Nenhuma BM encontrada com esse filtro." : "Nenhuma conta conectada. Conecte uma BM ou crie um template."}</Empty>}
 
       <div className="space-y-3">
-        {shown.map((w) => {
+        {sections.map((sec) => {
+          const secTpl = sec.items.reduce((a, w) => a + (byWaba.get(w.id)?.length ?? 0), 0);
+          const secUsable = sec.items.reduce((a, w) => a + (byWaba.get(w.id) ?? []).filter((t) => t.status === "APPROVED" && t.category === "UTILITY").length, 0);
+          return (
+          <details key={sec.key} open={filtering} className="group/sec overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-50/60">
+            <summary className="flex cursor-pointer list-none flex-wrap items-center gap-3 px-5 py-3.5 hover:bg-zinc-100/70 [&::-webkit-details-marker]:hidden">
+              <ChevronRight className="size-4 shrink-0 text-zinc-400 transition-transform group-open/sec:rotate-90" />
+              <span className={`size-2.5 shrink-0 rounded-full ${sec.key === "none" ? "bg-zinc-300" : groupDot(sec.color)}`} />
+              <span className="text-base font-semibold text-zinc-900">{sec.name}</span>
+              <span className="ml-auto flex flex-wrap items-center gap-2 text-xs">
+                <span className="rounded-full bg-white px-2.5 py-0.5 font-semibold text-zinc-600 ring-1 ring-zinc-200">{sec.items.length} conta{sec.items.length === 1 ? "" : "s"}</span>
+                <span className="rounded-full bg-white px-2.5 py-0.5 font-medium text-zinc-600 ring-1 ring-zinc-200">{secTpl} template(s)</span>
+                <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 font-medium text-emerald-700 ring-1 ring-emerald-200">{secUsable} aptos</span>
+              </span>
+            </summary>
+            <div className="space-y-3 border-t border-zinc-200 p-3">
+        {sec.items.map((w) => {
           const list = byWaba.get(w.id) ?? [];
           const usable = list.filter((t) => t.status === "APPROVED" && t.category === "UTILITY").length;
           const pending = list.filter((t) => t.status === "PENDING").length;
@@ -181,6 +211,10 @@ export default async function TemplatesPage({ searchParams }: { searchParams: Pr
                 })}
               </div>
             </details>
+          );
+        })}
+            </div>
+          </details>
           );
         })}
       </div>

@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "3.18",
+    date: "28/10/2026",
+    items: ["Templates: as contas ficam separadas em gavetas pelo grupo da BM (Prontas para disparo, grupos de problema, seus grupos e Sem grupo), igual em Conexões, com quantas contas, templates e aptos tem em cada"],
+  },
+  {
     version: "3.17",
     date: "27/10/2026",
     items: ["Relatório do cliente: o quadro \"Números do relatório\" mostra a etiqueta \"só administradores veem\" (contas de clientes não veem nem conseguem mudar esses números)"],
