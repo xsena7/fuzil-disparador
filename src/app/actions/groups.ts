@@ -96,3 +96,14 @@ export async function moveBusinessToProblemsAction(businessId: string): Promise<
   revalidatePath("/grupos");
   return { ok: true };
 }
+
+/** Tira a BM só deste grupo (ela continua nos outros, como "Prontas para disparo"). */
+export async function removeBusinessFromGroupAction(businessId: string, groupId: string): Promise<{ ok?: true; error?: string }> {
+  const auth = await requireAuth();
+  const group = await prisma.bmGroup.findFirst({ where: { id: groupId, workspaceId: auth.workspace.id }, select: { id: true, system: true } });
+  if (!group) return { error: "Grupo não encontrado" };
+  if (group.system) return { error: "Esse grupo é automático: a BM entra e sai dele sozinha." };
+  await prisma.bmGroupMember.deleteMany({ where: { groupId: group.id, businessId, business: { workspaceId: auth.workspace.id } } });
+  revalidatePath("/grupos");
+  return { ok: true };
+}

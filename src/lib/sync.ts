@@ -106,6 +106,14 @@ export async function syncWaba(wabaRecordId: string) {
     if (test.length) await prisma.phoneNumber.deleteMany({ where: { wabaId: waba.id, phoneNumberId: { in: test } } });
     await refreshBusinessTier(waba.id);
   });
+  // Foto de perfil de cada número (para mostrar nos grupos). O link da Meta vence, por isso renova a cada sincronização
+  await step(async () => {
+    const list = await prisma.phoneNumber.findMany({ where: { wabaId: waba.id, invalidReason: null, status: "CONNECTED" }, select: { id: true, phoneNumberId: true } });
+    for (const p of list) {
+      const prof = await meta.getBusinessProfile(token, p.phoneNumberId).catch(() => undefined);
+      if (prof !== undefined) await prisma.phoneNumber.update({ where: { id: p.id }, data: { profilePhotoUrl: prof?.profile_picture_url || null } });
+    }
+  });
   await step(async () => {
     const templates = await meta.listTemplates(token, waba.wabaId);
     const seen = new Set<string>();

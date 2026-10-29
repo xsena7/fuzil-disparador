@@ -1,4 +1,5 @@
-import { CheckCircle2, Plus, Trash2 } from "lucide-react";
+import { CheckCircle2, ImageOff, Plus, Trash2 } from "lucide-react";
+import { formatPhone } from "@/lib/phone";
 import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { formatLimit, tierLabel } from "@/lib/limits";
@@ -29,7 +30,7 @@ export default async function GroupsPage() {
         groups: { include: { group: { select: { id: true, name: true, system: true, color: true } } } },
         wabas: {
           include: {
-            phones: { select: { enabled: true, invalidReason: true, status: true } },
+            phones: { select: { id: true, enabled: true, invalidReason: true, status: true, displayPhoneNumber: true, verifiedName: true, profilePhotoUrl: true, qualityRating: true } },
             templates: { select: { category: true, status: true } },
           },
         },
@@ -173,9 +174,18 @@ export default async function GroupsPage() {
                         {activeNow} de {phones.length} número{phones.length === 1 ? "" : "s"} ativo{activeNow === 1 ? "" : "s"}
                         {a && !a.apta && <span className="ml-1.5 font-medium text-red-700">· falta: {a.falta.join(", ")}</span>}
                       </div>
+                      {phones.length > 0 && (
+                        <div className="mb-2 flex flex-wrap gap-1.5">
+                          {phones.map((p) => <PhoneChip key={p.id} p={p} />)}
+                        </div>
+                      )}
                       <LimitWindow w={w} compact />
                       <div className="mt-2">
-                        <SendToGroup businessId={m.businessId} groups={regular.filter((x) => x.id !== g.id).map((x) => ({ id: x.id, name: x.name, color: x.color }))} />
+                        <SendToGroup
+                          businessId={m.businessId}
+                          groups={regular.filter((x) => x.id !== g.id).map((x) => ({ id: x.id, name: x.name, color: x.color }))}
+                          removeFrom={g.system ? undefined : { id: g.id, name: g.name }}
+                        />
                       </div>
                     </div>
                   ) : null;
@@ -216,6 +226,30 @@ export default async function GroupsPage() {
         </Drawer>
         </div>
       </div>
+    </div>
+  );
+}
+
+/** Cartãozinho do número: foto do perfil (ou o aviso de sem foto), nome no WhatsApp e o número. */
+function PhoneChip({ p }: { p: { displayPhoneNumber: string; verifiedName: string | null; profilePhotoUrl: string | null; status: string | null; enabled: boolean } }) {
+  const on = p.enabled && p.status === "CONNECTED";
+  return (
+    <div className={`flex min-w-0 items-center gap-2 rounded-xl border bg-white py-1 pl-1 pr-2.5 ${on ? "border-zinc-200" : "border-zinc-200 opacity-60"}`} title={on ? "Conectado" : "Não está conectado"}>
+      {p.profilePhotoUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={p.profilePhotoUrl} alt="" referrerPolicy="no-referrer" className="size-8 shrink-0 rounded-full object-cover ring-1 ring-zinc-200" />
+      ) : (
+        <span className="grid size-8 shrink-0 place-items-center rounded-full bg-zinc-100 text-zinc-400" title="Sem foto de perfil">
+          <ImageOff className="size-3.5" />
+        </span>
+      )}
+      <span className="min-w-0 leading-tight">
+        <span className="block truncate text-xs font-semibold text-zinc-800">{p.verifiedName || "Sem nome"}</span>
+        <span className="block truncate text-[11px] tabular-nums text-zinc-500">
+          {formatPhone(p.displayPhoneNumber.replace(/\D/g, ""))}
+          {!p.profilePhotoUrl && <span className="ml-1 text-amber-600">· sem foto</span>}
+        </span>
+      </span>
     </div>
   );
 }

@@ -65,6 +65,8 @@ export async function applyPendingPhotos() {
         const token = wabaToken(p.waba);
         const handle = await meta.uploadSampleMedia(token, await photoBuffer(p.waba.workspace, kind), "perfil.jpg", "image/jpeg");
         await meta.updateBusinessProfile(token, p.phoneNumberId, { profile_picture_handle: handle });
+        const prof = await meta.getBusinessProfile(token, p.phoneNumberId).catch(() => null);
+        if (prof?.profile_picture_url) await prisma.phoneNumber.update({ where: { id: p.id }, data: { profilePhotoUrl: prof.profile_picture_url } });
       }
       await prisma.phoneNumber.update({ where: { id: p.id }, data: { pendingPhoto: null, pendingPhotoAt: null } });
     } catch (err) {

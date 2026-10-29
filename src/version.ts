@@ -2,6 +2,14 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "3.45",
+    date: "29/10/2026",
+    items: [
+      "Grupos de BM: cada BM mostra os números dela com a foto de perfil, o nome no WhatsApp e o número (avisa quando está sem foto)",
+      "Grupos de BM: botão \"Tirar deste grupo\" tira a BM só daquele grupo; ela continua nos outros, como Prontas para disparo",
+    ],
+  },
+  {
     version: "3.44",
     date: "29/10/2026",
     items: ["Financeiro: na entrada e na despesa dá para escolher em qual conta caiu (Caixa da empresa, Conta do Guilherme ou Conta do Eduardo), não só na sua", "Admin → Contas: \"Disparos feitos\" agora conta só o que foi cobrado; as que a Meta aceitou e depois falhou aparecem embaixo (estornadas). O saldo mostra a conta: recargas − gasto + estornos", "Foto de perfil automática: ao adicionar um número (na mão ou pelo registro automático), escolha Mulher, Homem ou Sem foto. Quando o número conecta, o Fuzil coloca a foto sozinho. As duas fotos ficam salvas no servidor e dá para trocar em Conexões → Fotos de perfil"],

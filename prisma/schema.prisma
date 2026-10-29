@@ -247,6 +247,8 @@ model PhoneNumber {
   // Foto de perfil escolhida ao adicionar (female | male): o worker coloca quando o número fica conectado
   pendingPhoto       String?
   pendingPhotoAt     DateTime?
+  // Foto de perfil atual no WhatsApp (link da Meta, renovado a cada sincronização; vazio = sem foto)
+  profilePhotoUrl    String?
   throughputLevel    String?
   isCoexistence      Boolean             @default(false)
   // Permite tirar o número do rodízio sem desconectar
