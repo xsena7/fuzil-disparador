@@ -4,6 +4,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "3.48",
+    date: "29/10/2026",
+    items: ["App Celular: o Fuzil agora instala na tela do celular (iPhone e Android) com o ícone do Fuzil e abre em tela cheia. Passo a passo no menu, em Ajuda → App Celular"],
+  },
+  {
     version: "3.47",
     date: "29/10/2026",
     items: ["Disparo: nada fica mais na fila esperando o limite da BM. O Fuzil tenta mandar a lista inteira; o que a Meta recusar por limite vira falha (\"Limite da BM\") e o crédito volta para o saldo, sem tirar o número nem marcar a BM com problema"],

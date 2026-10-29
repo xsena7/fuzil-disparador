@@ -4,7 +4,7 @@ import clsx from "clsx";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Bell, Building2, GraduationCap, MessagesSquare, Coins, FileText, Home, Layers, LogOut, Mail, Megaphone, Menu, X, Settings, Shield, ShoppingBag, Sparkles, Wallet, Workflow } from "lucide-react";
+import { Bell, Building2, GraduationCap, MessagesSquare, Coins, FileText, Home, Layers, LogOut, Mail, Megaphone, Menu, X, Settings, Shield, ShoppingBag, Smartphone, Sparkles, Wallet, Workflow } from "lucide-react";
 import { logoutAction } from "@/app/actions/auth";
 import { Logo } from "./brand";
 
@@ -37,7 +37,10 @@ const sections = [
   },
   {
     title: "Ajuda",
-    items: [{ href: "/tutoriais", label: "Tutoriais", icon: GraduationCap }],
+    items: [
+      { href: "/tutoriais", label: "Tutoriais", icon: GraduationCap },
+      { href: "/app-celular", label: "App Celular", icon: Smartphone },
+    ],
   },
 ];
 
