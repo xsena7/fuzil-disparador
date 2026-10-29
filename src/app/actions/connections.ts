@@ -16,7 +16,8 @@ import { FUZIL_APP_ID, FUZIL_BUSINESS_ID, defaultAppSecret, isPlatformOwner } fr
 
 const errMsg = friendlyError;
 import { metaDetail, metaErrorText } from "@/lib/meta-errors";
-import { parsePhoto, setPendingPhoto } from "@/lib/profile-photos";
+import { customPhotoMark, parsePhoto, setPendingPhoto, squareJpeg } from "@/lib/profile-photos";
+import { saveUpload } from "@/lib/uploads";
 
 /** Conexão manual: ID da conta do WhatsApp (opcional) + token do usuário do sistema da BM. Sem ID, o Fuzil acha as contas pelo token. */
 export async function connectManualAction(_: FormState, form: FormData): Promise<FormState> {
@@ -231,6 +232,16 @@ export async function addPhoneAction(wabaRecordId: string, _: FormState, form: F
   const name = String(form.get("name") ?? "").replace(/\s+/g, " ").trim().slice(0, 100);
   if (name.length < 3) return { error: "Escreva o nome de exibição (o nome que aparece no WhatsApp)." };
   const method = form.get("method") === "VOICE" ? "VOICE" : "SMS";
+  // Foto: mulher, homem, nenhuma ou uma foto própria só para este número
+  let photo: string | null = parsePhoto(form.get("photo"));
+  const own = form.get("photoFile");
+  if (form.get("photo") === "custom") {
+    if (!(own instanceof File) || !own.size) return { error: "Escolha a foto do perfil (ou marque outra opção)." };
+    if (!["image/jpeg", "image/png"].includes(own.type)) return { error: "Foto: envie JPG ou PNG" };
+    if (own.size > 5 * 1024 * 1024) return { error: "Foto grande demais (máximo 5 MB)" };
+    const pic = await squareJpeg(Buffer.from(await own.arrayBuffer()), own.type);
+    photo = customPhotoMark((await saveUpload(new File([new Uint8Array(pic.buf)], "perfil.jpg", { type: pic.mime }))).path);
+  }
   const token = wabaToken(waba);
   // Duas etapas na Meta: colocar o número na WABA e mandar o código. O erro diz em qual a Meta recusou
   let added = false;
@@ -244,7 +255,7 @@ export async function addPhoneAction(wabaRecordId: string, _: FormState, form: F
   } catch (err) {
     if (added) {
       await syncWaba(waba.id).catch(() => undefined);
-      await setPendingPhoto({ phoneNumberId: newId! }, parsePhoto(form.get("photo"))).catch(() => undefined);
+      await setPendingPhoto({ phoneNumberId: newId! }, photo).catch(() => undefined);
       return { error: `O número entrou na WABA, mas a Meta recusou mandar o código: ${metaDetail(err)}. Tente pedir o código de novo no número, aqui embaixo.` };
     }
     return {
@@ -252,7 +263,7 @@ export async function addPhoneAction(wabaRecordId: string, _: FormState, form: F
     };
   }
   // A foto escolhida entra sozinha quando o número ficar conectado
-  await setPendingPhoto({ phoneNumberId: newId! }, parsePhoto(form.get("photo"))).catch(() => undefined);
+  await setPendingPhoto({ phoneNumberId: newId! }, photo).catch(() => undefined);
   revalidatePath("/conexoes");
   return { ok: `Número adicionado! A Meta mandou um código ${method === "VOICE" ? "por ligação" : "por SMS"} para ele. Digite o código no número, logo abaixo, para terminar.` };
 }

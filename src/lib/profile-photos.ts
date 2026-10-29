@@ -14,6 +14,9 @@ export const PHOTO_LABEL: Record<PhotoKind, string> = { female: "Mulher", male: 
 const DEFAULT_FILE: Record<PhotoKind, string> = { female: "mulher.jpg", male: "homem.jpg" };
 
 export const parsePhoto = (v: unknown): PhotoKind | null => (PHOTO_KINDS.includes(v as PhotoKind) ? (v as PhotoKind) : null);
+/** Foto própria de um número só (arquivo na pasta de uploads): fica marcada como "file:<arquivo>". */
+const FILE_PREFIX = "file:";
+export const customPhotoMark = (fileName: string) => `${FILE_PREFIX}${path.basename(fileName)}`;
 
 type WsPhotos = { profilePhotoFemale: string | null; profilePhotoMale: string | null };
 const custom = (ws: WsPhotos, kind: PhotoKind) => (kind === "female" ? ws.profilePhotoFemale : ws.profilePhotoMale);
@@ -45,7 +48,7 @@ export async function squareJpeg(buf: Buffer, mime: string): Promise<{ buf: Buff
 }
 
 /** Marca a foto que o número vai receber quando ficar conectado. */
-export async function setPendingPhoto(where: { id?: string; phoneNumberId?: string }, kind: PhotoKind | null) {
+export async function setPendingPhoto(where: { id?: string; phoneNumberId?: string }, kind: PhotoKind | string | null) {
   if (!kind || (!where.id && !where.phoneNumberId)) return;
   await prisma.phoneNumber.updateMany({ where, data: { pendingPhoto: kind, pendingPhotoAt: new Date() } });
 }
@@ -60,10 +63,12 @@ export async function applyPendingPhotos() {
   });
   for (const p of phones) {
     const kind = parsePhoto(p.pendingPhoto);
+    const own = p.pendingPhoto?.startsWith(FILE_PREFIX) ? path.join(path.resolve(env.uploadDir()), path.basename(p.pendingPhoto.slice(FILE_PREFIX.length))) : null;
     try {
-      if (kind) {
+      if (kind || own) {
         const token = wabaToken(p.waba);
-        const handle = await meta.uploadSampleMedia(token, await photoBuffer(p.waba.workspace, kind), "perfil.jpg", "image/jpeg");
+        const buf = own ? await readFile(own) : await photoBuffer(p.waba.workspace, kind!);
+        const handle = await meta.uploadSampleMedia(token, buf, "perfil.jpg", "image/jpeg");
         await meta.updateBusinessProfile(token, p.phoneNumberId, { profile_picture_handle: handle });
         const prof = await meta.getBusinessProfile(token, p.phoneNumberId).catch(() => null);
         if (prof?.profile_picture_url) await prisma.phoneNumber.update({ where: { id: p.id }, data: { profilePhotoUrl: prof.profile_picture_url } });

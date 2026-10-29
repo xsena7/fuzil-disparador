@@ -446,7 +446,7 @@ export default async function ConnectionsPage() {
                             </select>
                           </Field>
                         </div>
-                        <PhotoPick name="photo" photos={photos} />
+                        <PhotoPick name="photo" photos={photos} allowCustom />
                       </ActionForm>
                     </details>
                   </div>
