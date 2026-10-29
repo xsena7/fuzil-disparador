@@ -8,6 +8,8 @@ import { createAlert } from "./alerts";
 import { onCategoryChanged, onStatusChanged, syncWaba } from "./sync";
 import { metaErrorLabel, metaErrorText, SENDER_FATAL_CODES } from "./meta-errors";
 import { settleRecipients } from "./credits";
+import { LIMIT_CODES } from "./limits";
+import { bmWindows } from "./limit-windows";
 import { flagBusinessProblem, kindForCode, problemFix } from "./bm-problems";
 import { canonicalWaId, formatPhone } from "./phone";
 import { applyChatStatus, ingestInbound, maybeAutoReply, sendChatMessage } from "./chat";
@@ -117,6 +119,17 @@ export async function processWebhook(payload: any, onlyWabaIds: Set<string> | nu
   }
 }
 
+/** A Meta recusou depois do envio com erro de limite e a BM já passou do limite oficial de 24h: ela descansa 1h. */
+async function markLimitHit(senderId: string | null, code: number | undefined): Promise<boolean> {
+  if (!senderId || code === undefined || !LIMIT_CODES.has(code)) return false;
+  const phone = await prisma.phoneNumber.findUnique({ where: { id: senderId }, select: { waba: { select: { businessId: true } } } });
+  if (!phone) return false;
+  const w = (await bmWindows([phone.waba.businessId])).get(phone.waba.businessId);
+  if (!w || w.used < w.limit) return false;
+  await prisma.businessManager.update({ where: { id: phone.waba.businessId }, data: { limitHitAt: new Date() } });
+  return true;
+}
+
 const MAX_REROUTES = 3;
 
 /**
@@ -184,8 +197,10 @@ async function handleMessages(value: any, workspaceIds: string[]) {
       data.errorDetail = e ? metaErrorText(e.code, e.error_data?.details, e.message, e.title) : null;
     }
     if (!next) continue;
+    // Recusa por limite numa BM que já passou do limite oficial: ela descansa 1h (não é problema da BM)
+    const limitHit = next === "FAILED" && (await markLimitHit(r.senderId, st.errors?.[0]?.code).catch(() => false));
     // Falha por problema da BM (pagamento, bloqueio, restrição) que chega depois do envio: manda por outra BM do grupo
-    if (next === "FAILED" && (await rerouteFailed(r, st.errors?.[0]))) continue;
+    if (next === "FAILED" && !limitHit && (await rerouteFailed(r, st.errors?.[0]))) continue;
     // Só avança o status (os webhooks podem chegar fora de ordem). Falha vale sempre.
     if (next === "FAILED" || RANK[next] > RANK[r.status]) data.status = next;
     await prisma.campaignRecipient.update({ where: { id: r.id }, data });

@@ -165,6 +165,8 @@ model BusinessManager {
   limitFullSince     DateTime?
   // Primeiro disparo da BM: só depois dele ela pode ir sozinha para o grupo "BMs com problema"
   firstSentAt        DateTime?
+  // A Meta recusou envios depois que a BM passou do limite nominal: fica de fora por 1h e tenta de novo
+  limitHitAt         DateTime?
   problemReason      String?
   problemFix         String?
   problemAt          DateTime?

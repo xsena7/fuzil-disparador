@@ -228,7 +228,8 @@ async function SendStep({ campaignId }: { campaignId: string }) {
   const plan = await planSenders(campaign);
   // Só as BMs que têm número apto contam (igual ao disparador)
   const senderBms = new Set(plan.senders.map((x) => x.businessId));
-  const capacity = [...plan.capacity.entries()].filter(([id]) => senderBms.has(id)).reduce((a, [, v]) => a + v, 0);
+  // Limite oficial que ainda cabe (o Fuzil passa dele até a Meta recusar; BM descansando não conta)
+  const capacity = [...plan.nominal.entries()].filter(([id]) => senderBms.has(id) && plan.capacity.get(id) !== 0).reduce((a, [, v]) => a + Math.max(0, v), 0);
   const cost = pending * auth.workspace.creditsPerMessage;
   const insufficient = auth.workspace.creditBalance < cost;
   const editable = ["DRAFT", "SCHEDULED"].includes(campaign.status);
@@ -240,7 +241,7 @@ async function SendStep({ campaignId }: { campaignId: string }) {
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Stat label="Destinatários pendentes" value={pending.toLocaleString("pt-BR")} />
         <Stat label="Números aptos" value={plan.senders.length} sub={`${plan.skipped.length} de fora`} tone={plan.senders.length ? "green" : "red"} />
-        <Stat label="Capacidade das BMs (24h)" value={formatLimit(capacity)} sub={capacity !== Infinity && capacity < pending ? "Menor que a audiência: o resto sai quando o limite liberar" : undefined} tone={capacity !== Infinity && capacity < pending ? "red" : "default"} />
+        <Stat label="Limite oficial das BMs (24h)" value={formatLimit(capacity)} sub={capacity !== Infinity && capacity < pending ? "Menor que a audiência: o Fuzil manda até a Meta recusar (costuma passar do limite) e o resto sai quando liberar" : "O Fuzil manda até a Meta recusar"} tone={capacity !== Infinity && capacity < pending ? "amber" : "default"} />
         <Stat label="Custo" value={`${cost.toLocaleString("pt-BR")} créditos`} sub={`Saldo: ${auth.workspace.creditBalance.toLocaleString("pt-BR")}`} tone={insufficient ? "red" : "default"} />
       </div>
 

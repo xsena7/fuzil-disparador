@@ -17,7 +17,7 @@ export function LimitWindow({ w, compact = false }: { w: BmWindow; compact?: boo
     <div className={clsx("rounded-xl border p-4", full ? "border-rose-200 bg-rose-50/50" : "border-zinc-200/70 bg-zinc-50/40")}>
       <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2 text-sm">
         <span className="font-medium">
-          {full ? <span className="text-rose-700">Limite atingido</span> : <>{formatLimit(w.available)} disponíveis</>}
+          {full ? <span className="text-rose-700">Limite oficial atingido · o Fuzil segue até a Meta recusar</span> : <>{formatLimit(w.available)} disponíveis</>}
         </span>
         <span className="text-xs text-zinc-500 tabular-nums">{n(w.used)} / {formatLimit(w.limit)} nas últimas 24h</span>
       </div>
@@ -69,7 +69,7 @@ export function LimitRow({ name, w, tag }: { name: string; w: BmWindow; tag?: Re
         <div className={clsx("h-full rounded-full", full ? "bg-rose-500" : pct > 85 ? "bg-amber-400" : "bg-brand-gradient")} style={{ width: `${pct}%` }} />
       </div>
       <span className="text-xs text-zinc-500 tabular-nums sm:text-right">
-        {full ? <b className="font-semibold text-rose-700">Limite atingido</b> : <><b className="font-semibold text-zinc-800">{formatLimit(w.available)}</b> de {formatLimit(w.limit)}</>}
+        {full ? <b className="font-semibold text-rose-700" title="O Fuzil segue mandando até a Meta recusar">Limite oficial atingido</b> : <><b className="font-semibold text-zinc-800">{formatLimit(w.available)}</b> de {formatLimit(w.limit)}</>}
         {w.nextReleaseAt && <> · libera {n(w.nextReleaseCount)} em <Countdown to={w.nextReleaseAt.toISOString()} /></>}
       </span>
     </div>

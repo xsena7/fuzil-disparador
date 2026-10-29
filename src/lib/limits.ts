@@ -30,3 +30,9 @@ export function effectiveTier(bmTier: string | null | undefined, phoneTiers: Arr
   }
   return best;
 }
+
+/** Depois que a Meta recusa por limite, a BM descansa 1h e tenta de novo. */
+export const LIMIT_REST_MS = 60 * 60_000;
+export const limitResting = (hitAt: Date | null | undefined) => Boolean(hitAt && Date.now() - hitAt.getTime() < LIMIT_REST_MS);
+/** Recusas da Meta que, numa BM que já passou do limite oficial, querem dizer "bateu o limite de verdade". */
+export const LIMIT_CODES = new Set([80007, 131048, 131049]);

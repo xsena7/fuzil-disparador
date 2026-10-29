@@ -146,6 +146,10 @@ createServer(async (req, res) => {
     if (String(body.to).endsWith("00")) {
       return json(res, 400, { error: { message: "Message undeliverable", code: 131026, error_data: { details: "Número não está no WhatsApp" } } });
     }
+    // MOCK_REAL_LIMIT=N: cada número aceita N envios e depois recusa (simula o limite de verdade da Meta)
+    if (process.env.MOCK_REAL_LIMIT && sent.filter((x) => x.phone === id).length >= Number(process.env.MOCK_REAL_LIMIT)) {
+      return json(res, 400, { error: { message: "Spam rate limit hit", code: 131048 } });
+    }
     sent.push({ phone: id, to: body.to, body });
     return json(res, 200, { messaging_product: "whatsapp", contacts: [{ input: body.to, wa_id: body.to }], messages: [{ id: `wamid.MOCK${Date.now().toString(36)}${++msgSeq}` }] });
   }

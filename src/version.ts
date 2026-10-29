@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "3.43",
+    date: "29/10/2026",
+    items: ["Disparo não trava mais no limite oficial da BM: o Fuzil manda até a Meta recusar (uma BM de 2 mil costuma aceitar 2.300, 2.400). Quando a Meta recusa, só aquela BM descansa 1 hora e as outras seguem; o que foi recusado volta para a fila e o crédito volta para o saldo"],
+  },
+  {
     version: "3.42",
     date: "29/10/2026",
     items: ["Site: preço separado por caminho. Empresas com BM própria: R$ 0,01 por disparo (a taxa da Meta é à parte, no cartão da conta). Disparo pronto: a partir de R$ 0,20 por disparo, com orçamento pelo WhatsApp"],

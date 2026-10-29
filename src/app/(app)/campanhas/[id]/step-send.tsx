@@ -108,7 +108,7 @@ export function StepSendForm({
         </div>
         {est && est.batches > 1 && (
           <p className="mt-3 text-amber-700">
-            As BMs só aceitam {capacity?.toLocaleString("pt-BR")} mensagens por dia. Por isso são {est.batches} dias de envio, com uma pausa automática de 24 h entre os lotes.
+            O limite oficial das BMs é {capacity?.toLocaleString("pt-BR")} mensagens por dia. O Fuzil manda até a Meta recusar (muitas vezes passa do limite); o que sobrar sai sozinho quando liberar, em até {est.batches} dias.
           </p>
         )}
         {!senders && <p className="mt-3 text-red-700">Nenhum número apto no grupo. Confira a etapa Template.</p>}
@@ -116,7 +116,7 @@ export function StepSendForm({
           <p className="mt-3 text-amber-700">Isso usa quase todo o limite das BMs hoje. Se quiser ir com mais calma, escolha uma velocidade menor.</p>
         )}
         <p className="mt-3 text-xs text-zinc-500">
-          Tempo estimado: a velocidade é respeitada, mas a Meta pode atrasar um pouco. Se uma BM bater o limite no meio, a campanha continua sozinha quando liberar.
+          Tempo estimado: a velocidade é respeitada, mas a Meta pode atrasar um pouco. Se a Meta recusar por limite numa BM, ela descansa 1 hora e as outras seguem; nada recusado é cobrado.
         </p>
       </div>
 
