@@ -80,7 +80,26 @@ function SourceEditor({
       ) : (
         <>
           <Input value={src.type === "fixed" ? src.value : ""} disabled={disabled} onChange={(e) => onChange({ type: "fixed", value: e.target.value })} placeholder="Texto que todos vão receber" />
-          <p className="mt-1 text-[11px] text-zinc-500">Pode misturar com a planilha: ex. <code>Saldo em aberto: {"{{var3}}"}</code>. A Meta não deixa pular linha dentro de variável: sai tudo numa linha só. Para cada item numa linha, ponha o texto no próprio template.</p>
+          {cols.length > 0 && (
+            <div className="mt-1.5 flex flex-wrap items-center gap-1">
+              <span className="text-[11px] text-zinc-500">Misturar com a planilha (clique para colocar no texto):</span>
+              {cols.map((c) => (
+                <button
+                  key={c.key}
+                  type="button"
+                  disabled={disabled}
+                  onClick={() => {
+                    const cur = src.type === "fixed" ? src.value : "";
+                    onChange({ type: "fixed", value: `${cur}${cur && !cur.endsWith(" ") ? " " : ""}{{${c.key.trim()}}}` });
+                  }}
+                  className="rounded-md border border-emerald-200 bg-emerald-50 px-1.5 py-0.5 font-mono text-[11px] text-emerald-700 hover:bg-emerald-100 disabled:opacity-50"
+                >
+                  {`{{${c.key.trim()}}}`}
+                </button>
+              ))}
+            </div>
+          )}
+          <p className="mt-1 text-[11px] text-zinc-500">Ex.: <code>Olá {"{{nome}}"}, seu banco {"{{banco}}"}</code> — cada pessoa recebe com os dados da linha dela. A Meta não deixa pular linha dentro de variável: sai tudo numa linha só. Para cada item numa linha, ponha o texto no próprio template.</p>
         </>
       )}
       {sample && Object.keys(sample.data).length > 0 && (
