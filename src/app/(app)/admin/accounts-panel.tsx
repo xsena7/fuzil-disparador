@@ -150,8 +150,16 @@ export function AccountsPanel({ accounts, selfId, ownerId = null }: { accounts: 
                       <div className="font-medium text-zinc-900">{limitText(a.totalLimit)}</div>
                       {a.totalLimit !== null && <div className="text-xs text-zinc-500">{n(a.used24h)} usados</div>}
                     </td>
-                    <td className="px-3 py-3 text-right font-medium tabular-nums text-zinc-900">{n(a.sentTotal)}</td>
-                    <td className="px-3 py-3 text-right tabular-nums">{n(a.creditBalance)}</td>
+                    <td className="px-3 py-3 text-right tabular-nums">
+                      <div className="font-medium text-zinc-900">{n(a.sentTotal - a.failedAfter)}</div>
+                      {a.failedAfter > 0 && <div className="text-xs text-zinc-500" title="A Meta aceitou, mas avisou depois que não entregou. O crédito delas voltou para o saldo.">+{n(a.failedAfter)} falharam (estornadas)</div>}
+                    </td>
+                    <td className="px-3 py-3 text-right tabular-nums">
+                      <div>{n(a.creditBalance)}</div>
+                      <div className="whitespace-nowrap text-xs text-zinc-500" title="Recargas e ajustes − gasto nos disparos + estornos">
+                        +{n(a.credits.added)} −{n(a.credits.spent)} +{n(a.credits.refunded)}
+                      </div>
+                    </td>
                     <td className="px-3 py-3 text-xs text-zinc-500">{date(a.createdAt)}</td>
                     <td className="px-3 py-3" onClick={(e) => e.stopPropagation()}>
                       <AccountMenu account={a} onDialog={setDialog} onFlash={setFlash} />

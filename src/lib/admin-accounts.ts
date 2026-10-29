@@ -17,13 +17,17 @@ export type AccountRow = {
   totalLimit: number | null;
   used24h: number;
   sentTotal: number;
+  /** A Meta aceitou, mas avisou depois que não entregou (o crédito voltou). */
+  failedAfter: number;
+  /** De onde vem o saldo: recargas/ajustes, gasto nos disparos e estornos. */
+  credits: { added: number; spent: number; refunded: number };
   campaigns: number;
   running: number;
 };
 
 /** Lista de contas para o painel do Admin: dono, usuários, limite somado das BMs e total de disparos. */
 export async function listAccounts(adminUserId: string): Promise<AccountRow[]> {
-  const [workspaces, usedRows, sentRows] = await Promise.all([
+  const [workspaces, usedRows, sentRows, txRows] = await Promise.all([
     prisma.workspace.findMany({
       include: {
         memberships: { include: { user: true }, orderBy: { role: "asc" } },
@@ -39,14 +43,16 @@ export async function listAccounts(adminUserId: string): Promise<AccountRow[]> {
       JOIN "WhatsAppAccount" w ON w.id = p."wabaId"
       WHERE r."sentAt" > NOW() - INTERVAL '24 hours'
       GROUP BY w."businessId"`,
-    prisma.$queryRaw<Array<{ workspaceId: string; sent: bigint }>>`
-      SELECT c."workspaceId" AS "workspaceId", COUNT(*) AS sent
+    prisma.$queryRaw<Array<{ workspaceId: string; sent: bigint; failed: bigint }>>`
+      SELECT c."workspaceId" AS "workspaceId", COUNT(*) AS sent, COUNT(*) FILTER (WHERE r.status = 'FAILED') AS failed
       FROM "CampaignRecipient" r JOIN "Campaign" c ON c.id = r."campaignId"
       WHERE r."sentAt" IS NOT NULL
       GROUP BY c."workspaceId"`,
+    prisma.creditTransaction.groupBy({ by: ["workspaceId", "type"], _sum: { amount: true } }),
   ]);
   const used = new Map(usedRows.map((r) => [r.businessId, Number(r.used)]));
-  const sent = new Map(sentRows.map((r) => [r.workspaceId, Number(r.sent)]));
+  const sent = new Map(sentRows.map((r) => [r.workspaceId, { sent: Number(r.sent), failed: Number(r.failed) }]));
+  const tx = (id: string, types: string[]) => txRows.filter((t) => t.workspaceId === id && types.includes(t.type)).reduce((a, t) => a + (t._sum.amount ?? 0), 0);
 
   return workspaces.map((w) => {
     const bms = w.businesses.map((b) => ({ name: b.name, limit: tierToLimit(b.messagingLimitTier), used: used.get(b.id) ?? 0 }));
@@ -74,7 +80,9 @@ export async function listAccounts(adminUserId: string): Promise<AccountRow[]> {
       bms: bms.map((b) => ({ ...b, limit: b.limit === Infinity ? -1 : b.limit })),
       totalLimit,
       used24h: bms.reduce((a, b) => a + b.used, 0),
-      sentTotal: sent.get(w.id) ?? 0,
+      sentTotal: sent.get(w.id)?.sent ?? 0,
+      failedAfter: sent.get(w.id)?.failed ?? 0,
+      credits: { added: tx(w.id, ["TOPUP", "ADJUST"]), spent: -tx(w.id, ["DEBIT"]), refunded: tx(w.id, ["REFUND"]) },
       campaigns: w.campaigns.length,
       running: w.campaigns.filter((c) => c.status === "RUNNING").length,
     };
