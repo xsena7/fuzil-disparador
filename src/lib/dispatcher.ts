@@ -3,7 +3,7 @@ import { prisma } from "./db";
 import { env } from "./env";
 import { meta, MetaError } from "./meta";
 import { wabaToken } from "./sync";
-import { LIMIT_CODES, limitResting, tierToLimit } from "./limits";
+import { LIMIT_CODES, tierToLimit } from "./limits";
 import { createAlert } from "./alerts";
 import { chargeRecipients, settleRecipients } from "./credits";
 import { buildSendComponents, getComponent, type TComponent, type VariableMapping } from "./template-utils";
@@ -42,7 +42,7 @@ export type Sender = {
 
 export type SenderPlan = {
   senders: Sender[];
-  /** Capacidade restante por BM. Infinity = manda até a Meta recusar; 0 = a Meta recusou há pouco (descansando). */
+  /** Capacidade restante por BM. Hoje sempre Infinity: tenta mandar tudo, o que a Meta recusar vira falha. */
   capacity: Map<string, number>;
   /** Quanto ainda cabe no limite oficial (tier) de 24h de cada BM. Passou disso, recusa da Meta = limite de verdade. */
   nominal: Map<string, number>;
@@ -103,9 +103,10 @@ export async function planSenders(
 
   for (const { business } of members) {
     const limit = tierToLimit(business.messagingLimitTier) ?? Infinity;
-    // O limite da Meta não é exato (BM de 2 mil costuma aceitar 2.300, 2.400...): manda até a Meta recusar
+    // O limite da Meta não é exato (BM de 2 mil costuma aceitar 2.300, 2.400...): só serve para saber quando a recusa é por limite
     plan.nominal.set(business.id, limit - (used.get(business.id) ?? 0));
-    plan.capacity.set(business.id, limitResting(business.limitHitAt) ? 0 : Infinity);
+    // Sem fila esperando o limite: tenta mandar tudo; o que a Meta recusar vira falha (e o crédito volta)
+    plan.capacity.set(business.id, Infinity);
 
     for (const waba of business.wabas) {
       // Prefere o template do nome escolhido; se a conta não tem esse nome, usa o aprovado com o mesmo conteúdo
@@ -404,18 +405,17 @@ export async function runCampaignTick(campaignId: string) {
   const firstSent = new Set<string>();
   // Envios aceitos neste lote por BM (para saber quando ela passou do limite oficial)
   const sentByBm = new Map<string, number>();
-  // BMs em que a Meta recusou depois do limite oficial: param neste lote e descansam 1h
-  const limitHit = new Set<string>();
-  // Recusas seguidas por BM (a Meta nem sempre diz que é o limite: 5 recusas seguidas depois do limite oficial contam como limite)
-  const misses = new Map<string, number>();
   const overNominal = (s: Sender) => (plan.nominal.get(s.businessId) ?? Infinity) - (sentByBm.get(s.businessId) ?? 0) <= 0;
-  /** Recusa da Meta numa BM que já passou do limite oficial: é o limite de verdade. A mensagem volta pra fila (e o crédito pro saldo). */
-  const hitLimit = async (s: Sender, code: number | null, r: CampaignRecipient, onlyLimitCodes = false) => {
-    misses.set(s.businessId, (misses.get(s.businessId) ?? 0) + 1);
-    const limitCode = code !== null && LIMIT_CODES.has(code);
-    if (!overNominal(s) || !(limitCode || (!onlyLimitCodes && (misses.get(s.businessId) ?? 0) >= 5))) return false;
-    limitHit.add(s.businessId);
-    await releaseRecipients([r.id]);
+  /**
+   * Recusa por limite numa BM que já passou do limite oficial: a mensagem vira falha (o crédito volta) e o envio segue.
+   * Não tira o número da campanha nem manda a BM para "com problema": é só o limite. Nada fica na fila esperando.
+   */
+  const hitLimit = async (s: Sender, code: number | null, r: CampaignRecipient) => {
+    if (code === null || !LIMIT_CODES.has(code) || !overNominal(s)) return false;
+    await prisma.campaignRecipient.update({
+      where: { id: r.id },
+      data: { status: "FAILED", senderId: s.phoneId, failedAt: new Date(), errorCode: code, errorTitle: "Limite da BM: a Meta recusou (passou do limite de 24h)" },
+    });
     return true;
   };
   // Pausou ou cancelou no meio do lote: para de enviar e devolve o resto
@@ -442,7 +442,7 @@ export async function runCampaignTick(campaignId: string) {
           const sentNow: Array<{ phone: string; name: string | null; wamid: string; text: string; at: Date }> = [];
           await Promise.all(
             chunk.map(async (r) => {
-              if (fatalWabas.has(sender.wabaId) || fatalSenders.has(sender.phoneId) || limitHit.has(sender.businessId)) {
+              if (fatalWabas.has(sender.wabaId) || fatalSenders.has(sender.phoneId)) {
                 await releaseRecipients([r.id]);
                 return;
               }
@@ -453,7 +453,6 @@ export async function runCampaignTick(campaignId: string) {
                   case "sent": {
                     sentWamid = out.wamid;
                     sentByBm.set(sender.businessId, (sentByBm.get(sender.businessId) ?? 0) + 1);
-                    misses.delete(sender.businessId);
                     const data = { status: "SENT" as const, wamid: out.wamid, senderId: sender.phoneId, sentAt: new Date(), creditsCharged: price, errorCode: null, errorTitle: null };
                     // Já saiu pela Meta: insiste em gravar, senão a recuperação mandaria de novo
                     await prisma.campaignRecipient.update({ where: { id: r.id }, data }).catch(async () => {
@@ -482,7 +481,7 @@ export async function runCampaignTick(campaignId: string) {
                     break;
                   case "sender_fatal":
                     // Banimento, pagamento etc. continuam tirando o número da campanha; só a recusa por limite vira descanso
-                    if (await hitLimit(sender, out.code, r, true)) break;
+                    if (await hitLimit(sender, out.code, r)) break;
                     if (!fatalSenders.has(sender.phoneId)) fatalCodes.set(sender.phoneId, out.code);
                     fatalSenders.set(sender.phoneId, out.title);
                     await releaseRecipients([r.id]);
@@ -519,9 +518,6 @@ export async function runCampaignTick(campaignId: string) {
     // Estorna o que não saiu (falhou, voltou para a fila, BM com problema...), numa operação só
     await settle(sendable.map((r) => r.id), "Estorno de falhas");
   }
-
-  // Bateu o limite de verdade: a BM descansa 1h (as outras seguem mandando)
-  if (limitHit.size) await prisma.businessManager.updateMany({ where: { id: { in: [...limitHit] } }, data: { limitHitAt: new Date() } });
 
   // Template com problema numa WABA: tira os números dela da campanha; só pausa se não sobrar nenhum
   for (const [wabaId, reason] of fatalWabas) {

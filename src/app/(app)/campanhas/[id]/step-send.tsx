@@ -54,12 +54,8 @@ export function StepSendForm({
     const perSender = Math.max(1, Math.ceil(total / senders));
     const effective = perSender * senders;
     const sendSeconds = pending / effective;
-    if (capacity === null || pending <= capacity) return { effective, seconds: sendSeconds, batches: 1 };
-    // Cada lote de 24h esgota o limite das BMs; o resto espera a janela liberar
-    const perDay = Math.max(1, capacity);
-    const batches = Math.ceil(pending / perDay);
-    const lastBatch = pending - (batches - 1) * perDay;
-    return { effective, seconds: (batches - 1) * 86400 + lastBatch / effective, batches };
+    // Nada espera o limite liberar: tudo sai no mesmo envio (o que passar do limite e a Meta recusar vira falha)
+    return { effective, seconds: sendSeconds, batches: capacity !== null && pending > capacity ? 2 : 1 };
   }, [total, senders, pending, capacity]);
 
   return (
@@ -108,7 +104,7 @@ export function StepSendForm({
         </div>
         {est && est.batches > 1 && (
           <p className="mt-3 text-amber-700">
-            O limite oficial das BMs é {capacity?.toLocaleString("pt-BR")} mensagens por dia. O Fuzil manda até a Meta recusar (muitas vezes passa do limite); o que sobrar sai sozinho quando liberar, em até {est.batches} dias.
+            O limite oficial das BMs é {capacity?.toLocaleString("pt-BR")} mensagens por dia, menor que a audiência. O Fuzil tenta mandar tudo mesmo assim (a Meta costuma aceitar um pouco mais); o que ela recusar vira falha e o crédito volta.
           </p>
         )}
         {!senders && <p className="mt-3 text-red-700">Nenhum número apto no grupo. Confira a etapa Template.</p>}
@@ -116,7 +112,7 @@ export function StepSendForm({
           <p className="mt-3 text-amber-700">Isso usa quase todo o limite das BMs hoje. Se quiser ir com mais calma, escolha uma velocidade menor.</p>
         )}
         <p className="mt-3 text-xs text-zinc-500">
-          Tempo estimado: a velocidade é respeitada, mas a Meta pode atrasar um pouco. Se a Meta recusar por limite numa BM, ela descansa 1 hora e as outras seguem; nada recusado é cobrado.
+          Tempo estimado: a velocidade é respeitada, mas a Meta pode atrasar um pouco. Se a Meta recusar por limite, a mensagem vira falha e o envio segue; nada recusado é cobrado.
         </p>
       </div>
 

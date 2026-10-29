@@ -119,15 +119,13 @@ export async function processWebhook(payload: any, onlyWabaIds: Set<string> | nu
   }
 }
 
-/** A Meta recusou depois do envio com erro de limite e a BM já passou do limite oficial de 24h: ela descansa 1h. */
+/** A Meta recusou depois do envio com erro de limite e a BM já passou do limite oficial de 24h: fica como falha (não é problema da BM). */
 async function markLimitHit(senderId: string | null, code: number | undefined): Promise<boolean> {
   if (!senderId || code === undefined || !LIMIT_CODES.has(code)) return false;
   const phone = await prisma.phoneNumber.findUnique({ where: { id: senderId }, select: { waba: { select: { businessId: true } } } });
   if (!phone) return false;
   const w = (await bmWindows([phone.waba.businessId])).get(phone.waba.businessId);
-  if (!w || w.used < w.limit) return false;
-  await prisma.businessManager.update({ where: { id: phone.waba.businessId }, data: { limitHitAt: new Date() } });
-  return true;
+  return Boolean(w && w.used >= w.limit);
 }
 
 const MAX_REROUTES = 3;
@@ -197,7 +195,7 @@ async function handleMessages(value: any, workspaceIds: string[]) {
       data.errorDetail = e ? metaErrorText(e.code, e.error_data?.details, e.message, e.title) : null;
     }
     if (!next) continue;
-    // Recusa por limite numa BM que já passou do limite oficial: ela descansa 1h (não é problema da BM)
+    // Recusa por limite numa BM que já passou do limite oficial: só falha (não tira o número nem marca a BM com problema)
     const limitHit = next === "FAILED" && (await markLimitHit(r.senderId, st.errors?.[0]?.code).catch(() => false));
     // Falha por problema da BM (pagamento, bloqueio, restrição) que chega depois do envio: manda por outra BM do grupo
     if (next === "FAILED" && !limitHit && (await rerouteFailed(r, st.errors?.[0]))) continue;

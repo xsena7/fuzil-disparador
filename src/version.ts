@@ -4,6 +4,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "3.47",
+    date: "29/10/2026",
+    items: ["Disparo: nada fica mais na fila esperando o limite da BM. O Fuzil tenta mandar a lista inteira; o que a Meta recusar por limite vira falha (\"Limite da BM\") e o crédito volta para o saldo, sem tirar o número nem marcar a BM com problema"],
+  },
+  {
     version: "3.46",
     date: "29/10/2026",
     items: ["Campanha, Texto fixo: botões com as colunas da planilha para misturar no texto (ex.: Olá {{nome}}, seu banco {{banco}}), cada pessoa recebe com os dados da linha dela", "Métricas: Enviadas mostra que são as aceitas pela Meta, e Falhas/Créditos deixam claro que falha não é cobrada (o crédito volta para o saldo)", "[admin] Novidades: os clientes veem só um resumo de cada versão (\"Melhorias em: Campanhas · Chat\"), sem os detalhes. Ferramentas internas (ajuste do relatório, Financeiro, Admin) nem aparecem. Administradores veem tudo, com a prévia do que o cliente vê"],
