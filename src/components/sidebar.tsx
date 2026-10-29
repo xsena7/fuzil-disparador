@@ -7,7 +7,6 @@ import { useEffect, useState } from "react";
 import { Bell, Building2, GraduationCap, MessagesSquare, Coins, FileText, Home, Layers, LogOut, Mail, Megaphone, Menu, X, Settings, Shield, ShoppingBag, Sparkles, Wallet, Workflow } from "lucide-react";
 import { logoutAction } from "@/app/actions/auth";
 import { Logo } from "./brand";
-import { APP_VERSION } from "@/version";
 
 const sections = [
   {
@@ -42,7 +41,7 @@ const sections = [
   },
 ];
 
-export function Sidebar({ workspace, user, unread, chatUnread = 0, mailUnread = 0, balance, isSuperAdmin, financePartner = false }: { workspace: string; user: string; unread: number; chatUnread?: number; mailUnread?: number; balance: number; isSuperAdmin: boolean; financePartner?: boolean }) {
+export function Sidebar({ workspace, user, unread, chatUnread = 0, mailUnread = 0, balance, isSuperAdmin, financePartner = false, version }: { workspace: string; user: string; unread: number; chatUnread?: number; mailUnread?: number; balance: number; isSuperAdmin: boolean; financePartner?: boolean; version: string }) {
   const path = usePathname();
   // No celular o menu fica escondido e abre pelo botão ☰; fecha sozinho ao trocar de página
   const [open, setOpen] = useState(false);
@@ -136,7 +135,7 @@ export function Sidebar({ workspace, user, unread, chatUnread = 0, mailUnread = 
           </button>
         </form>
         <Link href="/novidades" title={`build ${process.env.NEXT_PUBLIC_VERSION}`} className="mt-2 block px-3 text-[11px] text-zinc-500 hover:text-brand-400">
-          v{APP_VERSION} · novidades
+          v{version} · novidades
         </Link>
       </div>
     </aside>

@@ -1,4 +1,6 @@
 // Versão do Fuzil Disparador. A cada atualização: sobe o número e adiciona as novidades no topo.
+// Item que começa com "[admin] " só aparece para administradores do Fuzil (clientes não veem). Este arquivo
+// é só do servidor: não importe em componente "use client" (o texto todo iria para o navegador de qualquer cliente).
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
@@ -14,7 +16,7 @@ export const CHANGELOG: Array<{ version: string; date: string; items: string[] }
   {
     version: "3.44",
     date: "29/10/2026",
-    items: ["Financeiro: na entrada e na despesa dá para escolher em qual conta caiu (Caixa da empresa, Conta do Guilherme ou Conta do Eduardo), não só na sua", "Admin → Contas: \"Disparos feitos\" agora conta só o que foi cobrado; as que a Meta aceitou e depois falhou aparecem embaixo (estornadas). O saldo mostra a conta: recargas − gasto + estornos", "Foto de perfil automática: ao adicionar um número (na mão ou pelo registro automático), escolha Mulher, Homem ou Sem foto. Quando o número conecta, o Fuzil coloca a foto sozinho. As duas fotos ficam salvas no servidor e dá para trocar em Conexões → Fotos de perfil"],
+    items: ["[admin] Financeiro: na entrada e na despesa dá para escolher em qual conta caiu (Caixa da empresa, Conta do Guilherme ou Conta do Eduardo), não só na sua", "[admin] Admin → Contas: \"Disparos feitos\" agora conta só o que foi cobrado; as que a Meta aceitou e depois falhou aparecem embaixo (estornadas). O saldo mostra a conta: recargas − gasto + estornos", "Foto de perfil automática: ao adicionar um número (na mão ou pelo registro automático), escolha Mulher, Homem ou Sem foto. Quando o número conecta, o Fuzil coloca a foto sozinho. As duas fotos ficam salvas no servidor e dá para trocar em Conexões → Fotos de perfil"],
   },
   {
     version: "3.43",
@@ -44,7 +46,7 @@ export const CHANGELOG: Array<{ version: string; date: string; items: string[] }
     version: "3.39",
     date: "28/10/2026",
     items: [
-      "Segurança: revisão completa antes de começar a vender. Administrador da plataforma não consegue mais mexer na senha, na conta ou no usuário do dono, dos sócios e de outros administradores",
+      "[admin] Segurança: revisão completa antes de começar a vender. Administrador da plataforma não consegue mais mexer na senha, na conta ou no usuário do dono, dos sócios e de outros administradores",
       "Segurança: Conectar com cadeado não deixa uma conta do Fuzil puxar uma conta do WhatsApp que já é (ou já foi) de outra",
       "Segurança: avisos falsos da Meta são recusados (cada chave só vale para as contas dela) e só e-mail comprovado da Meta vira BM no estoque da loja",
       "Segurança: membro comum da equipe não apaga BM, não troca token nem gasta o saldo do SMSBear/SMS24h. Adicionar alguém na equipe não revela mais quem já tem conta",
@@ -156,7 +158,7 @@ export const CHANGELOG: Array<{ version: string; date: string; items: string[] }
     date: "28/10/2026",
     items: [
       "Gerador de links: agora cada pessoa cria a própria conta com e-mail e senha (com \"Esqueci minha senha\" por e-mail) e vê só os links dela. O login por código no WhatsApp saiu",
-      "Admin: lista das contas do gerador de links (com quantos links cada uma tem e o último acesso) e botão para bloquear uma conta",
+      "[admin] Admin: lista das contas do gerador de links (com quantos links cada uma tem e o último acesso) e botão para bloquear uma conta",
     ],
   },
   {
@@ -184,7 +186,7 @@ export const CHANGELOG: Array<{ version: string; date: string; items: string[] }
   {
     version: "3.17",
     date: "27/10/2026",
-    items: ["Relatório do cliente: o quadro \"Números do relatório\" mostra a etiqueta \"só administradores veem\" (contas de clientes não veem nem conseguem mudar esses números)"],
+    items: ["[admin] Relatório do cliente: o quadro \"Números do relatório\" mostra a etiqueta \"só administradores veem\" (contas de clientes não veem nem conseguem mudar esses números)"],
   },
   {
     version: "3.16",
@@ -357,8 +359,8 @@ export const CHANGELOG: Array<{ version: string; date: string; items: string[] }
     version: "2.92",
     date: "27/10/2026",
     items: [
-      "Relatório do cliente: os números que você ajustou continuam subindo ao vivo junto com os reais, cada um na sua própria proporção (ex.: real 200 cliques, você colocou 2.000; o real foi a 250, o relatório mostra 2.500)",
-      "Relatório do cliente: com os números ajustados, nenhum número real aparece no relatório (nem os créditos usados)",
+      "[admin] Relatório do cliente: os números que você ajustou continuam subindo ao vivo junto com os reais, cada um na sua própria proporção (ex.: real 200 cliques, você colocou 2.000; o real foi a 250, o relatório mostra 2.500)",
+      "[admin] Relatório do cliente: com os números ajustados, nenhum número real aparece no relatório (nem os créditos usados)",
     ],
   },
   {
@@ -378,17 +380,17 @@ export const CHANGELOG: Array<{ version: string; date: string; items: string[] }
   {
     version: "2.89",
     date: "27/10/2026",
-    items: ["Financeiro: o Guilherme (dono) pode apagar qualquer lançamento, de qualquer sócio. Os outros sócios continuam apagando só os próprios"],
+    items: ["[admin] Financeiro: o Guilherme (dono) pode apagar qualquer lançamento, de qualquer sócio. Os outros sócios continuam apagando só os próprios"],
   },
   {
     version: "2.88",
     date: "27/10/2026",
-    items: ["Financeiro: a chave Pix dos dois sócios fica sempre lá em cima, no cartão de cada um, com botão de copiar (e também na linha de reembolso do caixa)"],
+    items: ["[admin] Financeiro: a chave Pix dos dois sócios fica sempre lá em cima, no cartão de cada um, com botão de copiar (e também na linha de reembolso do caixa)"],
   },
   {
     version: "2.87",
     date: "27/10/2026",
-    items: ["Financeiro: no Acerto dá para anotar o Pix que saiu do caixa da empresa para cobrir custos, escolhendo quem recebeu (você ou o sócio). O reembolso entra na conta certa e o saldo do caixa baixa"],
+    items: ["[admin] Financeiro: no Acerto dá para anotar o Pix que saiu do caixa da empresa para cobrir custos, escolhendo quem recebeu (você ou o sócio). O reembolso entra na conta certa e o saldo do caixa baixa"],
   },
   {
     version: "2.86",
@@ -420,7 +422,7 @@ export const CHANGELOG: Array<{ version: string; date: string; items: string[] }
       "Saldo: compra de créditos pelo Pix. 1 crédito = 1 disparo, a R$ 0,01 por crédito (preço muda em Admin → Vendas). Pacotes prontos ou quantidade livre, e o saldo entra sozinho quando o Pix cai",
       "Saldo: o crédito entra uma vez só, mesmo com o Mercado Pago avisando o pagamento várias vezes. Pix não pago vence sozinho em 30 minutos e clique duplo não gera dois Pix",
       "Disparo: o crédito fica anotado em cada destinatário até a mensagem sair. O que falha ou volta para a fila é estornado numa operação só, e se o servidor cair no meio do lote o crédito volta sozinho (antes podia se perder)",
-      "Financeiro: recargas de créditos e vendas de BM pagas no Pix entram sozinhas como entrada no caixa da empresa",
+      "[admin] Financeiro: recargas de créditos e vendas de BM pagas no Pix entram sozinhas como entrada no caixa da empresa",
     ],
   },
   {
@@ -468,7 +470,7 @@ export const CHANGELOG: Array<{ version: string; date: string; items: string[] }
   {
     version: "2.75",
     date: "26/10/2026",
-    items: ["Admin → Vendas: botão \"Testar o Mercado Pago\" gera um Pix de R$ 1,00 e cancela na hora, para conferir se o token funciona"],
+    items: ["[admin] Admin → Vendas: botão \"Testar o Mercado Pago\" gera um Pix de R$ 1,00 e cancela na hora, para conferir se o token funciona"],
   },
   {
     version: "2.74",
@@ -487,7 +489,7 @@ export const CHANGELOG: Array<{ version: string; date: string; items: string[] }
     version: "2.72",
     date: "26/10/2026",
     items: [
-      "E-mails: aba nova em Plataforma (só os sócios) para criar endereços @fuzildisparador.com.br, ler, responder e baixar anexos, com contador de não lidos no menu",
+      "[admin] E-mails: aba nova em Plataforma (só os sócios) para criar endereços @fuzildisparador.com.br, ler, responder e baixar anexos, com contador de não lidos no menu",
       "E-mails: o conteúdo do e-mail abre isolado (nenhum script de quem mandou roda no Fuzil) e os anexos só abrem logado",
       "Vendas: o e-mail do estoque agora é uma caixa do próprio Fuzil (marque \"e-mail do estoque\" em E-mails). Os convites de BM caem direto nas Vendas, sem senha de outro provedor",
     ],
@@ -495,7 +497,7 @@ export const CHANGELOG: Array<{ version: string; date: string; items: string[] }
   {
     version: "2.71",
     date: "26/10/2026",
-    items: ["Admin: as configurações de vendas (Mercado Pago, e-mail do estoque e WhatsApp) ficam numa gaveta própria, \"Vendas\""],
+    items: ["[admin] Admin: as configurações de vendas (Mercado Pago, e-mail do estoque e WhatsApp) ficam numa gaveta própria, \"Vendas\""],
   },
   {
     version: "2.70",
@@ -504,7 +506,7 @@ export const CHANGELOG: Array<{ version: string; date: string; items: string[] }
       "Vendas: vitrine pública em fuzildisparador.com.br/vendas, com BMs por tipo (com ou sem template), estoque ao vivo e o template aparecendo ao passar o mouse",
       "Vendas: pagamento no Pix pelo Mercado Pago. A BM fica separada por 15 minutos e, quando o Pix cai, o cliente recebe sozinho no e-mail o convite de cada BM, o acesso ao Fuzil (conta criada sozinha) e um PDF ensinando a disparar e a usar o gerador de links",
       "Vendas: o Fuzil lê o e-mail do estoque, acha os convites das BMs, testa se o link responde e liga cada convite à BM certa pelo nome. Só BM com convite testado aparece na vitrine",
-      "Vendas: painel só dos sócios com pedidos, estoque, convites recebidos e produtos, com troca de BM (garantia de 24h: convite que não funciona ou conta banida) e botão de WhatsApp para o cliente",
+      "[admin] Vendas: painel só dos sócios com pedidos, estoque, convites recebidos e produtos, com troca de BM (garantia de 24h: convite que não funciona ou conta banida) e botão de WhatsApp para o cliente",
     ],
   },
   {
@@ -520,8 +522,8 @@ export const CHANGELOG: Array<{ version: string; date: string; items: string[] }
     version: "2.68",
     date: "26/10/2026",
     items: [
-      "Financeiro: caixa da empresa. Despesa e entrada podem ser do caixa (padrão) e o lucro fica nele para reinvestir, sem ir para a conta de ninguém",
-      "Financeiro: quem pagar algo do próprio bolso é reembolsado pelo caixa (botão \"Já recebi do caixa\"). Só o que o caixa não cobre é dividido meio a meio",
+      "[admin] Financeiro: caixa da empresa. Despesa e entrada podem ser do caixa (padrão) e o lucro fica nele para reinvestir, sem ir para a conta de ninguém",
+      "[admin] Financeiro: quem pagar algo do próprio bolso é reembolsado pelo caixa (botão \"Já recebi do caixa\"). Só o que o caixa não cobre é dividido meio a meio",
     ],
   },
   {
@@ -684,15 +686,15 @@ export const CHANGELOG: Array<{ version: string; date: string; items: string[] }
     version: "2.37",
     date: "24/10/2026",
     items: [
-      "Financeiro: cada sócio cadastra a própria chave Pix e, na hora do acerto, aparece o botão \"Copiar chave Pix\" do outro",
-      "Financeiro mais seguro: os sócios ficam fixos (dar administrador para alguém não muda a divisão nem o histórico), valor com ponto de milhar lido certo (1.234 = mil duzentos e trinta e quatro) e o acerto nunca é anotado em dobro (clique duplo, duas abas ou os dois clicando juntos)",
+      "[admin] Financeiro: cada sócio cadastra a própria chave Pix e, na hora do acerto, aparece o botão \"Copiar chave Pix\" do outro",
+      "[admin] Financeiro mais seguro: os sócios ficam fixos (dar administrador para alguém não muda a divisão nem o histórico), valor com ponto de milhar lido certo (1.234 = mil duzentos e trinta e quatro) e o acerto nunca é anotado em dobro (clique duplo, duas abas ou os dois clicando juntos)",
     ],
   },
   {
     version: "2.36",
     date: "24/10/2026",
     items: [
-      "Financeiro (só os sócios, administradores do Fuzil): anote despesas, entradas e acertos com descrição, valor, categoria e comprovante. Quem anota é quem pagou ou recebeu, e a data é a da hora",
+      "[admin] Financeiro (só os sócios, administradores do Fuzil): anote despesas, entradas e acertos com descrição, valor, categoria e comprovante. Quem anota é quem pagou ou recebeu, e a data é a da hora",
       "O Fuzil soma tudo, divide meio a meio e mostra quem passa quanto para quem. Quem deve tem o botão \"Já fiz o Pix\" (com opção de anexar o comprovante do Pix), que anota o acerto e zera o saldo",
       "Visão por mês, filtro por categoria (Perfil, Automação, SMS, Captcha, Disparo, Venda BM, Sem categoria) e despesas por categoria. Só quem anotou pode apagar, ninguém edita",
     ],
@@ -785,9 +787,9 @@ export const CHANGELOG: Array<{ version: string; date: string; items: string[] }
     version: "2.21",
     date: "23/10/2026",
     items: [
-      "Admin: etiqueta \"Dono do Fuzil\" no seu nome e \"Admin do Fuzil\" em quem é administrador",
-      "Admin: usuários de cada conta organizados (nome e etiquetas em cima, e-mail, último acesso e botões embaixo)",
-      "Admin: botão \"Dar administrador\" / \"Tirar administrador\" em cada usuário (só o dono vê). Quem vira administrador ganha o funil do gerador de links e os modelos de aquecimento na conta dele",
+      "[admin] Admin: etiqueta \"Dono do Fuzil\" no seu nome e \"Admin do Fuzil\" em quem é administrador",
+      "[admin] Admin: usuários de cada conta organizados (nome e etiquetas em cima, e-mail, último acesso e botões embaixo)",
+      "[admin] Admin: botão \"Dar administrador\" / \"Tirar administrador\" em cada usuário (só o dono vê). Quem vira administrador ganha o funil do gerador de links e os modelos de aquecimento na conta dele",
     ],
   },
   {
@@ -937,13 +939,13 @@ export const CHANGELOG: Array<{ version: string; date: string; items: string[] }
   {
     version: "1.99",
     date: "22/10/2026",
-    items: ["Números do relatório: cada campo mostra a % (enviadas do público, lidas das enviadas, cliques e respostas das lidas) do número real e do que você digita, ao vivo. Fica vermelho se passar do limite"],
+    items: ["[admin] Números do relatório: cada campo mostra a % (enviadas do público, lidas das enviadas, cliques e respostas das lidas) do número real e do que você digita, ao vivo. Fica vermelho se passar do limite"],
   },
   {
     version: "1.98",
     date: "22/10/2026",
     items: [
-      "Relatório do cliente: os números sempre fecham. Público ≥ Enviadas ≥ Lidas ≥ Clicaram, e Responderam ≤ Lidas. Ao ajustar, o Fuzil não deixa salvar número sem lógica",
+      "[admin] Relatório do cliente: os números sempre fecham. Público ≥ Enviadas ≥ Lidas ≥ Clicaram, e Responderam ≤ Lidas. Ao ajustar, o Fuzil não deixa salvar número sem lógica",
       "Quem clicou ou respondeu conta como lida, mesmo que o celular da pessoa não mande a confirmação de leitura",
     ],
   },
@@ -955,13 +957,13 @@ export const CHANGELOG: Array<{ version: string; date: string; items: string[] }
   {
     version: "1.96",
     date: "22/10/2026",
-    items: ["Relatório do cliente: ajustar os números fica só para administradores do Fuzil. As outras contas veem o valor a cobrar e o link"],
+    items: ["[admin] Relatório do cliente: ajustar os números fica só para administradores do Fuzil. As outras contas veem o valor a cobrar e o link"],
   },
   {
     version: "1.95",
     date: "22/10/2026",
     items: [
-      "Relatório do cliente: dá para ajustar à mão os números (público, enviadas, lidas, cliques e respostas) na aba Relatório do cliente. O valor cobrado e o funil (inclusive ao passar o mouse) usam esses números. As Métricas continuam com os números reais, e um botão volta para eles",
+      "[admin] Relatório do cliente: dá para ajustar à mão os números (público, enviadas, lidas, cliques e respostas) na aba Relatório do cliente. O valor cobrado e o funil (inclusive ao passar o mouse) usam esses números. As Métricas continuam com os números reais, e um botão volta para eles",
       "O relatório do cliente ficou só com o topo, o valor da campanha e o funil (saíram os números soltos, como terminou cada mensagem, tempos, motivos de falha e respostas)",
     ],
   },
@@ -1087,7 +1089,7 @@ export const CHANGELOG: Array<{ version: string; date: string; items: string[] }
   {
     version: "1.78",
     date: "22/10/2026",
-    items: ["Links externos saíram do painel e viraram um site separado. Novo: gerador de links do botão, num site público (fuzildisparador.com.br/links), sem precisar de login. O cliente cria o link com a senha de acesso, copia o código e cola na variável do botão na outra plataforma. Ele troca o destino e vê os cliques pelo link secreto que recebe", "Admin: senha de acesso do gerador e lista de todos os links criados (dá para apagar qualquer um)"],
+    items: ["Links externos saíram do painel e viraram um site separado. Novo: gerador de links do botão, num site público (fuzildisparador.com.br/links), sem precisar de login. O cliente cria o link com a senha de acesso, copia o código e cola na variável do botão na outra plataforma. Ele troca o destino e vê os cliques pelo link secreto que recebe", "[admin] Admin: senha de acesso do gerador e lista de todos os links criados (dá para apagar qualquer um)"],
   },
   {
     version: "1.77",
@@ -1529,7 +1531,7 @@ export const CHANGELOG: Array<{ version: string; date: string; items: string[] }
     date: "08/10/2026",
     items: [
       "Site também em site.fuzildisparador.com.br",
-      "Admin → Empresa e site: aceita códigos de verificação de domínio de mais de uma BM (separados por vírgula)",
+      "[admin] Admin → Empresa e site: aceita códigos de verificação de domínio de mais de uma BM (separados por vírgula)",
     ],
   },
   {
@@ -1550,7 +1552,7 @@ export const CHANGELOG: Array<{ version: string; date: string; items: string[] }
     date: "08/10/2026",
     items: [
       "Site público em fuzildisparador.com.br: página de vendas, Política de Privacidade, Termos de Uso e Exclusão de dados (exigidos pela Meta para o app do Tech Provider)",
-      "Admin → Empresa e site: razão social, CNPJ, endereço, e-mail, telefone e código de verificação de domínio da Meta",
+      "[admin] Admin → Empresa e site: razão social, CNPJ, endereço, e-mail, telefone e código de verificação de domínio da Meta",
     ],
   },
   {
@@ -1558,8 +1560,8 @@ export const CHANGELOG: Array<{ version: string; date: string; items: string[] }
     date: "08/10/2026",
     items: [
       "Corrigido: bug reportado não ia pro Discord quando não existia canal #bugs nem #geral. Agora tenta #bugs → #geral → #erros → qualquer canal configurado",
-      "Admin → Bugs reportados mostra se cada relato chegou no Discord (e o motivo, se não chegou), com botão \"Reenviar pro Discord\"",
-      "Admin → Avisos no Discord mostra quais canais estão configurados e avisa quando nada está indo pro Discord",
+      "[admin] Admin → Bugs reportados mostra se cada relato chegou no Discord (e o motivo, se não chegou), com botão \"Reenviar pro Discord\"",
+      "[admin] Admin → Avisos no Discord mostra quais canais estão configurados e avisa quando nada está indo pro Discord",
     ],
   },
   {
@@ -1587,7 +1589,7 @@ export const CHANGELOG: Array<{ version: string; date: string; items: string[] }
     items: [
       "Nova aba Tutoriais (menu Ajuda): passo a passo de cada tela com prints, boas práticas para não queimar BM e dúvidas frequentes",
       "Botão do bichinho 🐞 no canto da tela para o cliente reportar bug (com print opcional, até colando com Ctrl+V)",
-      "Admin → Bugs reportados: lista com protocolo, quem mandou, página e print; marcar como resolvido. Também chega no Discord #bugs",
+      "[admin] Admin → Bugs reportados: lista com protocolo, quem mandou, página e print; marcar como resolvido. Também chega no Discord #bugs",
     ],
   },
   {
@@ -1598,7 +1600,7 @@ export const CHANGELOG: Array<{ version: string; date: string; items: string[] }
       "Canais do Discord agora ficam no Admin e recebem os avisos de todas as contas, com o nome da conta",
       "Configurações simplificada para o cliente: meus dados (nome e e-mail), trocar senha, nome da conta, alertas por e-mail e usuários. Discord e Meta só no Admin",
       "Alertas no painel mostram \"O que fazer\" nos avisos importantes",
-      "Admin → Contas: o menu ⋮ não fica mais cortado (abre por cima da tela)",
+      "[admin] Admin → Contas: o menu ⋮ não fica mais cortado (abre por cima da tela)",
       "Brilho laranja suave acompanhando o mouse",
     ],
   },
@@ -1606,7 +1608,7 @@ export const CHANGELOG: Array<{ version: string; date: string; items: string[] }
     version: "1.4",
     date: "08/10/2026",
     items: [
-      "Admin → Contas: painel novo com busca, filtro (ativas/bloqueadas) e páginas. Cada conta mostra dono, status, limite geral de 24h (soma de todas as BMs) e quantos disparos já fez",
+      "[admin] Admin → Contas: painel novo com busca, filtro (ativas/bloqueadas) e páginas. Cada conta mostra dono, status, limite geral de 24h (soma de todas as BMs) e quantos disparos já fez",
       "Clicando na conta abre os usuários (com reenviar convite/excluir) e as BMs com o limite de cada uma",
       "Menu ⋮ de cada conta: entrar na conta, gerar link de login, reenviar convite, créditos, preço por mensagem, renomear, bloquear/desbloquear e excluir",
       "Conta bloqueada: o cliente vê a tela \"Conta bloqueada\" (com o motivo) e as campanhas rodando ou agendadas são pausadas",
@@ -1617,8 +1619,8 @@ export const CHANGELOG: Array<{ version: string; date: string; items: string[] }
     version: "1.3",
     date: "08/10/2026",
     items: [
-      "Admin → Usuários: lista de todos os usuários com status (convite pendente ou último acesso), reenviar convite com link para copiar e excluir usuário",
-      "Admin → Contas: botão \"Entrar na conta\" para ver o painel de qualquer cliente, com faixa para voltar para a sua conta",
+      "[admin] Admin → Usuários: lista de todos os usuários com status (convite pendente ou último acesso), reenviar convite com link para copiar e excluir usuário",
+      "[admin] Admin → Contas: botão \"Entrar na conta\" para ver o painel de qualquer cliente, com faixa para voltar para a sua conta",
     ],
   },
   {

@@ -1,3 +1,4 @@
+import { APP_VERSION } from "@/version";
 import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { Sidebar } from "@/components/sidebar";
@@ -30,7 +31,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const offerTour = !auth.inspecting && !me?.tourState && bms === 0;
   return (
     <div className="flex min-h-screen">
-      <Sidebar workspace={auth.workspace.name} user={auth.user.email} unread={unread} chatUnread={chatUnread} mailUnread={mailUnread} balance={auth.workspace.creditBalance} isSuperAdmin={auth.user.isSuperAdmin} financePartner={Boolean(me?.financePartner)} />
+      <Sidebar workspace={auth.workspace.name} user={auth.user.email} unread={unread} chatUnread={chatUnread} mailUnread={mailUnread} balance={auth.workspace.creditBalance} isSuperAdmin={auth.user.isSuperAdmin} financePartner={Boolean(me?.financePartner)} version={APP_VERSION} />
       {/* Fundo de todas as telas: brilho laranja bem clarinho e a logo do Fuzil apagada (só enfeite) */}
       <div aria-hidden className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
         {/* Degradês simples (sem filtro de desfoque, que deixava o mouse pesado) */}
