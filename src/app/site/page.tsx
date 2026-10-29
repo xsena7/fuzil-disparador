@@ -29,11 +29,11 @@ const AUDIENCES = [
   },
   {
     icon: Users,
-    title: "Para agências e quem dispara para clientes",
-    lead: "A ferramenta para operar várias contas sem dor de cabeça",
-    points: ["Some o limite de várias BMs num grupo", "Rodízio automático entre os números", "Template padrão sobe em todas as contas", "Relatório ao vivo para mandar ao seu cliente"],
-    cta: "Quero a ferramenta para minha agência",
-    msg: "Oi! Tenho uma agência e quero usar o Fuzil para disparar para meus clientes.",
+    title: "Contrate o disparo pronto",
+    lead: "A gente dispara para você, do começo ao fim",
+    points: ["Você manda a lista de contatos e a mensagem", "A gente monta o modelo, aprova na Meta e dispara", "Relatório ao vivo com entregues, lidas e cliques", "Sem precisar ter conta na Meta nem mexer em nada"],
+    cta: "Quero contratar disparos",
+    msg: "Oi! Quero contratar disparos de WhatsApp com o Fuzil.",
   },
 ];
 

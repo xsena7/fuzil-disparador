@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "3.41",
+    date: "29/10/2026",
+    items: ["Site: o segundo caminho agora é \"Contrate o disparo pronto\" (a gente dispara para o cliente: ele manda a lista e a mensagem e acompanha o relatório), no lugar de \"Para agências\""],
+  },
+  {
     version: "3.40",
     date: "29/10/2026",
     items: [
