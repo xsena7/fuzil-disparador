@@ -5,6 +5,7 @@ export const CHANGELOG: Array<{ version: string; date: string; items: string[] }
     version: "3.45",
     date: "29/10/2026",
     items: [
+      "Conexões: a lista de números mostra a foto de perfil de cada um (sem foto, fica o ícone do telefone)",
       "Adicionar número nesta WABA: além de Mulher, Homem e Sem foto, agora dá para escolher \"Outra foto\" e subir uma foto só para esse número",
       "Grupos de BM: cada BM mostra os números dela com a foto de perfil, o nome no WhatsApp e o número (avisa quando está sem foto)",
       "Grupos de BM: botão \"Tirar deste grupo\" tira a BM só daquele grupo; ela continua nos outros, como Prontas para disparo",

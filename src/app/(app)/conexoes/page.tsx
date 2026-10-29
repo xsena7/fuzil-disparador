@@ -24,7 +24,7 @@ import { ManualGuide } from "./manual-guide";
 import { SharedWabas } from "./shared-wabas";
 import { ProfileEditor } from "./profile-editor";
 import { SmsBearPanel } from "./smsbear-panel";
-import { PhotoPick } from "./photo-pick";
+import { PhoneAvatar, PhotoPick } from "./photo-pick";
 import { PhotoPresets } from "./photo-presets";
 import { photoUrl } from "@/lib/profile-photos";
 import { KeepInput } from "@/components/keep-input";
@@ -385,7 +385,7 @@ export default async function ConnectionsPage() {
                     {waba.phones.length === 0 && <div className="px-4 py-3 text-zinc-500">Nenhum número nesta WABA.</div>}
                     {waba.phones.map((p) => (
                       <div key={p.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
-                        <div className="flex size-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 ring-1 ring-emerald-600/10"><Phone className="size-4" /></div>
+                        <PhoneAvatar url={p.profilePhotoUrl} />
                         <div className="min-w-48">
                           <div className="font-medium">{formatPhone(p.displayPhoneNumber.replace(/\D/g, ""))}</div>
                           <div className="text-xs text-zinc-600">{p.verifiedName} · Phone ID {p.phoneNumberId}</div>

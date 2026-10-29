@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import clsx from "clsx";
-import { ImagePlus, ImageOff } from "lucide-react";
+import { ImagePlus, ImageOff, Phone } from "lucide-react";
 
 export type PhotoUrls = { female: string; male: string };
 
@@ -95,6 +95,19 @@ export function PhotoPick({ name, photos, compact = false, allowCustom = false }
           className="mt-2 block text-xs file:mr-2 file:rounded-lg file:border-0 file:bg-zinc-100 file:px-2 file:py-1 file:text-xs"
         />
       )}
+    </div>
+  );
+}
+
+/** Foto de perfil do número na lista; sem foto (ou se o link da Meta venceu) mostra o telefone. */
+export function PhoneAvatar({ url }: { url: string | null }) {
+  const [broken, setBroken] = useState(false);
+  if (url && !broken)
+    // eslint-disable-next-line @next/next/no-img-element
+    return <img src={url} alt="" referrerPolicy="no-referrer" onError={() => setBroken(true)} className="size-9 shrink-0 rounded-xl object-cover ring-1 ring-zinc-200" />;
+  return (
+    <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 ring-1 ring-emerald-600/10">
+      <Phone className="size-4" />
     </div>
   );
 }
