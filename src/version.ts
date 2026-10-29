@@ -6,7 +6,7 @@ export const CHANGELOG: Array<{ version: string; date: string; items: string[] }
   {
     version: "3.46",
     date: "29/10/2026",
-    items: ["[admin] Novidades: os clientes veem só um resumo de cada versão (\"Melhorias em: Campanhas · Chat\"), sem os detalhes. Ferramentas internas (ajuste do relatório, Financeiro, Admin) nem aparecem. Administradores veem tudo, com a prévia do que o cliente vê"],
+    items: ["Métricas: Enviadas mostra que são as aceitas pela Meta, e Falhas/Créditos deixam claro que falha não é cobrada (o crédito volta para o saldo)", "[admin] Novidades: os clientes veem só um resumo de cada versão (\"Melhorias em: Campanhas · Chat\"), sem os detalhes. Ferramentas internas (ajuste do relatório, Financeiro, Admin) nem aparecem. Administradores veem tudo, com a prévia do que o cliente vê"],
   },
   {
     version: "3.45",

@@ -54,15 +54,15 @@ export async function Metrics({ campaignId }: { campaignId: string }) {
 
       <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-5">
         <Stat label="Público" value={n(t.total)} sub={t.pending ? `${n(t.pending)} na fila` : undefined} />
-        <Stat label="Enviadas" value={n(t.sent)} sub={pct(t.sent, t.total) + " do público"} tone="brand" />
+        <Stat label="Enviadas" value={n(t.sent)} sub={`${pct(t.sent, t.total)} do público · aceitas pela Meta`} tone="brand" />
         <Stat label="Entregues" value={n(t.delivered)} sub={pct(t.delivered, t.sent) + " das enviadas"} tone="green" />
         <Stat label="Lidas (abriram)" value={n(t.read)} sub={pct(t.read, t.delivered) + " das entregues"} tone="blue" />
         <Stat label="Clicaram no link" value={n(t.clicked)} sub={`${pct(t.clicked, t.delivered)} das entregues · ${n(t.clicks)} cliques`} tone="violet" />
         <Stat label="Responderam" value={n(t.replied)} sub={pct(t.replied, t.delivered) + " das entregues"} tone="pink" />
         <Stat label="Descadastraram (SAIR)" value={n(t.optedOut)} sub={pct(t.optedOut, t.delivered)} tone={t.optedOut ? "amber" : "default"} />
         <Stat label="Não entregues" value={n(m.undeliverable)} sub="Sem WhatsApp, bloqueou ou app antigo" />
-        <Stat label="Falhas" value={n(t.failed)} sub={pct(t.failed, t.total)} tone={t.failed ? "red" : "default"} />
-        <Stat label="Créditos usados" value={n(t.credits)} sub={t.skipped ? `${n(t.skipped)} ignorados` : undefined} />
+        <Stat label="Falhas" value={n(t.failed)} sub={`${pct(t.failed, t.total)}${t.failed ? " · não cobradas" : ""}`} tone={t.failed ? "red" : "default"} />
+        <Stat label="Créditos usados" value={n(t.credits)} sub={`Falhas voltam para o saldo${t.skipped ? ` · ${n(t.skipped)} ignorados` : ""}`} />
       </div>
 
       <div className="grid gap-3 sm:grid-cols-3">
