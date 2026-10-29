@@ -9,6 +9,7 @@ import { KeepInput } from "@/components/keep-input";
 import { Button, Field, Input } from "@/components/ui";
 import { PasswordInput } from "@/components/password-input";
 import { toast, toastResult } from "@/components/toast";
+import { PhotoPick, type PhotoUrls } from "./photo-pick";
 
 type Job = {
   id: string;
@@ -36,7 +37,7 @@ const brl = (cents: number) => (cents / 100).toLocaleString("pt-BR", { style: "c
 const WAIT_MS = 150_000;
 
 /** Painel de números em Conexões (SMSBear ou SMS24h, só WhatsApp Brasil): conecta, mostra o saldo e registra números na WABA. */
-export function SmsBearPanel({ wabas }: { wabas: Array<{ id: string; label: string; name: string }> }) {
+export function SmsBearPanel({ wabas, photos }: { wabas: Array<{ id: string; label: string; name: string }>; photos: PhotoUrls }) {
   const [st, setSt] = useState<State | null>(null);
   const [provider, setProvider] = useState<SmsProviderKey>(() => {
     try {
@@ -104,6 +105,7 @@ export function SmsBearPanel({ wabas }: { wabas: Array<{ id: string; label: stri
             jobs={st.jobs.filter((j) => j.provider === provider)}
             manual={st.manual.filter((m) => m.provider === provider)}
             wabas={wabas}
+            photos={photos}
             now={now}
             reload={load}
           />
@@ -132,7 +134,7 @@ function Connect({ provider, onDone }: { provider: SmsProviderKey; onDone: () =>
   );
 }
 
-function Connected({ provider, ps: st, jobs, manual, wabas, now, reload }: { provider: SmsProviderKey; ps: ProvState; jobs: Job[]; manual: Manual[]; wabas: Array<{ id: string; label: string; name: string }>; now: number; reload: () => void }) {
+function Connected({ provider, ps: st, jobs, manual, wabas, photos, now, reload }: { provider: SmsProviderKey; ps: ProvState; jobs: Job[]; manual: Manual[]; wabas: Array<{ id: string; label: string; name: string }>; photos: PhotoUrls; now: number; reload: () => void }) {
   const busyWabas = new Set(jobs.filter((j) => j.status === "RUNNING").map((j) => j.wabaId));
   const free = wabas.filter((w) => !busyWabas.has(w.id));
   const [picked, setPicked] = useState<string[]>(() => (free[0] ? [free[0].id] : []));
@@ -220,6 +222,9 @@ function Connected({ provider, ps: st, jobs, manual, wabas, now, reload }: { pro
                       <div className="mt-2">
                         <span className="mb-1 block text-xs text-zinc-500">Nome de exibição (o nome que aparece no WhatsApp)</span>
                         <KeepInput name={`name-${w.id}`} remember={`nome-waba-${w.id}`} defaultValue={w.name} maxLength={100} required />
+                        <div className="mt-2">
+                          <PhotoPick name={`photo-${w.id}`} photos={photos} compact />
+                        </div>
                       </div>
                     )}
                   </div>

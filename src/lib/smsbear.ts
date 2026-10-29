@@ -1,6 +1,7 @@
 // Registro automático de número na WABA com SMSBear ou SMS24h (só WhatsApp Brasil).
 // O Fuzil compra o número, coloca na WABA, espera o código da Meta e confirma.
 // Se o SMS não chegar em 2,5 minutos, cancela (o saldo volta) e tenta outro número, até dar certo ou acabar as tentativas.
+import { parsePhoto, setPendingPhoto } from "./profile-photos";
 import { randomUUID } from "node:crypto";
 import { prisma } from "./db";
 import { env } from "./env";
@@ -113,6 +114,7 @@ async function stepJob(job: JobWithWaba) {
         await meta.verifyCode(metaToken, job.phoneNumberId, code);
         await meta.registerPhone(metaToken, job.phoneNumberId, env.metaRegisterPin());
         await syncWaba(job.wabaId).catch(() => undefined);
+        await setPendingPhoto({ phoneNumberId: job.phoneNumberId }, parsePhoto(job.photo)).catch(() => undefined);
         await prov.finish?.(token, job.orderId).catch(() => undefined);
         await alertEnd(job, true, `${pretty(job.number ?? "")} registrado na WABA ${job.waba.business.name}.`);
         return finish(job.id, "DONE", `Pronto! ${pretty(job.number ?? "")} confirmado e registrado. Já entra no rodízio.`, "ok");

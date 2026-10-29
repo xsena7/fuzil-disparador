@@ -1,11 +1,14 @@
 "use server";
 
+import path from "node:path";
 import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { meta, type BusinessProfile } from "@/lib/meta";
 import { friendlyError, metaDetail } from "@/lib/meta-errors";
 import { wabaToken } from "@/lib/sync";
+import { parsePhoto, PHOTO_LABEL, squareJpeg, type PhotoKind } from "@/lib/profile-photos";
+import { saveUpload } from "@/lib/uploads";
 import type { FormState } from "./auth";
 
 // Perfil do WhatsApp dos números (foto, recado, descrição...), direto pelo Fuzil, sem entrar no Facebook.
@@ -13,17 +16,6 @@ import type { FormState } from "./auth";
 const PHOTO_TYPES = ["image/jpeg", "image/png"];
 const MAX_PHOTO = 5 * 1024 * 1024;
 export type ProfileScope = "phone" | "bm" | "all";
-
-/** Foto do perfil no jeito que a Meta aceita melhor: JPG quadrado de 640×640 (se não der para converter, vai a original). */
-async function squareJpeg(buf: Buffer, mime: string): Promise<{ buf: Buffer; mime: string }> {
-  try {
-    const sharp = (await import("sharp")).default;
-    return { buf: await sharp(buf).rotate().resize(640, 640, { fit: "cover" }).flatten({ background: "#ffffff" }).jpeg({ quality: 90 }).toBuffer(), mime: "image/jpeg" };
-  } catch (err) {
-    console.error("[perfil] não converteu a foto", err);
-    return { buf, mime };
-  }
-}
 
 /** Perfil atual do número, como está na Meta. */
 export async function getProfileAction(phoneId: string): Promise<{ profile?: BusinessProfile; error?: string }> {
@@ -127,4 +119,30 @@ export async function saveProfileAction(phoneId: string, _: FormState, form: For
   if (!targets.length) return { error: "Nenhum número conectado para receber o perfil." };
   if (!errors.length) return { ok: ok === 1 ? "Perfil do WhatsApp atualizado! Pode levar alguns minutos para aparecer no celular." : `Perfil atualizado em ${ok} números! Pode levar alguns minutos para aparecer no celular.` };
   return { error: `${targets.length === 1 ? "Não deu para salvar tudo" : `Atualizado em ${ok} de ${targets.length}`}. ${errors.slice(0, 5).join(" | ")}${errors.length > 5 ? ` (+${errors.length - 5})` : ""}` };
+}
+
+/** Troca a foto padrão (mulher ou homem) que os números novos recebem. Fica salva no servidor. */
+export async function savePhotoPresetAction(kind: PhotoKind, _: FormState, form: FormData): Promise<FormState> {
+  const auth = await requireAuth();
+  if (auth.role === "MEMBER" && !auth.user.isSuperAdmin) return { error: "Só o dono ou um admin da conta pode trocar as fotos." };
+  if (!parsePhoto(kind)) return { error: "Foto inválida" };
+  const file = form.get("photo");
+  if (!(file instanceof File) || !file.size) return { error: "Escolha uma foto." };
+  if (!PHOTO_TYPES.includes(file.type)) return { error: "Foto: envie JPG ou PNG" };
+  if (file.size > MAX_PHOTO) return { error: "Foto grande demais (máximo 5 MB)" };
+  const pic = await squareJpeg(Buffer.from(await file.arrayBuffer()), file.type);
+  const saved = await saveUpload(new File([new Uint8Array(pic.buf)], "perfil.jpg", { type: pic.mime }));
+  const name = path.basename(saved.path);
+  await prisma.workspace.update({ where: { id: auth.workspace.id }, data: kind === "female" ? { profilePhotoFemale: name } : { profilePhotoMale: name } });
+  revalidatePath("/conexoes");
+  return { ok: `Foto de ${PHOTO_LABEL[kind].toLowerCase()} salva! Os próximos números com essa opção recebem ela.` };
+}
+
+/** Volta para a foto padrão do Fuzil. */
+export async function resetPhotoPresetAction(kind: PhotoKind): Promise<FormState> {
+  const auth = await requireAuth();
+  if (auth.role === "MEMBER" && !auth.user.isSuperAdmin) return { error: "Só o dono ou um admin da conta pode trocar as fotos." };
+  await prisma.workspace.update({ where: { id: auth.workspace.id }, data: kind === "female" ? { profilePhotoFemale: null } : { profilePhotoMale: null } });
+  revalidatePath("/conexoes");
+  return { ok: "Voltou para a foto padrão." };
 }

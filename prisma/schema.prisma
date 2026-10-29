@@ -63,6 +63,9 @@ model Workspace {
   smsbearTokenEnc     String?
   // Chave da API do SMS24h da própria conta (criptografada)
   sms24hKeyEnc        String?
+  // Fotos de perfil automáticas para número novo (arquivo na pasta de uploads); vazio = foto padrão do Fuzil
+  profilePhotoFemale  String?
+  profilePhotoMale    String?
   // Saldo em créditos (1 crédito = 1 mensagem por padrão)
   creditBalance       Int                 @default(0)
   creditsPerMessage   Int                 @default(1)
@@ -241,6 +244,9 @@ model PhoneNumber {
   // Troca de nome pedida pelo Fuzil e ainda em análise na Meta (quando aprova, o Fuzil registra o número de novo sozinho)
   pendingName        String?
   pendingNameAt      DateTime?
+  // Foto de perfil escolhida ao adicionar (female | male): o worker coloca quando o número fica conectado
+  pendingPhoto       String?
+  pendingPhotoAt     DateTime?
   throughputLevel    String?
   isCoexistence      Boolean             @default(false)
   // Permite tirar o número do rodízio sem desconectar
@@ -1091,6 +1097,8 @@ model SmsJob {
   // Linha do tempo para o painel: [{ at, text, tone }]
   log           Json            @default("[]")
   error         String?
+  // Foto de perfil para o número quando registrar (female | male)
+  photo         String?
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
   finishedAt    DateTime?

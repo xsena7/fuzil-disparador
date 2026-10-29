@@ -9,6 +9,7 @@ import { stopSmsJob } from "@/lib/smsbear";
 import { providerOf, providerToken } from "@/lib/sms-providers";
 import { SMS_PROVIDER_INFO, cancelOpensIn, isSmsProvider, type SmsProviderKey } from "@/lib/smsbear-shared";
 import type { FormState } from "./auth";
+import { parsePhoto } from "@/lib/profile-photos";
 
 // Serviços de número (SMSBear e SMS24h, só WhatsApp Brasil): conectar, registro automático e modo manual
 
@@ -70,6 +71,7 @@ export async function startSmsJobAction(_: FormState, form: FormData): Promise<F
       provider: p,
       verifiedName: name,
       maxAttempts,
+      photo: parsePhoto(form.get("photo")),
       log: [{ at: new Date().toISOString(), text: `Começou pelo ${SMS_PROVIDER_INFO[p].label}: registrar um número na ${waba.business.name} (até ${maxAttempts} tentativas).`, tone: "info" }],
     },
   });
@@ -88,6 +90,7 @@ export async function startSmsJobsAction(_: FormState, form: FormData): Promise<
     one.set("wabaId", id);
     one.set("name", String(form.get(`name-${id}`) ?? ""));
     one.set("maxAttempts", String(form.get("maxAttempts") ?? ""));
+    one.set("photo", String(form.get(`photo-${id}`) ?? ""));
     const r = await startSmsJobAction(undefined, one);
     const label = String(form.get(`label-${id}`) ?? "BM");
     if (r?.error) failed.push(`${label}: ${r.error}`);

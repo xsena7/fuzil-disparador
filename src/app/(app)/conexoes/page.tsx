@@ -24,6 +24,9 @@ import { ManualGuide } from "./manual-guide";
 import { SharedWabas } from "./shared-wabas";
 import { ProfileEditor } from "./profile-editor";
 import { SmsBearPanel } from "./smsbear-panel";
+import { PhotoPick } from "./photo-pick";
+import { PhotoPresets } from "./photo-presets";
+import { photoUrl } from "@/lib/profile-photos";
 import { KeepInput } from "@/components/keep-input";
 import { FUZIL_APP_ID, FUZIL_BUSINESS_ID, defaultAppSecret, isPlatformOwner, supportWhatsAppLink } from "@/lib/onboarding";
 import {
@@ -49,7 +52,9 @@ const CONN_LABEL = { CLOUD_API: "Cloud API", COEXISTENCE: "Coexistência", MANUA
 
 export default async function ConnectionsPage() {
   const auth = await requireAuth();
-  const wsKeys = await prisma.workspace.findUnique({ where: { id: auth.workspace.id }, select: { defaultAppSecretEnc: true } });
+  const wsKeys = await prisma.workspace.findUnique({ where: { id: auth.workspace.id }, select: { defaultAppSecretEnc: true, profilePhotoFemale: true, profilePhotoMale: true } });
+  const wsPhotos = { profilePhotoFemale: wsKeys?.profilePhotoFemale ?? null, profilePhotoMale: wsKeys?.profilePhotoMale ?? null };
+  const photos = { female: photoUrl(wsPhotos, "female"), male: photoUrl(wsPhotos, "male") };
   const hasDefaultSecret = Boolean(wsKeys?.defaultAppSecretEnc);
   // Cliente sem chave própria: a chave padrão do app do Fuzil entra sozinha (campo some)
   const usesDefaultSecret = hasDefaultSecret || Boolean(await defaultAppSecret(auth.workspace.id));
@@ -441,6 +446,7 @@ export default async function ConnectionsPage() {
                             </select>
                           </Field>
                         </div>
+                        <PhotoPick name="photo" photos={photos} />
                       </ActionForm>
                     </details>
                   </div>
@@ -461,7 +467,10 @@ export default async function ConnectionsPage() {
       {/* SMSBear: comprar número BR e registrar na WABA sozinho */}
       <aside className="mt-8 xl:mt-0">
         <div className="xl:sticky xl:top-6 xl:max-h-[calc(100vh-3rem)] xl:overflow-y-auto xl:overscroll-contain xl:rounded-2xl">
-          <SmsBearPanel wabas={smsWabas} />
+          <SmsBearPanel wabas={smsWabas} photos={photos} />
+          <div className="mt-4">
+            <PhotoPresets ws={wsPhotos} canEdit={auth.role !== "MEMBER" || auth.user.isSuperAdmin} />
+          </div>
         </div>
       </aside>
     </div>

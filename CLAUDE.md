@@ -19,6 +19,7 @@ Produção: VM Oracle grátis, Docker Compose (db, app, worker, caddy). O servid
 - Links externos (código fixo na variável do botão, para disparar por outra plataforma): site público em `src/app/site/links/` (fuzildisparador.com.br/links), conta própria com e-mail e senha (`LinksAccount`, sessão em `src/lib/links-auth.ts`; cada conta vê só os próprios links; o login antigo por WhatsApp e o Aquecimento foram removidos), `src/app/actions/links.ts`, resolvido em `src/app/r/[token]/route.ts`.
 - Relatório do cliente (métricas + valor + chaves Pix): `src/app/relatorio/report-view.tsx` (logado em `/relatorio/[id]`, público em `/relatorio/p/[token]`, 12h no ar), chaves em `src/lib/pix-keys.ts`, aba em `src/app/(app)/campanhas/[id]/client-report.tsx`.
 - Números BR (SMSBear e SMS24h, só WhatsApp Brasil; comprar e registrar na WABA sozinho, troca de número se o SMS não chegar em 2,5 min, modo manual): serviços em `src/lib/sms-providers.ts`, registro automático em `src/lib/smsbear.ts` (roda no worker), painel em `src/app/(app)/conexoes/smsbear-panel.tsx`, simuladores `scripts/mock-smsbear.ts` e `scripts/mock-sms24h.ts`.
+- Foto de perfil automática do número novo (mulher/homem, escolhida ao adicionar; o worker coloca quando conecta): `src/lib/profile-photos.ts`, fotos padrão em `public/perfil/`, seletor em `src/app/(app)/conexoes/photo-pick.tsx`.
 - Logo: `src/components/brand.tsx`. Gaveta padrão: `src/components/drawer.tsx`.
 - Server actions: `src/app/actions/*.ts`. Telas: `src/app/(app)/*`. Site público: `src/app/site/*`.
 

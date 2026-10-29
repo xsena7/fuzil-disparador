@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "3.44",
+    date: "29/10/2026",
+    items: ["Foto de perfil automática: ao adicionar um número (na mão ou pelo registro automático), escolha Mulher, Homem ou Sem foto. Quando o número conecta, o Fuzil coloca a foto sozinho. As duas fotos ficam salvas no servidor e dá para trocar em Conexões → Fotos de perfil"],
+  },
+  {
     version: "3.43",
     date: "29/10/2026",
     items: ["Campanha: aviso no texto fixo da variável de que a Meta não deixa pular linha dentro de variável (sai numa linha só)", "Disparo não trava mais no limite oficial da BM: o Fuzil manda até a Meta recusar (uma BM de 2 mil costuma aceitar 2.300, 2.400). Quando a Meta recusa, só aquela BM descansa 1 hora e as outras seguem; o que foi recusado volta para a fila e o crédito volta para o saldo"],

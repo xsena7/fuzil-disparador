@@ -1,3 +1,4 @@
+import { applyPendingPhotos } from "../lib/profile-photos";
 import { prisma } from "../lib/db";
 import { settleLeftoverCredits } from "../lib/credits";
 import { maybeComplete, recoverStuck, runCampaignTick, startDueCampaigns, TICK_MS } from "../lib/dispatcher";
@@ -88,6 +89,7 @@ async function main() {
   void every(BLUEPRINT_EVERY_MS, "blueprints", () => deployBlueprints());
   void every(60_000, "housekeeping", housekeeping);
   void every(60_000, "limites", checkLimitAlerts);
+  void every(5 * 60_000, "fotos-perfil", applyPendingPhotos);
   void every(5_000, "fluxos", runFlows);
   void every(5_000, "smsbear", smsJobsTick);
   void every(20_000, "vendas", marketTick);
