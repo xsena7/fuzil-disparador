@@ -19,7 +19,8 @@ const KINDS: Array<{ kind: FinanceKind; label: string; hint: string; icon: typeo
 /** Nova anotação: quem anota é quem pagou/recebeu; data e hora são as de agora. Limpa os campos depois de salvar. */
 export function FinanceForm({ me, partners }: { me: string; partners: Array<{ id: string; name: string }> }) {
   const [kind, setKind] = useState<FinanceKind>("EXPENSE");
-  const [where, setWhere] = useState<"cash" | "me">("cash");
+  // Caixa da empresa ou a conta de um dos sócios (id do sócio)
+  const [where, setWhere] = useState<string>("cash");
   // Acerto: Pix da minha conta para o sócio, ou Pix do caixa da empresa para qualquer sócio (inclusive eu)
   const [from, setFrom] = useState<"me" | "cash">("cash");
   const others = partners.filter((p) => p.id !== me);
@@ -76,10 +77,10 @@ export function FinanceForm({ me, partners }: { me: string; partners: Array<{ id
       {kind !== "SETTLEMENT" && (
         <div className="flex flex-wrap items-center gap-2 text-sm">
           <span className="font-medium text-zinc-700">{kind === "EXPENSE" ? "Pago com:" : "Caiu em:"}</span>
-          {([
+          {[
             ["cash", "Caixa da empresa"],
-            ["me", kind === "EXPENSE" ? "Meu bolso (o caixa me reembolsa)" : "Minha conta"],
-          ] as const).map(([v, label]) => (
+            ...partners.map((p) => [p.id, `${kind === "EXPENSE" ? "Bolso" : "Conta"} do ${p.name.split(" ")[0]}${p.id === me ? " (você)" : ""}`]),
+          ].map(([v, label]) => (
             <button
               key={v}
               type="button"

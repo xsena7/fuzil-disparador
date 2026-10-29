@@ -24,8 +24,15 @@ export async function addFinanceEntryAction(_: FormState, form: FormData): Promi
   let description = String(form.get("description") ?? "").replace(/\s+/g, " ").trim().slice(0, 200);
   let category: string | null = null;
   let toUserId: string | null = null;
-  // Despesa/entrada: do caixa da empresa (padrão) ou da conta de quem anotou
-  const cash = (kind === "EXPENSE" || kind === "INCOME") && form.get("where") !== "me";
+  // Despesa/entrada: do caixa da empresa (padrão) ou da conta de um sócio (qualquer um, não só quem anota)
+  const where = String(form.get("where") ?? "cash");
+  const cash = (kind === "EXPENSE" || kind === "INCOME") && where === "cash";
+  let ownerId = auth.user.id;
+  if ((kind === "EXPENSE" || kind === "INCOME") && !cash && where !== "me") {
+    const p = (await financePartners()).find((x) => x.id === where);
+    if (!p) return { error: "Escolha de quem é a conta" };
+    ownerId = p.id;
+  }
   if (kind === "WITHDRAW") {
     // Pix que saiu do caixa da empresa para um sócio (qualquer um, inclusive quem anota)
     const partners = await financePartners();
@@ -77,7 +84,7 @@ export async function addFinanceEntryAction(_: FormState, form: FormData): Promi
       if (amountCents > owed) return { error: `O valor mudou: agora é de ${(owed / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}. Atualize a página.` };
     }
     // Data e hora: sempre o momento em que foi anotado
-    await tx.financeEntry.create({ data: { kind, description, amountCents, category, cash, userId: auth.user.id, toUserId, ...(attachment ?? {}) } });
+    await tx.financeEntry.create({ data: { kind, description, amountCents, category, cash, userId: ownerId, toUserId, ...(attachment ?? {}) } });
     return null;
   });
   if (result?.error) {
