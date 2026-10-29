@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "3.42",
+    date: "29/10/2026",
+    items: ["Site: preço separado por caminho. Empresas com BM própria: R$ 0,01 por disparo (a taxa da Meta é à parte, no cartão da conta). Disparo pronto: a partir de R$ 0,20 por disparo, com orçamento pelo WhatsApp"],
+  },
+  {
     version: "3.41",
     date: "29/10/2026",
     items: ["Site: o segundo caminho agora é \"Contrate o disparo pronto\" (a gente dispara para o cliente: ele manda a lista e a mensagem e acompanha o relatório), no lugar de \"Para agências\""],

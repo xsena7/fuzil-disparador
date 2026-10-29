@@ -21,16 +21,20 @@ const roundDown = (n: number) => (n >= 1_000_000 ? `${Math.floor(n / 100_000) / 
 const AUDIENCES = [
   {
     icon: Building2,
-    title: "Para empresas",
-    lead: "Avise todos os seus clientes no WhatsApp oficial",
-    points: ["Confirmação de pedido, cobrança, entrega e atendimento", "Milhares de mensagens por dia sem conta travando", "Respostas dos clientes num chat só", "Relatório com entregues, lidas e cliques"],
-    cta: "Quero disparar para meus clientes",
-    msg: "Oi! Tenho uma empresa e quero disparar mensagens no WhatsApp para meus clientes com o Fuzil.",
+    title: "Para empresas com BM própria",
+    lead: "Use a ferramenta com as suas contas do WhatsApp",
+    price: "R$ 0,01",
+    pricePrefix: "",
+    points: ["Junte suas contas e some o limite de todas", "Milhares de mensagens por dia sem conta travando", "Respostas dos clientes num chat só", "Relatório com entregues, lidas e cliques"],
+    cta: "Quero usar com minhas BMs",
+    msg: "Oi! Tenho uma empresa com BM própria e quero usar o Fuzil para disparar para meus clientes.",
   },
   {
     icon: Users,
     title: "Contrate o disparo pronto",
     lead: "A gente dispara para você, do começo ao fim",
+    price: "R$ 0,20",
+    pricePrefix: "a partir de ",
     points: ["Você manda a lista de contatos e a mensagem", "A gente monta o modelo, aprova na Meta e dispara", "Relatório ao vivo com entregues, lidas e cliques", "Sem precisar ter conta na Meta nem mexer em nada"],
     cta: "Quero contratar disparos",
     msg: "Oi! Quero contratar disparos de WhatsApp com o Fuzil.",
@@ -117,7 +121,7 @@ export default async function SitePage() {
                 <Zap className="size-3.5" /> API oficial do WhatsApp Business
               </span>
               <span className="inline-flex items-center gap-2 rounded-full bg-emerald-500/15 px-3 py-1 text-xs font-medium text-emerald-300 ring-1 ring-emerald-400/30">
-                <span className="size-1.5 rounded-full bg-emerald-400" /> R$ 0,01 por disparo · sem mensalidade
+                <span className="size-1.5 rounded-full bg-emerald-400" /> A partir de R$ 0,01 por disparo · sem mensalidade
               </span>
             </div>
             <h1 className="text-4xl font-semibold leading-tight tracking-tight md:text-5xl">
@@ -187,6 +191,9 @@ export default async function SitePage() {
               <span className="mb-4 flex size-11 items-center justify-center rounded-xl bg-brand-gradient text-white shadow-md shadow-orange-500/25"><a.icon className="size-5" /></span>
               <div className="text-sm font-semibold uppercase tracking-wide text-orange-600">{a.title}</div>
               <div className="mt-1 text-xl font-semibold text-zinc-900">{a.lead}</div>
+              <div className="mt-3 text-sm text-zinc-500">
+                {a.pricePrefix}<b className="text-2xl font-bold text-zinc-900">{a.price}</b> por disparo
+              </div>
               <ul className="mt-4 flex-1 space-y-2">
                 {a.points.map((pt) => (
                   <li key={pt} className="flex items-start gap-2 text-sm text-zinc-600"><CheckCircle2 className="mt-0.5 size-4 shrink-0 text-emerald-600" /> {pt}</li>
@@ -270,28 +277,44 @@ export default async function SitePage() {
       </section>
 
       <section id="preco" className="mx-auto max-w-6xl scroll-mt-20 px-5 py-20">
-        <div className="grid items-center gap-10 md:grid-cols-[1fr_1.1fr]">
-          <div>
-            <div className="mb-3 text-sm font-semibold uppercase tracking-wider text-orange-600">Preço</div>
-            <h2 className="text-3xl font-semibold tracking-tight text-zinc-900">Paga só o que enviar</h2>
-            <p className="mt-2 max-w-md text-zinc-500">Sem mensalidade, sem plano e sem fidelidade. Você coloca crédito pelo Pix e usa quando quiser.</p>
-          </div>
-          <div className="rounded-3xl bg-ink p-8 text-white shadow-lift">
-            <div className="flex items-end gap-2">
-              <span className="text-5xl font-bold tracking-tight">R$ 0,01</span>
-              <span className="pb-1.5 text-zinc-400">por disparo</span>
+        <div className="mb-3 text-sm font-semibold uppercase tracking-wider text-orange-600">Preço</div>
+        <h2 className="text-3xl font-semibold tracking-tight text-zinc-900">Paga só o que enviar</h2>
+        <p className="mt-2 max-w-2xl text-zinc-500">Sem mensalidade, sem plano e sem fidelidade. Você coloca crédito pelo Pix e usa quando quiser.</p>
+        <div className="mt-8 grid gap-5 md:grid-cols-2">
+          <div className="flex flex-col rounded-3xl border border-zinc-200/80 bg-white p-8 shadow-soft">
+            <div className="text-sm font-semibold uppercase tracking-wide text-orange-600">Empresas com BM própria</div>
+            <div className="mt-3 flex items-end gap-2">
+              <span className="text-5xl font-bold tracking-tight text-zinc-900">R$ 0,01</span>
+              <span className="pb-1.5 text-zinc-500">por disparo</span>
             </div>
-            <ul className="mt-6 space-y-2.5 text-sm text-zinc-300">
+            <ul className="mt-6 flex-1 space-y-2.5 text-sm text-zinc-600">
               {["Sem mensalidade: é o único valor cobrado pelo Fuzil", "Mensagem que não sai volta como crédito", "Crédito pelo Pix, cai na hora", "Todas as funções incluídas: chat, fluxos, relatório"].map((t) => (
-                <li key={t} className="flex items-start gap-2"><CheckCircle2 className="mt-0.5 size-4 shrink-0 text-emerald-400" /> {t}</li>
+                <li key={t} className="flex items-start gap-2"><CheckCircle2 className="mt-0.5 size-4 shrink-0 text-emerald-600" /> {t}</li>
               ))}
             </ul>
-            <a href={wa} className="mt-7 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-brand-gradient px-5 py-3 font-medium">
-              Quero começar <ArrowRight className="size-4" />
+            <a href={waTo(AUDIENCES[0].msg)} className="mt-7 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-ink px-5 py-3 font-medium text-white hover:opacity-90">
+              Quero usar com minhas BMs <ArrowRight className="size-4" />
             </a>
             <p className="mt-4 text-xs leading-relaxed text-zinc-500">
               A Meta (dona do WhatsApp) cobra a parte dela por mensagem direto no cartão da sua conta, conforme a tabela oficial do WhatsApp Business.
             </p>
+          </div>
+          <div className="flex flex-col rounded-3xl bg-ink p-8 text-white shadow-lift">
+            <div className="text-sm font-semibold uppercase tracking-wide text-orange-300">Disparo pronto</div>
+            <div className="mt-3 flex items-end gap-2">
+              <span className="pb-1.5 text-zinc-400">a partir de</span>
+              <span className="text-5xl font-bold tracking-tight">R$ 0,20</span>
+              <span className="pb-1.5 text-zinc-400">por disparo</span>
+            </div>
+            <ul className="mt-6 flex-1 space-y-2.5 text-sm text-zinc-300">
+              {["A gente cuida de tudo: modelo, aprovação e disparo", "Você não precisa ter conta na Meta", "Relatório ao vivo da sua campanha", "Sem mensalidade: paga por campanha"].map((t) => (
+                <li key={t} className="flex items-start gap-2"><CheckCircle2 className="mt-0.5 size-4 shrink-0 text-emerald-400" /> {t}</li>
+              ))}
+            </ul>
+            <a href={waTo(AUDIENCES[1].msg)} className="mt-7 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-brand-gradient px-5 py-3 font-medium">
+              Quero contratar disparos <ArrowRight className="size-4" />
+            </a>
+            <p className="mt-4 text-xs leading-relaxed text-zinc-500">O valor final depende da quantidade e do tipo de mensagem. Fale com a gente para um orçamento.</p>
           </div>
         </div>
       </section>

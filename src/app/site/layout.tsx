@@ -9,7 +9,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const c = company();
   return {
     title: "Fuzil Disparador · Disparo em massa no WhatsApp oficial",
-    description: "Avise milhares de clientes no WhatsApp oficial, sem conta travando. R$ 0,01 por disparo, sem mensalidade. Várias contas juntas, rodízio automático de números e relatório ao vivo.",
+    description: "Avise milhares de clientes no WhatsApp oficial, sem conta travando. A partir de R$ 0,01 por disparo, sem mensalidade. Várias contas juntas, rodízio automático de números e relatório ao vivo.",
     metadataBase: new URL(c.siteUrl),
     // Um código por BM (dá para colar vários, separados por vírgula ou espaço)
     ...(c.domainVerification ? { other: { "facebook-domain-verification": c.domainVerification.split(/[\s,;]+/).filter(Boolean) } } : {}),
