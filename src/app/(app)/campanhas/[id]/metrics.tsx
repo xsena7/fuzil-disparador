@@ -52,7 +52,7 @@ export async function Metrics({ campaignId }: { campaignId: string }) {
         <div className="h-2 overflow-hidden rounded-full bg-zinc-200/60"><div className="h-full rounded-full bg-brand-gradient transition-all" style={{ width: `${progress}%` }} /></div>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-5">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         <Stat label="Público" value={n(t.total)} sub={t.pending ? `${n(t.pending)} na fila` : undefined} />
         <Stat label="Enviadas" value={n(t.sent)} sub={`${pct(t.sent, t.total)} do público · aceitas pela Meta`} tone="brand" />
         <Stat label="Entregues" value={n(t.delivered)} sub={pct(t.delivered, t.sent) + " das enviadas"} tone="green" />
@@ -65,7 +65,7 @@ export async function Metrics({ campaignId }: { campaignId: string }) {
         <Stat label="Créditos usados" value={n(t.credits)} sub={`Falhas voltam para o saldo${t.skipped ? ` · ${n(t.skipped)} ignorados` : ""}`} />
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         <Stat label="Tempo mediano até entregar" value={duration(m.timing.deliver)} />
         <Stat label="Tempo mediano até ler" value={duration(m.timing.read)} />
         <Stat label="Tempo mediano até clicar" value={duration(m.timing.click)} />

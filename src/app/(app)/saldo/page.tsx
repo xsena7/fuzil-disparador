@@ -46,7 +46,7 @@ export default async function BalancePage() {
   return (
     <div className="mx-auto max-w-4xl">
       <PageHeader title="Saldo" description="Cada disparo enviado gasta créditos. O que falha é estornado na hora. A cobrança da Meta é à parte, no cartão de cada WABA." />
-      <div className="mb-6 grid gap-3 sm:grid-cols-3">
+      <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3">
         <Stat label="Saldo atual" value={`${auth.workspace.creditBalance.toLocaleString("pt-BR")}`} sub={`créditos · dá para ${Math.floor(auth.workspace.creditBalance / Math.max(1, auth.workspace.creditsPerMessage)).toLocaleString("pt-BR")} disparos`} tone="green" />
         <Stat label="Custo por disparo" value={auth.workspace.creditsPerMessage} sub={auth.workspace.creditsPerMessage === 1 ? "crédito" : "créditos"} />
         <Stat label="Consumo (30 dias)" value={Math.abs(used30._sum.amount ?? 0).toLocaleString("pt-BR")} sub="créditos" />

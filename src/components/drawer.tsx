@@ -43,18 +43,19 @@ export function Drawer({
 }) {
   return (
     <details open={open} className={clsx("group overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm transition hover:shadow-lift open:shadow-lift", (tone || stripe) && ["border-l-[5px]", stripe ?? STRIPE[tone!]], className)}>
-      <summary className="flex cursor-pointer list-none flex-wrap items-center gap-3 px-5 py-4 transition-colors hover:bg-orange-50/50 group-open:bg-zinc-50/80 [&::-webkit-details-marker]:hidden">
+      <summary className="flex cursor-pointer list-none flex-wrap items-center gap-3 px-4 py-3.5 sm:px-5 sm:py-4 transition-colors hover:bg-orange-50/50 group-open:bg-zinc-50/80 [&::-webkit-details-marker]:hidden">
         <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-zinc-100 text-zinc-500 transition group-open:bg-brand-gradient group-open:text-white group-hover:bg-orange-100 group-hover:text-orange-700">
           <ChevronRight className="size-4 transition-transform group-open:rotate-90" />
         </span>
         {tone && <StatusDot tone={tone} title={toneTitle} />}
-        <span className="min-w-0 flex-1">
+        {/* Largura mínima: no celular o resumo desce para a linha de baixo em vez de cortar o título */}
+        <span className="min-w-[10rem] flex-1">
           <span className="block truncate text-[0.95rem] font-semibold text-zinc-900">{title}</span>
           {subtitle && <span className="block truncate text-xs text-zinc-500">{subtitle}</span>}
         </span>
         {meta && <span className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-zinc-600">{meta}</span>}
       </summary>
-      <div className={clsx("border-t border-zinc-100", bodyClassName ?? "p-5")}>{children}</div>
+      <div className={clsx("border-t border-zinc-100", bodyClassName ?? "p-4 sm:p-5")}>{children}</div>
     </details>
   );
 }

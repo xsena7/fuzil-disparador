@@ -118,7 +118,7 @@ export default async function HomePage() {
         </Link>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Stat label="BMs conectadas" value={businesses.length} sub={`${ready.size} ${ready.size === 1 ? "pronta" : "prontas"} para disparar`} tone="blue" icon={<Building2 className="size-4" />} />
         <Stat label="Disponível hoje" value={formatLimit(readyStats.available)} sub={`só das BMs prontas · ${usedPct.toLocaleString("pt-BR")}% usado`} tone="brand" icon={<Gauge className="size-4" />} />
         <Stat label="Enviadas (24h)" value={n(t.sent)} sub={`${pct(Number(t.delivered), Number(t.sent))} entregues · ${pct(Number(t.read), Number(t.delivered))} lidas`} tone="green" icon={<Send className="size-4" />} />

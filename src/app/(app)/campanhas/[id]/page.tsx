@@ -53,9 +53,9 @@ export default async function CampaignPage({ params, searchParams }: { params: P
   const step = (await searchParams).etapa ?? (started ? "metricas" : "template");
 
   return (
-    <div className="relative -mx-10 -my-9 min-h-screen overflow-hidden">
+    <div className="relative -mx-4 -mb-8 -mt-6 min-h-screen overflow-hidden md:-mx-10 md:-my-9">
       <div className="relative">
-      <div className="sticky top-0 z-10 flex flex-wrap items-center gap-3 border-b border-zinc-200/70 bg-white/85 px-6 py-3 backdrop-blur">
+      <div className="sticky top-0 z-10 flex flex-wrap items-center gap-3 border-b border-zinc-200/70 bg-white/85 px-4 py-3 backdrop-blur md:px-6">
         <Link href="/campanhas" className="rounded-full border border-zinc-200 p-1.5 hover:bg-zinc-50"><ArrowLeft className="size-4" /></Link>
         <CampaignName id={campaign.id} name={campaign.name} />
         <CampaignStatusBadge s={campaign.status} />
@@ -77,7 +77,7 @@ export default async function CampaignPage({ params, searchParams }: { params: P
               key={s.key}
               href={`/campanhas/${id}?etapa=${s.key}`}
               className={clsx(
-                "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition",
+                "flex shrink-0 items-center gap-3 whitespace-nowrap rounded-xl px-3 py-2.5 text-sm transition",
                 step === s.key ? "bg-white font-semibold text-zinc-900 shadow-lift ring-2 ring-orange-300/70" : "bg-white/70 font-medium text-zinc-700 shadow-sm ring-1 ring-zinc-200 hover:bg-white hover:text-zinc-900",
               )}
             >
@@ -86,7 +86,7 @@ export default async function CampaignPage({ params, searchParams }: { params: P
             </Link>
           ))}
         </nav>
-        <div className="min-w-0 flex-1 p-8">
+        <div className="min-w-0 flex-1 p-4 md:p-8">
           {step === "template" && <TemplateStep campaignId={id} workspaceId={auth.workspace.id} locked={started} />}
           {step === "conteudo" && (
             <>
@@ -238,7 +238,7 @@ async function SendStep({ campaignId }: { campaignId: string }) {
   return (
     <div className="space-y-6">
       <h2 className="text-lg font-semibold">Envio</h2>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Stat label="Destinatários pendentes" value={pending.toLocaleString("pt-BR")} />
         <Stat label="Números aptos" value={plan.senders.length} sub={`${plan.skipped.length} de fora`} tone={plan.senders.length ? "green" : "red"} />
         <Stat label="Limite oficial das BMs (24h)" value={formatLimit(capacity)} sub={capacity !== Infinity && capacity < pending ? "Menor que a audiência: o Fuzil tenta mandar tudo mesmo assim. O que a Meta recusar vira falha e o crédito volta" : "O Fuzil tenta mandar tudo"} tone={capacity !== Infinity && capacity < pending ? "amber" : "default"} />

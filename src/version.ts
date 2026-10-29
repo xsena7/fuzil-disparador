@@ -6,7 +6,11 @@ export const CHANGELOG: Array<{ version: string; date: string; items: string[] }
   {
     version: "3.48",
     date: "29/10/2026",
-    items: ["App Celular: o Fuzil agora instala na tela do celular (iPhone e Android) com o ícone do Fuzil e abre em tela cheia. Passo a passo no menu, em Ajuda → App Celular"],
+    items: [
+      "Celular: Chat arrumado (tela inteira, escolher o número no topo, botões só com ícone na conversa)",
+      "Celular: campanha aberta sem cortar na borda, cartões de números em 2 colunas e mais compactos em todas as telas",
+      "Celular: em Conexões, suas conexões aparecem primeiro; gavetas não cortam mais o título; campos não dão zoom sozinhos no iPhone",
+      "App Celular: o Fuzil agora instala na tela do celular (iPhone e Android) com o ícone do Fuzil e abre em tela cheia. Passo a passo no menu, em Ajuda → App Celular"],
   },
   {
     version: "3.47",

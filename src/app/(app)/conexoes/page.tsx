@@ -108,13 +108,15 @@ export default async function ConnectionsPage() {
 
   return (
     <div className="mx-auto max-w-[1520px] xl:grid xl:grid-cols-[minmax(0,1fr)_360px] xl:gap-6">
-      <div className="min-w-0">
+      <div className="flex min-w-0 flex-col md:block">
       <PageHeader
         title="Conexões"
         description="BMs, WABAs e números conectados. Qualidade e limite são atualizados automaticamente a cada 10 minutos e pelos webhooks da Meta."
         actions={<VerifyAllButton>Sincronizar tudo</VerifyAllButton>}
       />
 
+      {/* Celular: suas conexões primeiro, as opções de conectar depois */}
+      <div className="max-md:order-2 max-md:mt-10">
       <h2 className="mb-4 text-base font-semibold">Nova conexão</h2>
       <ConnectGuide open={businesses.length === 0} />
       <EmbeddedSignup appId={env.metaAppId()} configId={env.metaConfigId()} graphVersion={env.metaGraphVersion()} />
@@ -182,8 +184,10 @@ export default async function ConnectionsPage() {
         </details>
       )}
 
-      <div data-tour="connections">
-      <div className="mt-10 mb-4 flex flex-wrap items-center gap-3">
+      </div>
+
+      <div data-tour="connections" className="max-md:order-1">
+      <div className="mt-10 mb-4 max-md:mt-0 flex flex-wrap items-center gap-3">
         <h2 className="text-base font-semibold">Suas conexões</h2>
         {businesses.length > 0 && (
           <VerifyAllButton className="px-3 py-1.5 text-xs">Verificar todas</VerifyAllButton>

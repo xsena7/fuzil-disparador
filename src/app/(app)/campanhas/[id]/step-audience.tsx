@@ -88,7 +88,7 @@ export function StepAudience({ campaignId, fileName, stats, locked }: { campaign
 
       {stats && (
         <>
-          <div className="grid max-w-4xl gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-2 max-w-4xl gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <Stat label="Aptos ao envio" value={stats.sendable.toLocaleString("pt-BR")} tone="green" />
             <Stat label="Linhas no arquivo" value={stats.totalLines.toLocaleString("pt-BR")} />
             <Stat label="Já cadastrados" value={stats.alreadyKnown.toLocaleString("pt-BR")} />

@@ -78,3 +78,12 @@ input, select, textarea { font: inherit; }
   to { width: 0%; }
 }
 .animate-toast-bar { animation: toast-bar linear forwards; }
+
+/* Celular: campo com letra menor que 16px faz o iPhone dar zoom sozinho ao tocar */
+@media (max-width: 640px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}

@@ -297,7 +297,7 @@ export function ChatApp({
   const totalUnread = Object.values(unreadByPhone).reduce((a, b) => a + b, 0);
 
   return (
-    <div className="-mx-10 -my-9 flex h-[100dvh] overflow-hidden bg-[#f4f4f7]">
+    <div className="-mx-4 -mb-8 -mt-6 flex h-[calc(100dvh-3.5rem)] overflow-hidden bg-[#f4f4f7] md:-mx-10 md:-my-9 md:h-[100dvh]">
       {/* Caixas: grupos e números */}
       <aside className="flex w-64 shrink-0 flex-col border-r border-zinc-200 bg-white max-md:hidden">
         <div className="border-b border-zinc-100 p-4">
@@ -359,8 +359,22 @@ export function ChatApp({
       </aside>
 
       {/* Lista de conversas */}
-      <section className={clsx("flex w-80 shrink-0 flex-col border-r border-zinc-200 bg-white", activeId && "max-lg:hidden")}>
+      <section className={clsx("flex w-full min-w-0 flex-col border-r border-zinc-200 bg-white lg:w-80 lg:shrink-0", activeId && "max-lg:hidden")}>
         <div className="space-y-3 border-b border-zinc-100 p-4">
+          {/* Celular: a coluna dos números some, então escolhe o número aqui */}
+          <select
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm font-medium outline-none focus:border-brand-400 md:hidden"
+            aria-label="Número"
+          >
+            <option value="">Todos os números{totalUnread ? ` (${totalUnread} não lidas)` : ""}</option>
+            {visiblePhones.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.display} · {p.bm}{unreadByPhone[p.id] ? ` (${unreadByPhone[p.id]})` : ""}
+              </option>
+            ))}
+          </select>
           <div className="flex items-center gap-2">
             <div className="relative flex-1">
               <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-400" />
@@ -447,7 +461,7 @@ export function ChatApp({
           <div className="flex flex-1 items-center justify-center"><Loader2 className="size-6 animate-spin text-zinc-300" /></div>
         ) : (
           <>
-            <header className="flex items-center gap-3 border-b border-zinc-200 bg-white px-5 py-3">
+            <header className="flex items-center gap-2 border-b border-zinc-200 bg-white px-3 py-3 sm:gap-3 sm:px-5">
               <button onClick={() => setActiveId(null)} className="rounded-lg p-1 text-zinc-500 hover:bg-zinc-100 lg:hidden" aria-label="Voltar"><ArrowLeft className="size-5" /></button>
               <span className={clsx("flex size-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br text-sm font-semibold text-white", avatarColor(detail.contactPhone))}>
                 {initials(detail.contactName, detail.contactPhone)}
@@ -462,22 +476,22 @@ export function ChatApp({
                 className={clsx("flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium", left ? "bg-emerald-50 text-emerald-700" : "bg-zinc-100 text-zinc-500")}
                 title={left ? `Janela de 24h aberta: dá para mandar mensagem livre por mais ${left}.` : "Janela de 24h fechada: só template até o cliente responder."}
               >
-                <Clock className="size-3.5" /> {left ? left : "Fechada"}
+                <Clock className="size-3.5" /> <span className={clsx(!left && "max-sm:hidden")}>{left ? left : "Fechada"}</span>
               </span>
               {detail.status !== "CLOSED" ? (
                 <>
                   {detail.status === "OPEN" && (
-                    <button onClick={() => setStatus("ATTENDING")} className="flex shrink-0 items-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-3 py-1.5 text-sm font-medium hover:bg-zinc-50">
-                      <Hand className="size-4 text-sky-600" /> Assumir
+                    <button onClick={() => setStatus("ATTENDING")} title="Assumir" className="flex shrink-0 items-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-3 py-1.5 text-sm font-medium hover:bg-zinc-50">
+                      <Hand className="size-4 text-sky-600" /> <span className="max-sm:hidden">Assumir</span>
                     </button>
                   )}
-                  <button onClick={() => setStatus("CLOSED")} className="flex shrink-0 items-center gap-1.5 rounded-xl bg-ink px-3 py-1.5 text-sm font-medium text-white hover:bg-zinc-800">
-                    <CheckCircle2 className="size-4" /> Finalizar
+                  <button onClick={() => setStatus("CLOSED")} title="Finalizar" className="flex shrink-0 items-center gap-1.5 rounded-xl bg-ink px-3 py-1.5 text-sm font-medium text-white hover:bg-zinc-800">
+                    <CheckCircle2 className="size-4" /> <span className="max-sm:hidden">Finalizar</span>
                   </button>
                 </>
               ) : (
-                <button onClick={() => setStatus("OPEN")} className="flex items-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-3 py-1.5 text-sm font-medium hover:bg-zinc-50">
-                  <RotateCcw className="size-4" /> Reabrir
+                <button onClick={() => setStatus("OPEN")} title="Reabrir" className="flex items-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-3 py-1.5 text-sm font-medium hover:bg-zinc-50">
+                  <RotateCcw className="size-4" /> <span className="max-sm:hidden">Reabrir</span>
                 </button>
               )}
               <button onClick={() => setShowInfo(!showInfo)} className="hidden shrink-0 rounded-lg p-1.5 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 lg:block" aria-label="Painel do contato">

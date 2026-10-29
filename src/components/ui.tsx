@@ -97,14 +97,14 @@ const STAT: Record<StatTone, { box: string; bar: string; value: string; icon: st
 export function Stat({ label, value, sub, tone = "default", icon }: { label: string; value: ReactNode; sub?: ReactNode; tone?: StatTone; icon?: ReactNode }) {
   const t = STAT[tone];
   return (
-    <div className={clsx("relative overflow-hidden rounded-2xl border p-5 pt-6 shadow-soft transition hover:-translate-y-0.5 hover:shadow-lift animate-fade-up", t.box)}>
+    <div className={clsx("relative min-w-0 overflow-hidden rounded-2xl border p-3.5 pt-4 shadow-soft transition hover:-translate-y-0.5 hover:shadow-lift animate-fade-up sm:p-5 sm:pt-6", t.box)}>
       <span aria-hidden className={clsx("absolute inset-x-0 top-0 h-1", t.bar)} />
       <div className="flex items-center justify-between gap-2">
-        <div className="text-xs font-semibold uppercase tracking-wide text-zinc-600">{label}</div>
-        {icon && <div className={clsx("flex size-8 items-center justify-center rounded-lg", t.icon)}>{icon}</div>}
+        <div className="text-[11px] font-semibold uppercase tracking-wide text-zinc-600 sm:text-xs">{label}</div>
+        {icon && <div className={clsx("flex size-7 shrink-0 items-center justify-center rounded-lg sm:size-8", t.icon)}>{icon}</div>}
       </div>
-      <div className={clsx("mt-2 text-[1.7rem] font-bold leading-tight tracking-tight tabular-nums", t.value)}>{value}</div>
-      {sub && <div className="mt-1 text-xs font-medium text-zinc-500">{sub}</div>}
+      <div className={clsx("mt-1.5 break-words text-[1.35rem] font-bold leading-tight tracking-tight tabular-nums sm:mt-2 sm:text-[1.7rem]", t.value)}>{value}</div>
+      {sub && <div className="mt-1 text-[11px] font-medium text-zinc-500 sm:text-xs">{sub}</div>}
     </div>
   );
 }

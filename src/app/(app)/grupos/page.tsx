@@ -151,7 +151,7 @@ export default async function GroupsPage() {
                 </>
               }
             >
-              <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 <Stat label="Limite total (24h)" value={formatLimit(s.totalLimit)} sub={`${g.members.filter((m) => isReady(m.businessId)).length} de ${g.members.length} BMs prontas somadas`} />
                 <Stat label="Disponível agora" value={formatLimit(s.available)} sub={`${s.usedToday.toLocaleString("pt-BR")} usados nas últimas 24h`} tone="green" />
                 <Stat label="Números ativos" value={`${s.activePhones}/${s.phones}`} />

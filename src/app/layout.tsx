@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   title: "Fuzil Disparador",
   description: "Gestão de BMs e disparos pela API oficial do WhatsApp",
   // App no celular (iPhone usa estes; o Android usa o manifest)
-  appleWebApp: { capable: true, title: "Fuzil", statusBarStyle: "black-translucent" },
+  appleWebApp: { capable: true, title: "Fuzil", statusBarStyle: "black" },
 };
 
 export const viewport: Viewport = { themeColor: "#FF6A2B" };

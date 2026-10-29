@@ -161,7 +161,7 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
           Todos os meses
         </Link>
       </div>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Stat label="Entradas" value={brl(income)} tone="green" icon={<ArrowDownLeft className="size-4" />} />
         <Stat label="Despesas" value={brl(expense)} tone="red" icon={<ArrowUpRight className="size-4" />} />
         <Stat label="Lucro" value={brl(profit)} tone={profit >= 0 ? "brand" : "red"} />

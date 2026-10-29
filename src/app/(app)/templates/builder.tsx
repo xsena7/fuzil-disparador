@@ -101,10 +101,10 @@ export function TemplateBuilder({
       <input type="hidden" name="payload" value={payload} />
       <div className="space-y-5">
         <Card className="space-y-3 p-5">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
             <Sparkles className="size-4 text-brand-500" />
-            <div className="flex-1 font-semibold">Começar de um modelo pronto</div>
-            <span className="text-xs text-zinc-500">opcional · preenche tudo e você edita</span>
+            <div className="flex-1 whitespace-nowrap font-semibold">Começar de um modelo pronto</div>
+            <span className="w-full text-xs text-zinc-500 sm:w-auto">opcional · preenche tudo e você edita</span>
           </div>
           <div className="flex flex-wrap gap-2">
             {TEMPLATE_PRESETS.map((p) => (
