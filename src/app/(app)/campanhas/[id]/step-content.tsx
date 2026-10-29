@@ -80,7 +80,7 @@ function SourceEditor({
       ) : (
         <>
           <Input value={src.type === "fixed" ? src.value : ""} disabled={disabled} onChange={(e) => onChange({ type: "fixed", value: e.target.value })} placeholder="Texto que todos vão receber" />
-          <p className="mt-1 text-[11px] text-zinc-500">Pode misturar com a planilha: ex. <code>Saldo em aberto: {"{{var3}}"}</code></p>
+          <p className="mt-1 text-[11px] text-zinc-500">Pode misturar com a planilha: ex. <code>Saldo em aberto: {"{{var3}}"}</code>. A Meta não deixa pular linha dentro de variável: sai tudo numa linha só. Para cada item numa linha, ponha o texto no próprio template.</p>
         </>
       )}
       {sample && Object.keys(sample.data).length > 0 && (
