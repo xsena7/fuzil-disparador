@@ -1,6 +1,41 @@
-import { ArrowRight, BarChart3, CheckCircle2, Coins, FileText, Layers, Link2, MessagesSquare, RefreshCw, Repeat, ShieldCheck, Sparkles, Zap } from "lucide-react";
+import { ArrowRight, BarChart3, Building2, CheckCircle2, Coins, FileText, Layers, Link2, MessagesSquare, Quote, RefreshCw, Repeat, ShieldCheck, Sparkles, Users, Zap } from "lucide-react";
 import { company } from "@/lib/company";
 import { SUPPORT_WHATSAPP } from "@/lib/onboarding";
+import { prisma } from "@/lib/db";
+
+// Depoimentos de clientes de verdade (nome, empresa e texto autorizados por eles). Vazio = a seção não aparece no site
+const TESTIMONIALS: Array<{ name: string; role: string; text: string }> = [
+  // { name: "Nome Sobrenome", role: "Cargo · Empresa", text: "O que mudou depois que começou a usar o Fuzil..." },
+];
+
+// Mensagens já enviadas pelo Fuzil (número real, guardado por 10 min para não pesar no banco)
+let sentCache = { at: 0, n: 0 };
+async function totalSent() {
+  if (Date.now() - sentCache.at < 600_000) return sentCache.n;
+  const n = await prisma.campaignRecipient.count({ where: { status: { in: ["SENT", "DELIVERED", "READ"] } } }).catch(() => sentCache.n);
+  sentCache = { at: Date.now(), n };
+  return n;
+}
+const roundDown = (n: number) => (n >= 1_000_000 ? `${Math.floor(n / 100_000) / 10} milhões`.replace(".", ",") : n >= 10_000 ? `${Math.floor(n / 1000)} mil` : n.toLocaleString("pt-BR"));
+
+const AUDIENCES = [
+  {
+    icon: Building2,
+    title: "Para empresas",
+    lead: "Avise todos os seus clientes no WhatsApp oficial",
+    points: ["Confirmação de pedido, cobrança, entrega e atendimento", "Milhares de mensagens por dia sem conta travando", "Respostas dos clientes num chat só", "Relatório com entregues, lidas e cliques"],
+    cta: "Quero disparar para meus clientes",
+    msg: "Oi! Tenho uma empresa e quero disparar mensagens no WhatsApp para meus clientes com o Fuzil.",
+  },
+  {
+    icon: Users,
+    title: "Para agências e quem dispara para clientes",
+    lead: "A ferramenta para operar várias contas sem dor de cabeça",
+    points: ["Some o limite de várias BMs num grupo", "Rodízio automático entre os números", "Template padrão sobe em todas as contas", "Relatório ao vivo para mandar ao seu cliente"],
+    cta: "Quero a ferramenta para minha agência",
+    msg: "Oi! Tenho uma agência e quero usar o Fuzil para disparar para meus clientes.",
+  },
+];
 
 // Diferenciais: o que o Fuzil faz sozinho e as plataformas tradicionais deixam na mão de quem opera
 const DIFFS = [
@@ -59,15 +94,17 @@ const COMPARE: Array<[string, string, string]> = [
 ];
 
 const STEPS = [
-  { title: "Libere o app do Fuzil na sua BM", text: "Peça acesso ao app do Fuzil, crie o usuário do sistema e gere o token. O passo a passo fica dentro do painel." },
+  { title: "Conecte sua conta do WhatsApp", text: "Pelo botão oficial da Meta, em uns 2 minutos. Sem senha e sem token: a própria Meta pergunta qual conta e qual número." },
   { title: "Monte o grupo e o template", text: "Junte as BMs num grupo. O template padrão sobe sozinho em todas e você acompanha a aprovação da Meta." },
   { title: "Suba a planilha e dispare", text: "Ligue as variáveis às colunas, confira a prévia e dispare. O Fuzil distribui os envios e mostra tudo ao vivo." },
 ];
 
-export default function SitePage() {
+export default async function SitePage() {
   const c = company();
   const whatsapp = c.phone.replace(/\D/g, "") || SUPPORT_WHATSAPP;
-  const wa = `https://wa.me/${whatsapp}?text=${encodeURIComponent("Oi! Quero participar dos testes do Fuzil Disparador.")}`;
+  const waTo = (msg: string) => `https://wa.me/${whatsapp}?text=${encodeURIComponent(msg)}`;
+  const wa = waTo("Oi! Quero começar a disparar com o Fuzil Disparador.");
+  const sent = await totalSent();
   return (
     <>
       <section className="relative overflow-hidden bg-ink text-white">
@@ -80,18 +117,23 @@ export default function SitePage() {
                 <Zap className="size-3.5" /> API oficial do WhatsApp Business
               </span>
               <span className="inline-flex items-center gap-2 rounded-full bg-emerald-500/15 px-3 py-1 text-xs font-medium text-emerald-300 ring-1 ring-emerald-400/30">
-                <span className="size-1.5 rounded-full bg-emerald-400" /> Em testes fechados
+                <span className="size-1.5 rounded-full bg-emerald-400" /> R$ 0,01 por disparo · sem mensalidade
               </span>
             </div>
             <h1 className="text-4xl font-semibold leading-tight tracking-tight md:text-5xl">
-              Várias BMs, <span className="bg-brand-gradient bg-clip-text text-transparent">um disparo só</span>.
+              Avise milhares de clientes no WhatsApp, <span className="bg-brand-gradient bg-clip-text text-transparent">sem conta travando</span>.
             </h1>
             <p className="mt-5 max-w-xl text-lg text-zinc-300">
-              O {c.brand} soma o limite de todas as suas BMs, alterna sozinho entre os números e cuida dos templates em todas as contas. Você sobe a planilha e acompanha tudo ao vivo, pela API oficial do WhatsApp.
+              Disparo pelo WhatsApp oficial da Meta, em grande quantidade. O {c.brand} junta suas contas, divide os envios entre elas sozinho e tira do disparo a que der problema. Você sobe a planilha e acompanha tudo ao vivo.
             </p>
+            {sent >= 10_000 && (
+              <p className="mt-4 text-sm text-zinc-400">
+                <b className="text-white">{roundDown(sent)}</b> de mensagens já enviadas pelo {c.brand}
+              </p>
+            )}
             <div className="mt-8 flex flex-wrap gap-3">
               <a href={wa} className="inline-flex items-center gap-2 rounded-xl bg-brand-gradient px-5 py-3 font-medium text-white shadow-lg shadow-orange-500/20">
-                Quero participar dos testes <ArrowRight className="size-4" />
+                Quero começar <ArrowRight className="size-4" />
               </a>
               <a href={`${c.appUrl}/login`} className="rounded-xl bg-white/10 px-5 py-3 font-medium text-white ring-1 ring-white/15 hover:bg-white/15">Já tenho acesso</a>
             </div>
@@ -133,6 +175,28 @@ export default function SitePage() {
               </div>
             </div>
           </div>
+        </div>
+      </section>
+
+      <section id="para-quem" className="mx-auto max-w-6xl scroll-mt-20 px-5 pt-20">
+        <div className="mb-3 text-sm font-semibold uppercase tracking-wider text-orange-600">Para quem é</div>
+        <h2 className="text-3xl font-semibold tracking-tight text-zinc-900">Escolha o seu caminho</h2>
+        <div className="mt-8 grid gap-5 md:grid-cols-2">
+          {AUDIENCES.map((a) => (
+            <div key={a.title} className="flex flex-col rounded-3xl border border-zinc-200/80 bg-white p-7 shadow-soft">
+              <span className="mb-4 flex size-11 items-center justify-center rounded-xl bg-brand-gradient text-white shadow-md shadow-orange-500/25"><a.icon className="size-5" /></span>
+              <div className="text-sm font-semibold uppercase tracking-wide text-orange-600">{a.title}</div>
+              <div className="mt-1 text-xl font-semibold text-zinc-900">{a.lead}</div>
+              <ul className="mt-4 flex-1 space-y-2">
+                {a.points.map((pt) => (
+                  <li key={pt} className="flex items-start gap-2 text-sm text-zinc-600"><CheckCircle2 className="mt-0.5 size-4 shrink-0 text-emerald-600" /> {pt}</li>
+                ))}
+              </ul>
+              <a href={waTo(a.msg)} className="mt-6 inline-flex items-center justify-center gap-2 rounded-xl bg-ink px-5 py-3 font-medium text-white hover:opacity-90">
+                {a.cta} <ArrowRight className="size-4" />
+              </a>
+            </div>
+          ))}
         </div>
       </section>
 
@@ -205,18 +269,59 @@ export default function SitePage() {
         </div>
       </section>
 
-      <section id="contato" className="mx-auto max-w-6xl scroll-mt-20 px-5 py-20">
+      <section id="preco" className="mx-auto max-w-6xl scroll-mt-20 px-5 py-20">
+        <div className="grid items-center gap-10 md:grid-cols-[1fr_1.1fr]">
+          <div>
+            <div className="mb-3 text-sm font-semibold uppercase tracking-wider text-orange-600">Preço</div>
+            <h2 className="text-3xl font-semibold tracking-tight text-zinc-900">Paga só o que enviar</h2>
+            <p className="mt-2 max-w-md text-zinc-500">Sem mensalidade, sem plano e sem fidelidade. Você coloca crédito pelo Pix e usa quando quiser.</p>
+          </div>
+          <div className="rounded-3xl bg-ink p-8 text-white shadow-lift">
+            <div className="flex items-end gap-2">
+              <span className="text-5xl font-bold tracking-tight">R$ 0,01</span>
+              <span className="pb-1.5 text-zinc-400">por disparo</span>
+            </div>
+            <ul className="mt-6 space-y-2.5 text-sm text-zinc-300">
+              {["Sem mensalidade: é o único valor cobrado pelo Fuzil", "Mensagem que não sai volta como crédito", "Crédito pelo Pix, cai na hora", "Todas as funções incluídas: chat, fluxos, relatório"].map((t) => (
+                <li key={t} className="flex items-start gap-2"><CheckCircle2 className="mt-0.5 size-4 shrink-0 text-emerald-400" /> {t}</li>
+              ))}
+            </ul>
+            <a href={wa} className="mt-7 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-brand-gradient px-5 py-3 font-medium">
+              Quero começar <ArrowRight className="size-4" />
+            </a>
+            <p className="mt-4 text-xs leading-relaxed text-zinc-500">
+              A Meta (dona do WhatsApp) cobra a parte dela por mensagem direto no cartão da sua conta, conforme a tabela oficial do WhatsApp Business.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {TESTIMONIALS.length > 0 && (
+        <section id="depoimentos" className="scroll-mt-20 bg-zinc-50">
+          <div className="mx-auto max-w-6xl px-5 py-20">
+            <h2 className="text-3xl font-semibold tracking-tight text-zinc-900">Quem usa</h2>
+            <div className="mt-8 grid gap-5 md:grid-cols-3">
+              {TESTIMONIALS.map((t) => (
+                <figure key={t.name} className="rounded-2xl bg-white p-6 shadow-soft ring-1 ring-zinc-200/70">
+                  <Quote className="size-5 text-orange-500" />
+                  <blockquote className="mt-3 text-sm leading-relaxed text-zinc-700">{t.text}</blockquote>
+                  <figcaption className="mt-4 text-sm"><b className="text-zinc-900">{t.name}</b><span className="block text-zinc-500">{t.role}</span></figcaption>
+                </figure>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      <section id="contato" className="mx-auto max-w-6xl scroll-mt-20 px-5 pb-20">
         <div className="relative overflow-hidden rounded-3xl bg-ink p-10 text-white">
           <div className="pointer-events-none absolute -right-20 -top-24 size-80 rounded-full bg-orange-500/25 blur-3xl" />
           <div className="relative">
-            <span className="inline-flex items-center gap-2 rounded-full bg-emerald-500/15 px-3 py-1 text-xs font-medium text-emerald-300 ring-1 ring-emerald-400/30">
-              <span className="size-1.5 rounded-full bg-emerald-400" /> Vagas limitadas
-            </span>
-            <h2 className="mt-4 text-3xl font-semibold tracking-tight">Estamos em testes fechados</h2>
-            <p className="mt-2 max-w-xl text-zinc-300">O {c.brand} ainda não está aberto ao público. Conte como é a sua operação e a gente avisa quando tiver uma vaga nos testes.</p>
+            <h2 className="text-3xl font-semibold tracking-tight">Pronto para disparar?</h2>
+            <p className="mt-2 max-w-xl text-zinc-300">Conte como é a sua operação: a gente te ajuda a conectar a primeira conta e fazer o primeiro disparo.</p>
             <div className="mt-6 flex flex-wrap gap-3">
               <a href={wa} className="inline-flex items-center gap-2 rounded-xl bg-brand-gradient px-5 py-3 font-medium">
-                Quero participar dos testes <ArrowRight className="size-4" />
+                Falar com a gente no WhatsApp <ArrowRight className="size-4" />
               </a>
               {c.email && <a href={`mailto:${c.email}`} className="rounded-xl bg-white/10 px-5 py-3 font-medium ring-1 ring-white/15 hover:bg-white/15">{c.email}</a>}
             </div>

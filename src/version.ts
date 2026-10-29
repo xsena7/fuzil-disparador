@@ -2,6 +2,15 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "3.40",
+    date: "29/10/2026",
+    items: [
+      "Site: nova página inicial para vender. Frase principal para quem não entende de BM (\"Avise milhares de clientes no WhatsApp, sem conta travando\"), um caminho para empresas e outro para agências, e preço: R$ 0,01 por disparo, sem mensalidade",
+      "Site: saiu o \"em testes fechados\" e o \"Comprar BM\" do menu. A loja de BMs continua no ar só pelo link direto (/vendas)",
+      "Site: seção de depoimentos pronta, aparece quando houver depoimentos reais. Mostra o total de mensagens já enviadas quando passar de 10 mil",
+    ],
+  },
+  {
     version: "3.39",
     date: "28/10/2026",
     items: [
