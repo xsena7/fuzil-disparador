@@ -7,6 +7,7 @@ import { AutoRefresh } from "@/app/(app)/campanhas/[id]/auto-refresh";
 import { Countdown } from "@/components/countdown";
 import { keysForReport, parsePixKeys } from "@/lib/pix-keys";
 import { reportNumbers } from "@/lib/report-numbers";
+import { formatPhone } from "@/lib/phone";
 import { Funnel, PixCopy, PrintButton, Ring } from "./charts";
 
 const n = (v: number) => v.toLocaleString("pt-BR");
@@ -14,6 +15,9 @@ const when = (d: Date | null | undefined) =>
   d ? d.toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo" }) : "—";
 
 const STATUS: Record<string, string> = { RUNNING: "Enviando", COMPLETED: "Concluída", PAUSED: "Pausada", SCHEDULED: "Agendada", CANCELLED: "Cancelada", DRAFT: "Rascunho" };
+
+// Resposta sem texto (áudio, foto...): mostra o tipo
+const TYPE_PT: Record<string, string> = { audio: "🎤 Áudio", image: "📷 Foto", video: "🎬 Vídeo", document: "📄 Documento", sticker: "Figurinha", location: "📍 Localização", contacts: "👤 Contato" };
 
 const brl = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
@@ -41,6 +45,13 @@ export async function ReportView({ id, workspaceId, publicView = false, expiresA
   const price = campaign.reportPrice ?? ws.reportPrice ?? 0;
   const total = Math.round(r.sent * price * 100) / 100;
   const allKeys = parsePixKeys(ws.pixKeys);
+  // Quem respondeu: as respostas do disparo (mais novas primeiro), num quadro com rolagem
+  const replies = await prisma.$queryRaw<Array<{ id: string; text: string | null; type: string; at: Date; phone: string; name: string | null }>>`
+    SELECT i.id, i.text, i.type, i."receivedAt" AS at, r.phone, r.name
+    FROM "InboundMessage" i JOIN "CampaignRecipient" r ON r.id = i."recipientId"
+    WHERE r."campaignId" = ${id} AND i.type <> 'reaction'
+    ORDER BY i."receivedAt" DESC
+    LIMIT 1000`;
   const keys = total > 0 ? keysForReport(allKeys, campaign.reportPixKeyId) : [];
 
   return (
@@ -171,6 +182,32 @@ export async function ReportView({ id, workspaceId, publicView = false, expiresA
             ]}
           />
         </section>
+
+        {replies.length > 0 && (
+          <section className="report-card rounded-2xl border border-zinc-200 bg-white shadow-sm">
+            <div className="p-5 pb-3 sm:p-6 sm:pb-3">
+              <h2 className="font-semibold text-zinc-900">Quem respondeu</h2>
+              <p className="text-sm text-zinc-500">As respostas que chegaram deste disparo, das mais novas para as mais antigas.</p>
+            </div>
+            {/* Mostra umas 10 e o resto na rolagem (no PDF sai tudo) */}
+            <div className="max-h-[44rem] overflow-y-auto border-t border-zinc-100 print:max-h-none print:overflow-visible">
+              <ul className="divide-y divide-zinc-100">
+                {replies.map((x) => (
+                  <li key={x.id} className="flex gap-3 px-5 py-3 sm:px-6">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-baseline gap-x-2 text-sm">
+                        <b className="font-semibold text-zinc-900">{x.name || "Sem nome"}</b>
+                        <span className="tabular-nums text-zinc-500">{formatPhone(x.phone)}</span>
+                      </div>
+                      <p className="mt-0.5 whitespace-pre-wrap break-words text-sm text-zinc-700">{x.text || TYPE_PT[x.type] || "Mensagem"}</p>
+                    </div>
+                    <span className="shrink-0 pt-0.5 text-xs tabular-nums text-zinc-400">{when(x.at)}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </section>
+        )}
 
         <footer className="flex flex-wrap items-center justify-between gap-2 pt-4 text-xs text-zinc-400">
           <span>Gerado pelo Fuzil Disparador em {when(new Date())}</span>
