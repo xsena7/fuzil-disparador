@@ -8,6 +8,8 @@ import { formatPhone } from "@/lib/phone";
 import { Card, Stat, Table, Td } from "@/components/ui";
 import { QualityBadge } from "@/components/status";
 import { errorTitlePt } from "@/lib/meta-errors-text";
+import { campaignReplies } from "@/lib/campaign-replies";
+import { ReplyList } from "@/app/relatorio/replies";
 
 const RESULT: Record<string, { label: string; cls: string }> = {
   READ: { label: "Lida", cls: "text-emerald-700" },
@@ -20,7 +22,7 @@ const RESULT: Record<string, { label: string; cls: string }> = {
 };
 
 export async function Metrics({ campaignId }: { campaignId: string }) {
-  const m = await campaignMetrics(campaignId);
+  const [m, replies] = await Promise.all([campaignMetrics(campaignId), campaignReplies(campaignId)]);
   const campaignRow = await prisma.campaign.findUnique({ where: { id: campaignId }, select: { status: true } });
   const canRetry = ["COMPLETED", "PAUSED"].includes(campaignRow?.status ?? "") && Number(m.totals.failed) > 0;
   const recipients = await prisma.campaignRecipient.findMany({
@@ -137,13 +139,14 @@ export async function Metrics({ campaignId }: { campaignId: string }) {
           </Table>
         </div>
         <div>
-          <div className="mb-2 font-semibold">Respostas mais comuns</div>
-          <Table head={["Resposta", "Qtd."]}>
-            {m.topReplies.map((r) => (
-              <tr key={r.text}><Td>{r.text}</Td><Td>{n(r.count)}</Td></tr>
-            ))}
-            {m.topReplies.length === 0 && <tr><Td colSpan={2} className="text-center text-zinc-500">Nenhuma resposta.</Td></tr>}
-          </Table>
+          <div className="mb-2 font-semibold">Quem respondeu</div>
+          {replies.length ? (
+            <div className="overflow-hidden rounded-2xl border border-zinc-200/70 bg-white shadow-soft">
+              <ReplyList replies={replies} />
+            </div>
+          ) : (
+            <Card className="p-4 text-center text-sm text-zinc-500">Nenhuma resposta ainda.</Card>
+          )}
         </div>
       </div>
 

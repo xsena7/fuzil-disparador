@@ -7,7 +7,8 @@ export const CHANGELOG: Array<{ version: string; date: string; items: string[] }
     version: "3.51",
     date: "30/10/2026",
     items: ["Relatório do cliente: voltou o quadro \"Quem respondeu\" com nome, número, resposta e horário. Mostra 10 por vez com rolagem (no PDF sai tudo)",
-      "Quem respondeu: barra de busca que filtra enquanto digita, pelo nome, pelo número (qualquer parte dele) ou pelo que a pessoa respondeu"],
+      "Quem respondeu: barra de busca que filtra enquanto digita, pelo nome, pelo número (qualquer parte dele) ou pelo que a pessoa respondeu",
+      "Métricas da campanha: \"Respostas mais comuns\" virou \"Quem respondeu\", com o número, o nome, a resposta, o horário e a busca"],
   },
   {
     version: "3.50",
