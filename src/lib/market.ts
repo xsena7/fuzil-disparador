@@ -3,8 +3,6 @@ import type { Prisma } from "@prisma/client";
 import { prisma } from "./db";
 import { env } from "./env";
 import { randomToken } from "./crypto";
-import bcrypt from "bcryptjs";
-import { createPasswordLink } from "./password-tokens";
 import { emailLayout, sendEmail } from "./email";
 import { createAlert } from "./alerts";
 import { platformOwnerId, SUPPORT_WHATSAPP } from "./onboarding";
@@ -128,18 +126,13 @@ export async function confirmMarketPayment(pay: MpPayment) {
 // ---------------------------------------------------------------------------
 
 /** Conta do comprador no Fuzil: cria se não tem (com link para criar a senha). */
-async function ensureBuyerAccount(name: string, email: string): Promise<{ userId: string; accessUrl: string; created: boolean }> {
-  const found = await prisma.user.findUnique({ where: { email } });
-  if (found) return { userId: found.id, accessUrl: `${env.appUrl()}/login`, created: false };
-  const user = await prisma.user.create({
-    data: {
-      name,
-      email,
-      passwordHash: await bcrypt.hash(randomToken(24), 10),
-      memberships: { create: { role: "OWNER", workspace: { create: { name } } } },
-    },
-  });
-  return { userId: user.id, accessUrl: await createPasswordLink(user.id, "INVITE"), created: true };
+/**
+ * Quem compra NÃO ganha conta no Fuzil: recebe só o convite e o PDF. Se já tem conta com esse e-mail, o pedido fica ligado a ela
+ * e o e-mail leva para o login; se não tem, leva para o cadastro (se quiser usar o Fuzil, cria a conta depois).
+ */
+async function buyerAccess(email: string): Promise<{ userId: string | null; accessUrl: string; hasAccount: boolean }> {
+  const found = await prisma.user.findUnique({ where: { email }, select: { id: true } });
+  return found ? { userId: found.id, accessUrl: `${env.appUrl()}/login`, hasAccount: true } : { userId: null, accessUrl: `${env.appUrl()}/cadastro`, hasAccount: false };
 }
 
 /**
@@ -178,10 +171,8 @@ export async function deliverOrder(orderId: string, opts: { resend?: boolean } =
   const { order, items } = ready;
   let sent = false;
   try {
-    const account = await ensureBuyerAccount(order.name, order.email);
-    if (!order.userId) await prisma.marketOrder.update({ where: { id: order.id }, data: { userId: account.userId } });
-    // Reenvio pelo painel: entra pelo login (o link de criar senha já foi no primeiro e-mail)
-    const access = opts.resend && order.status === "DELIVERED" ? { ...account, created: false, accessUrl: `${env.appUrl()}/login` } : account;
+    const access = await buyerAccess(order.email);
+    if (!order.userId && access.userId) await prisma.marketOrder.update({ where: { id: order.id }, data: { userId: access.userId } });
     sent = await sendDeliveryEmail(order, items.map((i) => i.invite?.url).filter((u): u is string => Boolean(u)), access);
   } finally {
     await prisma.marketOrder.update({
@@ -196,27 +187,27 @@ export async function deliverOrder(orderId: string, opts: { resend?: boolean } =
 async function sendDeliveryEmail(
   order: { name: string; email: string; quantity: number; token: string; product: { name: string; kind: string } },
   urls: string[],
-  account: { accessUrl: string; created: boolean },
+  account: { accessUrl: string; hasAccount: boolean },
   replacement = false,
 ) {
   const first = order.name.split(" ")[0];
   const list = urls.map((u, i) => `<b>BM ${i + 1}:</b> <a href="${u}" style="color:#ea580c;word-break:break-all;">${u}</a>`).join("<br>");
   const wa = supportLink(`Oi! Comprei BM no Fuzil (pedido ${order.token.slice(0, 8)}) e preciso de ajuda.`);
   const { html, text } = emailLayout({
-    preheader: replacement ? "Sua BM de troca chegou" : "Seus convites de BM e o acesso ao Fuzil",
+    preheader: replacement ? "Sua BM de troca chegou" : "Seus convites de BM e o passo a passo",
     title: replacement ? `${first}, sua BM de troca chegou` : `${first}, sua compra chegou!`,
     paragraphs: [
       replacement
         ? "Trocamos a BM do seu pedido. O convite novo está aqui embaixo:"
         : `Aqui ${urls.length > 1 ? `estão os ${urls.length} convites` : "está o convite"} de ${order.product.name}. Abra cada link logado no Facebook que vai ser dono da BM e aceite:`,
       list,
-      account.created
-        ? "Também criamos sua conta no Fuzil Disparador com este e-mail. Clique no botão para criar sua senha e conectar a BM."
-        : "Entre no Fuzil Disparador com este e-mail e conecte a BM em Conexões → Conectar Cloud API.",
+      account.hasAccount
+        ? "Para disparar com a BM, entre no Fuzil Disparador e conecte ela em Conexões → Conectar Cloud API."
+        : "Quer disparar com a BM? Crie sua conta no Fuzil Disparador pelo botão abaixo e conecte a BM em Conexões → Conectar Cloud API.",
       "No PDF anexo está o passo a passo completo: aceitar o convite, conectar no Fuzil, disparar e usar o gerador de links em outras plataformas.",
       `<a href="${wa}" style="display:inline-block;padding:12px 22px;border-radius:12px;background:#16a34a;color:#ffffff;font-weight:700;text-decoration:none;">Problema com a compra? Fale no WhatsApp</a><br><span style="font-size:12px;color:#a1a1aa;">WhatsApp: <a href="${wa}" style="color:#16a34a;">${wa.split("?")[0]}</a></span>`,
     ],
-    cta: { label: account.created ? "Criar minha senha no Fuzil" : "Entrar no Fuzil", url: account.accessUrl },
+    cta: { label: account.hasAccount ? "Entrar no Fuzil" : "Criar conta no Fuzil", url: account.accessUrl },
     note:
       "Garantia: você tem 24 horas depois da compra para avisar se tiver problema, e respondemos em até 24 horas. Trocamos a BM em dois casos: o link do convite não funcionou ou a conta chegou banida. Cada convite é único: não repasse o link.",
   });
@@ -249,8 +240,7 @@ export async function replaceItem(orderId: string, itemId: string, reason: strin
     return { order, url: next.invite.url, reason };
   });
   if ("error" in r) return { error: r.error ?? "Não deu certo" };
-  const account = await ensureBuyerAccount(r.order.name, r.order.email);
-  const sent = await sendDeliveryEmail(r.order, [r.url], { ...account, created: false, accessUrl: `${env.appUrl()}/login` }, true);
+  const sent = await sendDeliveryEmail(r.order, [r.url], await buyerAccess(r.order.email), true);
   return sent ? { ok: "Troca feita e e-mail enviado ao cliente" } : { error: "Troca feita, mas o e-mail não saiu. Mande o link manualmente." };
 }
 

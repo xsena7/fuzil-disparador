@@ -6,7 +6,10 @@ export const CHANGELOG: Array<{ version: string; date: string; items: string[] }
   {
     version: "3.50",
     date: "30/10/2026",
-    items: ["[admin] Vendas: BMs que estavam a R$ 70,00 passam para R$ 50,00 na vitrine (pedidos já feitos não mudam)"],
+    items: [
+      "Loja de BMs: dá para comprar até 50 de uma vez. A trava agora conta só os pedidos que ainda esperam o Pix (pedido pago ou vencido não conta mais)",
+      "Loja de BMs: quem compra não ganha mais conta no Fuzil automaticamente. Recebe o convite e o PDF; se quiser disparar pelo Fuzil, cria a conta depois pelo botão do e-mail",
+      "[admin] Vendas: BMs que estavam a R$ 70,00 passam para R$ 50,00 na vitrine (pedidos já feitos não mudam)"],
   },
   {
     version: "3.49",

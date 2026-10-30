@@ -8,8 +8,10 @@ import { sitePath } from "@/lib/site-path";
 import { prisma } from "@/lib/db";
 
 // Quantas BMs um mesmo IP pode deixar separadas por hora (sem isso dá para travar o estoque sem pagar)
-const MAX_QTY_PER_IP_HOUR = 20;
-const reservedByIp = new Map<string, Array<{ at: number; qty: number }>>();
+// Trava contra quem tenta segurar o estoque sem pagar: soma só os pedidos deste aparelho que ainda esperam o Pix
+// (pedido pago ou vencido não conta). Cada pedido vai até 50.
+const MAX_PENDING_PER_IP = 60;
+const reservedByIp = new Map<string, Array<{ at: number; token: string }>>();
 export type OrderState = { error?: string; goTo?: string } | undefined;
 
 const schema = z.object({
@@ -32,11 +34,14 @@ export async function createOrderAction(_: OrderState, form: FormData): Promise<
     return { error: "Você já tem um pedido esperando o Pix. Pague esse ou espere ele vencer (15 minutos) para fazer outro." };
   const now = Date.now();
   const recent = (reservedByIp.get(ip) ?? []).filter((r) => now - r.at < 3600_000);
-  if (recent.reduce((a, r) => a + r.qty, 0) + quantity > MAX_QTY_PER_IP_HOUR) return { error: "Muitas BMs separadas daqui na última hora. Fale com a gente no WhatsApp para comprar mais." };
+  const waiting = recent.length
+    ? await prisma.marketOrder.aggregate({ where: { token: { in: recent.map((r) => r.token) }, status: "PENDING", expiresAt: { gt: new Date() } }, _sum: { quantity: true } })
+    : null;
+  if ((waiting?._sum.quantity ?? 0) + quantity > MAX_PENDING_PER_IP) return { error: "Muitas BMs separadas daqui esperando o Pix. Pague os pedidos abertos ou espere eles vencerem (15 minutos)." };
   const phone = parsed.data.phone ? normalizePhone(parsed.data.phone) : null;
   const r = await createOrder({ productId, quantity, name, email, phone: phone || null });
   if ("error" in r) return { error: r.error };
-  reservedByIp.set(ip, [...recent, { at: now, qty: quantity }]);
+  reservedByIp.set(ip, [...recent, { at: now, token: r.token }]);
   if (reservedByIp.size > 10_000) reservedByIp.clear();
   // O navegador abre o endereço (passa pela reescrita do domínio do site). Redirecionar daqui dava 404 no domínio do site
   return { goTo: await sitePath(`/vendas/pedido/${r.token}`) };

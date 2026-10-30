@@ -8,13 +8,13 @@ export const metadata: Metadata = { title: "BMs para disparo · Fuzil Disparador
 
 const STEPS = [
   { icon: Zap, title: "Escolha e pague no Pix", text: "Escolha o tipo e a quantidade. O Pix sai na hora e a sua BM fica separada por 15 minutos." },
-  { icon: Mail, title: "Receba no e-mail", text: "Pagou, chegou: o convite de cada BM, o acesso ao Fuzil e um PDF com o passo a passo." },
+  { icon: Mail, title: "Receba no e-mail", text: "Pagou, chegou: o convite de cada BM e um PDF com o passo a passo." },
   { icon: Link2, title: "Conecte e dispare", text: "Aceite o convite, conecte a BM no Fuzil com um clique e dispare com o link do botão funcionando." },
 ];
 
 const FAQ: Array<[string, string]> = [
   ["Como recebo a BM?", "Por um convite da Meta, no seu e-mail, logo depois que o Pix cai. Você abre o link logado no Facebook que vai ser dono da BM e aceita."],
-  ["Preciso usar o Fuzil?", "As BMs com template vêm com o template aprovado do Fuzil, e o link do botão funciona dentro do Fuzil. A conta no Fuzil é criada sozinha com o seu e-mail. Para disparar por outra plataforma, o PDF ensina a usar o gerador de links."],
+  ["Preciso usar o Fuzil?", "As BMs com template vêm com o template aprovado do Fuzil, e o link do botão funciona dentro do Fuzil. Para disparar pelo Fuzil, é só criar sua conta depois, com o mesmo e-mail. Para disparar por outra plataforma, o PDF ensina a usar o gerador de links."],
   ["E se o convite não funcionar?", "Você tem 24 horas depois da compra para avisar pelo WhatsApp, e respondemos em até 24 horas. Trocamos a BM se o link do convite não funcionar ou se a conta chegar banida."],
   ["Quanto tempo leva?", "A entrega é automática: chega no seu e-mail em poucos minutos depois do pagamento."],
 ];
