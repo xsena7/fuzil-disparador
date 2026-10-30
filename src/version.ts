@@ -4,6 +4,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "3.49",
+    date: "30/10/2026",
+    items: ["[admin] Admin → Contas: o limite geral de 24h soma só as BMs que podem disparar. Banidas e com problema ficam de fora (aparece quantas e, ao abrir a conta, quais)"],
+  },
+  {
     version: "3.48",
     date: "29/10/2026",
     items: [

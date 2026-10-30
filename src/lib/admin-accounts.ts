@@ -12,9 +12,11 @@ export type AccountRow = {
   creditsPerMessage: number;
   owner: { name: string; email: string } | null;
   users: Array<{ id: string; name: string; email: string; role: string; lastLoginAt: string | null; isSuperAdmin: boolean }>;
-  bms: Array<{ name: string; limit: number | null; used: number }>;
-  /** Soma dos limites de 24h das BMs (null = nenhuma BM com limite conhecido; -1 = ilimitado). */
+  bms: Array<{ name: string; limit: number | null; used: number; problem: boolean }>;
+  /** Soma dos limites de 24h das BMs que podem disparar (null = nenhuma BM com limite conhecido; -1 = ilimitado). Banidas e com problema ficam de fora. */
   totalLimit: number | null;
+  /** BMs fora da soma do limite (banidas, pagamento, template em análise...). */
+  problemBms: number;
   used24h: number;
   sentTotal: number;
   /** A Meta aceitou, mas avisou depois que não entregou (o crédito voltou). */
@@ -31,7 +33,7 @@ export async function listAccounts(adminUserId: string): Promise<AccountRow[]> {
     prisma.workspace.findMany({
       include: {
         memberships: { include: { user: true }, orderBy: { role: "asc" } },
-        businesses: { select: { id: true, name: true, messagingLimitTier: true }, orderBy: { name: "asc" } },
+        businesses: { select: { id: true, name: true, messagingLimitTier: true, problemAt: true }, orderBy: { name: "asc" } },
         campaigns: { select: { status: true } },
       },
       orderBy: { createdAt: "desc" },
@@ -55,8 +57,10 @@ export async function listAccounts(adminUserId: string): Promise<AccountRow[]> {
   const tx = (id: string, types: string[]) => txRows.filter((t) => t.workspaceId === id && types.includes(t.type)).reduce((a, t) => a + (t._sum.amount ?? 0), 0);
 
   return workspaces.map((w) => {
-    const bms = w.businesses.map((b) => ({ name: b.name, limit: tierToLimit(b.messagingLimitTier), used: used.get(b.id) ?? 0 }));
-    const known = bms.filter((b) => b.limit !== null);
+    const bms = w.businesses.map((b) => ({ name: b.name, limit: tierToLimit(b.messagingLimitTier), used: used.get(b.id) ?? 0, problem: Boolean(b.problemAt) }));
+    // Limite e uso somam só as BMs que podem disparar (banida ou com problema não conta)
+    const usable = bms.filter((b) => !b.problem);
+    const known = usable.filter((b) => b.limit !== null);
     const totalLimit = !known.length ? null : known.some((b) => b.limit === Infinity) ? -1 : known.reduce((a, b) => a + (b.limit as number), 0);
     const owner = w.memberships.find((m) => m.role === "OWNER") ?? w.memberships[0];
     return {
@@ -79,7 +83,8 @@ export async function listAccounts(adminUserId: string): Promise<AccountRow[]> {
       })),
       bms: bms.map((b) => ({ ...b, limit: b.limit === Infinity ? -1 : b.limit })),
       totalLimit,
-      used24h: bms.reduce((a, b) => a + b.used, 0),
+      problemBms: bms.length - usable.length,
+      used24h: usable.reduce((a, b) => a + b.used, 0),
       sentTotal: sent.get(w.id)?.sent ?? 0,
       failedAfter: sent.get(w.id)?.failed ?? 0,
       credits: { added: tx(w.id, ["TOPUP", "ADJUST"]), spent: -tx(w.id, ["DEBIT"]), refunded: tx(w.id, ["REFUND"]) },

@@ -149,6 +149,7 @@ export function AccountsPanel({ accounts, selfId, ownerId = null }: { accounts: 
                     <td className="px-3 py-3 text-right tabular-nums">
                       <div className="font-medium text-zinc-900">{limitText(a.totalLimit)}</div>
                       {a.totalLimit !== null && <div className="text-xs text-zinc-500">{n(a.used24h)} usados</div>}
+                      {a.problemBms > 0 && <div className="text-xs text-rose-600" title="BMs banidas ou com problema não entram na soma do limite">{a.problemBms} BM{a.problemBms > 1 ? "s" : ""} com problema fora</div>}
                     </td>
                     <td className="px-3 py-3 text-right tabular-nums">
                       <div className="font-medium text-zinc-900">{n(a.sentTotal - a.failedAfter)}</div>
@@ -199,8 +200,11 @@ export function AccountsPanel({ accounts, selfId, ownerId = null }: { accounts: 
                             <div className="border-b border-zinc-100 px-4 py-2.5 text-xs font-medium uppercase tracking-wide text-zinc-400">BMs · limite de 24h</div>
                             {a.bms.map((b, i) => (
                               <div key={i} className="flex items-center justify-between gap-3 border-b border-zinc-100 px-4 py-2 last:border-0">
-                                <span className="truncate">{b.name}</span>
-                                <span className="shrink-0 text-xs tabular-nums text-zinc-500">{n(b.used)} / {limitText(b.limit)}</span>
+                                <span className="truncate">
+                                  {b.name}
+                                  {b.problem && <span className="ml-1.5 rounded-full bg-rose-50 px-1.5 py-0.5 text-[10px] font-semibold text-rose-700">com problema · fora da soma</span>}
+                                </span>
+                                <span className={`shrink-0 text-xs tabular-nums ${b.problem ? "text-zinc-300 line-through" : "text-zinc-500"}`}>{n(b.used)} / {limitText(b.limit)}</span>
                               </div>
                             ))}
                             {a.bms.length === 0 && <div className="px-4 py-3 text-xs text-zinc-400">Nenhuma BM conectada</div>}
