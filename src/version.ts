@@ -6,7 +6,7 @@ export const CHANGELOG: Array<{ version: string; date: string; items: string[] }
   {
     version: "3.49",
     date: "30/10/2026",
-    items: ["BMs com problema: nova ordem dos grupos automáticos. A BM passa por Template em análise → Problemas de pagamento → Sem número → Prontas para disparo (pagamento agora vem antes do número)", "[admin] Admin → Contas: o limite geral de 24h soma só as BMs que podem disparar. Banidas e com problema ficam de fora (aparece quantas e, ao abrir a conta, quais)"],
+    items: ["BMs com problema: nova ordem dos grupos automáticos. A BM passa por Template em análise → Problemas de pagamento → Sem número → Prontas para disparo (pagamento agora vem antes do número)", "[admin] Admin → Contas: o limite geral de 24h não soma mais as BMs banidas (aparece quantas e, ao abrir a conta, quais). Pagamento, sem número e os outros continuam somando"],
   },
   {
     version: "3.48",
