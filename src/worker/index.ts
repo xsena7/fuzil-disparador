@@ -69,8 +69,8 @@ async function housekeeping() {
   // Link do relatório do cliente passou das 12h: sai do ar e é apagado
   await prisma.campaign.updateMany({ where: { shareExpiresAt: { lt: new Date() } }, data: { shareToken: null, shareExpiresAt: null } });
   await prisma.webhookEvent.deleteMany({ where: { createdAt: { lt: new Date(Date.now() - 3 * 86400_000) } } });
-  // Chat: conversas que são só disparo (cliente nunca respondeu) somem depois de 45 dias
-  await prisma.conversation.deleteMany({ where: { hasInbound: false, lastMessageAt: { lt: new Date(Date.now() - 45 * 86400_000) } } });
+  // Chat: conversas que são só disparo (cliente nunca respondeu) somem depois de 72 horas (as que têm resposta ficam)
+  await prisma.conversation.deleteMany({ where: { hasInbound: false, lastMessageAt: { lt: new Date(Date.now() - 72 * 3600_000) } } });
 }
 
 async function main() {

@@ -4,6 +4,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "3.53",
+    date: "31/10/2026",
+    items: ["Chat: conversas que são só o disparo (o contato nunca respondeu) somem depois de 72 horas, em vez de 45 dias. As que têm resposta continuam"],
+  },
+  {
     version: "3.52",
     date: "31/10/2026",
     items: [
