@@ -23,14 +23,23 @@ function signedWith(raw: string, header: string, secret: string) {
 
 /** App Secrets dos apps das BMs (conexão manual), cada um com as WABAs que usam ele. Cache de 1 min. */
 let bmSecrets: { at: number; list: Array<{ secret: string; wabaIds: Set<string> }> } = { at: 0, list: [] };
+/** WABAs sem chave própria, por conta: valem para a chave de qualquer outra BM da mesma conta (mesmo cliente). */
+let noSecretByWs: Map<string, Set<string>> = new Map();
 async function bmAppSecrets() {
   if (Date.now() - bmSecrets.at < 60_000) return bmSecrets.list;
-  const rows = await prisma.whatsAppAccount.findMany({ where: { appSecretEnc: { not: null } }, select: { appSecretEnc: true, wabaId: true } });
+  const rows = await prisma.whatsAppAccount.findMany({ select: { appSecretEnc: true, wabaId: true, workspaceId: true } });
+  noSecretByWs = new Map();
+  for (const r of rows) if (!r.appSecretEnc) noSecretByWs.set(r.workspaceId, (noSecretByWs.get(r.workspaceId) ?? new Set()).add(r.wabaId));
   const bySecret = new Map<string, Set<string>>();
   for (const r of rows) {
+    if (!r.appSecretEnc) continue;
     try {
-      const sec = decrypt(r.appSecretEnc!);
-      bySecret.set(sec, (bySecret.get(sec) ?? new Set()).add(r.wabaId));
+      const sec = decrypt(r.appSecretEnc);
+      // A chave vale para as WABAs dela e para as WABAs sem chave da mesma conta
+      const set = bySecret.get(sec) ?? new Set<string>();
+      set.add(r.wabaId);
+      for (const w of noSecretByWs.get(r.workspaceId) ?? []) set.add(w);
+      bySecret.set(sec, set);
     } catch {
       /* chave que não abre: ignora */
     }

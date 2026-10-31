@@ -23,6 +23,19 @@ const RESULT: Record<string, { label: string; cls: string }> = {
 
 export async function Metrics({ campaignId }: { campaignId: string }) {
   const [m, replies] = await Promise.all([campaignMetrics(campaignId), campaignReplies(campaignId)]);
+  // Avisos de entrega da Meta (webhook): por WABA que disparou, quantas a Meta confirmou e quando chegou o último evento
+  const hooks = await prisma.$queryRaw<Array<{ waba: string; bm: string; sent: bigint; confirmed: bigint; last: Date | null; rejected: Date | null }>>`
+    SELECT w.name AS waba, b.name AS bm, COUNT(*) AS sent,
+      COUNT(*) FILTER (WHERE r."deliveredAt" IS NOT NULL OR r."readAt" IS NOT NULL OR r.status = 'FAILED') AS confirmed,
+      w."webhookLastAt" AS last, w."webhookRejectedAt" AS rejected
+    FROM "CampaignRecipient" r
+    JOIN "PhoneNumber" p ON p.id = r."senderId"
+    JOIN "WhatsAppAccount" w ON w.id = p."wabaId"
+    JOIN "BusinessManager" b ON b.id = w."businessId"
+    WHERE r."campaignId" = ${campaignId} AND r."sentAt" IS NOT NULL AND r."sentAt" < NOW() - INTERVAL '10 minutes'
+    GROUP BY w.id, w.name, b.name, w."webhookLastAt", w."webhookRejectedAt"`;
+  // Mandou bastante e a Meta não confirmou nenhuma entrega: os avisos dessa conta não estão chegando no Fuzil
+  const silent = hooks.filter((h) => Number(h.sent) >= 20 && Number(h.confirmed) === 0);
   const campaignRow = await prisma.campaign.findUnique({ where: { id: campaignId }, select: { status: true } });
   const canRetry = ["COMPLETED", "PAUSED"].includes(campaignRow?.status ?? "") && Number(m.totals.failed) > 0;
   const recipients = await prisma.campaignRecipient.findMany({
@@ -53,6 +66,21 @@ export async function Metrics({ campaignId }: { campaignId: string }) {
         </div>
         <div className="h-2 overflow-hidden rounded-full bg-zinc-200/60"><div className="h-full rounded-full bg-brand-gradient transition-all" style={{ width: `${progress}%` }} /></div>
       </div>
+
+      {silent.length > 0 && (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+          <b>Os avisos de entrega da Meta não estão chegando de {silent.length === 1 ? "uma conta" : `${silent.length} contas`}.</b> Por isso Entregues e Lidas aparecem baixos (só contam quem clicou ou respondeu): não quer dizer que as mensagens não chegaram.
+          <ul className="mt-2 space-y-0.5">
+            {silent.map((h) => (
+              <li key={h.waba + h.bm}>
+                • <b>{h.bm}</b> ({h.waba}): {n(Number(h.sent))} enviadas, nenhuma confirmação.{" "}
+                {h.rejected && (!h.last || h.rejected > h.last) ? "A Meta está mandando, mas a chave secreta do app não confere." : !h.last ? "Nenhum evento dessa conta chegou ao Fuzil." : "Último evento chegou há tempo."}
+              </li>
+            ))}
+          </ul>
+          <p className="mt-2 text-xs">Para arrumar: em Conexões, abra essa BM e veja <b>Receber respostas no Chat</b> (chave secreta do app e webhook apontando para o Fuzil).</p>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         <Stat label="Público" value={n(t.total)} sub={t.pending ? `${n(t.pending)} na fila` : undefined} />
