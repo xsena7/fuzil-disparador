@@ -39,7 +39,7 @@ const STEPS = [
   { key: "conteudo", label: "3. Conteúdo" },
   { key: "envio", label: "4. Envio" },
   { key: "metricas", label: "5. Métricas" },
-  { key: "relatorio", label: "6. Relatório do cliente" },
+  { key: "relatorio", label: "6. Relatório" },
 ];
 
 export default async function CampaignPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ etapa?: string }> }) {
