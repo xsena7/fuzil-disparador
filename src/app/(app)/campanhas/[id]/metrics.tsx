@@ -179,9 +179,9 @@ export async function Metrics({ campaignId }: { campaignId: string }) {
       </div>
 
       <Card className="flex flex-wrap items-center gap-2 p-4">
-        <span className="mr-2 font-medium">Exportar relatório (CSV):</span>
+        <span className="mr-2 font-medium">Exportar planilha (CSV):</span>
         {[
-          ["", "Todos"], ["READ", "Leram"], ["DELIVERED", "Entregues sem leitura"], ["FAILED", "Falhas"], ["PENDING", "Pendentes"],
+          ["clicked", "Clicaram no link"],
         ].map(([s, label]) => (
           <a key={s} href={`/api/campaigns/${campaignId}/export${s ? `?status=${s}` : ""}`} className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 px-3 py-1.5 hover:bg-zinc-50">
             <Download className="size-3.5" /> {label}

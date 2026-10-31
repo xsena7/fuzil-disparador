@@ -7,6 +7,8 @@ export const CHANGELOG: Array<{ version: string; date: string; items: string[] }
     version: "3.52",
     date: "31/10/2026",
     items: [
+      "Métricas: exportar planilha só de quem clicou no link, com nome, telefone, horário do primeiro e do último clique. Antes podia sair em branco",
+      
       "Métricas: aviso quando a Meta não manda os avisos de entrega de uma conta (Entregues e Lidas ficam baixos sem as mensagens deixarem de chegar), com a BM e o que arrumar",
       "Conexões: volta o aviso vermelho \"a Meta está mandando, mas a chave não confere\" em Receber respostas no Chat",
       "Webhook: a chave secreta de uma BM agora vale também para as outras BMs da mesma conta que não têm chave própria",
