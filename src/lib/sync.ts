@@ -94,6 +94,8 @@ export async function syncWaba(wabaRecordId: string) {
         // Já desconectado (descadastrado antes) também conta como tirado: não dispara mais por ele
         if (r.deregistered || r.deleted || p.status !== "CONNECTED") {
           real = real.filter((x) => x.id !== p.id);
+          // Guarda que já foi tirado (em qualquer conta que tenha esse número): na próxima sincronização não avisa de novo
+          await prisma.phoneNumber.updateMany({ where: { phoneNumberId: p.id }, data: { invalidReason: PHONE_REMOVED, enabled: false } });
           await alertRedRemoved(waba.workspaceId, waba.id, p).catch(() => undefined);
         } else console.error("[sync] não deu para tirar o número vermelho", p.id);
       }
@@ -183,11 +185,14 @@ export const PHONE_REMOVED = "Número removido da Meta";
 async function alertRedRemoved(workspaceId: string, wabaRecordId: string, p: MetaPhone) {
   const num = formatPhone(p.display_phone_number.replace(/\D/g, ""));
   const bm = await wabaLabel(wabaRecordId);
+  const title = `Número ${num} (${bm.split(" / ")[0]}) removido: qualidade baixa`;
+  // Um aviso só por número (não repete a cada sincronização)
+  if (await prisma.alert.findFirst({ where: { workspaceId, title, createdAt: { gte: new Date(Date.now() - 30 * 86400_000) } }, select: { id: true } })) return;
   await createAlert({
     workspaceId,
     type: "NUMBER_STATUS",
     severity: "WARNING",
-    title: `Número ${num} (${bm.split(" / ")[0]}) removido: qualidade baixa`,
+    title,
     message: `${/^bm\b/i.test(bm) ? "" : "BM "}${bm}: a qualidade do número ficou vermelha e o Fuzil tirou ele da conta do WhatsApp (e do Fuzil). Se a BM não tiver outro número, ela vai para "Sem número": coloque um número novo nela.`,
   });
 }

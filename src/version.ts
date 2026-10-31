@@ -7,6 +7,8 @@ export const CHANGELOG: Array<{ version: string; date: string; items: string[] }
     version: "3.52",
     date: "31/10/2026",
     items: [
+      "Alertas: o aviso \"número removido: qualidade baixa\" chega uma vez só por número (repetia a cada sincronização, de 15 em 15 minutos, inclusive no Discord)",
+      
       "Métricas: exportar planilha só de quem clicou no link, com nome, telefone, horário do primeiro e do último clique. Antes podia sair em branco",
       
       "Métricas: aviso quando a Meta não manda os avisos de entrega de uma conta (Entregues e Lidas ficam baixos sem as mensagens deixarem de chegar), com a BM e o que arrumar",
