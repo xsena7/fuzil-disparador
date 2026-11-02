@@ -4,6 +4,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "3.54",
+    date: "02/11/2026",
+    items: ["Métricas da campanha: saiu \"Entregues\" (e o tempo até entregar). Lidas, cliques e respostas agora mostram a % das enviadas"],
+  },
+  {
     version: "3.53",
     date: "31/10/2026",
     items: ["Chat: conversas que são só o disparo (o contato nunca respondeu) somem depois de 72 horas, em vez de 45 dias. As que têm resposta continuam"],
