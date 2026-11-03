@@ -7,6 +7,7 @@ export const PLATFORM_KEYS = [
   { key: "META_APP_ID", label: "App ID", secret: false },
   { key: "META_APP_SECRET", label: "App Secret", secret: true },
   { key: "META_CONFIG_ID", label: "Config ID do Embedded Signup", secret: false },
+  { key: "META_SOLUTION_ID", label: "ID da solução de parceiro (linha de crédito da Gupshup): preencha só depois que a Gupshup aprovar", secret: false },
   { key: "META_SYSTEM_USER_TOKEN", label: "Token do System User", secret: true },
   { key: "META_GRAPH_VERSION", label: "Versão da Graph API", secret: false },
   { key: "RESEND_API_KEY", label: "Chave do Resend (e-mails)", secret: true },

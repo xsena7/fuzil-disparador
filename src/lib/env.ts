@@ -17,6 +17,8 @@ export const env = {
   metaAppId: () => platform("META_APP_ID"),
   metaAppSecret: () => platform("META_APP_SECRET"),
   metaConfigId: () => platform("META_CONFIG_ID"),
+  /** Solução com parceiro (Multi-Partner): a BM conectada pelo botão já entra com a linha de crédito do parceiro */
+  metaSolutionId: () => platform("META_SOLUTION_ID"),
   metaSystemToken: () => platform("META_SYSTEM_USER_TOKEN"),
   metaGraphVersion: () => platform("META_GRAPH_VERSION", "v23.0"),
   metaGraphUrl: () => opt("META_GRAPH_URL", "https://graph.facebook.com").replace(/\/$/, ""),

@@ -15,7 +15,7 @@ declare global {
 
 type SessionInfo = { waba_id?: string; phone_number_id?: string };
 
-export function EmbeddedSignup({ appId, configId, graphVersion }: { appId: string; configId: string; graphVersion: string }) {
+export function EmbeddedSignup({ appId, configId, graphVersion, solutionId = "" }: { appId: string; configId: string; graphVersion: string; solutionId?: string }) {
   const router = useRouter();
   const [ready, setReady] = useState(false);
   const [busy, setBusy] = useState<null | "CLOUD_API" | "COEXISTENCE">(null);
@@ -97,7 +97,8 @@ export function EmbeddedSignup({ appId, configId, graphVersion }: { appId: strin
         response_type: "code",
         override_default_response_type: true,
         extras: {
-          setup: {},
+          // Com a solução do parceiro, a BM já sai com a linha de crédito dele (sem cartão)
+          setup: solutionId ? { solutionID: solutionId } : {},
           sessionInfoVersion: "3",
           version: "v4",
           ...(type === "COEXISTENCE" ? { featureType: "whatsapp_business_app_onboarding" } : {}),
