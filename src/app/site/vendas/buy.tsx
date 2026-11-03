@@ -6,6 +6,7 @@ import clsx from "clsx";
 import { BadgeCheck, Loader2, Minus, MousePointerClick, Plus, X } from "lucide-react";
 import { createOrderAction } from "@/app/actions/market-public";
 import type { TemplatePreview, VitrineProduct } from "@/lib/market";
+import { unitPrice } from "@/lib/market-price";
 
 const brl = (c: number) => (c / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
@@ -36,6 +37,8 @@ export function ProductCard({ product: p }: { product: VitrineProduct }) {
     return () => clearInterval(t);
   }, [p.templates.length]);
   const withTemplate = p.kind === "TEMPLATE";
+  // Preço de cada BM cai conforme a quantidade
+  const each = unitPrice(p.priceCents, p.tiers, qty);
   return (
     <div className={clsx("group relative flex flex-col rounded-3xl bg-gradient-to-b from-white/[.09] to-white/[.03] p-6 ring-1 ring-white/10 transition duration-300", !out && "hover:-translate-y-1 hover:ring-orange-400/50 hover:shadow-2xl hover:shadow-orange-500/10")}>
       <div className="flex items-center justify-between gap-3">
@@ -74,7 +77,10 @@ export function ProductCard({ product: p }: { product: VitrineProduct }) {
       <div className="mt-auto pt-6">
         <div className="flex items-end justify-between gap-3">
           <div>
-            <div className="text-3xl font-bold tabular-nums text-white">{brl(p.priceCents)}</div>
+            <div className="flex items-baseline gap-2">
+              <span className="text-3xl font-bold tabular-nums text-white">{brl(each)}</span>
+              {each < p.priceCents && <span className="text-sm tabular-nums text-zinc-500 line-through">{brl(p.priceCents)}</span>}
+            </div>
             <div className="text-xs text-zinc-500">por BM</div>
           </div>
           {!out && (
@@ -85,13 +91,28 @@ export function ProductCard({ product: p }: { product: VitrineProduct }) {
             </div>
           )}
         </div>
+        {p.tiers.length > 0 && (
+          <div className="mt-3 flex flex-wrap gap-1.5 text-xs">
+            {p.tiers.map((t) => (
+              <button
+                key={t.min}
+                type="button"
+                disabled={out || p.stock < t.min}
+                onClick={() => setQty(t.min)}
+                className={clsx("rounded-lg px-2.5 py-1 font-medium ring-1 transition disabled:opacity-40", qty >= t.min && each === t.priceCents ? "bg-emerald-500/15 text-emerald-300 ring-emerald-400/30" : "bg-white/5 text-zinc-300 ring-white/10 hover:bg-white/10")}
+              >
+                A partir de {t.min}: {brl(t.priceCents)} cada
+              </button>
+            ))}
+          </div>
+        )}
         <button
           type="button"
           disabled={out}
           onClick={() => setOpen(true)}
           className="mt-4 w-full rounded-2xl bg-brand-gradient px-5 py-3.5 font-semibold text-white shadow-lg shadow-orange-500/25 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
         >
-          {out ? "Esgotado" : `Comprar ${qty > 1 ? `${qty} por ${brl(p.priceCents * qty)}` : "agora"}`}
+          {out ? "Esgotado" : `Comprar ${qty > 1 ? `${qty} por ${brl(each * qty)}` : "agora"}`}
         </button>
       </div>
       {/* Portal: o card usa transform no hover, e um modal fixo dentro dele ficaria preso no card */}
@@ -120,7 +141,8 @@ function Checkout({ product: p, qty, onClose }: { product: VitrineProduct; qty: 
         <input type="hidden" name="quantity" value={qty} />
         <div className="text-xs font-semibold uppercase tracking-wider text-orange-600">Finalizar compra</div>
         <div className="mt-1 text-xl font-bold text-zinc-900">{qty}x {p.name}</div>
-        <div className="mt-1 text-2xl font-bold text-brand-gradient">{brl(p.priceCents * qty)}</div>
+        <div className="mt-1 text-2xl font-bold text-brand-gradient">{brl(unitPrice(p.priceCents, p.tiers, qty) * qty)}</div>
+        {qty > 1 && <div className="text-xs text-zinc-500">{brl(unitPrice(p.priceCents, p.tiers, qty))} cada</div>}
         <div className="mt-5 space-y-3">
           <label className="block text-sm font-medium">Seu nome
             <input name="name" required maxLength={80} className="mt-1 w-full rounded-xl border border-zinc-200 px-3.5 py-2.5 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100" />

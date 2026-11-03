@@ -4,6 +4,14 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "3.55",
+    date: "03/11/2026",
+    items: [
+      "Loja de BMs: preço por quantidade. A vitrine mostra o desconto (\"A partir de 10: R$ 35,00 cada\") e o preço cai sozinho conforme a quantidade escolhida",
+      "[admin] Loja: BM 250 sem template R$ 40 (10+ R$ 35, 15+ R$ 30) e com template R$ 70 (10+ R$ 60, 15+ R$ 50). Dá para mudar as faixas em Vendas → Produtos",
+    ],
+  },
+  {
     version: "3.54",
     date: "02/11/2026",
     items: ["Métricas da campanha: saiu \"Entregues\" (e o tempo até entregar). Lidas, cliques e respostas agora mostram a % das enviadas"],

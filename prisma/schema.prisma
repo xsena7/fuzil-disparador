@@ -919,6 +919,8 @@ model MarketProduct {
   // TEMPLATE = BM com template do Fuzil aprovado; NO_TEMPLATE = sem template
   kind        String        @default("TEMPLATE")
   priceCents  Int
+  // Preço por quantidade: [{ min, priceCents }] (a partir de min BMs, cada uma sai por priceCents)
+  priceTiers  Json          @default("[]")
   active      Boolean       @default(true)
   sort        Int           @default(0)
   createdAt   DateTime      @default(now())

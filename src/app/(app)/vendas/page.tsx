@@ -1,3 +1,4 @@
+import { parseTiers } from "@/lib/market-price";
 import Link from "next/link";
 import clsx from "clsx";
 import { CheckCircle2, ChevronRight, Circle, ExternalLink, Inbox, Mail, Package, ShoppingBag, Store } from "lucide-react";
@@ -370,7 +371,9 @@ export default async function VendasPage({ searchParams }: { searchParams: Promi
   );
 }
 
-function ProductForm({ product, domain }: { product?: { id: string; name: string; description: string; kind: string; priceCents: number; sort: number; active: boolean; mailbox?: { address: string } | null }; domain: string }) {
+function ProductForm({ product, domain }: { product?: { id: string; name: string; description: string; kind: string; priceCents: number; priceTiers?: unknown; sort: number; active: boolean; mailbox?: { address: string } | null }; domain: string }) {
+  const tiers = parseTiers(product?.priceTiers);
+  const money = (c?: number) => (c ? (c / 100).toFixed(2).replace(".", ",") : "");
   return (
     <ActionForm action={saveProductAction} submit={product ? "Salvar" : "Criar produto"}>
       {product && <input type="hidden" name="id" value={product.id} />}
@@ -387,6 +390,19 @@ function ProductForm({ product, domain }: { product?: { id: string; name: string
         <Field label="Preço por BM (R$)">
           <Input name="price" defaultValue={product ? (product.priceCents / 100).toFixed(2).replace(".", ",") : ""} placeholder="50,00" inputMode="decimal" required />
         </Field>
+      </div>
+      {/* Preço por quantidade: deixe vazio a faixa que não usar */}
+      <div className="mt-4 grid gap-4 sm:grid-cols-2">
+        {[0, 1].map((i) => (
+          <Field key={i} label={`Desconto ${i + 1} (opcional)`} hint="A partir de quantas BMs e o preço de cada uma">
+            <div className="flex items-center gap-2 text-sm">
+              <span className="text-zinc-500">A partir de</span>
+              <Input name={`tierMin${i}`} type="number" min={2} max={1000} defaultValue={tiers[i]?.min ?? ""} placeholder={i ? "15" : "10"} className="w-20" />
+              <span className="text-zinc-500">BMs, R$</span>
+              <Input name={`tierPrice${i}`} defaultValue={money(tiers[i]?.priceCents)} placeholder={i ? "30,00" : "35,00"} inputMode="decimal" className="w-28" />
+            </div>
+          </Field>
+        ))}
       </div>
       <div className="mt-4 grid gap-4 md:grid-cols-[3fr_1fr]">
         <Field label="Descrição (opcional)">

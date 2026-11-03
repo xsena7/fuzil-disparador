@@ -1,4 +1,5 @@
 // Vendas de BM (marketplace em /vendas): reserva do estoque, Pix do Mercado Pago, entrega automática e troca.
+import { parseTiers, unitPrice, type PriceTier } from "./market-price";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "./db";
 import { env } from "./env";
@@ -59,7 +60,7 @@ export async function createOrder(input: { productId: string; quantity: number; 
     if (items.length < quantity) return { error: items.length ? `Só temos ${items.length} em estoque agora.` : "Esgotado no momento." };
     const expiresAt = new Date(Date.now() + RESERVE_MINUTES * 60_000);
     const order = await tx.marketOrder.create({
-      data: { token: randomToken(18), productId: product.id, quantity, totalCents: product.priceCents * quantity, name: input.name, email: input.email, phone: input.phone, expiresAt },
+      data: { token: randomToken(18), productId: product.id, quantity, totalCents: unitPrice(product.priceCents, parseTiers(product.priceTiers), quantity) * quantity, name: input.name, email: input.email, phone: input.phone, expiresAt },
     });
     await tx.marketItem.updateMany({ where: { id: { in: items.map((i) => i.id) } }, data: { status: "RESERVED", orderId: order.id, reservedUntil: expiresAt } });
     return { order, product };
@@ -299,7 +300,7 @@ export async function marketTick() {
 // ---------------------------------------------------------------------------
 
 export type TemplatePreview = { name: string; header: string | null; body: string; footer: string | null; buttons: string[] };
-export type VitrineProduct = { id: string; name: string; description: string; kind: string; priceCents: number; stock: number; templates: TemplatePreview[] };
+export type VitrineProduct = { id: string; name: string; description: string; kind: string; priceCents: number; tiers: PriceTier[]; stock: number; templates: TemplatePreview[] };
 
 type Comp = { type: string; format?: string; text?: string; buttons?: Array<{ text: string }> };
 
@@ -336,7 +337,7 @@ export async function vitrine(): Promise<VitrineProduct[]> {
           }
       templates = [...seen.values()].slice(0, 3);
     }
-    out.push({ id: p.id, name: p.name, description: p.description, kind: p.kind, priceCents: p.priceCents, stock: stock.get(p.id) ?? 0, templates });
+    out.push({ id: p.id, name: p.name, description: p.description, kind: p.kind, priceCents: p.priceCents, tiers: parseTiers(p.priceTiers), stock: stock.get(p.id) ?? 0, templates });
   }
   return out;
 }

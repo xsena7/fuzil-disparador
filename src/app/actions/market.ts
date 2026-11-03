@@ -27,7 +27,15 @@ export async function saveProductAction(_: FormState, form: FormData): Promise<F
   const active = form.get("active") === "on";
   if (!name) return { error: "Dê um nome ao produto (ex.: BM com template aprovado)" };
   if (!priceCents) return { error: "Digite o preço (ex.: 50 ou 49,90)" };
-  const data = { name, description, kind, priceCents, sort, active };
+  // Preço por quantidade (até 2 faixas): só entra a faixa com quantidade e preço preenchidos
+  const tiers = [0, 1].flatMap((i) => {
+    const min = Math.floor(Number(form.get(`tierMin${i}`)));
+    const price = parseMoney(String(form.get(`tierPrice${i}`) ?? ""));
+    return min >= 2 && price ? [{ min, priceCents: price }] : [];
+  });
+  if (tiers.some((t) => t.priceCents >= priceCents)) return { error: "O preço com desconto tem que ser menor que o preço normal" };
+  if (tiers.length === 2 && (tiers[0].min === tiers[1].min)) return { error: "As duas faixas de desconto estão com a mesma quantidade" };
+  const data = { name, description, kind, priceCents, priceTiers: tiers.sort((a, b) => a.min - b.min), sort, active };
   // E-mail de estoque do produto (opcional): o convite que chegar nele entra nesse produto
   const rawBox = String(form.get("mailbox") ?? "").trim();
   const local = rawBox ? cleanLocalPart(rawBox) : null;
