@@ -35,6 +35,8 @@ export type Sender = {
   display: string;
   businessId: string;
   businessName: string;
+  /** Nome do perfil no WhatsApp (o que o contato vê) */
+  profileName: string | null;
   wabaId: string; // id interno da WABA
   token: string;
   template: { name: string; language: string; components: TComponent[] };
@@ -139,6 +141,7 @@ export async function planSenders(
           display,
           businessId: business.id,
           businessName: business.name,
+          profileName: phone.verifiedName,
           wabaId: waba.id,
           token,
           template: { name: tpl.name, language: tpl.language, components: tpl.components as unknown as TComponent[] },

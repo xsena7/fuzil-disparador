@@ -248,7 +248,7 @@ async function SendStep({ campaignId }: { campaignId: string }) {
       <Card className="p-5">
         <div className="mb-3 font-semibold">Números que vão disparar</div>
         <div className="flex flex-wrap gap-2">
-          {plan.senders.map((s) => <Badge key={s.phoneId} color="green">{s.display} · {s.businessName}</Badge>)}
+          {plan.senders.map((s) => <span key={s.phoneId} title={`BM ${s.businessName}`}><Badge color="green">{s.display} · {s.profileName || s.businessName}</Badge></span>)}
           {plan.senders.length === 0 && <span className="text-red-600">Nenhum número apto.</span>}
         </div>
         {plan.skipped.length > 0 && (
