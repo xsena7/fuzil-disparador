@@ -7,7 +7,7 @@ export const CHANGELOG: Array<{ version: string; date: string; items: string[] }
     version: "3.56",
     date: "03/11/2026",
     items: [
-      "[admin] Admin → Integração com a Meta: campo \"ID da solução de parceiro\". Preenchido, o botão Conectar Cloud API já conecta a BM com a linha de crédito do parceiro (Gupshup), sem cartão","Métricas da campanha: \"Entregues\" voltou (cartão, tempo até entregar e coluna por número). Lidas, cliques e respostas voltam a mostrar a % das entregues"],
+      "[admin] Admin → Integração com a Meta: campo \"ID da solução de parceiro\". Preenchido, o botão Conectar Cloud API já conecta a BM com a linha de crédito do parceiro (Gupshup), sem cartão. Vale só para os administradores do Fuzil, nas próprias contas; os clientes continuam conectando normal","Métricas da campanha: \"Entregues\" voltou (cartão, tempo até entregar e coluna por número). Lidas, cliques e respostas voltam a mostrar a % das entregues"],
   },
   {
     version: "3.55",

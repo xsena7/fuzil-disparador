@@ -119,7 +119,7 @@ export default async function ConnectionsPage() {
       <div className="max-md:order-2 max-md:mt-10">
       <h2 className="mb-4 text-base font-semibold">Nova conexão</h2>
       <ConnectGuide open={businesses.length === 0} />
-      <EmbeddedSignup appId={env.metaAppId()} configId={env.metaConfigId()} graphVersion={env.metaGraphVersion()} solutionId={env.metaSolutionId()} />
+      <EmbeddedSignup appId={env.metaAppId()} configId={env.metaConfigId()} graphVersion={env.metaGraphVersion()} solutionId={auth.user.isSuperAdmin && !auth.inspecting ? env.metaSolutionId() : ""} />
 
       <SharedWabas workspace={auth.workspace.name} partnerId={FUZIL_BUSINESS_ID} owner={isOwner} />
 
