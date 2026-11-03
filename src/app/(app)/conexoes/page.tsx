@@ -1,4 +1,4 @@
-import { AlertTriangle, CheckCircle2, ChevronRight, CreditCard, KeyRound, MessagesSquare, RefreshCw, Phone, Plus, Trash2 } from "lucide-react";
+import { AlertTriangle, CheckCircle2, ChevronRight, CreditCard, KeyRound, MessagesSquare, RefreshCw, Phone, Plus, StickyNote, Trash2 } from "lucide-react";
 import { metaBillingUrl } from "@/lib/meta-links";
 import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
@@ -34,6 +34,7 @@ import {
 
   deleteWabaAction,
   deleteBusinessAction,
+  saveBusinessNoteAction,
   registerPhoneAction,
   addPhoneAction,
   requestPhoneCodeAction,
@@ -229,6 +230,11 @@ export default async function ConnectionsPage() {
                     {g.group.name}
                   </span>
                 ))}
+              {bm.notes && (
+                <span className="inline-flex max-w-xs items-center gap-1 truncate rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-800 ring-1 ring-inset ring-amber-200" title={bm.notes}>
+                  <StickyNote className="size-3 shrink-0" /> <span className="truncate">{bm.notes}</span>
+                </span>
+              )}
               <span className="ml-auto flex flex-wrap items-center gap-3 text-xs text-zinc-500">
                 <span>{bm.wabas.length} conta(s) · {phones} número(s)</span>
                 <Badge color="blue">Limite: {tierLabel(bm.messagingLimitTier)}</Badge>
@@ -247,6 +253,18 @@ export default async function ConnectionsPage() {
                 <Trash2 className="size-3.5" /> Excluir BM
               </ConfirmButton>
             </div>
+            {/* Observação da BM: fica visível do lado de fora da gaveta */}
+            <ActionForm action={saveBusinessNoteAction.bind(null, bm.id)} submit="Salvar observação" variant="secondary" className="mb-4 space-y-2">
+              <label className="flex items-center gap-1.5 text-xs font-medium text-zinc-600"><StickyNote className="size-3.5" /> Observação</label>
+              <textarea
+                name="notes"
+                defaultValue={bm.notes ?? ""}
+                maxLength={500}
+                rows={2}
+                placeholder="Ex.: BM do cliente João · cartão vence em dezembro · não usar no grupo 2"
+                className="w-full rounded-xl border border-zinc-200 bg-white px-3.5 py-2.5 text-sm outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100"
+              />
+            </ActionForm>
             {w && <div className="mb-4"><LimitWindow w={w} /></div>}
             <div className="space-y-3">
               {bm.wabas.map((waba) => (

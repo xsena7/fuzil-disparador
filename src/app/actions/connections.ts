@@ -592,3 +592,13 @@ export async function connectSharedWabaAction(wabaId: string): Promise<FormState
   revalidatePath("/conexoes");
   return { ok: `Conta conectada em ${auth.workspace.name}!` };
 }
+
+/** Observação da BM (aparece em Conexões, do lado de fora da gaveta). Vazio apaga. */
+export async function saveBusinessNoteAction(businessId: string, _: FormState, form: FormData): Promise<FormState> {
+  const auth = await requireAuth();
+  const notes = String(form.get("notes") ?? "").replace(/\r/g, "").trim().slice(0, 500);
+  const r = await prisma.businessManager.updateMany({ where: { id: businessId, workspaceId: auth.workspace.id }, data: { notes: notes || null } });
+  if (!r.count) return { error: "BM não encontrada" };
+  revalidatePath("/conexoes");
+  return { ok: notes ? "Observação salva!" : "Observação apagada." };
+}

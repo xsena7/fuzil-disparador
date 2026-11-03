@@ -4,6 +4,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "3.57",
+    date: "03/11/2026",
+    items: ["Conexões: cada BM tem um campo de observação. A observação aparece do lado de fora da gaveta, ao lado do nome da BM"],
+  },
+  {
     version: "3.56",
     date: "03/11/2026",
     items: [
