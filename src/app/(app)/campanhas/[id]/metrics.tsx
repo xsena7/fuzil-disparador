@@ -69,7 +69,7 @@ export async function Metrics({ campaignId }: { campaignId: string }) {
 
       {silent.length > 0 && (
         <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-          <b>Os avisos de entrega da Meta não estão chegando de {silent.length === 1 ? "uma conta" : `${silent.length} contas`}.</b> Por isso Lidas aparece baixo (só conta quem clicou ou respondeu): não quer dizer que as mensagens não chegaram.
+          <b>Os avisos de entrega da Meta não estão chegando de {silent.length === 1 ? "uma conta" : `${silent.length} contas`}.</b> Por isso Entregues e Lidas aparecem baixos (só contam quem clicou ou respondeu): não quer dizer que as mensagens não chegaram.
           <ul className="mt-2 space-y-0.5">
             {silent.map((h) => (
               <li key={h.waba + h.bm}>
@@ -85,16 +85,18 @@ export async function Metrics({ campaignId }: { campaignId: string }) {
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         <Stat label="Público" value={n(t.total)} sub={t.pending ? `${n(t.pending)} na fila` : undefined} />
         <Stat label="Enviadas" value={n(t.sent)} sub={`${pct(t.sent, t.total)} do público · aceitas pela Meta`} tone="brand" />
-        <Stat label="Lidas (abriram)" value={n(t.read)} sub={pct(t.read, t.sent) + " das enviadas"} tone="blue" />
-        <Stat label="Clicaram no link" value={n(t.clicked)} sub={`${pct(t.clicked, t.sent)} das enviadas · ${n(t.clicks)} cliques`} tone="violet" />
-        <Stat label="Responderam" value={n(t.replied)} sub={pct(t.replied, t.sent) + " das enviadas"} tone="pink" />
-        <Stat label="Descadastraram (SAIR)" value={n(t.optedOut)} sub={pct(t.optedOut, t.sent)} tone={t.optedOut ? "amber" : "default"} />
+        <Stat label="Entregues" value={n(t.delivered)} sub={pct(t.delivered, t.sent) + " das enviadas"} tone="green" />
+        <Stat label="Lidas (abriram)" value={n(t.read)} sub={pct(t.read, t.delivered) + " das entregues"} tone="blue" />
+        <Stat label="Clicaram no link" value={n(t.clicked)} sub={`${pct(t.clicked, t.delivered)} das entregues · ${n(t.clicks)} cliques`} tone="violet" />
+        <Stat label="Responderam" value={n(t.replied)} sub={pct(t.replied, t.delivered) + " das entregues"} tone="pink" />
+        <Stat label="Descadastraram (SAIR)" value={n(t.optedOut)} sub={pct(t.optedOut, t.delivered)} tone={t.optedOut ? "amber" : "default"} />
         <Stat label="Não entregues" value={n(m.undeliverable)} sub="Sem WhatsApp, bloqueou ou app antigo" />
         <Stat label="Falhas" value={n(t.failed)} sub={`${pct(t.failed, t.total)}${t.failed ? " · não cobradas" : ""}`} tone={t.failed ? "red" : "default"} />
         <Stat label="Créditos usados" value={n(t.credits)} sub={`Falhas voltam para o saldo${t.skipped ? ` · ${n(t.skipped)} ignorados` : ""}`} />
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <Stat label="Tempo mediano até entregar" value={duration(m.timing.deliver)} />
         <Stat label="Tempo mediano até ler" value={duration(m.timing.read)} />
         <Stat label="Tempo mediano até clicar" value={duration(m.timing.click)} />
       </div>
@@ -129,20 +131,21 @@ export async function Metrics({ campaignId }: { campaignId: string }) {
         <div className="mb-2 flex items-center justify-between">
           <div className="font-semibold">Desempenho por número</div>
         </div>
-        <Table head={["Número", "BM", "Qualidade", "Enviadas", "Lidas", "Cliques", "Respostas", "Falhas"]}>
+        <Table head={["Número", "BM", "Qualidade", "Enviadas", "Entregues", "Lidas", "Cliques", "Respostas", "Falhas"]}>
           {m.senders.map((s) => (
             <tr key={s.id}>
               <Td className="whitespace-nowrap font-medium">{s.display}</Td>
               <Td className="whitespace-nowrap">{s.business}</Td>
               <Td><QualityBadge q={s.quality} /></Td>
               <Td className="whitespace-nowrap">{n(s.sent)}</Td>
-              <Td className="whitespace-nowrap">{n(s.read)} <span className="text-xs text-zinc-400">{pct(s.read, s.sent)}</span></Td>
-              <Td className="whitespace-nowrap">{n(s.clicked)} <span className="text-xs text-zinc-400">{pct(s.clicked, s.sent)}</span></Td>
+              <Td className="whitespace-nowrap">{n(s.delivered)} <span className="text-xs text-zinc-400">{pct(s.delivered, s.sent)}</span></Td>
+              <Td className="whitespace-nowrap">{n(s.read)} <span className="text-xs text-zinc-400">{pct(s.read, s.delivered)}</span></Td>
+              <Td className="whitespace-nowrap">{n(s.clicked)} <span className="text-xs text-zinc-400">{pct(s.clicked, s.delivered)}</span></Td>
               <Td className="whitespace-nowrap">{n(s.replied)}</Td>
               <Td className={s.failed ? "whitespace-nowrap text-red-600" : "whitespace-nowrap"}>{n(s.failed)}</Td>
             </tr>
           ))}
-          {m.senders.length === 0 && <tr><Td colSpan={8} className="text-center text-zinc-500">Nenhum envio ainda.</Td></tr>}
+          {m.senders.length === 0 && <tr><Td colSpan={9} className="text-center text-zinc-500">Nenhum envio ainda.</Td></tr>}
         </Table>
       </div>
 

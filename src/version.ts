@@ -4,6 +4,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "3.56",
+    date: "03/11/2026",
+    items: ["Métricas da campanha: \"Entregues\" voltou (cartão, tempo até entregar e coluna por número). Lidas, cliques e respostas voltam a mostrar a % das entregues"],
+  },
+  {
     version: "3.55",
     date: "03/11/2026",
     items: [
