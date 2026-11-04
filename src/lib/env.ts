@@ -30,6 +30,16 @@ export const env = {
   // Vendas (marketplace)
   mpAccessToken: () => platform("MP_ACCESS_TOKEN"),
   mpApiUrl: () => opt("MP_API_URL", "https://api.mercadopago.com").replace(/\/$/, ""),
+  syncpayClientId: () => platform("SYNCPAY_CLIENT_ID").trim(),
+  syncpaySecret: () => platform("SYNCPAY_CLIENT_SECRET").trim(),
+  syncpayApiUrl: () => opt("SYNCPAY_API_URL", "https://api.syncpayments.com.br").replace(/\/$/, ""),
+  /** Quem gera o Pix das recargas e da loja. */
+  paymentProvider: (): "syncpay" | "mercadopago" => {
+    const v = platform("PAYMENT_PROVIDER").trim().toLowerCase().replace(/[^a-z]/g, "");
+    if (v === "mercadopago" || v === "mp") return "mercadopago";
+    if (v === "syncpay") return "syncpay";
+    return platform("SYNCPAY_CLIENT_ID") && platform("SYNCPAY_CLIENT_SECRET") ? "syncpay" : "mercadopago";
+  },
   marketWhatsapp: () => platform("MARKET_WHATSAPP").replace(/\D/g, ""),
   /** Preço de 1 crédito em reais (padrão R$ 0,01). Aceita "0,01" ou "0.01". */
   creditPrice: () => {

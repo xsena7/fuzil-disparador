@@ -187,3 +187,10 @@ export async function testMercadoPagoAction() {
   const { mpTestPix } = await import("@/lib/market");
   return mpTestPix(auth.user.email);
 }
+
+/** Botão "Testar a SyncPay" (Admin → Vendas). */
+export async function testSyncPayAction() {
+  await requireFinancePartner();
+  const { syncpayTest } = await import("@/lib/syncpay");
+  return syncpayTest();
+}

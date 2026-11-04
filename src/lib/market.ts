@@ -10,7 +10,8 @@ import { platformOwnerId, SUPPORT_WHATSAPP } from "./onboarding";
 import { buildGuidePdf } from "./market-pdf";
 import { normalizeBmName } from "./market-invite";
 import { recordCompanyIncome } from "./finance-auto";
-import { mp, mpCreatePix, mpDate, mpGetPayment, paidEnough, type MpPayment } from "./mercadopago";
+import { mp, mpDate, type MpPayment } from "./mercadopago";
+import { createPix, getPixPayment, type PixPayment } from "./pix";
 
 /** Quanto tempo o estoque fica separado esperando o Pix. */
 export const RESERVE_MINUTES = 15;
@@ -50,7 +51,7 @@ export function supportLink(text: string) {
 // Pedido: reserva + Pix
 // ---------------------------------------------------------------------------
 
-export async function createOrder(input: { productId: string; quantity: number; name: string; email: string; phone: string | null }): Promise<{ token: string } | { error: string }> {
+export async function createOrder(input: { productId: string; quantity: number; name: string; email: string; phone: string | null; document?: string | null }): Promise<{ token: string } | { error: string }> {
   const quantity = Math.max(1, Math.min(50, Math.floor(input.quantity)));
   const reserved = await prisma.$transaction(async (tx) => {
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(${LOCK})`;
@@ -68,12 +69,14 @@ export async function createOrder(input: { productId: string; quantity: number; 
   if ("error" in reserved) return { error: reserved.error ?? "Não deu certo" };
   const { order, product } = reserved;
   try {
-    const pix = await mpCreatePix({
+    const pix = await createPix({
       amountCents: order.totalCents,
       description: `${quantity}x ${product.name}`,
       reference: order.id,
       email: order.email,
-      firstName: order.name.split(" ")[0],
+      name: order.name,
+      document: input.document,
+      phone: order.phone,
       expiresAt: order.expiresAt,
       idempotency: order.id,
     });
@@ -94,24 +97,25 @@ async function releaseOrder(orderId: string, status: "EXPIRED" | "CANCELLED", er
   ]);
 }
 
-/** Pagamento avisado pelo Mercado Pago: confere direto na API (nunca confia só no aviso) e entrega. */
+/** Pagamento avisado pelo gateway: confere direto na API (nunca confia só no aviso) e entrega. */
 export async function confirmPayment(paymentId: string) {
-  return confirmMarketPayment(await mpGetPayment(paymentId));
+  return confirmMarketPayment(await getPixPayment(paymentId));
 }
 
-/** Pagamento de um pedido de BM (já consultado no Mercado Pago). */
-export async function confirmMarketPayment(pay: MpPayment) {
-  if (pay.status !== "approved" || !pay.external_reference) return { status: pay.status };
-  const order = await prisma.marketOrder.findUnique({ where: { id: pay.external_reference } });
-  if (!order || (order.mpPaymentId && order.mpPaymentId !== String(pay.id))) return { status: "ignored" };
-  if (!paidEnough(pay, order.totalCents)) {
-    await prisma.marketOrder.update({ where: { id: order.id }, data: { error: `Pago valor menor: ${pay.transaction_amount}` } });
+/** Pagamento de um pedido de BM (já consultado no gateway). */
+export async function confirmMarketPayment(pay: PixPayment) {
+  if (!pay.approved) return { status: pay.status };
+  // Mercado Pago diz de quem é pela referência; SyncPay, pelo id do Pix salvo no pedido
+  const order = pay.reference ? await prisma.marketOrder.findUnique({ where: { id: pay.reference } }) : await prisma.marketOrder.findUnique({ where: { mpPaymentId: pay.id } });
+  if (!order || (order.mpPaymentId && order.mpPaymentId !== pay.id)) return { status: "ignored" };
+  if (pay.amountCents < order.totalCents) {
+    await prisma.marketOrder.update({ where: { id: order.id }, data: { error: `Pago valor menor: ${(pay.amountCents / 100).toFixed(2)}` } });
     return { status: "amount_mismatch" };
   }
   // Só um aviso marca como pago (e avisa vocês uma vez só)
   const marked = await prisma.marketOrder.updateMany({
     where: { id: order.id, status: { in: ["PENDING", "EXPIRED", "CANCELLED"] } },
-    data: { status: "PAID", paidAt: new Date(), mpPaymentId: String(pay.id) },
+    data: { status: "PAID", paidAt: new Date(), mpPaymentId: pay.id },
   });
   if (marked.count) {
     await notifyOwner("SALE", `Venda paga: ${order.quantity} BM(s) · ${brlCents(order.totalCents)}`, `${order.name} (${order.email}).`, { orderId: order.id });
@@ -275,7 +279,7 @@ export async function matchInvites() {
 /** Rodada do worker: confere Pix sem aviso, vence reservas e tenta de novo entregas que falharam. */
 export async function marketTick() {
   const now = Date.now();
-  // Pix pendente: pergunta ao Mercado Pago (caso o aviso tenha se perdido)
+  // Pix pendente: pergunta ao gateway (caso o aviso tenha se perdido)
   const pending = await prisma.marketOrder.findMany({ where: { status: "PENDING", mpPaymentId: { not: null } }, take: 50 });
   for (const o of pending) {
     try {

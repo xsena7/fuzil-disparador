@@ -23,7 +23,7 @@ import { stockMailbox } from "@/lib/mail";
 import { cachedSetting } from "@/lib/settings-cache";
 import { PasswordInput } from "@/components/password-input";
 import { adminBlockLinksAccountAction, adminDeleteLinkAction } from "@/app/actions/links";
-import { testMercadoPagoAction } from "@/app/actions/market";
+import { testMercadoPagoAction, testSyncPayAction } from "@/app/actions/market";
 import { Trash2 } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -152,13 +152,19 @@ export default async function AdminPage() {
         meta={<span>{salesOk ? "Mercado Pago e e-mail do estoque configurados" : `Falta ${[!env.mpAccessToken() && "o Mercado Pago", !stockBox && "o e-mail do estoque"].filter(Boolean).join(" e ")}`}</span>}
       >
         <p className="mb-4 text-sm text-zinc-500">
-          Pagamento no Pix pelo Mercado Pago. Os convites das BMs chegam no e-mail do estoque, que é criado em <b>E-mails</b> (marcando &quot;e-mail do estoque&quot;):{" "}
+          Pix das recargas e da loja: agora pela <b>{env.paymentProvider() === "syncpay" ? "SyncPay" : "Mercado Pago"}</b>. Na SyncPay, libere o IP do servidor em Developer → API → IPs Autorizados. Os convites das BMs chegam no e-mail do estoque, que é criado em <b>E-mails</b> (marcando &quot;e-mail do estoque&quot;):{" "}
           {stockBox ? <b className="text-emerald-700">{stockBox.address}</b> : <b className="text-amber-700">ainda não escolhido</b>}. Campos secretos em branco mantêm o valor atual.
         </p>
         {env.mpAccessToken() && (
           <div className="mb-4 flex flex-wrap items-center gap-3 rounded-xl bg-zinc-50 p-3 text-sm">
             <span className="flex-1 text-zinc-600">Gera um Pix de R$ 1,00 e cancela na hora, só para conferir se o token funciona.</span>
             <ConfirmButton action={testMercadoPagoAction} className="px-3 py-1.5 text-xs">Testar o Mercado Pago</ConfirmButton>
+          </div>
+        )}
+        {env.syncpayClientId() && env.syncpaySecret() && (
+          <div className="mb-4 flex flex-wrap items-center gap-3 rounded-xl bg-zinc-50 p-3 text-sm">
+            <span className="flex-1 text-zinc-600">Confere se as chaves e o IP liberado funcionam (só consulta o saldo, não cria cobrança).</span>
+            <ConfirmButton action={testSyncPayAction} className="px-3 py-1.5 text-xs">Testar a SyncPay</ConfirmButton>
           </div>
         )}
         <ActionForm action={adminSavePlatformAction} submit="Salvar vendas">
@@ -265,7 +271,7 @@ export default async function AdminPage() {
 }
 
 /** Configurações de vendas (Mercado Pago, e-mail do estoque, WhatsApp) ficam na gaveta de Vendas. */
-const isSalesKey = (key: string) => key.startsWith("MP_") || key.startsWith("MARKET_");
+const isSalesKey = (key: string) => key.startsWith("MP_") || key.startsWith("MARKET_") || key.startsWith("SYNCPAY_") || key === "PAYMENT_PROVIDER";
 
 function SettingField({ name, label, secret }: { name: string; label: string; secret: boolean }) {
   const current = cachedSetting(name) ?? process.env[name] ?? "";

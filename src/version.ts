@@ -4,6 +4,14 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "3.60",
+    date: "04/11/2026",
+    items: [
+      "Saldo: recarga de créditos pelo Pix por um novo meio de pagamento. Quando pedido, informe CPF/CNPJ e WhatsApp de quem paga (ficam lembrados neste aparelho)",
+      "[admin] Admin → Vendas: SyncPay como gateway do Pix (recargas e loja de BM). Campos ID Público e ID Privado, escolha do gateway e botão Testar a SyncPay. O aviso da SyncPay só faz o Fuzil conferir o pagamento na API antes de liberar",
+    ],
+  },
+  {
     version: "3.59",
     date: "04/11/2026",
     items: ["[admin] Admin → Empresa e site: campo para os disparos feitos antes do Fuzil. O contador do site mostra esse histórico real mais os disparos do Fuzil, subindo sozinho"],

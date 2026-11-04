@@ -14,6 +14,9 @@ export const PLATFORM_KEYS = [
   { key: "EMAIL_FROM", label: "Remetente dos e-mails", secret: false },
   { key: "DISCORD_ERRORS_WEBHOOK", label: "Webhook do Discord para erros do sistema", secret: true },
   { key: "MP_ACCESS_TOKEN", label: "Vendas: Access Token do Mercado Pago (produção)", secret: true },
+  { key: "SYNCPAY_CLIENT_ID", label: "Vendas: SyncPay ID Público (client_id)", secret: false },
+  { key: "SYNCPAY_CLIENT_SECRET", label: "Vendas: SyncPay ID Privado (client_secret)", secret: true },
+  { key: "PAYMENT_PROVIDER", label: "Vendas: gateway do Pix (escreva syncpay ou mercadopago; vazio = SyncPay se estiver preenchida)", secret: false },
   { key: "MARKET_WHATSAPP", label: "Vendas: WhatsApp do suporte (só números, com 55)", secret: false },
   { key: "MARKET_CREDIT_PRICE", label: "Vendas: preço de 1 crédito em R$ (padrão 0,01)", secret: false },
 ] as const;

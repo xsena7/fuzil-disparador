@@ -196,7 +196,7 @@ export default async function VendasPage({ searchParams }: { searchParams: Promi
                       Marcar como pago
                     </ConfirmButton>
                   )}
-                  {o.mpPaymentId && <span className="self-center text-xs text-zinc-400">Mercado Pago #{o.mpPaymentId}</span>}
+                  {o.mpPaymentId && <span className="self-center text-xs text-zinc-400">{o.mpPaymentId.startsWith("sp:") ? `SyncPay ${o.mpPaymentId.slice(3, 11)}` : `Mercado Pago #${o.mpPaymentId}`}</span>}
                 </div>
               </Drawer>
             );

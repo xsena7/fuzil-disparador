@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { BadgeCheck, Clock, Link2, Mail, ShieldCheck, Zap } from "lucide-react";
 import { vitrine } from "@/lib/market";
 import { ProductCard } from "./buy";
+import { pixNeedsPayerDoc } from "@/lib/pix";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "BMs para disparo · Fuzil Disparador", description: "BMs prontas para disparar pela API oficial do WhatsApp, com entrega automática." };
@@ -21,6 +22,7 @@ const FAQ: Array<[string, string]> = [
 
 export default async function VendasPage() {
   const products = await vitrine();
+  const needsDoc = pixNeedsPayerDoc();
   const total = products.reduce((a, p) => a + p.stock, 0);
   return (
     <div className="bg-ink text-zinc-300">
@@ -66,7 +68,7 @@ export default async function VendasPage() {
         ) : (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {products.map((p) => (
-              <ProductCard key={p.id} product={p} />
+              <ProductCard key={p.id} product={p} needsDoc={needsDoc} />
             ))}
           </div>
         )}

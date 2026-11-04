@@ -5,6 +5,7 @@ import { MAX_CREDITS, MIN_AMOUNT_CENTS, creditPackages, minCredits, purchaseStat
 import { supportLink } from "@/lib/market";
 import { Badge, Card, PageHeader, Stat, Table, Td } from "@/components/ui";
 import { BuyCredits } from "./buy-credits";
+import { pixNeedsPayerDoc } from "@/lib/pix";
 
 export const dynamic = "force-dynamic";
 
@@ -58,7 +59,7 @@ export default async function BalancePage() {
           {price.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 2, maximumFractionDigits: 4 })} por crédito (1 crédito = 1 disparo). Recarga mínima de {brl(MIN_AMOUNT_CENTS)}. Pague no Pix e o saldo entra sozinho.
         </p>
         {canBuy ? (
-          <BuyCredits price={price} packages={creditPackages(price)} min={minCredits(price)} minCents={MIN_AMOUNT_CENTS} max={MAX_CREDITS} resume={resume} />
+          <BuyCredits price={price} packages={creditPackages(price)} min={minCredits(price)} minCents={MIN_AMOUNT_CENTS} max={MAX_CREDITS} resume={resume} needsDoc={pixNeedsPayerDoc()} />
         ) : (
           <p className="rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-800">
             A compra pelo Pix ainda não está ligada.{" "}

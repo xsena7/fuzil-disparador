@@ -25,7 +25,7 @@ function Bubble({ t }: { t: TemplatePreview }) {
   );
 }
 
-export function ProductCard({ product: p }: { product: VitrineProduct }) {
+export function ProductCard({ product: p, needsDoc = false }: { product: VitrineProduct; needsDoc?: boolean }) {
   const [qty, setQty] = useState(1);
   const [open, setOpen] = useState(false);
   const [tpl, setTpl] = useState(0);
@@ -116,12 +116,12 @@ export function ProductCard({ product: p }: { product: VitrineProduct }) {
         </button>
       </div>
       {/* Portal: o card usa transform no hover, e um modal fixo dentro dele ficaria preso no card */}
-      {open && createPortal(<Checkout product={p} qty={qty} onClose={() => setOpen(false)} />, document.body)}
+      {open && createPortal(<Checkout product={p} qty={qty} needsDoc={needsDoc} onClose={() => setOpen(false)} />, document.body)}
     </div>
   );
 }
 
-function Checkout({ product: p, qty, onClose }: { product: VitrineProduct; qty: number; onClose: () => void }) {
+function Checkout({ product: p, qty, needsDoc, onClose }: { product: VitrineProduct; qty: number; needsDoc: boolean; onClose: () => void }) {
   const [state, action, pending] = useActionState(createOrderAction, undefined);
   // Pix gerado: abre a página do pedido (navegação normal, para passar pela reescrita do domínio do site)
   useEffect(() => {
@@ -150,8 +150,13 @@ function Checkout({ product: p, qty, onClose }: { product: VitrineProduct; qty: 
           <label className="block text-sm font-medium">E-mail (o convite chega aqui)
             <input name="email" type="email" required maxLength={120} className="mt-1 w-full rounded-xl border border-zinc-200 px-3.5 py-2.5 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100" />
           </label>
-          <label className="block text-sm font-medium">WhatsApp (opcional)
-            <input name="phone" inputMode="tel" maxLength={30} placeholder="(11) 99999-9999" className="mt-1 w-full rounded-xl border border-zinc-200 px-3.5 py-2.5 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100" />
+          {needsDoc && (
+            <label className="block text-sm font-medium">CPF ou CNPJ (pedido pelo Pix)
+              <input name="document" required inputMode="numeric" maxLength={18} placeholder="000.000.000-00" className="mt-1 w-full rounded-xl border border-zinc-200 px-3.5 py-2.5 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100" />
+            </label>
+          )}
+          <label className="block text-sm font-medium">WhatsApp{needsDoc ? "" : " (opcional)"}
+            <input name="phone" required={needsDoc} inputMode="tel" maxLength={30} placeholder="(11) 99999-9999" className="mt-1 w-full rounded-xl border border-zinc-200 px-3.5 py-2.5 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100" />
           </label>
         </div>
         <ul className="mt-4 space-y-1.5 text-xs text-zinc-500">

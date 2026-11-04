@@ -6,6 +6,7 @@ import { clientIp, tooMany } from "@/lib/rate-limit";
 import { normalizePhone } from "@/lib/phone";
 import { sitePath } from "@/lib/site-path";
 import { prisma } from "@/lib/db";
+import { pixNeedsPayerDoc, validDocument } from "@/lib/pix";
 
 // Quantas BMs um mesmo IP pode deixar separadas por hora (sem isso dá para travar o estoque sem pagar)
 // Trava contra quem tenta segurar o estoque sem pagar: soma só os pedidos deste aparelho que ainda esperam o Pix
@@ -20,6 +21,7 @@ const schema = z.object({
   name: z.string().trim().min(2, "Digite seu nome").max(80),
   email: z.string().trim().toLowerCase().email("E-mail inválido").max(120),
   phone: z.string().trim().max(30).optional(),
+  document: z.string().trim().max(20).optional(),
 });
 
 /** Compra na vitrine (/vendas): separa o estoque por 15 minutos e gera o Pix. */
@@ -29,6 +31,12 @@ export async function createOrderAction(_: OrderState, form: FormData): Promise<
   const parsed = schema.safeParse(Object.fromEntries(form));
   if (!parsed.success) return { error: parsed.error.issues[0].message };
   const { productId, quantity, name, email } = parsed.data;
+  const document = (parsed.data.document ?? "").replace(/\D/g, "");
+  if (pixNeedsPayerDoc()) {
+    if (!validDocument(document)) return { error: "CPF ou CNPJ inválido. Confira os números." };
+    const digits = (parsed.data.phone ?? "").replace(/\D/g, "");
+    if (digits.length < 10 || digits.length > 13) return { error: "WhatsApp inválido. Coloque com DDD." };
+  }
   // Um pedido esperando Pix por e-mail
   if (await prisma.marketOrder.count({ where: { email, status: "PENDING", expiresAt: { gt: new Date() } } }))
     return { error: "Você já tem um pedido esperando o Pix. Pague esse ou espere ele vencer (15 minutos) para fazer outro." };
@@ -39,7 +47,7 @@ export async function createOrderAction(_: OrderState, form: FormData): Promise<
     : null;
   if ((waiting?._sum.quantity ?? 0) + quantity > MAX_PENDING_PER_IP) return { error: "Muitas BMs separadas daqui esperando o Pix. Pague os pedidos abertos ou espere eles vencerem (15 minutos)." };
   const phone = parsed.data.phone ? normalizePhone(parsed.data.phone) : null;
-  const r = await createOrder({ productId, quantity, name, email, phone: phone || null });
+  const r = await createOrder({ productId, quantity, name, email, phone: phone || null, document });
   if ("error" in r) return { error: r.error };
   reservedByIp.set(ip, [...recent, { at: now, token: r.token }]);
   if (reservedByIp.size > 10_000) reservedByIp.clear();

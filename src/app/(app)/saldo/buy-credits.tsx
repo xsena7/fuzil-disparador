@@ -12,7 +12,7 @@ const n = (v: number) => v.toLocaleString("pt-BR");
 const brl = (c: number) => (c / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
 /** Comprar créditos: escolhe o pacote (ou digita), gera o Pix e o saldo entra sozinho quando o pagamento cai. */
-export function BuyCredits({ price, packages, min, minCents, max, resume }: { price: number; packages: number[]; min: number; minCents: number; max: number; resume: { token: string; status: PurchaseStatus } | null }) {
+export function BuyCredits({ price, packages, min, minCents, max, resume, needsDoc = false }: { price: number; packages: number[]; min: number; minCents: number; max: number; resume: { token: string; status: PurchaseStatus } | null; needsDoc?: boolean }) {
   const [credits, setCredits] = useState(packages[1] ?? packages[0]);
   const [custom, setCustom] = useState("");
   const [state, action, pending] = useActionState(buyCreditsAction, undefined);
@@ -25,6 +25,21 @@ export function BuyCredits({ price, packages, min, minCents, max, resume }: { pr
   const [now, setNow] = useState(() => Date.now());
   const [copied, setCopied] = useState(false);
   const router = useRouter();
+  // CPF/CNPJ e WhatsApp de quem paga (o gateway pede): ficam lembrados neste aparelho
+  const [payer, setPayer] = useState({ document: "", phone: "" });
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem("keep:pagador") ?? "null") as { document?: string; phone?: string } | null;
+      if (saved) setPayer({ document: saved.document ?? "", phone: saved.phone ?? "" });
+    } catch {}
+  }, []);
+  const editPayer = (k: "document" | "phone", v: string) => {
+    const next = { ...payer, [k]: v };
+    setPayer(next);
+    try {
+      localStorage.setItem("keep:pagador", JSON.stringify(next));
+    } catch {}
+  };
 
   const chosen = custom ? Number(custom.replace(/\D/g, "")) || 0 : credits;
   const cents = useMemo(() => Math.round(chosen * price * 100), [chosen, price]);
@@ -104,7 +119,7 @@ export function BuyCredits({ price, packages, min, minCents, max, resume }: { pr
     return (
       <div className="grid gap-6 md:grid-cols-[auto_1fr] md:items-center">
         {st.pixQr ? (
-          // QR do Pix gerado pelo Mercado Pago (imagem em base64)
+          // QR do Pix (imagem em base64)
           // eslint-disable-next-line @next/next/no-img-element
           <img src={`data:image/png;base64,${st.pixQr}`} alt="QR Code do Pix" className="mx-auto size-52 rounded-2xl ring-1 ring-zinc-200" />
         ) : (
@@ -161,6 +176,18 @@ export function BuyCredits({ price, packages, min, minCents, max, resume }: { pr
           </button>
         ))}
       </div>
+      {needsDoc && (
+        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+          <label className="block text-sm font-medium text-zinc-700">
+            CPF ou CNPJ de quem paga
+            <input name="document" value={payer.document} onChange={(e) => editPayer("document", e.target.value.slice(0, 18))} required inputMode="numeric" placeholder="000.000.000-00" className="mt-1 block w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100" />
+          </label>
+          <label className="block text-sm font-medium text-zinc-700">
+            WhatsApp de quem paga
+            <input name="phone" value={payer.phone} onChange={(e) => editPayer("phone", e.target.value.slice(0, 20))} required inputMode="tel" placeholder="(11) 99999-9999" className="mt-1 block w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100" />
+          </label>
+        </div>
+      )}
       <div className="mt-3 flex flex-wrap items-end gap-3">
         <label className="block text-sm font-medium text-zinc-700">
           Outra quantidade

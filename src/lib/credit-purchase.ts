@@ -4,7 +4,7 @@ import { env } from "./env";
 import { randomToken } from "./crypto";
 import { createAlert } from "./alerts";
 import { platformOwnerId } from "./onboarding";
-import { mpCreatePix, mpGetPayment, paidEnough, type MpPayment } from "./mercadopago";
+import { createPix, getPixPayment, type PixPayment } from "./pix";
 import { recordCompanyIncome } from "./finance-auto";
 
 /** Recarga mínima: R$ 60,00 (a quantidade mínima de créditos sai do preço do crédito). */
@@ -33,7 +33,7 @@ export function creditsPriceCents(credits: number, price = env.creditPrice()): n
 const brl = (c: number) => (c / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 const n = (v: number) => v.toLocaleString("pt-BR");
 
-export async function createCreditPurchase(input: { workspaceId: string; userId: string; email: string; name: string; credits: number }): Promise<{ token: string } | { error: string }> {
+export async function createCreditPurchase(input: { workspaceId: string; userId: string; email: string; name: string; credits: number; document?: string | null; phone?: string | null }): Promise<{ token: string } | { error: string }> {
   const credits = Math.floor(input.credits);
   const amountCents = creditsPriceCents(credits);
   if (!Number.isFinite(credits) || credits < 1 || amountCents < MIN_AMOUNT_CENTS)
@@ -46,12 +46,14 @@ export async function createCreditPurchase(input: { workspaceId: string; userId:
     data: { token: randomToken(18), workspaceId: input.workspaceId, userId: input.userId, credits, amountCents, expiresAt: new Date(Date.now() + CREDIT_PIX_MINUTES * 60_000) },
   });
   try {
-    const pix = await mpCreatePix({
+    const pix = await createPix({
       amountCents,
       description: `${n(credits)} créditos Fuzil Disparador`,
       reference: `cred:${purchase.id}`,
       email: input.email,
-      firstName: input.name.split(" ")[0],
+      name: input.name,
+      document: input.document,
+      phone: input.phone,
       expiresAt: purchase.expiresAt,
       idempotency: `cred-${purchase.id}`,
     });
@@ -64,20 +66,23 @@ export async function createCreditPurchase(input: { workspaceId: string; userId:
   }
 }
 
-/** Pagamento de uma recarga (já consultado no Mercado Pago). O saldo entra uma vez só, mesmo com vários avisos. */
-export async function confirmCreditPayment(pay: MpPayment) {
-  if (pay.status !== "approved" || !pay.external_reference?.startsWith("cred:")) return { status: pay.status };
-  const purchase = await prisma.creditPurchase.findUnique({ where: { id: pay.external_reference.slice(5) } });
-  if (!purchase || (purchase.mpPaymentId && purchase.mpPaymentId !== String(pay.id))) return { status: "ignored" };
-  if (!paidEnough(pay, purchase.amountCents)) {
-    await prisma.creditPurchase.update({ where: { id: purchase.id }, data: { error: `Pago valor menor: ${pay.transaction_amount}` } });
+/** Pagamento de uma recarga (já consultado no gateway). O saldo entra uma vez só, mesmo com vários avisos. */
+export async function confirmCreditPayment(pay: PixPayment) {
+  if (!pay.approved) return { status: pay.status };
+  // Mercado Pago diz de quem é pela referência; SyncPay, pelo id do Pix salvo na recarga
+  const purchase = pay.reference
+    ? pay.reference.startsWith("cred:") ? await prisma.creditPurchase.findUnique({ where: { id: pay.reference.slice(5) } }) : null
+    : await prisma.creditPurchase.findUnique({ where: { mpPaymentId: pay.id } });
+  if (!purchase || (purchase.mpPaymentId && purchase.mpPaymentId !== pay.id)) return { status: "ignored" };
+  if (pay.amountCents < purchase.amountCents) {
+    await prisma.creditPurchase.update({ where: { id: purchase.id }, data: { error: `Pago valor menor: ${(pay.amountCents / 100).toFixed(2)}` } });
     return { status: "amount_mismatch" };
   }
   const credited = await prisma.$transaction(async (tx) => {
-    // Só quem muda de "não pago" para "pago" credita (o Mercado Pago avisa mais de uma vez, e o worker também confere)
+    // Só quem muda de "não pago" para "pago" credita (o gateway avisa mais de uma vez, e o worker também confere)
     const marked = await tx.creditPurchase.updateMany({
       where: { id: purchase.id, status: { in: ["PENDING", "EXPIRED", "CANCELLED"] } },
-      data: { status: "PAID", paidAt: new Date(), mpPaymentId: String(pay.id), error: null },
+      data: { status: "PAID", paidAt: new Date(), mpPaymentId: pay.id, error: null },
     });
     if (!marked.count) return null;
     const ws = await tx.workspace.update({ where: { id: purchase.workspaceId }, data: { creditBalance: { increment: purchase.credits } }, select: { creditBalance: true, name: true } });
@@ -108,7 +113,7 @@ export async function creditTick() {
   const pending = await prisma.creditPurchase.findMany({ where: { status: "PENDING", mpPaymentId: { not: null } }, take: 50 });
   for (const p of pending) {
     try {
-      const r = await confirmCreditPayment(await mpGetPayment(p.mpPaymentId!));
+      const r = await confirmCreditPayment(await getPixPayment(p.mpPaymentId!));
       if (r.status !== "approved" && r.status !== "already" && p.expiresAt.getTime() < now - 60_000)
         await prisma.creditPurchase.updateMany({ where: { id: p.id, status: "PENDING" }, data: { status: "EXPIRED" } });
     } catch {
