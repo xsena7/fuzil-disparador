@@ -4,6 +4,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "3.59",
+    date: "04/11/2026",
+    items: ["[admin] Admin → Empresa e site: campo para os disparos feitos antes do Fuzil. O contador do site mostra esse histórico real mais os disparos do Fuzil, subindo sozinho"],
+  },
+  {
     version: "3.58",
     date: "04/11/2026",
     items: [

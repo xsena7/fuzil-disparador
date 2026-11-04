@@ -108,7 +108,8 @@ export default async function SitePage() {
   const whatsapp = c.phone.replace(/\D/g, "") || SUPPORT_WHATSAPP;
   const waTo = (msg: string) => `https://wa.me/${whatsapp}?text=${encodeURIComponent(msg)}`;
   const wa = waTo("Oi! Quero começar a disparar com o Fuzil Disparador.");
-  const sent = await totalSent();
+  // Histórico real de antes do Fuzil + o que o Fuzil já enviou (continua subindo sozinho)
+  const sent = c.priorSends + (await totalSent());
   return (
     <>
       <section className="relative overflow-hidden bg-ink text-white">
@@ -132,7 +133,7 @@ export default async function SitePage() {
             </p>
             {sent >= 10_000 && (
               <p className="mt-4 text-sm text-zinc-400">
-                <b className="text-white">{roundDown(sent)}</b> de mensagens já enviadas pelo {c.brand}
+                <b className="text-white">{roundDown(sent)}</b> {c.priorSends ? "de mensagens já disparadas pela nossa equipe" : `de mensagens já enviadas pelo ${c.brand}`}
               </p>
             )}
             <div className="mt-8 flex flex-wrap gap-3">

@@ -11,6 +11,8 @@ export function company() {
     email: get("COMPANY_EMAIL"),
     phone: get("COMPANY_PHONE"),
     domainVerification: get("META_DOMAIN_VERIFICATION"),
+    /** Disparos reais feitos pela equipe antes do Fuzil existir: entram no contador do site */
+    priorSends: Number(get("SITE_PRIOR_SENDS").replace(/\D/g, "")) || 0,
     siteUrl: `https://${(process.env.SITE_DOMAIN || "fuzildisparador.com.br").replace(/^https?:\/\//, "")}`,
     appUrl: process.env.APP_URL || "https://app.fuzildisparador.com.br",
   };
