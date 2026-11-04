@@ -179,7 +179,9 @@ async function releaseRecipients(ids: string[]) {
 }
 
 export async function pauseCampaign(campaign: Pick<Campaign, "id" | "workspaceId" | "name">, reason: string, severity: "WARNING" | "CRITICAL" = "CRITICAL") {
-  await prisma.campaign.update({ where: { id: campaign.id }, data: { status: "PAUSED", pausedReason: reason } });
+  // Só pausa a que está rodando (não passa por cima de cancelada ou concluída no meio do lote)
+  const r = await prisma.campaign.updateMany({ where: { id: campaign.id, status: "RUNNING" }, data: { status: "PAUSED", pausedReason: reason } });
+  if (!r.count) return;
   // O funil retoma sozinho e pode pausar de novo pelo mesmo motivo: avisa uma vez a cada 6h
   const title = `Campanha "${campaign.name}" pausada`;
   if (await prisma.alert.findFirst({ where: { workspaceId: campaign.workspaceId, title, message: reason, createdAt: { gte: new Date(Date.now() - 6 * 3600_000) } }, select: { id: true } })) return;
@@ -527,11 +529,17 @@ export async function runCampaignTick(campaignId: string) {
     const out = plan.senders.filter((x) => x.wabaId === wabaId);
     for (const x of out) if (!fatalSenders.has(x.phoneId)) fatalSenders.set(x.phoneId, `Erro no template nessa WABA: ${reason}`);
   }
+  const paymentStops: string[] = [];
   for (const [phoneId, reason] of fatalSenders) {
     const sender = plan.senders.find((s) => s.phoneId === phoneId)!;
     // Problema na BM (pagamento, bloqueio, acesso...): ela vai para "BMs com problema"
     if (fatalCodes.has(phoneId))
       await flagBusinessProblem(sender.businessId, `${sender.display}: ${reason}`, problemFix(fatalCodes.get(phoneId)), kindForCode(fatalCodes.get(phoneId))).catch((e) => console.error("[dispatcher] problema da BM", e));
+    // Pagamento: não tira o número da campanha, só pausa. Depois de arrumar o cartão, é só clicar em Retomar
+    if (fatalCodes.has(phoneId) && kindForCode(fatalCodes.get(phoneId)) === "PAYMENT") {
+      paymentStops.push(sender.businessName);
+      continue;
+    }
     await prisma.campaign.update({ where: { id: campaign.id }, data: { excludedSenders: { push: phoneId } } });
     await createAlert({
       workspaceId: campaign.workspaceId,
@@ -540,6 +548,11 @@ export async function runCampaignTick(campaignId: string) {
       title: `Número ${sender.display} (${sender.businessName}) retirado da campanha "${campaign.name}"`,
       message: `${sender.businessName}: ${reason}`,
     });
+  }
+  if (paymentStops.length) {
+    const names = [...new Set(paymentStops)].join(", ");
+    await pauseCampaign(campaign, `Problema de pagamento na BM ${names}. Arrume o cartão no WhatsApp Manager e clique em Retomar: a campanha continua de onde parou`);
+    return;
   }
   const remaining = plan.senders.filter((x) => !fatalSenders.has(x.phoneId));
   if (fatalWabas.size && !remaining.length) await pauseCampaign(campaign, `Erro no template: ${[...fatalWabas.values()][0]}`);

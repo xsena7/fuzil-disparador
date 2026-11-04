@@ -172,11 +172,12 @@ export async function pauseCampaignAction(id: string) {
 export async function resumeCampaignAction(id: string) {
   const { c } = await ownCampaign(id);
   if (c.status !== "PAUSED") return;
+  // Retomar confere tudo de novo: os números retirados por erro voltam (o rodízio checa o estado atual de cada BM)
   // Agendada que foi pausada antes de começar: volta a esperar o horário
   if (!c.startedAt && c.scheduledAt && c.scheduledAt.getTime() > Date.now()) {
-    await prisma.campaign.update({ where: { id }, data: { status: "SCHEDULED", pausedReason: null } });
+    await prisma.campaign.update({ where: { id }, data: { status: "SCHEDULED", pausedReason: null, excludedSenders: [] } });
   } else {
-    await prisma.campaign.update({ where: { id }, data: { status: "RUNNING", pausedReason: null, startedAt: c.startedAt ?? new Date() } });
+    await prisma.campaign.update({ where: { id }, data: { status: "RUNNING", pausedReason: null, excludedSenders: [], startedAt: c.startedAt ?? new Date() } });
   }
   revalidatePath(`/campanhas/${id}`);
 }

@@ -4,6 +4,14 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "3.61",
+    date: "04/11/2026",
+    items: [
+      "Campanhas: erro de pagamento na BM agora só pausa a campanha (o número não é mais retirado). Arrumou o cartão, é só clicar em Retomar que ela continua de onde parou",
+      "Campanhas: Retomar confere de novo todos os números do grupo, inclusive os que tinham sido retirados por erro",
+    ],
+  },
+  {
     version: "3.60",
     date: "04/11/2026",
     items: [
