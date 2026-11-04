@@ -22,6 +22,7 @@ Produção: VM Oracle grátis, Docker Compose (db, app, worker, caddy). O servid
 - Foto de perfil automática do número novo (mulher/homem, escolhida ao adicionar; o worker coloca quando conecta): `src/lib/profile-photos.ts`, fotos padrão em `public/perfil/`, seletor em `src/app/(app)/conexoes/photo-pick.tsx`.
 - Logo: `src/components/brand.tsx`. Gaveta padrão: `src/components/drawer.tsx`.
 - Server actions: `src/app/actions/*.ts`. Telas: `src/app/(app)/*`. Site público: `src/app/site/*`.
+- SEO do site: erros da Meta em `/erros` (`src/lib/seo-errors.ts`, usa `meta-errors-text.ts` e `explain.ts`: erro novo traduzido já vira página), guias em `/guias` (mesmo conteúdo de `src/lib/tutorials.ts`, então tutorial não pode ter nada interno), FAQ em `/perguntas`, `src/app/sitemap.ts` e `src/app/robots.ts`.
 
 ## Regras do projeto
 - Toda mudança visível: subir a versão e adicionar o item em `src/version.ts` (lista de novidades, em português). Cliente vê só o resumo por área ("Melhorias em: ..."); item de ferramenta interna (ajuste do relatório, Financeiro, Admin, vendas do dono) começa com `[admin] `. Nunca importar `src/version.ts` em componente "use client".

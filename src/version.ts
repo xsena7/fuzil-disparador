@@ -4,6 +4,15 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "3.58",
+    date: "04/11/2026",
+    items: [
+      "Site: páginas públicas dos erros da API do WhatsApp em português (fuzildisparador.com.br/erros/131026 e outros), com o que significa e como resolver",
+      "Site: guias públicos (os tutoriais do painel viram artigos em /guias) e página de perguntas frequentes (/perguntas)",
+      "Site: mapa do site e robots para o Google achar as páginas (o painel fica de fora das buscas)",
+    ],
+  },
+  {
     version: "3.57",
     date: "03/11/2026",
     items: ["Conexões: cada BM tem um campo de observação. A observação aparece do lado de fora da gaveta, ao lado do nome da BM"],

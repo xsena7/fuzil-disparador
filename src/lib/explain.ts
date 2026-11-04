@@ -17,7 +17,7 @@ export const URGENCY_LABEL: Record<Urgency, string> = {
 // Códigos de erro da Meta mais comuns no disparo
 // ---------------------------------------------------------------------------
 
-const META_CODES: Record<number, Explanation> = {
+export const META_CODES: Record<number, Explanation> = {
   0: { urgency: "URGENTE", meaning: "A Meta não aceitou o acesso a essa BM (token inválido).", action: "Reconecte a BM em Conexões. Se for em todas as BMs, confira o token do System User em Admin → Integração." },
   10: { urgency: "URGENTE", meaning: "O app perdeu a permissão nessa BM.", action: "Reconecte a BM em Conexões (o dono da BM precisa aceitar de novo as permissões)." },
   190: { urgency: "URGENTE", meaning: "O token de acesso expirou ou foi revogado.", action: "Gere um token novo do System User e cole em Admin → Integração, ou reconecte a BM em Conexões." },

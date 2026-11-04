@@ -28,6 +28,7 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
             <a href="/#recursos" className="hover:text-white">Diferenciais</a>
             <a href="/#como-funciona" className="hover:text-white">Como funciona</a>
             <a href="/#preco" className="hover:text-white">Preço</a>
+            <Link href="/guias" className="hover:text-white">Guias</Link>
             <a href="/#contato" className="hover:text-white">Contato</a>
           </nav>
           <a href={`${c.appUrl}/login`} className="ml-auto rounded-xl bg-brand-gradient px-4 py-2 text-sm font-medium text-white shadow-sm md:ml-0">Entrar</a>
@@ -37,7 +38,7 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
       <main>{children}</main>
 
       <footer className="bg-ink text-sm text-zinc-400">
-        <div className="mx-auto grid max-w-6xl gap-8 px-5 py-12 md:grid-cols-[2fr_1fr_1fr]">
+        <div className="mx-auto grid max-w-6xl gap-8 px-5 py-12 md:grid-cols-[2fr_1fr_1fr_1fr]">
           <div>
             <Logo className="mb-4 w-40" />
             <p>
@@ -56,6 +57,14 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
               <li><a href={`${c.appUrl}/login`} className="hover:text-white">Entrar no painel</a></li>
               <li><a href="/#recursos" className="hover:text-white">Diferenciais</a></li>
               <li><a href="/#contato" className="hover:text-white">Contato</a></li>
+            </ul>
+          </div>
+          <div>
+            <div className="mb-3 font-medium text-zinc-200">Aprenda</div>
+            <ul className="space-y-2">
+              <li><Link href="/guias" className="hover:text-white">Guias da API do WhatsApp</Link></li>
+              <li><Link href="/erros" className="hover:text-white">Erros do WhatsApp explicados</Link></li>
+              <li><Link href="/perguntas" className="hover:text-white">Perguntas frequentes</Link></li>
             </ul>
           </div>
           <div>
