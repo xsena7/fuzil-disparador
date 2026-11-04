@@ -32,7 +32,7 @@ export const META_ERRORS: Record<number, [string, string]> = {
   131030: ["Número fora da lista de teste", "O número de teste da Meta só manda para os contatos cadastrados na lista dele. Use um número de verdade para disparar."],
   131031: ["Conta bloqueada pela Meta", "A Meta travou essa conta do WhatsApp (verificação pendente ou violação de regra). Ela não consegue disparar até a Meta liberar."],
   131037: ["Nome do WhatsApp não aprovado", "O nome de exibição do número ainda não foi aprovado pela Meta. Espere a aprovação para disparar por ele."],
-  131042: ["Problema de pagamento", "A conta de anúncios ligada a essa BM está sem forma de pagamento válida ou com conta em aberto. Arrume o pagamento na Meta (Conexões → Pagamento na Meta)."],
+  131042: ["Problema de pagamento", "A Meta recusou por pagamento da conta do WhatsApp (não é a conta de anúncios). Mesmo com cartão cadastrado acontece quando: o cartão não está ligado a essa conta do WhatsApp, uma cobrança anterior foi recusada e ficou em aberto, o cartão acabou de ser colocado (pode levar algumas horas) ou o banco bloqueou a cobrança. Confira no WhatsApp Manager → Configurações de pagamento."],
   131044: ["Pagamento não configurado", "Essa conta do WhatsApp ainda não tem forma de pagamento. Adicione um cartão na Meta (Conexões → Pagamento na Meta)."],
   131045: ["Número não registrado", "O número ainda não foi ativado no WhatsApp da Meta. Registre o número em Conexões."],
   131047: ["Passou das 24h", "Só dá para mandar mensagem livre até 24h depois da última resposta do contato. Depois disso, só com template."],

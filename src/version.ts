@@ -9,6 +9,7 @@ export const CHANGELOG: Array<{ version: string; date: string; items: string[] }
     items: [
       "Campanhas: erro de pagamento na BM agora só pausa a campanha (o número não é mais retirado). Arrumou o cartão, é só clicar em Retomar que ela continua de onde parou",
       "Campanhas: Retomar confere de novo todos os números do grupo, inclusive os que tinham sido retirados por erro",
+      "Erro de pagamento da Meta: explicação mais clara do que costuma causar (mesmo com cartão cadastrado) e onde conferir",
     ],
   },
   {
