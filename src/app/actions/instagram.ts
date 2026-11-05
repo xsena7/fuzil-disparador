@@ -16,7 +16,7 @@ export async function importInstagramZipAction(_: FormState, form: FormData): Pr
     const r = await importZip(Buffer.from(await file.arrayBuffer()), { startDay: String(form.get("startDay") ?? ""), times: String(form.get("times") ?? "") });
     const fmt = (d: Date) => d.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
     revalidatePath("/instagram");
-    return { ok: `${r.count} posts agendados: de ${fmt(r.first)} até ${fmt(r.last)}.${r.warnings.length ? ` Atenção: ${r.warnings.join("; ")}.` : ""}` };
+    return { ok: `${r.count} posts lidos (de ${fmt(r.first)} até ${fmt(r.last)}). Confira abaixo e clique em Confirmar agendamento.${r.warnings.length ? ` Atenção: ${r.warnings.join("; ")}.` : ""}` };
   } catch (e) {
     return { error: e instanceof Error ? e.message : String(e) };
   }
@@ -46,6 +46,8 @@ export async function rescheduleInstagramPostAction(id: string, _: FormState, fo
   if (!m) return { error: "Data inválida" };
   const at = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4] + 3, +m[5]));
   if (at.getTime() < Date.now()) return { error: "Escolha um horário no futuro" };
+  // Rascunho continua rascunho (só muda a hora); o resto volta para a fila
+  await prisma.instagramPost.updateMany({ where: { id, status: "DRAFT" }, data: { scheduledAt: at } });
   await prisma.instagramPost.updateMany({ where: { id, status: { in: ["SCHEDULED", "FAILED", "CANCELLED"] } }, data: { scheduledAt: at, status: "SCHEDULED", error: null } });
   revalidatePath("/instagram");
   return { ok: "Horário alterado" };
@@ -57,4 +59,20 @@ export async function cancelAllInstagramAction() {
   await prisma.instagramPost.updateMany({ where: { status: { in: ["SCHEDULED", "FAILED"] } }, data: { status: "CANCELLED" } });
   revalidatePath("/instagram");
   return { ok: "Agendamentos cancelados" };
+}
+
+export async function confirmInstagramBatchAction(batchId: string) {
+  await requireSuperAdmin();
+  const { confirmBatch } = await import("@/lib/instagram");
+  const r = await confirmBatch(batchId);
+  revalidatePath("/instagram");
+  return r;
+}
+
+export async function discardInstagramBatchAction(batchId: string) {
+  await requireSuperAdmin();
+  const { discardBatch } = await import("@/lib/instagram");
+  await discardBatch(batchId);
+  revalidatePath("/instagram");
+  return { ok: "Rascunho descartado" };
 }

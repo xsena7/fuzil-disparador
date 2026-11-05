@@ -1204,7 +1204,7 @@ model InstagramPost {
   // Arquivos JPG na pasta de uploads (servidos em /media para a Meta baixar)
   images      String[]
   scheduledAt DateTime
-  // SCHEDULED | PUBLISHING | PUBLISHED | FAILED | CANCELLED
+  // DRAFT (subiu, falta conferir e confirmar) | SCHEDULED | PUBLISHING | PUBLISHED | FAILED | CANCELLED
   status      String    @default("SCHEDULED")
   igMediaId   String?
   permalink   String?

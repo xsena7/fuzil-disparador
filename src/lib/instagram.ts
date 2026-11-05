@@ -1,6 +1,6 @@
 // Instagram do Fuzil: sobe o .zip dos posts, agenda um por horário e o worker publica sozinho pela API oficial (Instagram Graph API).
 // As imagens ficam na pasta de uploads e a Meta baixa por /media/<arquivo> na hora de publicar (precisa ser JPG).
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { randomBytes } from "node:crypto";
 import JSZip from "jszip";
@@ -106,7 +106,7 @@ async function saveJpeg(data: Uint8Array, tag: string): Promise<string> {
   return name;
 }
 
-/** Sobe o .zip e agenda os posts. */
+/** Sobe o .zip e deixa os posts em rascunho (DRAFT): só agenda depois de conferir e confirmar na tela. */
 export async function importZip(buf: Buffer, opts: { startDay: string; times: string }) {
   const times = parseTimes(opts.times);
   if (!times.length) throw new Error("Coloque pelo menos um horário, ex.: 12:00");
@@ -118,9 +118,27 @@ export async function importZip(buf: Buffer, opts: { startDay: string; times: st
   for (const [i, p] of posts.entries()) {
     const images: string[] = [];
     for (const s of p.slides) images.push(await saveJpeg(s.data, `${batchId}-${p.number}`));
-    await prisma.instagramPost.create({ data: { batchId, number: p.number, title: p.title, caption: p.caption.slice(0, 2200), images, scheduledAt: slots[i] } });
+    await prisma.instagramPost.create({ data: { batchId, number: p.number, title: p.title, caption: p.caption.slice(0, 2200), images, scheduledAt: slots[i], status: "DRAFT" } });
   }
-  return { count: posts.length, first: slots[0], last: slots[slots.length - 1], warnings };
+  return { batchId, count: posts.length, first: slots[0], last: slots[slots.length - 1], warnings };
+}
+
+/** Confirma o rascunho: os posts entram na fila de publicação. */
+export async function confirmBatch(batchId: string): Promise<{ ok: string } | { error: string }> {
+  const drafts = await prisma.instagramPost.findMany({ where: { batchId, status: "DRAFT" }, orderBy: { scheduledAt: "asc" } });
+  if (!drafts.length) return { error: "Nada para confirmar" };
+  const late = drafts.find((p) => p.scheduledAt.getTime() < Date.now() + 60_000);
+  if (late) return { error: `O horário do post ${late.number} já passou. Mude o horário dele antes de confirmar` };
+  await prisma.instagramPost.updateMany({ where: { batchId, status: "DRAFT" }, data: { status: "SCHEDULED" } });
+  return { ok: `${drafts.length} posts agendados!` };
+}
+
+/** Descarta o rascunho (apaga os posts e as imagens). */
+export async function discardBatch(batchId: string) {
+  const drafts = await prisma.instagramPost.findMany({ where: { batchId, status: "DRAFT" } });
+  await prisma.instagramPost.deleteMany({ where: { id: { in: drafts.map((d) => d.id) } } });
+  const dir = path.resolve(env.uploadDir());
+  for (const f of drafts.flatMap((d) => d.images)) await unlink(path.join(dir, path.basename(f))).catch(() => undefined);
 }
 
 // ---------------------------------------------------------------------------
@@ -220,6 +238,9 @@ export async function publishPost(id: string) {
 
 /** Rodada do worker: publica os posts que chegaram na hora. */
 export async function instagramTick() {
+  // Rascunho esquecido há mais de 2 dias: apaga
+  const old = await prisma.instagramPost.findMany({ where: { status: "DRAFT", createdAt: { lt: new Date(Date.now() - 2 * 86400_000) } }, select: { batchId: true }, distinct: ["batchId"] });
+  for (const b of old) await discardBatch(b.batchId);
   // Travou no meio (o servidor reiniciou): marca como falha para não postar duas vezes; o botão tenta de novo
   await prisma.instagramPost.updateMany({
     where: { status: "PUBLISHING", scheduledAt: { lt: new Date(Date.now() - 15 * 60_000) } },
