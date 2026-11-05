@@ -353,7 +353,7 @@ export async function upsertTemplate(workspaceId: string, wabaRecordId: string, 
     await onCategoryChanged(workspaceId, wabaRecordId, t.name, t.language, existing.category, t.category);
   }
   if (existing.status !== t.status) {
-    await onStatusChanged(workspaceId, wabaRecordId, t.name, t.language, existing.status, t.status, data.rejectedReason);
+    await onStatusChanged(workspaceId, wabaRecordId, t.name, t.language, existing.status, t.status, data.rejectedReason, existing.submittedAt ?? existing.createdAt);
   }
   return prisma.template.update({ where: { id: existing.id }, data });
 }
@@ -398,8 +398,12 @@ export async function onStatusChanged(
   from: string,
   to: string,
   reason: string | null,
+  /** Quando o template foi mandado para a Meta (para dizer em quanto tempo foi aprovado) */
+  since?: Date | null,
 ) {
   const label = await wabaLabel(wabaRecordId);
+  const tookMs = to === "APPROVED" && since && ["PENDING", "IN_APPEAL"].includes(from) ? Date.now() - since.getTime() : null;
+  const took = tookMs !== null && tookMs >= 0 && tookMs < 30 * 86400_000 ? approvalTime(tookMs) : null;
   const severity = ["REJECTED", "PAUSED", "DISABLED"].includes(to) ? "CRITICAL" : "INFO";
   const type = to === "REJECTED" ? "TEMPLATE_REJECTED" : to === "PAUSED" || to === "DISABLED" ? "TEMPLATE_PAUSED" : "TEMPLATE_STATUS";
   await createAlert({
@@ -407,9 +411,20 @@ export async function onStatusChanged(
     type,
     severity,
     title: `Template "${name}" (${language}): ${from} → ${to}`,
-    message: `WABA ${label}.${reason ? ` Motivo: ${templateRejectReason(reason)}` : ""}`,
-    data: { wabaId: wabaRecordId, name, language, from, to },
+    message: `${took ? `Aprovado ${took}. ` : ""}WABA ${label}.${reason ? ` Motivo: ${templateRejectReason(reason)}` : ""}`,
+    data: { wabaId: wabaRecordId, name, language, from, to, ...(took ? { tookMs, took } : {}) },
   });
+}
+
+/** "em 4 min", "em 1 h 20 min", "em 2 dias". */
+export function approvalTime(ms: number): string {
+  const min = Math.round(ms / 60_000);
+  if (min < 1) return "em menos de 1 min";
+  if (min < 60) return `em ${min} min`;
+  const h = Math.floor(min / 60), m = min % 60;
+  if (h < 24) return `em ${h} h${m ? ` ${m} min` : ""}`;
+  const d = Math.floor(h / 24), hh = h % 24;
+  return `em ${d} ${d > 1 ? "dias" : "dia"}${hh ? ` ${hh} h` : ""}`;
 }
 
 /** Cria ou reaproveita a WABA no banco e sincroniza. Usado pela conexão manual e pelo Embedded Signup. */

@@ -294,7 +294,7 @@ async function handleTemplateStatus(wabaRecordId: string, workspaceId: string, v
   if (tpl.status === status) return;
   const reason = value.reason && value.reason !== "NONE" ? value.reason : null;
   await prisma.template.update({ where: { id: tpl.id }, data: { status, rejectedReason: reason } });
-  await onStatusChanged(workspaceId, wabaRecordId, tpl.name, tpl.language, tpl.status, status, reason);
+  await onStatusChanged(workspaceId, wabaRecordId, tpl.name, tpl.language, tpl.status, status, reason, tpl.submittedAt ?? tpl.createdAt);
   // Aprovado: confere a categoria final na Meta (pode ter sido aprovado como marketing)
   if (status === "APPROVED") await syncWaba(wabaRecordId).catch(() => undefined);
 }

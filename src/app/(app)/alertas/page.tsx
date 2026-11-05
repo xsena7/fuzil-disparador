@@ -60,6 +60,7 @@ export default async function AlertsPage({ searchParams }: { searchParams: Promi
                   </span>
                   <span className={clsx("min-w-0 flex-1 truncate text-sm", a.readAt ? "text-zinc-600" : "font-medium text-zinc-900")}>
                     {a.title}
+                    {(a.data as { took?: string } | null)?.took && <span className="ml-2 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200">⏱ aprovado {(a.data as { took: string }).took}</span>}
                     {bmFor(a.title) && <span className="ml-2 rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-700">{/^bm\b/i.test(bmFor(a.title)!) ? "" : "BM "}{bmFor(a.title)}</span>}
                   </span>
                   {!a.readAt && <span className="size-2 shrink-0 rounded-full bg-red-500" />}
