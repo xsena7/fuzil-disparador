@@ -7,6 +7,7 @@ import { ConfirmButton } from "@/components/action-form";
 import { markAlertsReadAction } from "@/app/actions/misc";
 import { EnableBrowserNotifications } from "@/components/alert-toaster";
 import { explainAlert } from "@/lib/explain";
+import { approvalTime } from "@/lib/sync";
 import { isLimitUp, LimitUpCard, limitUpBm } from "./limit-up";
 
 export const dynamic = "force-dynamic";
@@ -20,6 +21,30 @@ export default async function AlertsPage({ searchParams }: { searchParams: Promi
     take: 300,
   });
   const icon = { CRITICAL: Siren, WARNING: AlertTriangle, INFO: Info };
+  // Template aprovado: em quanto tempo. Os alertas novos já trazem; os antigos calcula pela hora em que o template foi mandado
+  const approvedRe = /^Template "(.+?)" \((.+?)\): (PENDING|IN_APPEAL) → APPROVED$/;
+  const oldApproved = alerts.filter((a) => approvedRe.test(a.title) && !(a.data as { took?: string } | null)?.took);
+  const tpls = oldApproved.length
+    ? await prisma.template.findMany({
+        where: { waba: { workspaceId: auth.workspace.id }, name: { in: [...new Set(oldApproved.map((a) => a.title.match(approvedRe)![1]))] } },
+        select: { wabaId: true, name: true, language: true, submittedAt: true, createdAt: true },
+      })
+    : [];
+  const tookFor = (a: (typeof alerts)[number]): string | null => {
+    const saved = (a.data as { took?: string } | null)?.took;
+    if (saved) return saved;
+    const m = a.title.match(approvedRe);
+    if (!m) return null;
+    const wabaId = (a.data as { wabaId?: string } | null)?.wabaId;
+    // O envio mais recente antes da aprovação (o mesmo template pode ter sido mandado de novo depois)
+    const since = tpls
+      .filter((t) => t.name === m[1] && t.language === m[2] && (!wabaId || t.wabaId === wabaId))
+      .map((t) => t.submittedAt ?? t.createdAt)
+      .filter((d) => d.getTime() <= a.createdAt.getTime())
+      .sort((x, y) => y.getTime() - x.getTime())[0];
+    const ms = since ? a.createdAt.getTime() - since.getTime() : -1;
+    return ms >= 0 && ms < 30 * 86400_000 ? approvalTime(ms) : null;
+  };
   // Alertas antigos de número não diziam a BM: descobre pelo número do título (os novos já trazem no texto)
   const phoneIn = (t: string) => t.match(/\+?\d[\d\s()-]{8,}\d/)?.[0].replace(/\D/g, "") ?? null;
   const wanted = [...new Set(alerts.map((a) => phoneIn(a.title)).filter((x): x is string => Boolean(x)))];
@@ -58,17 +83,17 @@ export default async function AlertsPage({ searchParams }: { searchParams: Promi
                   <span className={clsx("flex size-7 shrink-0 items-center justify-center rounded-lg", a.severity === "CRITICAL" ? "bg-red-100 text-red-600" : a.severity === "WARNING" ? "bg-amber-100 text-amber-700" : "bg-sky-100 text-sky-600")}>
                     <Icon className="size-4" />
                   </span>
-                  <span className={clsx("min-w-0 flex-1 truncate text-sm", a.readAt ? "text-zinc-600" : "font-medium text-zinc-900")}>
-                    {a.title}
-                    {(a.data as { took?: string } | null)?.took && <span className="ml-2 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200">⏱ aprovado {(a.data as { took: string }).took}</span>}
-                    {bmFor(a.title) && <span className="ml-2 rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-700">{/^bm\b/i.test(bmFor(a.title)!) ? "" : "BM "}{bmFor(a.title)}</span>}
+                  <span className={clsx("flex min-w-0 flex-1 items-center gap-2 text-sm", a.readAt ? "text-zinc-600" : "font-medium text-zinc-900")}>
+                    <span className="truncate">{a.title}</span>
+                    {tookFor(a) && <span className="shrink-0 whitespace-nowrap rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200">⏱ aprovado {tookFor(a)}</span>}
+                    {bmFor(a.title) && <span className="shrink-0 whitespace-nowrap rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-700">{/^bm\b/i.test(bmFor(a.title)!) ? "" : "BM "}{bmFor(a.title)}</span>}
                   </span>
                   {!a.readAt && <span className="size-2 shrink-0 rounded-full bg-red-500" />}
                   <span className="shrink-0 text-xs text-zinc-400">{a.createdAt.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}</span>
                   <ChevronRight className="size-4 shrink-0 text-zinc-300 transition-transform group-open:rotate-90" />
                 </summary>
                 <div className="px-14 pb-4 text-sm">
-                  <p className="text-zinc-600">{a.message}</p>
+                  <p className="text-zinc-600">{tookFor(a) && !/^Aprovado /.test(a.message) ? `Aprovado ${tookFor(a)}. ` : ""}{a.message}</p>
                   {ex && ex.urgency !== "INFO" && <p className="mt-1.5 text-zinc-500"><b className="text-zinc-700">O que fazer:</b> {ex.action}</p>}
                 </div>
               </details>

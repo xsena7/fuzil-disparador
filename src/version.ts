@@ -6,7 +6,7 @@ export const CHANGELOG: Array<{ version: string; date: string; items: string[] }
   {
     version: "3.70",
     date: "05/11/2026",
-    items: ["Alertas: template aprovado mostra em quanto tempo a Meta aprovou (ex.: \"aprovado em 4 min\"), do lado do título e no detalhe"],
+    items: ["Alertas: template aprovado mostra em quanto tempo a Meta aprovou (ex.: \"aprovado em 4 min\"), do lado do título e no detalhe. Vale também para os alertas antigos"],
   },
   {
     version: "3.69",
