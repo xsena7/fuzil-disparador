@@ -4,11 +4,12 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
-    version: "3.68",
+    version: "3.69",
     date: "05/11/2026",
     items: [
       "Correção: envio de arquivos grandes (acima de 10 MB) não quebra mais a tela",
       "Formulários: se o envio cair no meio, aparece uma mensagem de erro em vez da tela de erro",
+      "[admin] Instagram: subir o .zip ficou bem mais rápido (imagem que já é JPG não é recomprimida)",
     ],
   },
   {

@@ -105,8 +105,16 @@ export function scheduleSlots(startDay: string, times: Array<[number, number]>, 
 
 /** Converte para JPG (a API do Instagram só aceita JPG) e salva na pasta de uploads. */
 async function saveJpeg(data: Uint8Array, tag: string): Promise<string> {
-  const sharp = (await import("sharp")).default;
-  const jpg = await sharp(Buffer.from(data)).rotate().flatten({ background: "#ffffff" }).jpeg({ quality: 92 }).toBuffer();
+  // Já é JPG: salva do jeito que veio (recomprimir 70 imagens deixava a VM lenta). PNG e outros viram JPG.
+  const isJpeg = data[0] === 0xff && data[1] === 0xd8 && data[2] === 0xff;
+  let jpg: Buffer;
+  if (isJpeg) jpg = Buffer.from(data);
+  else {
+    const sharp = (await import("sharp")).default;
+    sharp.concurrency(1);
+    sharp.cache(false);
+    jpg = await sharp(Buffer.from(data)).rotate().flatten({ background: "#ffffff" }).jpeg({ quality: 92 }).toBuffer();
+  }
   const dir = path.resolve(env.uploadDir());
   await mkdir(dir, { recursive: true });
   const name = `ig-${tag}-${randomBytes(6).toString("hex")}.jpg`;
