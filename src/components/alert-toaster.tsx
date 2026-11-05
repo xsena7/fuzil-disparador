@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import clsx from "clsx";
 import { X } from "lucide-react";
 import { summarizeAlert, type AlertTone } from "@/lib/alert-summary";
+import { celebrate } from "@/components/celebration";
 
 type A = { id: string; title: string; message: string; severity: "INFO" | "WARNING" | "CRITICAL"; createdAt: string; count?: number };
 type Toast = { id: string; head: string; who: string; tone: AlertTone; severity: A["severity"] };
@@ -58,6 +59,10 @@ export function AlertToaster() {
         if (json.alerts.length) cursor.current = json.alerts[json.alerts.length - 1].createdAt;
         if (fresh.length) {
           for (const a of fresh) seen.current.add(a.id);
+          // Limite da BM subiu: comemora (confete + som)
+          const ups = fresh.filter((a) => /^Limite da BM .+ subiu$/.test(a.title));
+          if (ups.length === 1) celebrate("🚀 Limite subiu!", `${ups[0].title.replace(/^Limite da BM /, "").replace(/ subiu$/, "")}: ${ups[0].message.replace(/k\/dia/g, " mil por dia")}`);
+          else if (ups.length > 1) celebrate(`🚀 ${ups.length} BMs subiram de limite!`, "Veja em Alertas");
           // Iguais viram um só; muitos tipos de uma vez: um aviso só para abrir Alertas
           let show = toToasts(fresh);
           if (show.length > 3)

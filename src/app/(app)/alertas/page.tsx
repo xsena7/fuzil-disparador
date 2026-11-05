@@ -7,6 +7,7 @@ import { ConfirmButton } from "@/components/action-form";
 import { markAlertsReadAction } from "@/app/actions/misc";
 import { EnableBrowserNotifications } from "@/components/alert-toaster";
 import { explainAlert } from "@/lib/explain";
+import { isLimitUp, LimitUpCard, limitUpBm } from "./limit-up";
 
 export const dynamic = "force-dynamic";
 
@@ -47,6 +48,7 @@ export default async function AlertsPage({ searchParams }: { searchParams: Promi
       {alerts.length > 0 && (
         <div className="divide-y divide-zinc-100 overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm">
           {alerts.map((a) => {
+            if (isLimitUp(a)) return <LimitUpCard key={a.id} a={a} bm={limitUpBm(a.title)} />;
             const Icon = icon[a.severity];
             const ex = a.severity === "INFO" ? null : explainAlert(a);
             return (

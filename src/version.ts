@@ -4,6 +4,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "3.63",
+    date: "05/11/2026",
+    items: ["Alertas: quando o limite da BM sobe, o aviso vem colorido, com antes e agora (ex.: 2 mil → 10 mil) e quantas mensagens a mais por dia, e com comemoração na tela"],
+  },
+  {
     version: "3.62",
     date: "05/11/2026",
     items: ["[admin] Site: página para os anúncios de disparo (fuzildisparador.com.br/disparos): qualquer nicho (bet, rifas, corban, clínicas, e-commerce...), disparo único e fluxo, a partir de R$ 0,20, todos os botões levam ao WhatsApp para orçamento"],
