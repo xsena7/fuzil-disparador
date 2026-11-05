@@ -59,13 +59,15 @@ export default async function EmailsPage({ searchParams }: { searchParams: Promi
         })
       : [];
   const base = box ? `/emails?caixa=${box.id}` : "/emails";
+  // No celular: lista de caixas OU a caixa aberta (no computador, as duas lado a lado)
+  const picked = Boolean(sp.caixa && box);
 
   return (
     <div className="mx-auto max-w-6xl space-y-5">
       <PageHeader title="E-mails" description={`E-mails @${domain} recebidos direto no Fuzil. Crie quantos endereços quiser.`} />
       <div className="grid gap-5 lg:grid-cols-[18rem_1fr]">
         {/* Caixas */}
-        <div className="space-y-3">
+        <div className={clsx("space-y-3", picked && "hidden lg:block")}>
           <Card className="overflow-hidden p-0">
             {boxes.length === 0 && <p className="p-4 text-sm text-zinc-500">Nenhum e-mail criado ainda.</p>}
             {boxes.map((b) => (
@@ -105,7 +107,10 @@ export default async function EmailsPage({ searchParams }: { searchParams: Promi
         </div>
 
         {/* Conteúdo */}
-        <div className="min-w-0 space-y-3">
+        <div className={clsx("min-w-0 space-y-3", !picked && boxes.length > 0 && "hidden lg:block")}>
+          {picked && (
+            <Link href="/emails" className="inline-flex items-center gap-1.5 text-sm font-medium text-zinc-600 hover:text-zinc-900 lg:hidden"><ArrowLeft className="size-4" /> Todos os e-mails</Link>
+          )}
           {!box ? (
             <Empty icon={<Inbox className="size-5" />}>Crie o primeiro e-mail ao lado. Ele já começa a receber assim que o domínio estiver apontado para o Fuzil.</Empty>
           ) : (

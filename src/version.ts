@@ -4,6 +4,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "3.71",
+    date: "05/11/2026",
+    items: ["[admin] E-mails no celular: tocar na caixa (ex.: contato@) abre os e-mails dela direto, com botão para voltar à lista"],
+  },
+  {
     version: "3.70",
     date: "05/11/2026",
     items: ["Alertas: template aprovado mostra em quanto tempo a Meta aprovou (ex.: \"aprovado em 4 min\"), do lado do título e no detalhe. Vale também para os alertas antigos"],
