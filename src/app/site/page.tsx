@@ -1,22 +1,12 @@
 import { ArrowRight, BarChart3, Building2, CheckCircle2, Coins, FileText, Layers, Link2, MessagesSquare, Quote, RefreshCw, Repeat, ShieldCheck, Sparkles, Users, Zap } from "lucide-react";
 import { company } from "@/lib/company";
 import { SUPPORT_WHATSAPP } from "@/lib/onboarding";
-import { prisma } from "@/lib/db";
+import { roundDown, totalSent } from "@/lib/site-stats";
 
 // Depoimentos de clientes de verdade (nome, empresa e texto autorizados por eles). Vazio = a seção não aparece no site
 const TESTIMONIALS: Array<{ name: string; role: string; text: string }> = [
   // { name: "Nome Sobrenome", role: "Cargo · Empresa", text: "O que mudou depois que começou a usar o Fuzil..." },
 ];
-
-// Mensagens já enviadas pelo Fuzil (número real, guardado por 10 min para não pesar no banco)
-let sentCache = { at: 0, n: 0 };
-async function totalSent() {
-  if (Date.now() - sentCache.at < 600_000) return sentCache.n;
-  const n = await prisma.campaignRecipient.count({ where: { status: { in: ["SENT", "DELIVERED", "READ"] } } }).catch(() => sentCache.n);
-  sentCache = { at: Date.now(), n };
-  return n;
-}
-const roundDown = (n: number) => (n >= 1_000_000 ? `${Math.floor(n / 100_000) / 10} milhões`.replace(".", ",") : n >= 10_000 ? `${Math.floor(n / 1000)} mil` : n.toLocaleString("pt-BR"));
 
 const AUDIENCES = [
   {

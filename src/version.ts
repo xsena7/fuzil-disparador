@@ -4,6 +4,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "3.62",
+    date: "05/11/2026",
+    items: ["[admin] Site: página para os anúncios de disparo (fuzildisparador.com.br/disparos): bet, rifas e corban, disparo único e fluxo, a partir de R$ 0,20, todos os botões levam ao WhatsApp para orçamento"],
+  },
+  {
     version: "3.61",
     date: "04/11/2026",
     items: [
