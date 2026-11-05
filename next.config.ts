@@ -11,7 +11,9 @@ const nextConfig: NextConfig = {
   typescript: { ignoreBuildErrors: process.env.FAST_BUILD === "1" },
   eslint: { ignoreDuringBuilds: process.env.FAST_BUILD === "1" },
   experimental: {
-    serverActions: { bodySizeLimit: "50mb" },
+    serverActions: { bodySizeLimit: "60mb" },
+    // O middleware (domínio do site) lia só os primeiros 10 MB do envio: o .zip do Instagram quebrava
+    middlewareClientMaxBodySize: "60mb",
   },
   poweredByHeader: false,
   // Proteções básicas em todas as páginas: o painel não abre escondido dentro de outro site (clickjacking),

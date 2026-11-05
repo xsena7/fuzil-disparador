@@ -27,7 +27,15 @@ export function ActionForm({
   /** Título da comemoração (confete + som) quando der certo */
   celebrateOk?: string;
 }) {
-  const [state, formAction, pending] = useActionState(action, undefined);
+  // Se o envio cair no meio (internet, arquivo grande demais), mostra o erro em vez de quebrar a tela
+  const [state, formAction, pending] = useActionState(async (prev: FormState, form: FormData): Promise<FormState> => {
+    try {
+      return await action(prev, form);
+    } catch (e) {
+      console.error("[form]", e);
+      return { error: "Não deu para enviar agora. Confira a internet (ou o tamanho do arquivo) e tente de novo." };
+    }
+  }, undefined);
   const router = useRouter();
   // Atualiza os dados da tela depois de salvar (sem prender o botão em "Aguarde...")
   useEffect(() => {
