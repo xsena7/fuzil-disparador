@@ -2,14 +2,15 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Logo } from "@/components/brand";
 import { company, ownerLine } from "@/lib/company";
+import { siteWhatsApp } from "./cta";
 
 export const dynamic = "force-dynamic";
 
 export async function generateMetadata(): Promise<Metadata> {
   const c = company();
   return {
-    title: "Fuzil Disparador · Disparo em massa no WhatsApp oficial",
-    description: "Avise milhares de clientes no WhatsApp oficial, sem conta travando. A partir de R$ 0,01 por disparo, sem mensalidade. Várias contas juntas, rodízio automático de números e relatório ao vivo.",
+    title: "Fuzil Disparador · A gente dispara pra você no WhatsApp",
+    description: "Disparo em massa no WhatsApp pela API oficial, feito pela nossa equipe. Lista higienizada, relatório ao vivo e você só paga o que sair. A partir de R$ 0,20 por mensagem.",
     metadataBase: new URL(c.siteUrl),
     // Um código por BM (dá para colar vários, separados por vírgula ou espaço)
     ...(c.domainVerification ? { other: { "facebook-domain-verification": c.domainVerification.split(/[\s,;]+/).filter(Boolean) } } : {}),
@@ -24,14 +25,14 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
         <div className="mx-auto flex max-w-6xl items-center gap-6 px-5 py-3">
           <Link href="/" className="w-28 shrink-0"><Logo className="w-full" /></Link>
           <nav className="ml-auto hidden items-center gap-6 text-sm text-zinc-300 md:flex">
-            <a href="/#para-quem" className="hover:text-white">Para quem é</a>
-            <a href="/#recursos" className="hover:text-white">Diferenciais</a>
+            <a href="/#por-que" className="hover:text-white">Por que a gente</a>
+            <a href="/#nichos" className="hover:text-white">Para quem é</a>
+            <a href="/#modalidades" className="hover:text-white">Como disparamos</a>
             <a href="/#como-funciona" className="hover:text-white">Como funciona</a>
             <a href="/#preco" className="hover:text-white">Preço</a>
-            <Link href="/guias" className="hover:text-white">Guias</Link>
-            <a href="/#contato" className="hover:text-white">Contato</a>
+            <a href="/#duvidas" className="hover:text-white">Dúvidas</a>
           </nav>
-          <a href={`${c.appUrl}/login`} className="ml-auto rounded-xl bg-brand-gradient px-4 py-2 text-sm font-medium text-white shadow-sm md:ml-0">Entrar</a>
+          <a href={siteWhatsApp("Oi! Vi o site e quero fazer um orçamento de disparo.")} target="_blank" rel="noreferrer" className="ml-auto rounded-xl bg-[#25D366] px-4 py-2 text-sm font-semibold text-white shadow-sm md:ml-0">Orçamento</a>
         </div>
       </header>
 
@@ -52,11 +53,12 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
             </p>
           </div>
           <div>
-            <div className="mb-3 font-medium text-zinc-200">Plataforma</div>
+            <div className="mb-3 font-medium text-zinc-200">Disparos</div>
             <ul className="space-y-2">
-              <li><a href={`${c.appUrl}/login`} className="hover:text-white">Entrar no painel</a></li>
-              <li><a href="/#recursos" className="hover:text-white">Diferenciais</a></li>
-              <li><a href="/#contato" className="hover:text-white">Contato</a></li>
+              <li><a href="/#como-funciona" className="hover:text-white">Como funciona</a></li>
+              <li><a href="/#preco" className="hover:text-white">Preço</a></li>
+              <li><a href={siteWhatsApp("Oi! Vi o site e quero fazer um orçamento de disparo.")} target="_blank" rel="noreferrer" className="hover:text-white">Orçamento no WhatsApp</a></li>
+              <li><a href={`${c.appUrl}/login`} className="hover:text-white">Área do cliente</a></li>
             </ul>
           </div>
           <div>

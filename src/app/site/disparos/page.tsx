@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { ArrowRight, CheckCheck, CheckCircle2, ClipboardList, MessageCircle, Repeat, Send, ShieldCheck, Smartphone, Wallet, Workflow, XCircle } from "lucide-react";
+import { ArrowRight, BarChart3, BadgeCheck, CheckCheck, Sparkles, CheckCircle2, ClipboardList, MessageCircle, Repeat, Send, ShieldCheck, Smartphone, Wallet, Workflow, XCircle } from "lucide-react";
 import { company } from "@/lib/company";
 import { roundDown, totalSent } from "@/lib/site-stats";
 import { siteWhatsApp } from "../cta";
@@ -27,6 +27,13 @@ const STEPS = [
   { icon: Wallet, title: "Recebe o orçamento", text: "A gente te passa o valor por disparo para o seu nicho. Sem surpresa." },
   { icon: ClipboardList, title: "Manda a lista e a mensagem", text: "Você envia os números (planilha ou lista) e o que quer falar." },
   { icon: Send, title: "A gente dispara", text: "Montamos tudo, disparamos e te mandamos o relatório de quem recebeu, leu e clicou." },
+];
+
+const WHY = [
+  { icon: Sparkles, title: "Experiência", text: "Mais de 5 milhões de mensagens disparadas pela nossa equipe. A gente sabe o texto, o horário e a lista que funcionam." },
+  { icon: BadgeCheck, title: "Lista higienizada", text: "Antes de disparar, tiramos números repetidos, inválidos e quem pediu para sair. Você não paga para mandar para ninguém." },
+  { icon: BarChart3, title: "Relatório ao vivo", text: "Um link que atualiza sozinho: enviadas, entregues, lidas, cliques e quem respondeu, com nome e número." },
+  { icon: Wallet, title: "Só paga o que sair", text: "Mensagem que falhou não entra na conta. O valor final sai do relatório, com os números na sua frente." },
 ];
 
 const NO_NEED = ["Ter BM ou conta na Meta", "Comprar chip ou número", "Mexer em sistema", "Saber de tecnologia"];
@@ -90,8 +97,25 @@ export default async function DisparosPage() {
         </div>
       </section>
 
+      {/* Por que com a gente */}
+      <section id="por-que" className="mx-auto max-w-5xl px-5 pt-14">
+        <h2 className="text-center text-3xl font-bold text-zinc-900">Por que disparar com a gente</h2>
+        <p className="mt-2 text-center text-zinc-500">Você cuida do seu negócio. A gente cuida do disparo.</p>
+        <div className="mt-8 grid gap-4 sm:grid-cols-2">
+          {WHY.map((w) => (
+            <div key={w.title} className="flex gap-4 rounded-2xl border border-zinc-200 bg-white p-6 shadow-soft">
+              <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-brand-gradient text-white shadow-sm shadow-orange-500/30"><w.icon className="size-6" /></span>
+              <div>
+                <div className="text-lg font-bold text-zinc-900">{w.title}</div>
+                <p className="mt-1 text-zinc-600">{w.text}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
       {/* Nichos */}
-      <section className="mx-auto max-w-5xl px-5 py-14">
+      <section id="nichos" className="mx-auto max-w-5xl px-5 py-14">
         <h2 className="text-center text-3xl font-bold text-zinc-900">Para quem é</h2>
         <p className="mt-2 text-center text-zinc-500">Disparamos para qualquer nicho. Alguns exemplos:</p>
         <div className="mt-8 grid gap-4 md:grid-cols-3">
@@ -105,7 +129,7 @@ export default async function DisparosPage() {
       </section>
 
       {/* Modalidades */}
-      <section className="bg-zinc-50">
+      <section id="modalidades" className="bg-zinc-50">
         <div className="mx-auto max-w-5xl px-5 py-14">
           <h2 className="text-center text-3xl font-bold text-zinc-900">Dois jeitos de disparar</h2>
           <p className="mt-2 text-center text-zinc-500">Você escolhe. Se não souber qual, a gente te ajuda.</p>
@@ -143,7 +167,7 @@ export default async function DisparosPage() {
       </section>
 
       {/* Como funciona */}
-      <section className="mx-auto max-w-5xl px-5 py-14">
+      <section id="como-funciona" className="mx-auto max-w-5xl px-5 py-14">
         <h2 className="text-center text-3xl font-bold text-zinc-900">Como funciona</h2>
         <p className="mt-2 text-center text-zinc-500">4 passos. Você só faz os 3 primeiros.</p>
         <ol className="mt-8 grid gap-4 md:grid-cols-4">
@@ -169,7 +193,7 @@ export default async function DisparosPage() {
       </section>
 
       {/* Preço */}
-      <section className="bg-ink text-white">
+      <section id="preco" className="bg-ink text-white">
         <div className="mx-auto max-w-3xl px-5 py-14 text-center">
           <h2 className="text-3xl font-bold">Quanto custa</h2>
           <div className="mt-6 inline-block rounded-3xl bg-white/5 px-8 py-6 ring-1 ring-white/10">
@@ -189,7 +213,7 @@ export default async function DisparosPage() {
       </section>
 
       {/* Perguntas */}
-      <section className="mx-auto max-w-3xl px-5 py-14">
+      <section id="duvidas" className="mx-auto max-w-3xl px-5 py-14">
         <h2 className="text-center text-3xl font-bold text-zinc-900">Dúvidas</h2>
         <div className="mt-8 space-y-3">
           {FAQ.map(([q, a]) => (

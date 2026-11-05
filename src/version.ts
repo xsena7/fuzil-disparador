@@ -4,6 +4,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "3.64",
+    date: "05/11/2026",
+    items: ["[admin] Site: a página inicial agora vende só o disparo feito pela equipe (por que com a gente, nichos, disparo único e fluxo, como funciona, preço e orçamento no WhatsApp). O botão do topo virou Orçamento; Área do cliente fica no rodapé"],
+  },
+  {
     version: "3.63",
     date: "05/11/2026",
     items: ["Alertas: quando o limite da BM sobe, o aviso vem colorido, com antes e agora (ex.: 2 mil → 10 mil) e quantas mensagens a mais por dia, e com comemoração na tela"],
