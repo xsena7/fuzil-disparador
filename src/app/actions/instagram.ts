@@ -13,10 +13,10 @@ export async function importInstagramZipAction(_: FormState, form: FormData): Pr
   if (file.size > 60 * 1024 * 1024) return { error: "O .zip passa de 60 MB" };
   const { importZip } = await import("@/lib/instagram");
   try {
-    const r = await importZip(Buffer.from(await file.arrayBuffer()), { startDay: String(form.get("startDay") ?? ""), times: String(form.get("times") ?? "") });
+    const r = await importZip(Buffer.from(await file.arrayBuffer()), { startDay: String(form.get("startDay") ?? ""), times: String(form.get("times") ?? ""), storyTimes: String(form.get("storyTimes") ?? "") });
     const fmt = (d: Date) => d.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
     revalidatePath("/instagram");
-    return { ok: `${r.count} posts lidos (de ${fmt(r.first)} até ${fmt(r.last)}). Confira abaixo e clique em Confirmar agendamento.${r.warnings.length ? ` Atenção: ${r.warnings.join("; ")}.` : ""}` };
+    return { ok: `${[r.count ? `${r.count} posts` : "", r.stories ? `${r.stories} stories` : ""].filter(Boolean).join(" e ")} lidos (de ${fmt(r.first)} até ${fmt(r.last)}). Confira abaixo e clique em Confirmar agendamento.${r.warnings.length ? ` Atenção: ${r.warnings.join("; ")}.` : ""}` };
   } catch (e) {
     return { error: e instanceof Error ? e.message : String(e) };
   }

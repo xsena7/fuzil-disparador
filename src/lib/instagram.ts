@@ -32,9 +32,10 @@ export function parseCaptions(text: string): Map<number, { title: string | null;
 }
 
 /** Lê o .zip: imagens "1-1.png, 1-2.png" (carrossel) ou "2.png" (post único) e as legendas (LEGENDAS.txt ou "2.txt"). */
-export async function parseZip(buf: Buffer): Promise<{ posts: ParsedPost[]; warnings: string[] }> {
+export async function parseZip(buf: Buffer): Promise<{ posts: ParsedPost[]; stories: Array<{ number: number; data: Uint8Array }>; warnings: string[] }> {
   const zip = await JSZip.loadAsync(buf);
   const posts = new Map<number, ParsedPost>();
+  const stories: Array<{ number: number; data: Uint8Array }> = [];
   const perFile = new Map<number, string>();
   let legendas: string | null = null;
   const warnings: string[] = [];
@@ -43,6 +44,12 @@ export async function parseZip(buf: Buffer): Promise<{ posts: ParsedPost[]; warn
     const parts = entry.name.split("/");
     if (parts.some((p) => p.startsWith("__MACOSX") || p.startsWith(".")) || parts.some((p) => p.toLowerCase() === "logos")) continue;
     const base = parts[parts.length - 1];
+    // Story: "story-1.png" ou qualquer imagem numerada dentro da pasta "stories"
+    const st = base.match(/^(?:story|stories|s)[-_ ]?(\d+)\.(png|jpe?g)$/i) ?? (parts.some((p) => /^stor(y|ies)$/i.test(p)) ? base.match(/^(\d+)\.(png|jpe?g)$/i) : null);
+    if (st) {
+      stories.push({ number: Number(st[1]), data: await entry.async("uint8array") });
+      continue;
+    }
     const img = base.match(/^(\d+)(?:-(\d+))?\.(png|jpe?g)$/i);
     if (img) {
       const n = Number(img[1]);
@@ -66,7 +73,8 @@ export async function parseZip(buf: Buffer): Promise<{ posts: ParsedPost[]; warn
     if (!p.caption) warnings.push(`Post ${p.number} sem legenda`);
     if (p.slides.length > MAX_SLIDES) throw new Error(`O post ${p.number} tem ${p.slides.length} imagens: o Instagram aceita no máximo ${MAX_SLIDES} no carrossel`);
   }
-  return { posts: list, warnings };
+  stories.sort((a, b) => a.number - b.number);
+  return { posts: list, stories, warnings };
 }
 
 /** Horários de postagem: "12:00, 19:00" → [[12,0],[19,0]]. */
@@ -107,20 +115,28 @@ async function saveJpeg(data: Uint8Array, tag: string): Promise<string> {
 }
 
 /** Sobe o .zip e deixa os posts em rascunho (DRAFT): só agenda depois de conferir e confirmar na tela. */
-export async function importZip(buf: Buffer, opts: { startDay: string; times: string }) {
+export async function importZip(buf: Buffer, opts: { startDay: string; times: string; storyTimes?: string }) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(opts.startDay)) throw new Error("Escolha o primeiro dia");
+  const { posts, stories, warnings } = await parseZip(buf);
+  if (!posts.length && !stories.length) throw new Error("Não achei imagens no .zip. Os nomes precisam ser 1-1.png, 1-2.png (carrossel), 2.png (post único) ou story-1.png (story)");
   const times = parseTimes(opts.times);
-  if (!times.length) throw new Error("Coloque pelo menos um horário, ex.: 12:00");
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(opts.startDay)) throw new Error("Escolha o dia do primeiro post");
-  const { posts, warnings } = await parseZip(buf);
-  if (!posts.length) throw new Error("Não achei imagens no .zip. Os nomes precisam ser 1-1.png, 1-2.png (carrossel) ou 2.png (post único)");
+  const storyTimes = parseTimes(opts.storyTimes ?? "");
+  if (posts.length && !times.length) throw new Error("Coloque pelo menos um horário para os posts, ex.: 12:00");
+  if (stories.length && !storyTimes.length) throw new Error("Coloque pelo menos um horário para os stories, ex.: 10:00");
   const slots = scheduleSlots(opts.startDay, times, posts.length);
+  const storySlots = scheduleSlots(opts.startDay, storyTimes, stories.length);
   const batchId = randomBytes(8).toString("hex");
   for (const [i, p] of posts.entries()) {
     const images: string[] = [];
     for (const s of p.slides) images.push(await saveJpeg(s.data, `${batchId}-${p.number}`));
     await prisma.instagramPost.create({ data: { batchId, number: p.number, title: p.title, caption: p.caption.slice(0, 2200), images, scheduledAt: slots[i], status: "DRAFT" } });
   }
-  return { batchId, count: posts.length, first: slots[0], last: slots[slots.length - 1], warnings };
+  for (const [i, st] of stories.entries()) {
+    const img = await saveJpeg(st.data, `${batchId}-s${st.number}`);
+    await prisma.instagramPost.create({ data: { batchId, kind: "STORY", number: st.number, caption: "", images: [img], scheduledAt: storySlots[i], status: "DRAFT" } });
+  }
+  const all = [...slots, ...storySlots].sort((a, b) => a.getTime() - b.getTime());
+  return { batchId, count: posts.length, stories: stories.length, first: all[0], last: all[all.length - 1], warnings };
 }
 
 /** Confirma o rascunho: os posts entram na fila de publicação. */
@@ -130,7 +146,8 @@ export async function confirmBatch(batchId: string): Promise<{ ok: string } | { 
   const late = drafts.find((p) => p.scheduledAt.getTime() < Date.now() + 60_000);
   if (late) return { error: `O horário do post ${late.number} já passou. Mude o horário dele antes de confirmar` };
   await prisma.instagramPost.updateMany({ where: { batchId, status: "DRAFT" }, data: { status: "SCHEDULED" } });
-  return { ok: `${drafts.length} posts agendados!` };
+  const nSt = drafts.filter((d) => d.kind === "STORY").length, nPosts = drafts.length - nSt;
+  return { ok: `Agendado: ${[nPosts ? `${nPosts} posts` : "", nSt ? `${nSt} stories` : ""].filter(Boolean).join(" e ")}!` };
 }
 
 /** Descarta o rascunho (apaga os posts e as imagens). */
@@ -199,7 +216,7 @@ async function waitReady(token: string, containerId: string) {
   }
 }
 
-async function publishOne(post: { id: string; caption: string; images: string[] }) {
+async function publishOne(post: { id: string; kind: string; caption: string; images: string[] }) {
   const token = env.instagramToken();
   if (!token) throw new Error("Instagram não configurado: falta o token");
   const st = await instagramStatus();
@@ -207,7 +224,9 @@ async function publishOne(post: { id: string; caption: string; images: string[] 
   const ig = st.id;
   const url = (f: string) => `${env.appUrl()}/media/${f}`;
   let creation: string;
-  if (post.images.length === 1) {
+  if (post.kind === "STORY") {
+    creation = (await graph<{ id: string }>(token, "POST", `${ig}/media`, { body: { image_url: url(post.images[0]), media_type: "STORIES" } })).id;
+  } else if (post.images.length === 1) {
     creation = (await graph<{ id: string }>(token, "POST", `${ig}/media`, { body: { image_url: url(post.images[0]), caption: post.caption } })).id;
   } else {
     const children: string[] = [];
@@ -242,7 +261,7 @@ export async function publishPost(id: string) {
   } catch (e) {
     const error = friendly(e);
     await prisma.instagramPost.update({ where: { id }, data: { status: "FAILED", error } });
-    await alertOwner(`Post ${post.number} do Instagram não saiu`, `${error}. Veja na tela Instagram e clique em Publicar agora para tentar de novo.`);
+    await alertOwner(`${post.kind === "STORY" ? "Story" : "Post"} ${post.number} do Instagram não saiu`, `${error}. Veja na tela Instagram e clique em Publicar agora para tentar de novo.`);
     return { status: "failed" as const, error };
   }
 }

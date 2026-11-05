@@ -1198,6 +1198,8 @@ model InstagramPost {
   id          String    @id @default(cuid())
   // Cada .zip enviado
   batchId     String
+  // FEED (post ou carrossel) | STORY
+  kind        String    @default("FEED")
   number      Int
   title       String?
   caption     String

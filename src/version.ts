@@ -4,6 +4,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "3.66",
+    date: "05/11/2026",
+    items: ["[admin] Instagram: stories também. No .zip, story-1.png, story-2.png... viram stories, com horários próprios (padrão: de hora em hora, das 10h às 14h e das 16h às 20h). Na conferência e na fila, os stories aparecem separados por dia"],
+  },
+  {
     version: "3.65",
     date: "05/11/2026",
     items: ["[admin] Instagram: nova tela para subir o .zip dos posts e deixar a semana agendada. O Fuzil publica sozinho no dia e hora (carrossel e post único, com a legenda do LEGENDAS.txt), pela API oficial do Instagram. Dá para mudar o horário, publicar agora ou cancelar", "[admin] Instagram: depois de subir o .zip, o Fuzil mostra cada post (carrossel ou único, todas as imagens, legenda e horário) para conferir. Só agenda depois de clicar em Confirmar agendamento", "[admin] Instagram: passo a passo novo para ligar a conta (Atribuir parceiro com o ID da BM do Fuzil). O ID da conta ficou opcional: o Fuzil acha o Instagram pela página"],
