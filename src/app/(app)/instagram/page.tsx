@@ -4,6 +4,7 @@ import { requireSuperAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { cachedSetting } from "@/lib/settings-cache";
 import { instagramStatus } from "@/lib/instagram";
+import { FUZIL_BUSINESS_ID } from "@/lib/onboarding";
 import { Drawer } from "@/components/drawer";
 import { ActionForm, ConfirmButton } from "@/components/action-form";
 import { Empty, Field, Input, PageHeader } from "@/components/ui";
@@ -47,15 +48,22 @@ export default async function InstagramPage() {
         meta={<span>{st.ok ? `Conectada: @${st.username}` : `Pendente: ${st.error}`}</span>}
         open={!st.ok}
       >
-        <ol className="mb-4 list-decimal space-y-1 pl-5 text-sm text-zinc-600">
-          <li>O Instagram precisa ser <b>conta profissional</b> e estar ligado à página do Facebook da empresa.</li>
-          <li>Em <b>Configurações do negócio → Contas → Contas do Instagram</b>, copie o ID da conta.</li>
-          <li>Em <b>Usuários do sistema</b>, adicione a conta do Instagram como ativo do usuário do sistema do Fuzil e gere um token com <b>instagram_basic</b>, <b>instagram_content_publish</b>, <b>pages_show_list</b>, <b>pages_read_engagement</b> e <b>business_management</b>.</li>
-          <li>Cole o ID e o token aqui. Se deixar o token vazio, o Fuzil usa o Token do System User do Admin.</li>
+        <ol className="mb-4 list-decimal space-y-2 pl-5 text-sm text-zinc-600">
+          <li>
+            Na BM onde está o Instagram: <b>Configurações do negócio → Contas → Contas do Instagram</b>, clique na conta e em <b>Atribuir parceiro</b>. Cole o ID da BM do Fuzil{" "}
+            <code className="rounded bg-zinc-100 px-1.5 py-0.5 font-mono text-zinc-800">{FUZIL_BUSINESS_ID}</code>, deixe em <b>Acesso total (Tudo)</b> e clique em <b>Atribuir</b>. A página do Facebook ligada ao Instagram vai junto.
+          </li>
+          <li>
+            Na BM do Fuzil: <b>Configurações do negócio → Usuários → Usuários do sistema</b>, abra o usuário do Fuzil e clique em <b>Atribuir ativos</b>. Marque a conta do Instagram <b>e</b> a página do Facebook dela, com controle total.
+          </li>
+          <li>
+            No mesmo usuário, clique em <b>Gerar novo token</b>, escolha o app do Fuzil e marque <b>instagram_basic</b>, <b>instagram_content_publish</b>, <b>pages_show_list</b>, <b>pages_read_engagement</b> e <b>business_management</b>. Copie o token.
+          </li>
+          <li>Cole o token aqui embaixo e salve. O ID da conta pode ficar vazio: o Fuzil acha o Instagram sozinho pela página. Deu certo, esta gaveta fica verde com o @ da conta.</li>
         </ol>
         <ActionForm action={adminSavePlatformAction} submit="Salvar conta do Instagram">
           <div className="grid gap-4 md:grid-cols-2">
-            <Field label="ID da conta do Instagram">
+            <Field label="ID da conta do Instagram (opcional)" hint="Vazio: o Fuzil acha sozinho pela página">
               <Input name="INSTAGRAM_ACCOUNT_ID" defaultValue={cachedSetting("INSTAGRAM_ACCOUNT_ID") ?? ""} placeholder="17841400000000000" autoComplete="off" />
             </Field>
             <Field label="Token com permissão de publicar" hint={cachedSetting("INSTAGRAM_TOKEN") ? "Configurado ✓ (deixe em branco para manter)" : hasToken ? "Vazio: usando o Token do System User" : "Não configurado"}>

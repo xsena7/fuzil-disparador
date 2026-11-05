@@ -148,10 +148,14 @@ export async function discardBatch(batchId: string) {
 async function accountId(token: string): Promise<string> {
   const id = env.instagramAccountId();
   if (id) return id;
+  return discoverAccount(token);
+}
+
+async function discoverAccount(token: string): Promise<string> {
   // Sem o ID: procura a conta do Instagram ligada às páginas que o token enxerga
   const r = await graph<{ data?: Array<{ instagram_business_account?: { id: string } }> }>(token, "GET", "me/accounts", { query: { fields: "instagram_business_account" } });
   const found = r.data?.find((p) => p.instagram_business_account)?.instagram_business_account?.id;
-  if (!found) throw new Error("Não achei a conta do Instagram: preencha o ID da conta na tela Instagram");
+  if (!found) throw new Error("Não achei o Instagram: confira se a página do Facebook dele foi atribuída ao usuário do sistema (passo 2)");
   return found;
 }
 
@@ -159,8 +163,13 @@ export async function instagramStatus(): Promise<{ ok: true; username: string; i
   const token = env.instagramToken();
   if (!token) return { ok: false, error: "Falta o token" };
   try {
-    const id = await accountId(token);
-    const r = await graph<{ username?: string }>(token, "GET", id, { query: { fields: "username" } });
+    let id = await accountId(token);
+    const r = await graph<{ username?: string }>(token, "GET", id, { query: { fields: "username" } }).catch(async (e) => {
+      // ID salvo errado (ex.: o da tela de Configurações não é o da API): tenta achar pela página
+      if (!env.instagramAccountId()) throw e;
+      id = await discoverAccount(token);
+      return graph<{ username?: string }>(token, "GET", id, { query: { fields: "username" } });
+    });
     return { ok: true, username: r.username ?? "?", id };
   } catch (e) {
     return { ok: false, error: friendly(e) };
@@ -193,7 +202,9 @@ async function waitReady(token: string, containerId: string) {
 async function publishOne(post: { id: string; caption: string; images: string[] }) {
   const token = env.instagramToken();
   if (!token) throw new Error("Instagram não configurado: falta o token");
-  const ig = await accountId(token);
+  const st = await instagramStatus();
+  if (!st.ok) throw new Error(st.error);
+  const ig = st.id;
   const url = (f: string) => `${env.appUrl()}/media/${f}`;
   let creation: string;
   if (post.images.length === 1) {
