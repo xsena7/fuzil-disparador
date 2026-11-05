@@ -1190,3 +1190,27 @@ model WabaClaim {
   workspaceId String
   createdAt   DateTime @default(now())
 }
+
+// ---------------------------------------------------------------------------
+// Instagram do Fuzil: posts agendados (sobe o .zip, o worker publica no horário pela API oficial)
+// ---------------------------------------------------------------------------
+model InstagramPost {
+  id          String    @id @default(cuid())
+  // Cada .zip enviado
+  batchId     String
+  number      Int
+  title       String?
+  caption     String
+  // Arquivos JPG na pasta de uploads (servidos em /media para a Meta baixar)
+  images      String[]
+  scheduledAt DateTime
+  // SCHEDULED | PUBLISHING | PUBLISHED | FAILED | CANCELLED
+  status      String    @default("SCHEDULED")
+  igMediaId   String?
+  permalink   String?
+  error       String?
+  publishedAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([status, scheduledAt])
+}

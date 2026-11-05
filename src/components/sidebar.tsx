@@ -4,7 +4,7 @@ import clsx from "clsx";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Bell, Building2, GraduationCap, MessagesSquare, Coins, FileText, Home, Layers, LogOut, Mail, Megaphone, Menu, X, Settings, Shield, ShoppingBag, Smartphone, Sparkles, Wallet, Workflow } from "lucide-react";
+import { Bell, Building2, Camera, GraduationCap, MessagesSquare, Coins, FileText, Home, Layers, LogOut, Mail, Megaphone, Menu, X, Settings, Shield, ShoppingBag, Smartphone, Sparkles, Wallet, Workflow } from "lucide-react";
 import { logoutAction } from "@/app/actions/auth";
 import { Logo } from "./brand";
 
@@ -50,7 +50,7 @@ export function Sidebar({ workspace, user, unread, chatUnread = 0, mailUnread = 
   const [open, setOpen] = useState(false);
   useEffect(() => setOpen(false), [path]);
   // Financeiro: só para os sócios (fixos no banco)
-  const platform = [...(isSuperAdmin ? [{ href: "/admin", label: "Admin", icon: Shield }] : []), ...(financePartner ? [{ href: "/financeiro", label: "Financeiro", icon: Wallet }, { href: "/vendas", label: "Vendas", icon: ShoppingBag }, { href: "/emails", label: "E-mails", icon: Mail }] : [])];
+  const platform = [...(isSuperAdmin ? [{ href: "/admin", label: "Admin", icon: Shield }, { href: "/instagram", label: "Instagram", icon: Camera }] : []), ...(financePartner ? [{ href: "/financeiro", label: "Financeiro", icon: Wallet }, { href: "/vendas", label: "Vendas", icon: ShoppingBag }, { href: "/emails", label: "E-mails", icon: Mail }] : [])];
   const all = platform.length ? [...sections, { title: "Plataforma", items: platform }] : sections;
   return (
     <>

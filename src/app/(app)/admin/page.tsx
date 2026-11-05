@@ -139,7 +139,7 @@ export default async function AdminPage() {
         </div>
         <ActionForm action={adminSavePlatformAction} submit="Salvar integração">
           <div className="grid gap-4 md:grid-cols-2">
-            {PLATFORM_KEYS.filter((k) => !isSalesKey(k.key)).map((k) => (
+            {PLATFORM_KEYS.filter((k) => !isSalesKey(k.key) && !k.key.startsWith("INSTAGRAM_")).map((k) => (
               <SettingField key={k.key} name={k.key} label={k.label} secret={k.secret} />
             ))}
           </div>

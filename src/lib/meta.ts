@@ -17,7 +17,7 @@ type Query = Record<string, string | number | undefined>;
 
 export type BusinessProfile = { about?: string; address?: string; description?: string; email?: string; profile_picture_url?: string; websites?: string[]; vertical?: string };
 
-async function graph<T>(
+export async function graph<T>(
   token: string,
   method: "GET" | "POST" | "DELETE",
   path: string,

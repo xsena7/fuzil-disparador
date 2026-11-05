@@ -4,6 +4,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "3.65",
+    date: "05/11/2026",
+    items: ["[admin] Instagram: nova tela para subir o .zip dos posts e deixar a semana agendada. O Fuzil publica sozinho no dia e hora (carrossel e post único, com a legenda do LEGENDAS.txt), pela API oficial do Instagram. Dá para mudar o horário, publicar agora ou cancelar"],
+  },
+  {
     version: "3.64",
     date: "05/11/2026",
     items: ["[admin] Site: a página inicial agora vende só o disparo feito pela equipe (por que com a gente, nichos, disparo único e fluxo, como funciona, preço e orçamento no WhatsApp). O botão do topo virou Orçamento; Área do cliente fica no rodapé"],

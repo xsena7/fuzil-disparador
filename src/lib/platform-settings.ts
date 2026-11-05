@@ -10,6 +10,8 @@ export const PLATFORM_KEYS = [
   { key: "META_SOLUTION_ID", label: "ID da solução de parceiro (linha de crédito da Gupshup): só nas contas dos administradores do Fuzil. Preencha depois que a Gupshup aprovar", secret: false },
   { key: "META_SYSTEM_USER_TOKEN", label: "Token do System User", secret: true },
   { key: "META_GRAPH_VERSION", label: "Versão da Graph API", secret: false },
+  { key: "INSTAGRAM_ACCOUNT_ID", label: "Instagram: ID da conta do Instagram (Configurações do negócio → Contas do Instagram)", secret: false },
+  { key: "INSTAGRAM_TOKEN", label: "Instagram: token com permissão de publicar (vazio = usa o Token do System User)", secret: true },
   { key: "RESEND_API_KEY", label: "Chave do Resend (e-mails)", secret: true },
   { key: "EMAIL_FROM", label: "Remetente dos e-mails", secret: false },
   { key: "DISCORD_ERRORS_WEBHOOK", label: "Webhook do Discord para erros do sistema", secret: true },

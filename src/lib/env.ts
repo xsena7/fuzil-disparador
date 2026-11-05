@@ -20,6 +20,8 @@ export const env = {
   /** Solução com parceiro (Multi-Partner): a BM conectada pelo botão já entra com a linha de crédito do parceiro */
   metaSolutionId: () => platform("META_SOLUTION_ID"),
   metaSystemToken: () => platform("META_SYSTEM_USER_TOKEN"),
+  instagramAccountId: () => platform("INSTAGRAM_ACCOUNT_ID").replace(/\D/g, ""),
+  instagramToken: () => platform("INSTAGRAM_TOKEN") || platform("META_SYSTEM_USER_TOKEN"),
   metaGraphVersion: () => platform("META_GRAPH_VERSION", "v23.0"),
   metaGraphUrl: () => opt("META_GRAPH_URL", "https://graph.facebook.com").replace(/\/$/, ""),
   metaVerifyToken: () => opt("META_WEBHOOK_VERIFY_TOKEN"),

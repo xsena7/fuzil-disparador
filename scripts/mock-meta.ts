@@ -61,6 +61,8 @@ function json(res: any, status: number, body: unknown) {
   res.end(JSON.stringify(body));
 }
 
+const igContainers = new Map<string, Record<string, unknown>>();
+const igPosts: Array<Record<string, unknown>> = [];
 createServer(async (req, res) => {
   const url = new URL(req.url!, `http://localhost:${PORT}`);
   const parts = url.pathname.split("/").filter(Boolean).slice(1); // remove versão
@@ -70,6 +72,27 @@ createServer(async (req, res) => {
   const [id, edge] = parts;
 
   if (id === "__sent") return json(res, 200, sent);
+  // Instagram (conta 17841400000000001): cria container (baixa a imagem para conferir), status, publica e permalink
+  if (id === "__ig") return json(res, 200, igPosts);
+  if (id === "17841400000000001" && !edge) return json(res, 200, { id, username: "fuzildisparador" });
+  if (id === "17841400000000001" && edge === "media" && req.method === "POST") {
+    if (body.image_url) {
+      const img = await fetch(body.image_url).catch(() => null);
+      if (!img?.ok || !(img.headers.get("content-type") ?? "").includes("jpeg")) return json(res, 400, { error: { message: "Media download has failed.", code: 9004 } });
+    }
+    const cid = `igc${igContainers.size + 1}`;
+    igContainers.set(cid, body);
+    return json(res, 200, { id: cid });
+  }
+  if (id?.startsWith("igc") && !edge) return json(res, 200, { status_code: "FINISHED", id });
+  if (id === "17841400000000001" && edge === "media_publish") {
+    const c = igContainers.get(body.creation_id);
+    if (!c) return json(res, 400, { error: { message: "Invalid creation id", code: 100 } });
+    const mid = `igm${igPosts.length + 1}`;
+    igPosts.push({ id: mid, caption: c.caption, children: c.children ? String(c.children).split(",").length : 0 });
+    return json(res, 200, { id: mid });
+  }
+  if (id?.startsWith("igm") && !edge) return json(res, 200, { id, permalink: `https://www.instagram.com/p/${id}/` });
   // Mídia recebida: GET /{media-id} devolve a URL; GET /download/{media-id} devolve os bytes (um PNG 1x1)
   if (id?.startsWith("media") && !edge) return json(res, 200, { url: `http://localhost:${PORT}/v23.0/download/${id}`, mime_type: id.includes("audio") ? "audio/ogg" : "image/png", id });
   if (id === "download") {
