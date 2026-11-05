@@ -17,6 +17,9 @@ const NICHES = [
   { name: "Bet", text: "Avise sua base sobre bônus, eventos e novidades da sua casa." },
   { name: "Rifas", text: "Divulgue a rifa nova, lembre do sorteio e avise o ganhador." },
   { name: "Corban", text: "Ofereça consignado, FGTS e crédito para quem já é da sua lista." },
+  { name: "Clínicas", text: "Confirme consultas, lembre retornos e divulgue promoções para seus pacientes." },
+  { name: "E-commerce", text: "Avise de promoção, cupom, carrinho abandonado e pedido enviado." },
+  { name: "Seu nicho", text: "Vende outra coisa? A gente dispara para qualquer nicho. Chama que a gente monta para você." },
 ];
 
 const STEPS = [
@@ -30,6 +33,7 @@ const NO_NEED = ["Ter BM ou conta na Meta", "Comprar chip ou número", "Mexer em
 
 const FAQ: Array<[string, string]> = [
   ["Quanto custa?", "A partir de R$ 0,20 por mensagem enviada. O valor certo depende do seu nicho e da quantidade: chame no WhatsApp que a gente faz o orçamento na hora."],
+  ["Vocês disparam para o meu nicho?", "Sim. Disparamos para qualquer nicho: bet, rifas, corban, clínicas, e-commerce e o que você precisar. Conta no WhatsApp o que você vende."],
   ["Preciso ter alguma conta ou número?", "Não. A gente usa as nossas contas e números. Você só manda a lista de contatos e a mensagem."],
   ["Qual a diferença entre disparo único e fluxo?", "Disparo único é uma mensagem só para a lista toda. No fluxo, quando a pessoa responde, ela recebe as próximas mensagens sozinha, como uma conversa pronta."],
   ["Como eu sei que foi enviado?", "Você recebe o relatório com quantos receberam, leram e clicaram no link."],
@@ -89,7 +93,7 @@ export default async function DisparosPage() {
       {/* Nichos */}
       <section className="mx-auto max-w-5xl px-5 py-14">
         <h2 className="text-center text-3xl font-bold text-zinc-900">Para quem é</h2>
-        <p className="mt-2 text-center text-zinc-500">Trabalhamos com esses nichos:</p>
+        <p className="mt-2 text-center text-zinc-500">Disparamos para qualquer nicho. Alguns exemplos:</p>
         <div className="mt-8 grid gap-4 md:grid-cols-3">
           {NICHES.map((n) => (
             <div key={n.name} className="rounded-2xl border border-zinc-200 bg-white p-6 text-center shadow-soft">
