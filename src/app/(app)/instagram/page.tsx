@@ -50,7 +50,7 @@ export default async function InstagramPage() {
       >
         <ol className="mb-4 list-decimal space-y-2 pl-5 text-sm text-zinc-600">
           <li>
-            Na BM onde está o Instagram: <b>Configurações do negócio → Contas → Contas do Instagram</b>, clique na conta e em <b>Atribuir parceiro</b>. Cole o ID da BM do Fuzil{" "}
+            <i>Se o Instagram já está na própria BM do Fuzil, pule este passo.</i> Na BM onde está o Instagram: <b>Configurações do negócio → Contas → Contas do Instagram</b>, clique na conta e em <b>Atribuir parceiro</b>. Cole o ID da BM do Fuzil{" "}
             <code className="rounded bg-zinc-100 px-1.5 py-0.5 font-mono text-zinc-800">{FUZIL_BUSINESS_ID}</code>, deixe em <b>Acesso total (Tudo)</b> e clique em <b>Atribuir</b>. A página do Facebook ligada ao Instagram vai junto.
           </li>
           <li>
