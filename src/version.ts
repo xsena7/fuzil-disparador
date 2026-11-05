@@ -4,6 +4,15 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "3.67",
+    date: "05/11/2026",
+    items: [
+      "[admin] Instagram: tela organizada em abas (Feed e Stories), cada uma com a sua fila; no envio do .zip, os horários do feed e dos stories ficam em caixas separadas",
+      "[admin] Instagram: fila em gavetas por dia, com botão Cancelar o dia (não precisa cancelar um por um)",
+      "[admin] Instagram: story em vídeo (story-4.mp4 no .zip), com prévia tocando na tela",
+    ],
+  },
+  {
     version: "3.66",
     date: "05/11/2026",
     items: ["[admin] Instagram: stories também. No .zip, story-1.png, story-2.png... viram stories, com horários próprios (padrão: de hora em hora, das 10h às 14h e das 16h às 20h). Na conferência e na fila, os stories aparecem separados por dia"],

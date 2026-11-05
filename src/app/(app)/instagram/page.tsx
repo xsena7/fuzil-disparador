@@ -1,4 +1,5 @@
-import { CalendarClock, CheckCircle2, ClipboardCheck, GalleryHorizontal, Image as ImageIcon, ExternalLink, Images, Send, XCircle } from "lucide-react";
+import { CalendarClock, CheckCircle2, ClipboardCheck, GalleryHorizontal, Image as ImageIcon, ExternalLink, Images, LayoutGrid, Send, Smartphone, Upload, XCircle } from "lucide-react";
+import Link from "next/link";
 import clsx from "clsx";
 import { requireSuperAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/db";
@@ -10,7 +11,7 @@ import { ActionForm, ConfirmButton } from "@/components/action-form";
 import { Empty, Field, Input, PageHeader } from "@/components/ui";
 import { PasswordInput } from "@/components/password-input";
 import { adminSavePlatformAction } from "@/app/actions/misc";
-import { cancelAllInstagramAction, cancelInstagramPostAction, confirmInstagramBatchAction, discardInstagramBatchAction, importInstagramZipAction, publishInstagramNowAction, rescheduleInstagramPostAction } from "@/app/actions/instagram";
+import { cancelAllInstagramAction, cancelInstagramDayAction, cancelInstagramPostAction, confirmInstagramBatchAction, discardInstagramBatchAction, importInstagramZipAction, publishInstagramNowAction, rescheduleInstagramPostAction } from "@/app/actions/instagram";
 
 export const dynamic = "force-dynamic";
 
@@ -29,20 +30,54 @@ const today = () => new Date(Date.now() - 3 * 3600_000).toISOString().slice(0, 1
 const dayKey = (d: Date) => d.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo", weekday: "long", day: "2-digit", month: "2-digit" });
 const hour = (d: Date) => d.toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" });
 type P = Awaited<ReturnType<typeof prisma.instagramPost.findMany>>[number];
-/** Stories em grade, separados por dia. */
-function StoryDays({ items, actions = false }: { items: P[]; actions?: boolean }) {
-  const days = [...new Set(items.map((p) => dayKey(p.scheduledAt)))];
+const dayIso = (d: Date) => new Date(d.getTime() - 3 * 3600_000).toISOString().slice(0, 10);
+const groupByDay = (items: P[]) => {
+  const m = new Map<string, P[]>();
+  for (const p of items) m.set(dayIso(p.scheduledAt), [...(m.get(dayIso(p.scheduledAt)) ?? []), p]);
+  return [...m.entries()];
+};
+
+/** Gaveta de um dia: resumo do lado de fora e, na fila, botão para cancelar o dia todo. */
+function DayDrawer({ day, items, kind, queue, children }: { day: string; items: P[]; kind: "FEED" | "STORY"; queue: boolean; children: React.ReactNode }) {
+  const failed = items.filter((p) => p.status === "FAILED").length;
+  const label = dayKey(items[0].scheduledAt);
+  const isToday = day === dayIso(new Date());
   return (
-    <div className="space-y-4">
-      {days.map((d) => (
-        <div key={d}>
-          <div className="mb-2 text-sm font-semibold capitalize text-zinc-700">{d} · {items.filter((p) => dayKey(p.scheduledAt) === d).length} stories</div>
+    <Drawer
+      title={<span className="capitalize">{isToday ? `Hoje · ${label}` : label}</span>}
+      tone={failed ? "amber" : kind === "STORY" ? "green" : "green"}
+      meta={<span>{items.length} {kind === "STORY" ? "stories" : items.length > 1 ? "posts" : "post"} · {hour(items[0].scheduledAt)} às {hour(items[items.length - 1].scheduledAt)}{failed ? ` · ${failed} falhou` : ""}</span>}
+      open={isToday}
+    >
+      {queue && (
+        <div className="mb-3 flex justify-end">
+          <ConfirmButton action={cancelInstagramDayAction.bind(null, kind, day)} variant="ghost" className="text-xs text-rose-600" confirm={`Cancelar ${kind === "STORY" ? "todos os stories" : "os posts"} de ${label}? Nada desse dia vai ser publicado.`}>
+            <XCircle className="size-3.5" /> Cancelar o dia
+          </ConfirmButton>
+        </div>
+      )}
+      {children}
+    </Drawer>
+  );
+}
+
+/** Stories em grade, uma gaveta por dia. */
+function StoryDays({ items, actions = false }: { items: P[]; actions?: boolean }) {
+  return (
+    <div className="space-y-3">
+      {groupByDay(items).map(([day, list]) => (
+        <DayDrawer key={day} day={day} items={list} kind="STORY" queue={actions}>
           <div className="flex gap-2 overflow-x-auto pb-2">
-            {items.filter((p) => dayKey(p.scheduledAt) === d).map((p) => (
+            {list.map((p) => (
               <div key={p.id} className="w-24 shrink-0 text-center">
-                <a href={`/media/${p.images[0]}`} target="_blank" rel="noreferrer">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={`/media/${p.images[0]}`} alt={`Story ${p.number}`} className={clsx("h-[171px] w-24 rounded-lg object-cover ring-1", p.status === "FAILED" ? "ring-2 ring-rose-400" : "ring-zinc-200")} />
+                <a href={`/media/${p.images[0]}`} target="_blank" rel="noreferrer" className="relative block">
+                  {p.images[0].endsWith(".mp4") ? (
+                    <video src={`/media/${p.images[0]}`} muted loop autoPlay playsInline preload="metadata" className={clsx("h-[171px] w-24 rounded-lg object-cover ring-1", p.status === "FAILED" ? "ring-2 ring-rose-400" : "ring-zinc-200")} />
+                  ) : (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={`/media/${p.images[0]}`} alt={`Story ${p.number}`} loading="lazy" className={clsx("h-[171px] w-24 rounded-lg object-cover ring-1", p.status === "FAILED" ? "ring-2 ring-rose-400" : "ring-zinc-200")} />
+                  )}
+                  {p.images[0].endsWith(".mp4") && <span className="absolute left-1 top-1 rounded bg-black/60 px-1 text-[10px] font-semibold text-white">▶ vídeo</span>}
                 </a>
                 <div className="mt-1 text-xs font-medium text-zinc-700">{hour(p.scheduledAt)}</div>
                 {p.status === "FAILED" && <div className="text-[10px] leading-tight text-rose-600" title={p.error ?? ""}>Falhou</div>}
@@ -52,28 +87,74 @@ function StoryDays({ items, actions = false }: { items: P[]; actions?: boolean }
               </div>
             ))}
           </div>
-        </div>
+        </DayDrawer>
       ))}
     </div>
   );
 }
 
-export default async function InstagramPage() {
+/** Card de um post do feed (conferência ou fila). */
+function FeedCard({ p, review = false }: { p: P; review?: boolean }) {
+  return (
+    <div className="rounded-xl border border-zinc-200 p-4">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="font-semibold text-zinc-900">Post {p.number}{p.title ? ` · ${p.title}` : ""}</span>
+        <span className={clsx("inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ring-1", p.images.length > 1 ? "bg-orange-50 text-orange-700 ring-orange-200" : "bg-zinc-50 text-zinc-700 ring-zinc-200")}>
+          {p.images.length > 1 ? <><GalleryHorizontal className="size-3.5" /> Carrossel · {p.images.length} imagens</> : <><ImageIcon className="size-3.5" /> Post único</>}
+        </span>
+        {!review && <span className={clsx("rounded-full px-2 py-0.5 text-xs font-medium ring-1", STATUS[p.status]?.cls)}>{STATUS[p.status]?.label ?? p.status}</span>}
+        <span className="ml-auto text-sm font-medium text-zinc-700">{when(p.scheduledAt)}</span>
+      </div>
+      <div className="mt-3 flex gap-2 overflow-x-auto pb-2">
+        {p.images.map((f, i) => (
+          <a key={f} href={`/media/${f}`} target="_blank" rel="noreferrer" className="relative shrink-0">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={`/media/${f}`} alt={`Imagem ${i + 1}`} className={clsx("rounded-lg object-cover ring-1 ring-zinc-200", review ? "h-48 w-[154px]" : "h-32 w-[103px]")} />
+            {p.images.length > 1 && <span className="absolute left-1.5 top-1.5 rounded bg-black/60 px-1.5 text-[11px] font-semibold text-white">{i + 1}/{p.images.length}</span>}
+          </a>
+        ))}
+      </div>
+      <div className={clsx("mt-1 whitespace-pre-wrap rounded-lg p-3 text-sm", p.caption ? "bg-zinc-50 text-zinc-700" : "bg-amber-50 text-amber-800", !review && "line-clamp-3")}>{p.caption || "Sem legenda: o post vai sair sem texto."}</div>
+      {p.error && <p className="mt-2 text-xs text-rose-600">{p.error}</p>}
+      <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-zinc-100 pt-3">
+        <ActionForm action={rescheduleInstagramPostAction.bind(null, p.id)} submit="Mudar horário" variant="secondary" className="flex items-end gap-2 [&>div]:mt-0">
+          <Input type="datetime-local" name="at" defaultValue={localInput(p.scheduledAt)} className="w-48 text-xs" />
+        </ActionForm>
+        {!review && (
+          <>
+            <ConfirmButton action={publishInstagramNowAction.bind(null, p.id)} className="text-xs" confirm={`Publicar o post ${p.number} agora no Instagram?`}><Send className="size-3.5" /> Publicar agora</ConfirmButton>
+            <ConfirmButton action={cancelInstagramPostAction.bind(null, p.id)} variant="ghost" className="text-xs text-zinc-500" confirm={`Cancelar o post ${p.number}?`}><XCircle className="size-3.5" /> Cancelar</ConfirmButton>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+const nextOf = (items: P[]) => (items[0] ? when(items[0].scheduledAt) : null);
+
+export default async function InstagramPage({ searchParams }: { searchParams: Promise<{ aba?: string }> }) {
   await requireSuperAdmin();
+  const aba = (await searchParams).aba === "stories" ? "stories" : "feed";
   const [st, posts] = await Promise.all([
     instagramStatus(),
     prisma.instagramPost.findMany({ where: { OR: [{ status: { not: "CANCELLED" } }, { createdAt: { gt: new Date(Date.now() - 7 * 86400_000) } }] }, orderBy: { scheduledAt: "asc" }, take: 500 }),
   ]);
+  const isStory = (p: P) => p.kind === "STORY";
   const drafts = posts.filter((p) => p.status === "DRAFT");
   const batches = [...new Set(drafts.map((p) => p.batchId))].map((id) => drafts.filter((p) => p.batchId === id));
   const pending = posts.filter((p) => !["PUBLISHED", "CANCELLED", "DRAFT"].includes(p.status));
-  const upcoming = pending.filter((p) => p.kind !== "STORY");
-  const upcomingStories = pending.filter((p) => p.kind === "STORY");
-  const done = posts.filter((p) => p.status === "PUBLISHED" || p.status === "CANCELLED").reverse();
+  const feedQueue = pending.filter((p) => !isStory(p));
+  const storyQueue = pending.filter(isStory);
+  const done = posts.filter((p) => (p.status === "PUBLISHED" || p.status === "CANCELLED") && (aba === "stories" ? isStory(p) : !isStory(p))).reverse();
   const hasToken = Boolean(cachedSetting("INSTAGRAM_TOKEN") || cachedSetting("META_SYSTEM_USER_TOKEN") || process.env.META_SYSTEM_USER_TOKEN);
+  const tabs = [
+    { id: "feed", label: "Feed", sub: "Posts e carrosséis", icon: LayoutGrid, count: feedQueue.length, next: nextOf(feedQueue), failed: feedQueue.filter((p) => p.status === "FAILED").length },
+    { id: "stories", label: "Stories", sub: "Um por horário", icon: Smartphone, count: storyQueue.length, next: nextOf(storyQueue), failed: storyQueue.filter((p) => p.status === "FAILED").length },
+  ];
   return (
     <div className="mx-auto max-w-5xl space-y-4">
-      <PageHeader title="Instagram" description="Suba o .zip dos posts e o Fuzil publica sozinho, no dia e na hora, pela API oficial do Instagram." />
+      <PageHeader title="Instagram" description="Suba o .zip e o Fuzil publica sozinho, no dia e na hora, pela API oficial do Instagram." />
 
       <Drawer
         title="Conta do Instagram"
@@ -106,128 +187,113 @@ export default async function InstagramPage() {
         </ActionForm>
       </Drawer>
 
-      <Drawer title="Agendar posts" tone="green" meta={<span>{drafts.length ? `${drafts.length} para conferir` : pending.length ? `${pending.length} na fila` : "Nenhum agendado"}</span>} open>
-        <p className="mb-4 text-sm text-zinc-500">
-          O .zip pode ser o pacote do jeito que veio: imagens <b>1-1.png, 1-2.png…</b> viram carrossel, <b>2.png</b> é post único, <b>story-1.png, story-2.png…</b> são stories, e as legendas saem do <b>LEGENDAS.txt</b>. Tudo entra na ordem dos números, um por horário. Horário que já passou hoje fica de fora.
-        </p>
+      <Drawer title="Subir .zip" tone="green" meta={<span>{drafts.length ? `${drafts.length} para conferir` : "Feed e stories no mesmo .zip"}</span>} open={!pending.length && !drafts.length}>
         <ActionForm action={importInstagramZipAction} submit="Subir e conferir">
           <div className="grid gap-4 md:grid-cols-2">
             <Field label="Arquivo .zip">
               <input type="file" name="zip" accept=".zip,application/zip" required className="block w-full text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-zinc-100 file:px-3 file:py-2 file:text-sm" />
             </Field>
-            <Field label="Primeiro dia">
+            <Field label="Primeiro dia" hint="Horário que já passou hoje fica de fora">
               <Input type="date" name="startDay" defaultValue={today()} required />
             </Field>
-            <Field label="Horários dos posts do feed" hint="Um post por horário. Ex.: 12:00, 19:00 = 2 por dia">
-              <Input name="times" defaultValue="12:00" />
-            </Field>
-            <Field label="Horários dos stories" hint="Um story por horário">
-              <Input name="storyTimes" defaultValue="10:00, 11:00, 12:00, 13:00, 14:00, 16:00, 17:00, 18:00, 19:00, 20:00" />
-            </Field>
+          </div>
+          <div className="mt-4 grid gap-4 md:grid-cols-2">
+            <div className="rounded-xl border border-orange-200 bg-orange-50/50 p-4">
+              <div className="flex items-center gap-2 font-semibold text-zinc-900"><LayoutGrid className="size-4 text-orange-600" /> Feed</div>
+              <p className="mt-1 text-xs text-zinc-600"><b>2.png</b> = post único · <b>5-1.png, 5-2.png…</b> = carrossel · legenda do <b>LEGENDAS.txt</b></p>
+              <div className="mt-3">
+                <Field label="Horários do feed" hint="Um post por horário. Ex.: 12:00, 19:00 = 2 por dia">
+                  <Input name="times" defaultValue="12:00" />
+                </Field>
+              </div>
+            </div>
+            <div className="rounded-xl border border-violet-200 bg-violet-50/50 p-4">
+              <div className="flex items-center gap-2 font-semibold text-zinc-900"><Smartphone className="size-4 text-violet-600" /> Stories</div>
+              <p className="mt-1 text-xs text-zinc-600"><b>story-1.png, story-2.mp4…</b> = um story cada, foto ou vídeo (sem legenda)</p>
+              <div className="mt-3">
+                <Field label="Horários dos stories" hint="Um story por horário">
+                  <Input name="storyTimes" defaultValue="10:00, 11:00, 12:00, 13:00, 14:00, 16:00, 17:00, 18:00, 19:00, 20:00" />
+                </Field>
+              </div>
+            </div>
           </div>
         </ActionForm>
       </Drawer>
 
-      {batches.map((all) => { const b = all.filter((p) => p.kind !== "STORY"); const sts = all.filter((p) => p.kind === "STORY"); const ordered = [...all].sort((x, y) => x.scheduledAt.getTime() - y.scheduledAt.getTime()); return (
-        <section key={all[0].batchId} className="rounded-2xl border-2 border-violet-200 bg-white p-5 shadow-sm">
-          <div className="flex flex-wrap items-center gap-3">
-            <h2 className="flex items-center gap-2 font-semibold text-zinc-900"><ClipboardCheck className="size-5 text-violet-600" /> Confira antes de agendar</h2>
-            <span className="text-sm text-zinc-500">
-              {b.length} posts ({b.filter((p) => p.images.length > 1).length} carrosséis · {b.filter((p) => p.images.length === 1).length} únicos) · {sts.length} stories · de {when(ordered[0].scheduledAt)} até {when(ordered[ordered.length - 1].scheduledAt)}
-            </span>
-          </div>
-          <div className="mt-4 space-y-4">
-            {b.map((p) => (
-              <div key={p.id} className="rounded-xl border border-zinc-200 p-4">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-semibold text-zinc-900">Post {p.number}{p.title ? ` · ${p.title}` : ""}</span>
-                  <span className={clsx("inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ring-1", p.images.length > 1 ? "bg-orange-50 text-orange-700 ring-orange-200" : "bg-zinc-50 text-zinc-700 ring-zinc-200")}>
-                    {p.images.length > 1 ? <><GalleryHorizontal className="size-3.5" /> Carrossel · {p.images.length} imagens</> : <><ImageIcon className="size-3.5" /> Post único</>}
-                  </span>
-                  <span className="text-sm text-zinc-600">{when(p.scheduledAt)}</span>
-                </div>
-                <div className="mt-3 flex gap-2 overflow-x-auto pb-2">
-                  {p.images.map((f, i) => (
-                    <a key={f} href={`/media/${f}`} target="_blank" rel="noreferrer" className="relative shrink-0">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={`/media/${f}`} alt={`Imagem ${i + 1}`} className="h-48 w-[154px] rounded-lg object-cover ring-1 ring-zinc-200" />
-                      {p.images.length > 1 && <span className="absolute left-1.5 top-1.5 rounded bg-black/60 px-1.5 text-[11px] font-semibold text-white">{i + 1}/{p.images.length}</span>}
-                    </a>
-                  ))}
-                </div>
-                <div className="mt-2 grid gap-3 md:grid-cols-[1fr_auto]">
-                  <div className={clsx("whitespace-pre-wrap rounded-lg p-3 text-sm", p.caption ? "bg-zinc-50 text-zinc-700" : "bg-amber-50 text-amber-800")}>{p.caption || "Sem legenda: o post vai sair sem texto."}</div>
-                  <ActionForm action={rescheduleInstagramPostAction.bind(null, p.id)} submit="Mudar horário" variant="secondary" className="flex flex-wrap items-end gap-2 self-start [&>div]:mt-0">
-                    <Input type="datetime-local" name="at" defaultValue={localInput(p.scheduledAt)} className="w-48 text-xs" />
-                  </ActionForm>
-                </div>
-              </div>
-            ))}
-          </div>
-          {sts.length > 0 && (
-            <div className="mt-5">
-              <h3 className="mb-3 font-semibold text-zinc-900">Stories ({sts.length})</h3>
-              <StoryDays items={sts} />
+      {batches.map((all) => {
+        const feed = all.filter((p) => !isStory(p));
+        const sts = all.filter(isStory);
+        return (
+          <section key={all[0].batchId} className="rounded-2xl border-2 border-violet-200 bg-white p-5 shadow-sm">
+            <h2 className="flex items-center gap-2 text-lg font-semibold text-zinc-900"><ClipboardCheck className="size-5 text-violet-600" /> Confira antes de agendar</h2>
+            <div className="mt-3 flex flex-wrap gap-2 text-sm">
+              {feed.length > 0 && <span className="rounded-full bg-orange-50 px-3 py-1 font-medium text-orange-800 ring-1 ring-orange-200">Feed: {feed.length} posts ({feed.filter((p) => p.images.length > 1).length} carrosséis, {feed.filter((p) => p.images.length === 1).length} únicos)</span>}
+              {sts.length > 0 && <span className="rounded-full bg-violet-50 px-3 py-1 font-medium text-violet-800 ring-1 ring-violet-200">Stories: {sts.length} ({[...new Set(sts.map((p) => dayKey(p.scheduledAt)))].length} dias)</span>}
             </div>
-          )}
-          <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-zinc-100 pt-4">
-            <ConfirmButton action={confirmInstagramBatchAction.bind(null, all[0].batchId)} variant="primary" confirm={`Agendar ${[b.length ? `${b.length} posts` : "", sts.length ? `${sts.length} stories` : ""].filter(Boolean).join(" e ")}? Eles vão sair sozinhos no Instagram nos horários acima.`}><CheckCircle2 className="size-4" /> Confirmar agendamento</ConfirmButton>
-            <ConfirmButton action={discardInstagramBatchAction.bind(null, all[0].batchId)} variant="ghost" className="text-zinc-500" confirm="Descartar tudo isso? Nada vai ser publicado."><XCircle className="size-4" /> Descartar</ConfirmButton>
-          </div>
-        </section>
-      ); })}
+            {feed.length > 0 && (
+              <div className="mt-5">
+                <h3 className="mb-3 flex items-center gap-2 font-semibold text-zinc-900"><LayoutGrid className="size-4 text-orange-600" /> Feed</h3>
+                <div className="space-y-3">{feed.map((p) => <FeedCard key={p.id} p={p} review />)}</div>
+              </div>
+            )}
+            {sts.length > 0 && (
+              <div className="mt-6">
+                <h3 className="mb-3 flex items-center gap-2 font-semibold text-zinc-900"><Smartphone className="size-4 text-violet-600" /> Stories</h3>
+                <StoryDays items={sts} />
+              </div>
+            )}
+            <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-zinc-100 pt-4">
+              <ConfirmButton action={confirmInstagramBatchAction.bind(null, all[0].batchId)} variant="primary" confirm={`Agendar ${[feed.length ? `${feed.length} posts do feed` : "", sts.length ? `${sts.length} stories` : ""].filter(Boolean).join(" e ")}? Eles vão sair sozinhos nos horários acima.`}><CheckCircle2 className="size-4" /> Confirmar agendamento</ConfirmButton>
+              <ConfirmButton action={discardInstagramBatchAction.bind(null, all[0].batchId)} variant="ghost" className="text-zinc-500" confirm="Descartar tudo isso? Nada vai ser publicado."><XCircle className="size-4" /> Descartar</ConfirmButton>
+            </div>
+          </section>
+        );
+      })}
+
+      {/* Abas: Feed e Stories, cada um com a sua fila */}
+      <div className="grid gap-3 sm:grid-cols-2">
+        {tabs.map((t) => (
+          <Link key={t.id} href={`?aba=${t.id}`} scroll={false} className={clsx("flex items-center gap-4 rounded-2xl border-2 bg-white p-4 shadow-sm transition", aba === t.id ? (t.id === "feed" ? "border-orange-400" : "border-violet-400") : "border-zinc-200 hover:border-zinc-300")}>
+            <span className={clsx("grid size-12 shrink-0 place-items-center rounded-2xl", t.id === "feed" ? "bg-orange-50 text-orange-600" : "bg-violet-50 text-violet-600")}><t.icon className="size-6" /></span>
+            <span className="min-w-0">
+              <span className="block text-lg font-semibold text-zinc-900">{t.label} <span className="text-sm font-normal text-zinc-500">· {t.sub}</span></span>
+              <span className="block text-sm text-zinc-600">{t.count ? `${t.count} na fila · próximo ${t.next}` : "Nada agendado"}{t.failed ? <b className="ml-1 text-rose-600">· {t.failed} falhou</b> : null}</span>
+            </span>
+          </Link>
+        ))}
+      </div>
 
       <section className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
-        <div className="mb-3 flex flex-wrap items-center gap-3">
-          <h2 className="flex items-center gap-2 font-semibold text-zinc-900"><CalendarClock className="size-5 text-orange-500" /> Próximos posts</h2>
+        <div className="mb-4 flex flex-wrap items-center gap-3">
+          <h2 className="flex items-center gap-2 font-semibold text-zinc-900"><CalendarClock className={clsx("size-5", aba === "feed" ? "text-orange-500" : "text-violet-500")} /> {aba === "feed" ? "Feed agendado" : "Stories agendados"}</h2>
           {pending.length > 0 && (
-            <ConfirmButton action={cancelAllInstagramAction} variant="ghost" className="ml-auto text-xs text-zinc-500" confirm="Cancelar todos os posts que ainda não saíram?">Cancelar todos</ConfirmButton>
+            <ConfirmButton action={cancelAllInstagramAction} variant="ghost" className="ml-auto text-xs text-zinc-500" confirm="Cancelar tudo que ainda não saiu (feed e stories)?">Cancelar tudo</ConfirmButton>
           )}
         </div>
-        {!pending.length && <Empty icon={<Images className="size-6" />}>Nenhum post agendado. Suba um .zip acima.</Empty>}
-        <div className="space-y-3">
-          {upcoming.map((p) => (
-            <div key={p.id} className="flex flex-wrap items-center gap-4 rounded-xl border border-zinc-200 p-3">
-              <div className="relative">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={`/media/${p.images[0]}`} alt="" className="h-24 w-[77px] rounded-lg object-cover ring-1 ring-zinc-200" />
-                {p.images.length > 1 && <span className="absolute right-1 top-1 rounded bg-black/60 px-1 text-[10px] font-semibold text-white">{p.images.length}</span>}
-              </div>
-              <div className="min-w-[14rem] flex-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-semibold text-zinc-900">Post {p.number}{p.title ? ` · ${p.title}` : ""}</span>
-                  <span className={clsx("rounded-full px-2 py-0.5 text-xs font-medium ring-1", STATUS[p.status]?.cls)}>{STATUS[p.status]?.label ?? p.status}</span>
-                  <span className="text-xs text-zinc-500">{p.images.length > 1 ? `Carrossel · ${p.images.length} imagens` : "Post único"}</span>
-                </div>
-                <div className="mt-0.5 text-sm text-zinc-600">{when(p.scheduledAt)}</div>
-                <p className="mt-1 line-clamp-2 text-xs text-zinc-500">{p.caption || "Sem legenda"}</p>
-                {p.error && <p className="mt-1 text-xs text-rose-600">{p.error}</p>}
-              </div>
-              <div className="flex w-full flex-wrap items-center gap-2 border-t border-zinc-100 pt-3">
-                <ActionForm action={rescheduleInstagramPostAction.bind(null, p.id)} submit="Mudar" variant="secondary" className="flex items-end gap-2 [&>div]:mt-0">
-                  <Input type="datetime-local" name="at" defaultValue={localInput(p.scheduledAt)} className="w-48 text-xs" />
-                </ActionForm>
-                <ConfirmButton action={publishInstagramNowAction.bind(null, p.id)} className="text-xs" confirm={`Publicar o post ${p.number} agora no Instagram?`}><Send className="size-3.5" /> Publicar agora</ConfirmButton>
-                <ConfirmButton action={cancelInstagramPostAction.bind(null, p.id)} variant="ghost" className="text-xs text-zinc-500" confirm={`Cancelar o post ${p.number}?`}><XCircle className="size-3.5" /> Cancelar</ConfirmButton>
-              </div>
+        {aba === "feed" ? (
+          feedQueue.length ? (
+            <div className="space-y-3">
+              {groupByDay(feedQueue).map(([day, list]) => (
+                <DayDrawer key={day} day={day} items={list} kind="FEED" queue>
+                  <div className="space-y-3">{list.map((p) => <FeedCard key={p.id} p={p} />)}</div>
+                </DayDrawer>
+              ))}
             </div>
-          ))}
-        </div>
-        {upcomingStories.length > 0 && (
-          <div className="mt-5">
-            <h3 className="mb-3 font-semibold text-zinc-900">Stories na fila ({upcomingStories.length})</h3>
-            <StoryDays items={upcomingStories} actions />
-          </div>
+          ) : <Empty icon={<Upload className="size-6" />}>Nenhum post do feed agendado. Suba um .zip acima.</Empty>
+        ) : storyQueue.length ? (
+          <StoryDays items={storyQueue} actions />
+        ) : (
+          <Empty icon={<Images className="size-6" />}>Nenhum story agendado. Suba um .zip com story-1.png, story-2.png…</Empty>
         )}
       </section>
 
       {done.length > 0 && (
-        <Drawer title="Já publicados" tone="green" meta={<span>{done.filter((p) => p.status === "PUBLISHED").length} publicados</span>}>
+        <Drawer title={aba === "feed" ? "Feed já publicado" : "Stories já publicados"} tone="green" meta={<span>{done.filter((p) => p.status === "PUBLISHED").length} publicados</span>}>
           <div className="divide-y divide-zinc-100">
             {done.map((p) => (
               <div key={p.id} className="flex items-center gap-3 py-2 text-sm">
                 {p.status === "PUBLISHED" ? <CheckCircle2 className="size-4 text-emerald-500" /> : <XCircle className="size-4 text-zinc-400" />}
-                <span className="font-medium text-zinc-800">{p.kind === "STORY" ? "Story" : "Post"} {p.number}{p.title ? ` · ${p.title}` : ""}</span>
+                <span className="font-medium text-zinc-800">{isStory(p) ? "Story" : "Post"} {p.number}{p.title ? ` · ${p.title}` : ""}</span>
                 <span className="text-xs text-zinc-500">{when(p.publishedAt ?? p.scheduledAt)}</span>
                 {p.permalink && <a href={p.permalink} target="_blank" rel="noreferrer" className="ml-auto inline-flex items-center gap-1 text-xs font-medium text-orange-600 hover:underline">Ver no Instagram <ExternalLink className="size-3" /></a>}
               </div>

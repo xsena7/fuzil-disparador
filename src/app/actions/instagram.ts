@@ -76,3 +76,15 @@ export async function discardInstagramBatchAction(batchId: string) {
   revalidatePath("/instagram");
   return { ok: "Rascunho descartado" };
 }
+
+/** Cancela tudo de um dia (feed ou stories) que ainda não saiu. `day` = AAAA-MM-DD no horário de Brasília. */
+export async function cancelInstagramDayAction(kind: "FEED" | "STORY", day: string) {
+  await requireSuperAdmin();
+  const m = day.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return { error: "Dia inválido" };
+  const from = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3], 3));
+  const to = new Date(from.getTime() + 86400_000);
+  const r = await prisma.instagramPost.updateMany({ where: { kind, status: { in: ["SCHEDULED", "FAILED"] }, scheduledAt: { gte: from, lt: to } }, data: { status: "CANCELLED" } });
+  revalidatePath("/instagram");
+  return { ok: `${r.count} ${kind === "STORY" ? "stories cancelados" : "posts cancelados"}` };
+}

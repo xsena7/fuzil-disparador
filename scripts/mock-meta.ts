@@ -76,9 +76,10 @@ createServer(async (req, res) => {
   if (id === "__ig") return json(res, 200, igPosts);
   if (id === "17841400000000001" && !edge) return json(res, 200, { id, username: "fuzildisparador" });
   if (id === "17841400000000001" && edge === "media" && req.method === "POST") {
-    if (body.image_url) {
-      const img = await fetch(body.image_url).catch(() => null);
-      if (!img?.ok || !(img.headers.get("content-type") ?? "").includes("jpeg")) return json(res, 400, { error: { message: "Media download has failed.", code: 9004 } });
+    if (body.image_url || body.video_url) {
+      const img = await fetch(String(body.image_url ?? body.video_url)).catch(() => null);
+      const want = body.video_url ? "mp4" : "jpeg";
+      if (!img?.ok || !(img.headers.get("content-type") ?? "").includes(want)) return json(res, 400, { error: { message: "Media download has failed.", code: 9004 } });
     }
     const cid = `igc${igContainers.size + 1}`;
     igContainers.set(cid, body);

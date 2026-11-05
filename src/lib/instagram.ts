@@ -32,10 +32,10 @@ export function parseCaptions(text: string): Map<number, { title: string | null;
 }
 
 /** Lê o .zip: imagens "1-1.png, 1-2.png" (carrossel) ou "2.png" (post único) e as legendas (LEGENDAS.txt ou "2.txt"). */
-export async function parseZip(buf: Buffer): Promise<{ posts: ParsedPost[]; stories: Array<{ number: number; data: Uint8Array }>; warnings: string[] }> {
+export async function parseZip(buf: Buffer): Promise<{ posts: ParsedPost[]; stories: Array<{ number: number; data: Uint8Array; video: boolean }>; warnings: string[] }> {
   const zip = await JSZip.loadAsync(buf);
   const posts = new Map<number, ParsedPost>();
-  const stories: Array<{ number: number; data: Uint8Array }> = [];
+  const stories: Array<{ number: number; data: Uint8Array; video: boolean }> = [];
   const perFile = new Map<number, string>();
   let legendas: string | null = null;
   const warnings: string[] = [];
@@ -45,9 +45,9 @@ export async function parseZip(buf: Buffer): Promise<{ posts: ParsedPost[]; stor
     if (parts.some((p) => p.startsWith("__MACOSX") || p.startsWith(".")) || parts.some((p) => p.toLowerCase() === "logos")) continue;
     const base = parts[parts.length - 1];
     // Story: "story-1.png" ou qualquer imagem numerada dentro da pasta "stories"
-    const st = base.match(/^(?:story|stories|s)[-_ ]?(\d+)\.(png|jpe?g)$/i) ?? (parts.some((p) => /^stor(y|ies)$/i.test(p)) ? base.match(/^(\d+)\.(png|jpe?g)$/i) : null);
+    const st = base.match(/^(?:story|stories|s)[-_ ]?(\d+)\.(png|jpe?g|mp4)$/i) ?? (parts.some((p) => /^stor(y|ies)$/i.test(p)) ? base.match(/^(\d+)\.(png|jpe?g|mp4)$/i) : null);
     if (st) {
-      stories.push({ number: Number(st[1]), data: await entry.async("uint8array") });
+      stories.push({ number: Number(st[1]), data: await entry.async("uint8array"), video: st[2].toLowerCase() === "mp4" });
       continue;
     }
     const img = base.match(/^(\d+)(?:-(\d+))?\.(png|jpe?g)$/i);
@@ -114,6 +114,16 @@ async function saveJpeg(data: Uint8Array, tag: string): Promise<string> {
   return name;
 }
 
+/** Vídeo do story: vai do jeito que veio (MP4), até 100 MB. */
+async function saveVideo(data: Uint8Array, tag: string): Promise<string> {
+  if (data.byteLength > 100 * 1024 * 1024) throw new Error("Vídeo do story passa de 100 MB");
+  const dir = path.resolve(env.uploadDir());
+  await mkdir(dir, { recursive: true });
+  const name = `ig-${tag}-${randomBytes(6).toString("hex")}.mp4`;
+  await writeFile(path.join(dir, name), data);
+  return name;
+}
+
 /** Sobe o .zip e deixa os posts em rascunho (DRAFT): só agenda depois de conferir e confirmar na tela. */
 export async function importZip(buf: Buffer, opts: { startDay: string; times: string; storyTimes?: string }) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(opts.startDay)) throw new Error("Escolha o primeiro dia");
@@ -132,7 +142,7 @@ export async function importZip(buf: Buffer, opts: { startDay: string; times: st
     await prisma.instagramPost.create({ data: { batchId, number: p.number, title: p.title, caption: p.caption.slice(0, 2200), images, scheduledAt: slots[i], status: "DRAFT" } });
   }
   for (const [i, st] of stories.entries()) {
-    const img = await saveJpeg(st.data, `${batchId}-s${st.number}`);
+    const img = st.video ? await saveVideo(st.data, `${batchId}-s${st.number}`) : await saveJpeg(st.data, `${batchId}-s${st.number}`);
     await prisma.instagramPost.create({ data: { batchId, kind: "STORY", number: st.number, caption: "", images: [img], scheduledAt: storySlots[i], status: "DRAFT" } });
   }
   const all = [...slots, ...storySlots].sort((a, b) => a.getTime() - b.getTime());
@@ -207,8 +217,9 @@ function friendly(e: unknown): string {
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 /** Espera a Meta terminar de processar o container (carrossel demora um pouco). */
-async function waitReady(token: string, containerId: string) {
-  for (let i = 0; i < 20; i++) {
+async function waitReady(token: string, containerId: string, video = false) {
+  // Vídeo demora mais para a Meta processar (até uns 5 min)
+  for (let i = 0; i < (video ? 100 : 20); i++) {
     const r = await graph<{ status_code?: string; status?: string }>(token, "GET", containerId, { query: { fields: "status_code,status" } }).catch(() => null);
     if (!r || r.status_code === "FINISHED" || r.status_code === "PUBLISHED") return;
     if (r.status_code === "ERROR" || r.status_code === "EXPIRED") throw new Error(`A Meta recusou a imagem (${r.status ?? r.status_code})`);
@@ -225,7 +236,10 @@ async function publishOne(post: { id: string; kind: string; caption: string; ima
   const url = (f: string) => `${env.appUrl()}/media/${f}`;
   let creation: string;
   if (post.kind === "STORY") {
-    creation = (await graph<{ id: string }>(token, "POST", `${ig}/media`, { body: { image_url: url(post.images[0]), media_type: "STORIES" } })).id;
+    const f = post.images[0];
+    const isVideo = f.endsWith(".mp4");
+    creation = (await graph<{ id: string }>(token, "POST", `${ig}/media`, { body: isVideo ? { video_url: url(f), media_type: "STORIES" } : { image_url: url(f), media_type: "STORIES" } })).id;
+    await waitReady(token, creation, isVideo);
   } else if (post.images.length === 1) {
     creation = (await graph<{ id: string }>(token, "POST", `${ig}/media`, { body: { image_url: url(post.images[0]), caption: post.caption } })).id;
   } else {
