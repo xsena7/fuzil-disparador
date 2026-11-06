@@ -4,6 +4,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "3.72",
+    date: "06/11/2026",
+    items: ["Grupos de BM: BM que está em BMs com problema (ex.: template em análise) agora pode mudar de grupo. Ela recebe na hora os templates padrão do grupo escolhido e entra nele sozinha quando o problema sumir"],
+  },
+  {
     version: "3.71",
     date: "05/11/2026",
     items: ["[admin] E-mails no celular: tocar na caixa (ex.: contato@) abre os e-mails dela direto, com botão para voltar à lista"],

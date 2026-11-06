@@ -56,13 +56,22 @@ export async function restoreBusinessAction(businessId: string) {
 }
 
 /** Coloca a BM também no grupo escolhido (ela continua nos grupos em que já estava). */
-export async function addBusinessToGroupAction(businessId: string, groupId: string): Promise<{ ok?: true; error?: string }> {
+export async function addBusinessToGroupAction(businessId: string, groupId: string): Promise<{ ok?: true; pending?: boolean; error?: string }> {
   const auth = await requireAuth();
   const [bm, group] = await Promise.all([
-    prisma.businessManager.findFirst({ where: { id: businessId, workspaceId: auth.workspace.id }, select: { id: true } }),
+    prisma.businessManager.findFirst({ where: { id: businessId, workspaceId: auth.workspace.id }, select: { id: true, problemAt: true } }),
     prisma.bmGroup.findFirst({ where: { id: groupId, workspaceId: auth.workspace.id, system: null }, select: { id: true, name: true } }),
   ]);
   if (!bm || !group) return { error: "BM ou grupo não encontrado" };
+  // BM com problema (ex.: template em análise): continua lá, mas passa a ser do grupo escolhido.
+  // Recebe na hora os templates padrão desse grupo e entra nele sozinha quando o problema sumir
+  if (bm.problemAt) {
+    await prisma.businessManager.update({ where: { id: bm.id }, data: { problemPrevGroups: [group.id] } });
+    const { deployBlueprints } = await import("@/lib/blueprints");
+    void deployBlueprints(auth.workspace.id).catch((e) => console.error("[grupos] templates padrão", e));
+    revalidatePath("/grupos");
+    return { ok: true, pending: true };
+  }
   // Move: a BM sai dos outros grupos de disparo e fica só no escolhido
   await prisma.$transaction([
     prisma.bmGroupMember.deleteMany({ where: { businessId: bm.id, groupId: { not: group.id }, group: { system: null, workspaceId: auth.workspace.id } } }),

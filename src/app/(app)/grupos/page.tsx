@@ -111,9 +111,12 @@ export default async function GroupsPage() {
                   {b.problemKind !== "MANUAL" && " · volta sozinha quando o problema sumir"}
                 </div>
               </div>
-              <ConfirmButton action={restoreBusinessAction.bind(null, b.id)} confirm={`Já resolveu o problema da BM ${b.name}?\nEla volta para os grupos de disparo.`}>
-                <CheckCircle2 className="size-4" /> Resolvido
-              </ConfirmButton>
+              <div className="flex flex-col items-end gap-2">
+                <ConfirmButton action={restoreBusinessAction.bind(null, b.id)} confirm={`Já resolveu o problema da BM ${b.name}?\nEla volta para os grupos de disparo.`}>
+                  <CheckCircle2 className="size-4" /> Resolvido
+                </ConfirmButton>
+                {b.problemKind !== "BANNED" && <SendToGroup businessId={b.id} groups={groups.filter((g) => !g.system).map((g) => ({ id: g.id, name: g.name, color: g.color }))} inProblems />}
+              </div>
             </div>
           ))}
         </Drawer>
