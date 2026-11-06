@@ -43,7 +43,7 @@ const FAQ: Array<{ q: string; a: string; link?: { href: string; label: string } 
   },
   {
     q: "Quanto custa disparar com o Fuzil Disparador?",
-    a: "Para empresas com BM própria: R$ 0,01 por disparo, sem mensalidade. A tarifa da Meta é cobrada à parte, direto no cartão da conta do WhatsApp. Para quem não tem BM e quer contratar o disparo pronto: a partir de R$ 0,20 por disparo. Mensagem que falha não é cobrada: o crédito volta para o saldo.",
+    a: "Para empresas com BM própria: R$ 0,01 por disparo, sem mensalidade. A tarifa da Meta é cobrada à parte, direto no cartão da conta do WhatsApp. Mensagem que falha não é cobrada: o crédito volta para o saldo. Para quem não tem BM e quer contratar o disparo pronto: pacotes por volume, a partir de R$ 0,16 por disparo (quanto mais dispara, menos paga, com até 47% de desconto).",
   },
   {
     q: "Dá para usar várias BMs e vários números ao mesmo tempo?",

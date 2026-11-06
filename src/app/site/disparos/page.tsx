@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { ArrowRight, BarChart3, BadgeCheck, CheckCheck, Sparkles, CheckCircle2, ClipboardList, MessageCircle, Repeat, Send, ShieldCheck, Smartphone, Wallet, Workflow, XCircle } from "lucide-react";
+import { ArrowRight, BarChart3, BadgeCheck, BellRing, CheckCheck, Sparkles, ClipboardList, Landmark, MessageCircle, Megaphone, Repeat, Rocket, Send, ShieldCheck, Smartphone, Store, Tag, Ticket, Wallet, Workflow, XCircle } from "lucide-react";
 import { company } from "@/lib/company";
 import { roundDown, totalSent } from "@/lib/site-stats";
 import { siteWhatsApp } from "../cta";
@@ -8,23 +8,36 @@ import { siteWhatsApp } from "../cta";
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "Disparo em massa no WhatsApp · Fuzil Disparador",
-  description: "A gente dispara suas mensagens no WhatsApp para milhares de pessoas. Você manda a lista e a mensagem, a gente faz o resto. A partir de R$ 0,20 por disparo.",
+  description: "A gente dispara suas mensagens no WhatsApp para milhares de pessoas. Você manda a lista e a mensagem, a gente faz o resto. A partir de R$ 0,16 por disparo, em pacotes com até 47% de desconto.",
 };
 
 const MSG = "Oi! Vi o anúncio e quero fazer um orçamento de disparo.";
 
-const NICHES = [
-  { name: "Bet", text: "Avise sua base sobre bônus, eventos e novidades da sua casa." },
-  { name: "Rifas", text: "Divulgue a rifa nova, lembre do sorteio e avise o ganhador." },
-  { name: "Corban", text: "Ofereça consignado, FGTS e crédito para quem já é da sua lista." },
-  { name: "Clínicas", text: "Confirme consultas, lembre retornos e divulgue promoções para seus pacientes." },
-  { name: "E-commerce", text: "Avise de promoção, cupom, carrinho abandonado e pedido enviado." },
-  { name: "Seu nicho", text: "Vende outra coisa? A gente dispara para qualquer nicho. Chama que a gente monta para você." },
+const USES: Array<{ icon: typeof Tag; name: string; text: string; adult?: boolean }> = [
+  { icon: Tag, name: "Promoções e ofertas", text: "Cupom, oferta relâmpago, queima de estoque e novidades para quem já é seu cliente." },
+  { icon: Rocket, name: "Lançamentos", text: "Avise do lançamento, da abertura do carrinho e do último dia da oferta." },
+  { icon: BellRing, name: "Cobranças e avisos", text: "Boleto, pedido, agendamento e lembretes que chegam onde a pessoa realmente lê." },
+  { icon: Landmark, name: "Financeiras e correspondentes", text: "Consignado, FGTS e crédito para a sua base de clientes." },
+  { icon: Ticket, name: "Bets e sorteios autorizados", text: "Bônus, eventos, sorteios e aviso de ganhador para a sua base.", adult: true },
+  { icon: Store, name: "O seu negócio", text: "Vende outra coisa? Conta pra gente no WhatsApp que a gente monta o disparo para você." },
 ];
+
+// Disparo pronto: pacotes por volume (só preço por disparo; nunca mostrar o total do pacote)
+const PACKAGES = [
+  { name: "Avulso", from: "1.000", price: "0,30", off: null },
+  { name: "Start", from: "3.000", price: "0,25", off: 17 },
+  { name: "Plus", from: "6.000", price: "0,22", off: 27 },
+  { name: "Pro", from: "15.000", price: "0,20", off: 33 },
+  { name: "Escala", from: "50.000", price: "0,18", off: 40 },
+  { name: "Máximo", from: "100.000", price: "0,16", off: 47, best: true },
+];
+
+/** "5 milhões" (sempre arredondado para baixo, para nunca passar do número real). */
+const provenSends = (n: number) => (n >= 1_000_000 ? `${Math.floor(n / 1_000_000).toLocaleString("pt-BR")} milhões` : roundDown(n));
 
 const STEPS = [
   { icon: MessageCircle, title: "Chama no WhatsApp", text: "Clica no botão verde e fala com a gente. Conta o que você vende." },
-  { icon: Wallet, title: "Recebe o orçamento", text: "A gente te passa o valor por disparo para o seu nicho. Sem surpresa." },
+  { icon: Wallet, title: "Escolhe o pacote", text: "Quanto mais dispara, menos paga: de R$ 0,30 a R$ 0,16 por disparo." },
   { icon: ClipboardList, title: "Manda a lista e a mensagem", text: "Você envia os números (planilha ou lista) e o que quer falar." },
   { icon: Send, title: "A gente dispara", text: "Montamos tudo, disparamos e te mandamos o relatório de quem recebeu, leu e clicou." },
 ];
@@ -39,8 +52,8 @@ const WHY = [
 const NO_NEED = ["Ter BM ou conta na Meta", "Comprar chip ou número", "Mexer em sistema", "Saber de tecnologia"];
 
 const FAQ: Array<[string, string]> = [
-  ["Quanto custa?", "A partir de R$ 0,20 por mensagem enviada. O valor certo depende do seu nicho e da quantidade: chame no WhatsApp que a gente faz o orçamento na hora."],
-  ["Vocês disparam para o meu nicho?", "Sim. Disparamos para qualquer nicho: bet, rifas, corban, clínicas, e-commerce e o que você precisar. Conta no WhatsApp o que você vende."],
+  ["Quanto custa?", "É por pacote, e quanto mais dispara, menos paga: R$ 0,30 por disparo no Avulso (a partir de 1.000 disparos) até R$ 0,16 no Máximo (a partir de 100.000). São pacotes com até 47% de desconto. Escolha o seu e chame no WhatsApp."],
+  ["Vocês disparam para o meu nicho?", "Sim: promoções e ofertas, lançamentos, cobranças e avisos, financeiras e correspondentes, bets e sorteios autorizados e o que mais o seu negócio precisar. Conta no WhatsApp o que você vende."],
   ["Preciso ter alguma conta ou número?", "Não. A gente usa as nossas contas e números. Você só manda a lista de contatos e a mensagem."],
   ["Qual a diferença entre disparo único e fluxo?", "Disparo único é uma mensagem só para a lista toda. No fluxo, quando a pessoa responde, ela recebe as próximas mensagens sozinha, como uma conversa pronta."],
   ["Como eu sei que foi enviado?", "Você recebe o relatório com quantos receberam, leram e clicaram no link."],
@@ -78,28 +91,28 @@ export default async function DisparosPage() {
   return (
     <div className="bg-white pb-24 sm:pb-0">
       {/* Topo */}
-      <section className="relative overflow-hidden bg-ink text-white">
+      <section className="relative overflow-hidden bg-[#1C1C1E] text-white">
         <div className="pointer-events-none absolute -left-40 -top-40 size-[520px] rounded-full bg-orange-500/20 blur-3xl" />
         <div className="pointer-events-none absolute -bottom-56 -right-40 size-[520px] rounded-full bg-emerald-500/15 blur-3xl" />
         <div className="relative mx-auto max-w-3xl px-5 py-14 text-center md:py-20">
           <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-orange-200 ring-1 ring-white/15">
             <ShieldCheck className="size-3.5" /> WhatsApp oficial da Meta
           </span>
-          <h1 className="mt-5 text-4xl font-bold leading-tight md:text-6xl">
-            A gente dispara sua mensagem no WhatsApp para <span className="text-brand-gradient">milhares de pessoas</span>
+          <h1 className="font-display mt-5 text-4xl leading-tight md:text-6xl">
+            A gente dispara sua mensagem no WhatsApp para <span className="text-fire">milhares de pessoas</span>
           </h1>
           <p className="mx-auto mt-5 max-w-xl text-lg text-zinc-300">Você manda a lista e a mensagem. A gente faz todo o resto. Simples assim.</p>
           <div className="mt-8 flex justify-center">
             <WaButton href={wa} big>Quero um orçamento</WaButton>
           </div>
-          <p className="mt-3 text-sm text-zinc-400">A partir de <b className="text-white">R$ 0,20</b> por disparo · orçamento pelo WhatsApp</p>
-          {sent >= 10_000 && <p className="mt-6 text-sm text-zinc-400"><b className="text-white">{roundDown(sent)}</b> de mensagens já disparadas pela nossa equipe</p>}
+          <p className="mt-3 text-sm text-zinc-400">A partir de <b className="text-white">R$ 0,16</b> por disparo · pacotes com até 47% de desconto</p>
+          {sent >= 10_000 && <p className="mt-6 text-sm text-zinc-400"><b className="text-white">{provenSends(sent)}</b> de mensagens já disparadas pela nossa equipe</p>}
         </div>
       </section>
 
       {/* Por que com a gente */}
       <section id="por-que" className="mx-auto max-w-5xl px-5 pt-14">
-        <h2 className="text-center text-3xl font-bold text-zinc-900">Por que disparar com a gente</h2>
+        <h2 className="font-display text-center text-3xl text-zinc-900">Por que disparar com a gente</h2>
         <p className="mt-2 text-center text-zinc-500">Você cuida do seu negócio. A gente cuida do disparo.</p>
         <div className="mt-8 grid gap-4 sm:grid-cols-2">
           {WHY.map((w) => (
@@ -114,24 +127,27 @@ export default async function DisparosPage() {
         </div>
       </section>
 
-      {/* Nichos */}
+      {/* Para que serve */}
       <section id="nichos" className="mx-auto max-w-5xl px-5 py-14">
-        <h2 className="text-center text-3xl font-bold text-zinc-900">Para quem é</h2>
-        <p className="mt-2 text-center text-zinc-500">Disparamos para qualquer nicho. Alguns exemplos:</p>
+        <h2 className="font-display text-center text-3xl text-zinc-900">Para que serve</h2>
+        <p className="mt-2 text-center text-zinc-500">Disparamos para qualquer negócio. Os usos mais comuns:</p>
         <div className="mt-8 grid gap-4 md:grid-cols-3">
-          {NICHES.map((n) => (
-            <div key={n.name} className="rounded-2xl border border-zinc-200 bg-white p-6 text-center shadow-soft">
-              <div className="text-2xl font-bold text-brand-gradient">{n.name}</div>
-              <p className="mt-2 text-zinc-600">{n.text}</p>
+          {USES.map((u) => (
+            <div key={u.name} className="relative rounded-2xl border border-zinc-200 bg-white p-6 shadow-soft">
+              {u.adult && <span className="absolute right-4 top-4 rounded-full bg-zinc-900 px-2 py-0.5 text-xs font-bold text-white">+18</span>}
+              <span className="grid size-11 place-items-center rounded-2xl bg-fire text-white shadow-sm shadow-orange-500/30"><u.icon className="size-5" /></span>
+              <div className="mt-3 text-lg font-bold text-zinc-900">{u.name}</div>
+              <p className="mt-1 text-zinc-600">{u.text}</p>
+              {u.adult && <p className="mt-2 text-xs font-semibold text-zinc-500">Só operações autorizadas · jogue com responsabilidade</p>}
             </div>
           ))}
         </div>
       </section>
 
       {/* Modalidades */}
-      <section id="modalidades" className="bg-zinc-50">
+      <section id="modalidades" className="bg-[#E6E5EB]">
         <div className="mx-auto max-w-5xl px-5 py-14">
-          <h2 className="text-center text-3xl font-bold text-zinc-900">Dois jeitos de disparar</h2>
+          <h2 className="font-display text-center text-3xl text-zinc-900">Dois jeitos de disparar</h2>
           <p className="mt-2 text-center text-zinc-500">Você escolhe. Se não souber qual, a gente te ajuda.</p>
           <div className="mt-8 grid gap-5 md:grid-cols-2">
             <div className="rounded-3xl bg-white p-6 shadow-soft ring-1 ring-zinc-200/70">
@@ -144,7 +160,7 @@ export default async function DisparosPage() {
               </div>
               <p className="mt-4 text-zinc-600">Todo mundo da lista recebe a mesma mensagem, com o seu link. É o mais simples e rápido.</p>
               <div className="mt-4 space-y-2 rounded-2xl bg-[#efeae2] p-4">
-                <Bubble>Oi, Maria! Saiu a rifa nova 🎉 Garanta o seu número aqui: <span className="text-sky-600 underline">link</span></Bubble>
+                <Bubble>Oi, Maria! Sua oferta de 20% chegou 🎉 Aproveite aqui: <span className="text-sky-600 underline">link</span></Bubble>
               </div>
             </div>
             <div className="rounded-3xl bg-white p-6 shadow-soft ring-1 ring-zinc-200/70">
@@ -168,7 +184,7 @@ export default async function DisparosPage() {
 
       {/* Como funciona */}
       <section id="como-funciona" className="mx-auto max-w-5xl px-5 py-14">
-        <h2 className="text-center text-3xl font-bold text-zinc-900">Como funciona</h2>
+        <h2 className="font-display text-center text-3xl text-zinc-900">Como funciona</h2>
         <p className="mt-2 text-center text-zinc-500">4 passos. Você só faz os 3 primeiros.</p>
         <ol className="mt-8 grid gap-4 md:grid-cols-4">
           {STEPS.map((s, i) => (
@@ -192,29 +208,57 @@ export default async function DisparosPage() {
         </div>
       </section>
 
-      {/* Preço */}
-      <section id="preco" className="bg-ink text-white">
-        <div className="mx-auto max-w-3xl px-5 py-14 text-center">
-          <h2 className="text-3xl font-bold">Quanto custa</h2>
-          <div className="mt-6 inline-block rounded-3xl bg-white/5 px-8 py-6 ring-1 ring-white/10">
-            <div className="text-sm text-zinc-400">a partir de</div>
-            <div className="text-6xl font-bold text-brand-gradient">R$ 0,20</div>
-            <div className="mt-1 text-zinc-300">por mensagem enviada</div>
+      {/* Pacotes do disparo pronto */}
+      <section id="preco" className="bg-[#1C1C1E] text-white">
+        <div className="mx-auto max-w-4xl px-5 py-14">
+          <div className="text-center">
+            <h2 className="font-display text-3xl md:text-4xl">Pacotes do disparo pronto</h2>
+            <p className="mt-3 text-lg text-zinc-300">
+              A partir de <b className="text-fire text-2xl">R$ 0,16</b> por disparo
+            </p>
+            <p className="mt-1 text-zinc-400">Pacotes com até 47% de desconto · quanto mais dispara, menos paga</p>
           </div>
-          <ul className="mx-auto mt-6 max-w-md space-y-2 text-left text-zinc-300">
-            <li className="flex gap-2"><CheckCircle2 className="size-5 shrink-0 text-emerald-400" /> O valor depende do nicho e da quantidade</li>
-            <li className="flex gap-2"><CheckCircle2 className="size-5 shrink-0 text-emerald-400" /> Orçamento rápido pelo WhatsApp, sem compromisso</li>
-            <li className="flex gap-2"><CheckCircle2 className="size-5 shrink-0 text-emerald-400" /> Relatório de quem recebeu, leu e clicou</li>
-          </ul>
-          <div className="mt-8 flex justify-center">
-            <WaButton href={wa} big>Fazer meu orçamento</WaButton>
+          <div className="mt-8 space-y-3">
+            {PACKAGES.map((p) => (
+              <div
+                key={p.name}
+                className={`flex flex-wrap items-center gap-x-5 gap-y-3 rounded-2xl px-5 py-4 ring-1 ${p.best ? "bg-white/10 ring-2 ring-[#FF6A2B]" : "bg-white/5 ring-white/10"}`}
+              >
+                <div className="min-w-[9rem] flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-display text-xl">{p.name}</span>
+                    {p.best && <span className="bg-fire rounded-full px-2.5 py-0.5 text-xs font-bold">Melhor preço</span>}
+                  </div>
+                  <div className="text-sm text-zinc-400">a partir de {p.from} disparos</div>
+                </div>
+                <div className="w-28 text-right">
+                  <div className="text-2xl font-bold">R$ {p.price}</div>
+                  <div className="text-xs text-zinc-400">por disparo</div>
+                </div>
+                <div className={`text-center sm:w-20 ${p.off ? "" : "hidden sm:block"}`}>
+                  {p.off ? <span className="rounded-full bg-emerald-500/15 px-2.5 py-1 text-sm font-bold text-emerald-300 ring-1 ring-emerald-400/30">-{p.off}%</span> : <span className="text-sm text-zinc-500">–</span>}
+                </div>
+                <a
+                  href={siteWhatsApp(`Oi! Vim pelo site e quero o pacote ${p.name}`)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className={`inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold sm:w-auto ${p.best ? "bg-[#25D366] text-white" : "bg-white/10 text-white hover:bg-white/15"}`}
+                >
+                  <MessageCircle className="size-4" /> Quero o {p.name}
+                </a>
+              </div>
+            ))}
+          </div>
+          <p className="mt-6 text-center text-sm text-zinc-400">Desconto em relação ao Avulso. Relatório de quem recebeu, leu e clicou em todos os pacotes.</p>
+          <div className="mt-6 flex justify-center">
+            <WaButton href={wa} big>Falar com a gente no WhatsApp</WaButton>
           </div>
         </div>
       </section>
 
       {/* Perguntas */}
       <section id="duvidas" className="mx-auto max-w-3xl px-5 py-14">
-        <h2 className="text-center text-3xl font-bold text-zinc-900">Dúvidas</h2>
+        <h2 className="font-display text-center text-3xl text-zinc-900">Dúvidas</h2>
         <div className="mt-8 space-y-3">
           {FAQ.map(([q, a]) => (
             <details key={q} className="group rounded-2xl border border-zinc-200 bg-white p-5 shadow-soft">
@@ -229,9 +273,9 @@ export default async function DisparosPage() {
 
       {/* Fechamento */}
       <section className="mx-auto max-w-3xl px-5 pb-16 text-center">
-        <div className="rounded-3xl bg-brand-gradient p-8 text-white shadow-lg shadow-orange-500/20">
+        <div className="rounded-3xl bg-fire p-8 text-white shadow-lg shadow-orange-500/20">
           <Repeat className="mx-auto size-8" />
-          <h2 className="mt-3 text-3xl font-bold">Bora disparar?</h2>
+          <h2 className="font-display mt-3 text-3xl">Bora disparar?</h2>
           <p className="mt-2 text-white/90">Chama no WhatsApp e receba seu orçamento agora.</p>
           <div className="mt-6 flex justify-center">
             <WaButton href={wa} big>Chamar no WhatsApp</WaButton>

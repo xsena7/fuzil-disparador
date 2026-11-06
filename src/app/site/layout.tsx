@@ -10,7 +10,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const c = company();
   return {
     title: "Fuzil Disparador · A gente dispara pra você no WhatsApp",
-    description: "Disparo em massa no WhatsApp pela API oficial, feito pela nossa equipe. Lista higienizada, relatório ao vivo e você só paga o que sair. A partir de R$ 0,20 por mensagem.",
+    description: "Disparo em massa no WhatsApp pela API oficial, feito pela nossa equipe. Lista higienizada, relatório ao vivo e pacotes com até 47% de desconto: a partir de R$ 0,16 por disparo.",
     metadataBase: new URL(c.siteUrl),
     // Um código por BM (dá para colar vários, separados por vírgula ou espaço)
     ...(c.domainVerification ? { other: { "facebook-domain-verification": c.domainVerification.split(/[\s,;]+/).filter(Boolean) } } : {}),
@@ -21,7 +21,7 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
   const c = company();
   return (
     <div className="min-h-screen bg-white text-[15px] text-zinc-700">
-      <header className="sticky top-0 z-30 border-b border-white/10 bg-ink/95 backdrop-blur">
+      <header className="sticky top-0 z-30 border-b border-white/10 bg-[#1C1C1E]/95 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center gap-6 px-5 py-3">
           <Link href="/" className="w-28 shrink-0"><Logo className="w-full" /></Link>
           <nav className="ml-auto hidden items-center gap-6 text-sm text-zinc-300 md:flex">
@@ -38,7 +38,7 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
 
       <main>{children}</main>
 
-      <footer className="bg-ink text-sm text-zinc-400">
+      <footer className="bg-[#1C1C1E] text-sm text-zinc-400">
         <div className="mx-auto grid max-w-6xl gap-8 px-5 py-12 md:grid-cols-[2fr_1fr_1fr_1fr]">
           <div>
             <Logo className="mb-4 w-40" />

@@ -4,6 +4,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "3.73",
+    date: "06/11/2026",
+    items: ["[admin] Site: disparo pronto em pacotes (Avulso R$ 0,30 até Máximo R$ 0,16 por disparo, até 47% de desconto), nova seção Para que serve e visual igual ao Instagram (Archivo Black, degradê oficial, fundos #1C1C1E e #E6E5EB)"],
+  },
+  {
     version: "3.72",
     date: "06/11/2026",
     items: ["Grupos de BM: BM que está em BMs com problema (ex.: template em análise) agora pode mudar de grupo. Ela recebe na hora os templates padrão do grupo escolhido e entra nele sozinha quando o problema sumir"],
