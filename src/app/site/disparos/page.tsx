@@ -52,7 +52,8 @@ const WHY = [
 const NO_NEED = ["Ter BM ou conta na Meta", "Comprar chip ou número", "Mexer em sistema", "Saber de tecnologia"];
 
 const FAQ: Array<[string, string]> = [
-  ["Quanto custa?", "É por pacote, e quanto mais dispara, menos paga: R$ 0,30 por disparo no Avulso (a partir de 1.000 disparos) até R$ 0,16 no Máximo (a partir de 100.000). São pacotes com até 47% de desconto. Escolha o seu e chame no WhatsApp."],
+  ["Quanto custa?", "É por pacote, e quanto mais dispara, menos paga: R$ 0,30 por disparo no Avulso (a partir de 1.000 disparos) até R$ 0,16 no Máximo (a partir de 100.000). São pacotes com até 47% de desconto, e cada pacote vale por 1 mês a partir do dia da contratação. Escolha o seu e chame no WhatsApp."],
+  ["Quanto tempo eu tenho para usar o pacote?", "1 mês a partir do dia da contratação. Dá para dividir em vários disparos dentro desse prazo."],
   ["Vocês disparam para o meu nicho?", "Sim: promoções e ofertas, lançamentos, cobranças e avisos, financeiras e correspondentes, bets e sorteios autorizados e o que mais o seu negócio precisar. Conta no WhatsApp o que você vende."],
   ["Preciso ter alguma conta ou número?", "Não. A gente usa as nossas contas e números. Você só manda a lista de contatos e a mensagem."],
   ["Qual a diferença entre disparo único e fluxo?", "Disparo único é uma mensagem só para a lista toda. No fluxo, quando a pessoa responde, ela recebe as próximas mensagens sozinha, como uma conversa pronta."],
@@ -249,7 +250,7 @@ export default async function DisparosPage() {
               </div>
             ))}
           </div>
-          <p className="mt-6 text-center text-sm text-zinc-400">Desconto em relação ao Avulso. Relatório de quem recebeu, leu e clicou em todos os pacotes.</p>
+          <p className="mt-6 text-center text-sm text-zinc-400">Todo pacote vale por <b className="text-zinc-200">1 mês</b> a partir do dia da contratação. Desconto em relação ao Avulso. Relatório de quem recebeu, leu e clicou em todos os pacotes.</p>
           <div className="mt-6 flex justify-center">
             <WaButton href={wa} big>Falar com a gente no WhatsApp</WaButton>
           </div>

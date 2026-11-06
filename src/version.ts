@@ -6,7 +6,7 @@ export const CHANGELOG: Array<{ version: string; date: string; items: string[] }
   {
     version: "3.73",
     date: "06/11/2026",
-    items: ["[admin] Site: disparo pronto em pacotes (Avulso R$ 0,30 até Máximo R$ 0,16 por disparo, até 47% de desconto), nova seção Para que serve e visual igual ao Instagram (Archivo Black, degradê oficial, fundos #1C1C1E e #E6E5EB)"],
+    items: ["[admin] Site: disparo pronto em pacotes (Avulso R$ 0,30 até Máximo R$ 0,16 por disparo, até 47% de desconto), nova seção Para que serve e visual igual ao Instagram (Archivo Black, degradê oficial, fundos #1C1C1E e #E6E5EB)", "[admin] Site: pacotes valem por 1 mês a partir da contratação (aviso nos pacotes e no FAQ)"],
   },
   {
     version: "3.72",
