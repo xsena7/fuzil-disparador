@@ -6,7 +6,7 @@ export const CHANGELOG: Array<{ version: string; date: string; items: string[] }
   {
     version: "3.74",
     date: "07/11/2026",
-    items: ["[admin] Admin: lista de contas num quadro com rolagem (umas 5 por vez), com o cabeçalho fixo no topo"],
+    items: ["[admin] Admin: lista de contas num quadro com rolagem (5 por vez, medido na tela), com o cabeçalho fixo no topo"],
   },
   {
     version: "3.73",

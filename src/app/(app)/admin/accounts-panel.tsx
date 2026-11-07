@@ -51,6 +51,9 @@ type Dialog =
 export function AccountsPanel({ accounts, selfId, ownerId = null }: { accounts: AccountRow[]; selfId: string; ownerId?: string | null }) {
   const isOwner = selfId === ownerId;
   const [query, setQuery] = useState("");
+  // Altura do quadro = cabeçalho + 5 contas (medido na tela, porque cada linha tem altura diferente)
+  const boxRef = useRef<HTMLDivElement>(null);
+  const [boxH, setBoxH] = useState<number | null>(null);
   const [filter, setFilter] = useState<"all" | "active" | "blocked">("all");
   const [page, setPage] = useState(0);
   const [open, setOpen] = useState<Set<string>>(new Set());
@@ -68,6 +71,20 @@ export function AccountsPanel({ accounts, selfId, ownerId = null }: { accounts: 
   const pages = Math.max(1, Math.ceil(filtered.length / PAGE));
   const current = Math.min(page, pages - 1);
   const rows = filtered.slice(current * PAGE, current * PAGE + PAGE);
+  useEffect(() => {
+    const measure = () => {
+      const box = boxRef.current;
+      if (!box) return;
+      const head = box.querySelector("thead")?.getBoundingClientRect().height ?? 0;
+      const trs = [...box.querySelectorAll<HTMLTableRowElement>("tr[data-account-row]")];
+      if (trs.length <= 5) return setBoxH(null);
+      // Do topo da 1ª conta até o topo da 6ª (conta também os detalhes abertos no meio)
+      setBoxH(Math.ceil(head + trs[5].offsetTop - trs[0].offsetTop) + 1);
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, [rows.length, query, filter]);
   const blockedCount = accounts.filter((a) => a.blocked).length;
 
   const toggle = (id: string) =>
@@ -109,8 +126,8 @@ export function AccountsPanel({ accounts, selfId, ownerId = null }: { accounts: 
         </div>
       )}
 
-      {/* Mostra umas 5 contas por vez; o resto é só rolar dentro do quadro */}
-      <div className="max-h-[23rem] overflow-auto overscroll-contain">
+      {/* Mostra 5 contas por vez; o resto é só rolar dentro do quadro */}
+      <div ref={boxRef} className="overflow-auto overscroll-contain" style={{ maxHeight: boxH ?? 560 }}>
         <table className="w-full text-sm">
           <thead className="sticky top-0 z-10 bg-white shadow-[0_1px_0_0_rgb(244_244_245)]">
             <tr className="border-b border-zinc-100 text-left text-xs font-medium uppercase tracking-wide text-zinc-400">
@@ -130,7 +147,7 @@ export function AccountsPanel({ accounts, selfId, ownerId = null }: { accounts: 
               const expanded = open.has(a.id);
               return (
                 <Fragment key={a.id}>
-                  <tr onClick={() => toggle(a.id)} className={clsx("cursor-pointer border-b border-zinc-100 transition hover:bg-zinc-50/80", expanded && "bg-zinc-50/80", a.blocked && "text-zinc-500")}>
+                  <tr data-account-row onClick={() => toggle(a.id)} className={clsx("cursor-pointer border-b border-zinc-100 transition hover:bg-zinc-50/80", expanded && "bg-zinc-50/80", a.blocked && "text-zinc-500")}>
                     <td className="px-4 py-3"><ChevronDown className={clsx("size-4 text-zinc-400 transition", !expanded && "-rotate-90")} /></td>
                     <td className="px-3 py-3">
                       <div className="font-medium text-zinc-900">{a.name}{a.isMine && <span className="ml-2"><Badge color="orange" dot={false}>sua conta</Badge></span>}</div>
