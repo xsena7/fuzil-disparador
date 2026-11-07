@@ -37,7 +37,7 @@ import { Badge, Button, Input } from "@/components/ui";
 import { UserActions } from "./user-actions";
 import type { AccountRow } from "@/lib/admin-accounts";
 
-const PAGE = 25;
+const PAGE = 200;
 const n = (v: number) => v.toLocaleString("pt-BR");
 const limitText = (v: number | null) => (v === null ? "—" : v === -1 ? "Ilimitado" : n(v));
 const date = (iso: string) => new Date(iso).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
@@ -109,9 +109,10 @@ export function AccountsPanel({ accounts, selfId, ownerId = null }: { accounts: 
         </div>
       )}
 
-      <div className="overflow-x-auto">
+      {/* Mostra umas 5 contas por vez; o resto é só rolar dentro do quadro */}
+      <div className="max-h-[23rem] overflow-auto overscroll-contain">
         <table className="w-full text-sm">
-          <thead>
+          <thead className="sticky top-0 z-10 bg-white shadow-[0_1px_0_0_rgb(244_244_245)]">
             <tr className="border-b border-zinc-100 text-left text-xs font-medium uppercase tracking-wide text-zinc-400">
               <th className="w-8 px-4 py-3" />
               <th className="px-3 py-3">Conta</th>
