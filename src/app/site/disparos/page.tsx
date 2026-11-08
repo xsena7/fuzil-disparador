@@ -108,6 +108,9 @@ export default async function DisparosPage() {
           </div>
           <p className="mt-3 text-sm text-zinc-400">A partir de <b className="text-white">R$ 0,16</b> por disparo · pacotes com até 47% de desconto</p>
           {sent >= 10_000 && <p className="mt-6 text-sm text-zinc-400"><b className="text-white">{provenSends(sent)}</b> de mensagens já disparadas pela nossa equipe</p>}
+          {/* Selo oficial (kit enviado pela Meta para parceiros com selo): sem alterar cor, proporção ou texto */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/meta/meta-business-partner.png" alt="Meta Business Partner" width={170} height={98} className="mx-auto mt-6 h-auto w-[150px] md:w-[170px]" />
         </div>
       </section>
 

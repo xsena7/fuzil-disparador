@@ -42,6 +42,8 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
         <div className="mx-auto grid max-w-6xl gap-8 px-5 py-12 md:grid-cols-[2fr_1fr_1fr_1fr]">
           <div>
             <Logo className="mb-4 w-40" />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/meta/meta-business-partner.png" alt="Meta Business Partner" width={140} height={80} className="mb-4 h-auto w-[140px]" />
             <p>
               O {c.brand} é um produto e marca de <span className="text-zinc-200">{ownerLine()}</span>.
             </p>

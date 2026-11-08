@@ -4,6 +4,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "3.75",
+    date: "08/11/2026",
+    items: ["[admin] Site: selo oficial Meta Business Partner no topo e no rodapé"],
+  },
+  {
     version: "3.74",
     date: "07/11/2026",
     items: ["[admin] Admin: lista de contas num quadro com rolagem (5 por vez, medido na tela), com o cabeçalho fixo no topo"],
