@@ -232,9 +232,16 @@ function Connected({ provider, ps: st, jobs, manual, wabas, photos, now, reload 
               })}
             </div>
           </div>
-          <Field label="Máximo de tentativas" hint="Cada número sem SMS em 2,5 min é cancelado e o saldo volta">
-            <KeepInput name="maxAttempts" type="number" min={1} max={20} remember="smsbear-max" defaultValue={10} className="w-24" />
-          </Field>
+          <div className="flex flex-wrap gap-4">
+            <Field label="Máximo de tentativas" hint="Cada número sem SMS em 2,5 min é cancelado e o saldo volta">
+              <KeepInput name="maxAttempts" type="number" min={1} max={20} remember="smsbear-max" defaultValue={10} className="w-24" />
+            </Field>
+            {provider === "sms24h" && (
+              <Field label="DDD (opcional)" hint="Vazio = qualquer DDD. Com DDD o SMS24h cobra 30% a mais">
+                <KeepInput name="ddd" remember="sms24h-ddd" defaultValue="" inputMode="numeric" maxLength={2} placeholder="Ex.: 11" className="w-24" />
+              </Field>
+            )}
+          </div>
           <Button disabled={pending || !picked.length} className="w-full">
             {pending ? <Loader2 className="size-4 animate-spin" /> : <Zap className="size-4" />} {pending ? "Começando..." : picked.length > 1 ? `Registrar em ${picked.length} BMs ao mesmo tempo` : "Registrar número automático"}
           </Button>
@@ -351,6 +358,20 @@ function CopyBtn({ text, label }: { text: string; label: string }) {
 /** Modo manual: compra o número, você coloca na WABA pelo "Adicionar número" e o código aparece aqui ao vivo. */
 function ManualTab({ provider, orders, now, reload }: { provider: SmsProviderKey; orders: Manual[]; now: number; reload: () => void }) {
   const [busy, start] = useTransition();
+  // DDD do número (só o SMS24h aceita; fica lembrado neste aparelho)
+  const [ddd, setDdd] = useState("");
+  useEffect(() => {
+    try {
+      setDdd(localStorage.getItem("keep:sms24h-ddd") ?? "");
+    } catch {}
+  }, []);
+  const editDdd = (v: string) => {
+    const d = v.replace(/\D/g, "").slice(0, 2);
+    setDdd(d);
+    try {
+      localStorage.setItem("keep:sms24h-ddd", d);
+    } catch {}
+  };
   const run = (fn: () => Promise<{ ok?: string; error?: string } | undefined>) =>
     start(async () => {
       toastResult(await fn());
@@ -361,8 +382,15 @@ function ManualTab({ provider, orders, now, reload }: { provider: SmsProviderKey
       <p className="text-xs text-zinc-500">
         Compre o número, copie e coloque na BM em <b>Adicionar número nesta WABA</b> (aqui em Conexões). Quando a Meta mandar o SMS, o código aparece aqui.
       </p>
-      <Button type="button" disabled={busy} className="w-full" onClick={() => run(() => buyManualAction(provider))}>
-        {busy ? <Loader2 className="size-4 animate-spin" /> : <ShoppingCart className="size-4" />} Comprar número BR para WhatsApp
+      {provider === "sms24h" && (
+        <label className="flex items-center gap-2 text-sm text-zinc-700">
+          DDD (opcional)
+          <input value={ddd} onChange={(e) => editDdd(e.target.value)} inputMode="numeric" maxLength={2} placeholder="Ex.: 11" className="w-20 rounded-lg border border-zinc-200 px-2 py-1.5 text-sm" />
+          <span className="text-xs text-zinc-500">vazio = qualquer · com DDD custa 30% a mais</span>
+        </label>
+      )}
+      <Button type="button" disabled={busy} className="w-full" onClick={() => run(() => buyManualAction(provider, provider === "sms24h" ? ddd : null))}>
+        {busy ? <Loader2 className="size-4 animate-spin" /> : <ShoppingCart className="size-4" />} {provider === "sms24h" && ddd.length === 2 ? `Comprar número BR com DDD ${ddd}` : "Comprar número BR para WhatsApp"}
       </Button>
       {orders.some((o) => o.status !== "PENDING") && (
         <div className="flex justify-end">

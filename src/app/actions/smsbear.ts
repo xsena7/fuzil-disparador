@@ -62,6 +62,8 @@ export async function startSmsJobAction(_: FormState, form: FormData): Promise<F
   const name = String(form.get("name") ?? "").replace(/\s+/g, " ").trim().slice(0, 100);
   if (name.length < 3) return { error: "Escreva o nome de exibição (o nome que aparece no WhatsApp)." };
   const maxAttempts = Math.min(20, Math.max(1, Number(form.get("maxAttempts")) || 10));
+  const ddd = parseDdd(form.get("ddd"));
+  if (ddd === "erro") return { error: "DDD inválido. Use 2 números, ex.: 11" };
   // Uma de cada vez por WABA (dois números ao mesmo tempo confundem o código)
   if (await prisma.smsJob.count({ where: { wabaId: waba.id, status: "RUNNING" } })) return { error: "Já tem um registro automático rodando nessa WABA." };
   await prisma.smsJob.create({
@@ -72,7 +74,8 @@ export async function startSmsJobAction(_: FormState, form: FormData): Promise<F
       verifiedName: name,
       maxAttempts,
       photo: parsePhoto(form.get("photo")),
-      log: [{ at: new Date().toISOString(), text: `Começou pelo ${SMS_PROVIDER_INFO[p].label}: registrar um número na ${waba.business.name} (até ${maxAttempts} tentativas).`, tone: "info" }],
+      ddd: providerOf(p).ddd ? ddd : null,
+      log: [{ at: new Date().toISOString(), text: `Começou pelo ${SMS_PROVIDER_INFO[p].label}: registrar um número${providerOf(p).ddd && ddd ? ` com DDD ${ddd}` : ""} na ${waba.business.name} (até ${maxAttempts} tentativas).`, tone: "info" }],
     },
   });
   return { ok: "Registro automático começou! Acompanhe aqui no painel." };
@@ -90,6 +93,7 @@ export async function startSmsJobsAction(_: FormState, form: FormData): Promise<
     one.set("wabaId", id);
     one.set("name", String(form.get(`name-${id}`) ?? ""));
     one.set("maxAttempts", String(form.get("maxAttempts") ?? ""));
+    one.set("ddd", String(form.get("ddd") ?? ""));
     one.set("photo", String(form.get(`photo-${id}`) ?? ""));
     const r = await startSmsJobAction(undefined, one);
     const label = String(form.get(`label-${id}`) ?? "BM");
@@ -133,15 +137,25 @@ export async function clearSmsJobsAction(provider: SmsProviderKey): Promise<Form
 // Modo manual: compra o número, o código aparece no painel, você coloca na WABA pelo "Adicionar número"
 // ---------------------------------------------------------------------------
 
-export async function buyManualAction(provider: SmsProviderKey): Promise<FormState> {
+/** DDD opcional: vazio = qualquer; "erro" = digitado errado. */
+function parseDdd(raw: FormDataEntryValue | string | null | undefined): string | null | "erro" {
+  const v = String(raw ?? "").replace(/\D/g, "");
+  if (!v) return null;
+  return /^[1-9]{2}$/.test(v) ? v : "erro";
+}
+
+export async function buyManualAction(provider: SmsProviderKey, dddRaw?: string | null): Promise<FormState> {
   const auth = await requireManager().catch(() => null);
   if (!auth) return { error: "Só o dono ou um admin da conta pode fazer isso." };
   const p = pick(provider);
   const token = await providerToken(auth.workspace.id, p);
   if (!token) return { error: `Conecte o ${SMS_PROVIDER_INFO[p].label} primeiro.` };
+  const ddd = parseDdd(dddRaw);
+  if (ddd === "erro") return { error: "DDD inválido. Use 2 números, ex.: 11" };
+  const useDdd = providerOf(p).ddd ? ddd : null;
   try {
-    const o = await providerOf(p).buy(token, randomUUID());
-    await prisma.smsOrder.create({ data: { workspaceId: auth.workspace.id, provider: p, orderId: o.id, number: o.number, costCents: o.costCents } });
+    const o = await providerOf(p).buy(token, randomUUID(), { ddd: useDdd });
+    await prisma.smsOrder.create({ data: { workspaceId: auth.workspace.id, provider: p, orderId: o.id, number: o.number, costCents: o.costCents, ddd: useDdd } });
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Não deu para comprar o número" };
   }
@@ -170,10 +184,10 @@ export async function cancelManualAction(id: string): Promise<FormState> {
 /** Trocar número: cancela este e já compra outro no mesmo serviço. */
 export async function swapManualAction(id: string): Promise<FormState> {
   const auth = await requireAuth();
-  const o = await prisma.smsOrder.findFirst({ where: { id, workspaceId: auth.workspace.id }, select: { provider: true } });
+  const o = await prisma.smsOrder.findFirst({ where: { id, workspaceId: auth.workspace.id }, select: { provider: true, ddd: true } });
   const r = await cancelManualAction(id);
   if (r?.error) return r;
-  return buyManualAction(pick(o?.provider));
+  return buyManualAction(pick(o?.provider), o?.ddd);
 }
 
 /** Tira do painel (o que já foi cancelado ou recebeu SMS). */

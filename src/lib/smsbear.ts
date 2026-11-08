@@ -67,7 +67,7 @@ async function stepJob(job: JobWithWaba) {
     const attempt = job.attempt + 1;
     let order: { id: string; number: string; costCents: number };
     try {
-      order = await prov.buy(token, `fuzil-${job.id}-${attempt}`);
+      order = await prov.buy(token, `fuzil-${job.id}-${attempt}`, { ddd: job.ddd });
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       // Sem saldo, mas com número esperando cancelar: o saldo volta quando o SMSBear deixar cancelar. Espera e continua

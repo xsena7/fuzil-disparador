@@ -1107,6 +1107,8 @@ model SmsJob {
   error         String?
   // Foto de perfil para o número quando registrar (female | male)
   photo         String?
+  // DDD pedido ao serviço (só SMS24h aceita; custa 30% a mais)
+  ddd           String?
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
   finishedAt    DateTime?
@@ -1124,6 +1126,8 @@ model SmsOrder {
   provider    String    @default("smsbear")
   orderId     String
   number      String
+  // DDD pedido na compra (para a troca de número pedir o mesmo)
+  ddd         String?
   costCents   Int       @default(0)
   // PENDING | RECEIVED | CANCELLED
   status      String    @default("PENDING")

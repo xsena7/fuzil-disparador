@@ -4,6 +4,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "3.77",
+    date: "08/11/2026",
+    items: ["Números BR: no SMS24h agora dá para escolher o DDD do número (no registro automático e na compra manual). Vazio = qualquer DDD; com DDD o SMS24h cobra 30% a mais. A troca de número pede o mesmo DDD"],
+  },
+  {
     version: "3.76",
     date: "08/11/2026",
     items: ["Relatório do cliente com a sua marca: na aba Relatório da campanha, escolha com qual marca gerar (Fuzil ou uma marca sua, com nome, logo e cores). O relatório sai com a marca escolhida e, embaixo, \"gerado pelo Fuzil Disparador\". Vale só para aquela campanha"],

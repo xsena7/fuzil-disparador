@@ -34,3 +34,27 @@ test("SMS24h: compra, código e cancelamento no padrão SMS-Activate", async () 
     globalThis.fetch = real;
   }
 });
+
+test("SMS24h: compra com DDD manda &ddd= e soma 30% no custo", async () => {
+  const { SMS_PROVIDERS } = await import("./sms-providers");
+  const urls: URL[] = [];
+  const real = globalThis.fetch;
+  globalThis.fetch = (async (u: string | URL) => {
+    const url = new URL(String(u));
+    urls.push(url);
+    const action = url.searchParams.get("action");
+    return new Response(action === "getPrices" ? JSON.stringify({ "73": { wa: { "5.00": 10 } } }) : "ACCESS_NUMBER:99:21987654321");
+  }) as typeof fetch;
+  try {
+    const p = SMS_PROVIDERS.sms24h;
+    assert.equal(p.ddd, true);
+    const o = await p.buy("k", "x", { ddd: "21" });
+    assert.equal(urls.find((u) => u.searchParams.get("action") === "getNumber")?.searchParams.get("ddd"), "21");
+    assert.deepEqual(o, { id: "99", number: "5521987654321", costCents: 650 });
+    urls.length = 0;
+    await p.buy("k", "x", { ddd: "" });
+    assert.equal(urls.find((u) => u.searchParams.get("action") === "getNumber")?.searchParams.has("ddd"), false);
+  } finally {
+    globalThis.fetch = real;
+  }
+});

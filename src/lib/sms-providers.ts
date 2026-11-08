@@ -10,7 +10,10 @@ export type SmsProvider = {
   balance(token: string): Promise<number>;
   /** Preço do WhatsApp Brasil (centavos) e quantos números tem. */
   price(token: string): Promise<{ costCents: number; stock: number } | null>;
-  buy(token: string, idempotency: string): Promise<{ id: string; number: string; costCents: number }>;
+  /** `ddd`: só o SMS24h aceita (cobra 30% a mais); os outros ignoram. */
+  buy(token: string, idempotency: string, opts?: { ddd?: string | null }): Promise<{ id: string; number: string; costCents: number }>;
+  /** Aceita escolher o DDD do número. */
+  ddd?: boolean;
   order(token: string, id: string): Promise<SmsOrderState>;
   cancel(token: string, id: string): Promise<void>;
   /** Avisa que o código foi usado (alguns serviços pedem para fechar a ativação). */
@@ -78,7 +81,7 @@ const S24_ERRORS: Record<string, string> = {
   BAD_KEY: "Chave do SMS24h inválida",
   errorBadKey: "Chave do SMS24h inválida",
   NO_BALANCE: "SMS24h: Saldo insuficiente",
-  NO_NUMBERS: "SMS24h: sem número de WhatsApp Brasil disponível agora",
+  NO_NUMBERS: "SMS24h: sem número de WhatsApp Brasil disponível agora (se escolheu DDD, tente outro ou deixe vazio)",
   WRONG_SERVICE: "SMS24h: serviço inválido",
   NO_ACTIVATION: "SMS24h: ativação não existe",
   NO_ATIVATION: "SMS24h: ativação não existe",
@@ -121,14 +124,18 @@ async function s24Price(key: string) {
 
 const sms24h: SmsProvider = {
   label: "SMS24h",
+  ddd: true,
   balance: (k) => s24(k, { action: "getBalance" }).then((t) => reaisToCents(t.split(":")[1] ?? "0")),
   price: s24Price,
-  async buy(k) {
-    const text = await s24(k, { action: "getNumber", service: "wa", country: "73", operator: "any" });
+  async buy(k, _idem, opts) {
+    // DDD escolhido: o SMS24h cobra 30% a mais (documentação: getNumber com &ddd=21)
+    const ddd = opts?.ddd && /^[1-9]{2}$/.test(opts.ddd) ? opts.ddd : null;
+    const text = await s24(k, { action: "getNumber", service: "wa", country: "73", operator: "any", ...(ddd ? { ddd } : {}) });
     const [tag, id, number] = text.split(":");
     if (tag !== "ACCESS_NUMBER" || !id || !number) throw new SmsProviderError(`SMS24h: ${text}`);
     const price = await s24Price(k).catch(() => null);
-    return { id, number: number.startsWith("55") ? number : `55${number}`, costCents: price?.costCents ?? 0 };
+    const cost = price?.costCents ?? 0;
+    return { id, number: number.startsWith("55") ? number : `55${number}`, costCents: ddd ? Math.round(cost * 1.3) : cost };
   },
   async order(k, id) {
     const text = await s24(k, { action: "getStatus", id });
