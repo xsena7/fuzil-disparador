@@ -82,7 +82,7 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
         </div>
         <div className="border-t border-white/10">
           <div className="mx-auto max-w-6xl px-5 py-5 text-xs text-zinc-500">
-            © {new Date().getFullYear()} {c.legalName || c.brand} · CNPJ {c.cnpj}. WhatsApp é uma marca da Meta Platforms, Inc. O {c.brand} utiliza a API oficial do WhatsApp Business e não é afiliado nem endossado pela Meta.
+            © {new Date().getFullYear()} {c.legalName || c.brand} · CNPJ {c.cnpj}. WhatsApp é uma marca da Meta Platforms, Inc. O {c.brand} é Meta Business Partner e utiliza a API oficial do WhatsApp Business.
           </div>
         </div>
       </footer>

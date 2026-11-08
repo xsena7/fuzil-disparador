@@ -6,7 +6,7 @@ export const CHANGELOG: Array<{ version: string; date: string; items: string[] }
   {
     version: "3.75",
     date: "08/11/2026",
-    items: ["[admin] Site: selo oficial Meta Business Partner no topo e no rodapé"],
+    items: ["[admin] Site: selo oficial Meta Business Partner no topo e no rodapé; rodapé agora diz que o Fuzil é Meta Business Partner"],
   },
   {
     version: "3.74",
