@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ExternalLink, FileBarChart, Link2, QrCode, RotateCcw, SlidersHorizontal } from "lucide-react";
+import { ExternalLink, FileBarChart, Link2, Palette, QrCode, RotateCcw, SlidersHorizontal, Trash2 } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { env } from "@/lib/env";
 import { Card, Field, Input, Select } from "@/components/ui";
@@ -7,7 +7,7 @@ import { parsePixKeys } from "@/lib/pix-keys";
 import { realReportNumbers, reportNumbers } from "@/lib/report-numbers";
 import { ReportNumbersFields } from "./report-numbers-fields";
 import { ActionForm, ConfirmButton } from "@/components/action-form";
-import { resetReportNumbersAction, saveCampaignPriceAction, saveReportNumbersAction, shareReportAction, unshareReportAction } from "@/app/actions/client-report";
+import { deleteReportBrandAction, resetReportNumbersAction, saveCampaignPriceAction, saveReportBrandAction, saveReportNumbersAction, setCampaignBrandAction, shareReportAction, unshareReportAction } from "@/app/actions/client-report";
 import { CopyLink } from "./copy-link";
 import { Countdown } from "@/components/countdown";
 
@@ -16,7 +16,7 @@ const brl = (v: number) => v.toLocaleString("pt-BR", { style: "currency", curren
 /** Aba "Relatório do cliente": valor cobrado, Pix e o link público do relatório. */
 export async function ClientReportStep({ campaignId, workspaceId, canAdjust = false }: { campaignId: string; workspaceId: string; canAdjust?: boolean }) {
   const [c, ws] = await Promise.all([
-    prisma.campaign.findFirstOrThrow({ where: { id: campaignId, workspaceId }, select: { reportPrice: true, reportPixKeyId: true, shareToken: true, shareExpiresAt: true, reportOverrides: true } }),
+    prisma.campaign.findFirstOrThrow({ where: { id: campaignId, workspaceId }, select: { reportPrice: true, reportPixKeyId: true, shareToken: true, shareExpiresAt: true, reportOverrides: true, reportBrandId: true } }),
     prisma.workspace.findUniqueOrThrow({ where: { id: workspaceId }, select: { pixKeys: true, reportPrice: true } }),
   ]);
   // Enviadas do relatório (as ajustadas em Métricas, se você ajustou)
@@ -27,6 +27,9 @@ export async function ClientReportStep({ campaignId, workspaceId, canAdjust = fa
   const total = Math.round(sent * price * 100) / 100;
   const alive = c.shareToken && c.shareExpiresAt && c.shareExpiresAt > new Date();
   const url = alive ? `${env.appUrl()}/relatorio/p/${c.shareToken}` : null;
+  const brands = await prisma.reportBrand.findMany({ where: { workspaceId }, orderBy: { name: "asc" } });
+  const brand = brands.find((b) => b.id === c.reportBrandId) ?? null;
+  const colorInput = "h-10 w-full cursor-pointer rounded-xl border border-zinc-200 bg-white p-1";
 
   return (
     <div className="max-w-3xl space-y-5">
@@ -95,6 +98,64 @@ export async function ClientReportStep({ campaignId, workspaceId, canAdjust = fa
         )}
       </Card>
       )}
+
+      {/* Marca do relatório: revendedor manda o relatório com a marca dele */}
+      <Card className="p-5">
+        <div className="mb-1 flex items-center gap-2 font-semibold">
+          <Palette className="size-4 text-brand-500" /> Com qual marca gerar o relatório?
+          <span className="ml-auto rounded-full px-2 py-0.5 text-xs font-medium ring-1" style={brand ? { color: brand.color, borderColor: brand.color } : undefined}>{brand ? brand.name : "Fuzil (padrão)"}</span>
+        </div>
+        <p className="mb-4 text-sm text-zinc-500">Padrão: Fuzil. Para cliente revendedor, escolha a marca dele: o relatório desta campanha sai com o nome, a logo e as cores dele, e embaixo aparece só "gerado pelo Fuzil Disparador". O link é o mesmo. Vale só para esta campanha.</p>
+        {brands.length > 0 && (
+          <ActionForm action={setCampaignBrandAction.bind(null, campaignId)} submit="Usar nesta campanha" variant="secondary" className="mb-4 flex flex-wrap items-end gap-3 [&>div]:mt-0">
+            <Field label="Marca que aparece no relatório">
+              <Select name="reportBrandId" defaultValue={c.reportBrandId ?? ""} className="w-64">
+                <option value="">Fuzil (padrão)</option>
+                {brands.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+              </Select>
+            </Field>
+          </ActionForm>
+        )}
+        <details className="rounded-xl border border-zinc-200 p-4" open={!brands.length}>
+          <summary className="cursor-pointer text-sm font-semibold text-zinc-800">{brands.length ? "Criar outra marca" : "Criar marca"}</summary>
+          <ActionForm action={saveReportBrandAction} submit="Criar e usar nesta campanha" variant="secondary" className="mt-3">
+            <input type="hidden" name="campaignId" value={campaignId} />
+            <div className="grid gap-4 md:grid-cols-2">
+              <Field label="Nome (aparece no relatório)"><Input name="name" required maxLength={60} placeholder="Ex.: Sávio Soluções" /></Field>
+              <Field label="Logo (PNG ou JPG)"><input type="file" name="logo" accept="image/png,image/jpeg" className="block w-full text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-zinc-100 file:px-3 file:py-2 file:text-sm" /></Field>
+              <Field label="Cor principal (destaques e gráficos)"><input type="color" name="color" defaultValue="#00B512" className={colorInput} /></Field>
+              <Field label="Cor do topo do relatório"><input type="color" name="headerColor" defaultValue="#0A2148" className={colorInput} /></Field>
+            </div>
+          </ActionForm>
+        </details>
+        {brands.map((b) => (
+          <details key={b.id} className="mt-3 rounded-xl border border-zinc-200 p-4">
+            <summary className="flex cursor-pointer items-center gap-3 text-sm">
+              {b.logoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={b.logoUrl} alt="" className="size-8 rounded-lg object-cover" style={{ background: b.headerColor }} />
+              ) : (
+                <span className="size-8 rounded-lg" style={{ background: b.headerColor }} />
+              )}
+              <span className="font-semibold text-zinc-800">{b.name}</span>
+              <span className="size-4 rounded-full ring-1 ring-zinc-200" style={{ background: b.color }} title="Cor principal" />
+              <span className="ml-auto text-xs text-zinc-500">editar</span>
+            </summary>
+            <ActionForm action={saveReportBrandAction} submit="Salvar marca" variant="secondary" className="mt-3">
+              <input type="hidden" name="id" value={b.id} />
+              <div className="grid gap-4 md:grid-cols-2">
+                <Field label="Nome"><Input name="name" required maxLength={60} defaultValue={b.name} /></Field>
+                <Field label="Trocar a logo (PNG ou JPG)"><input type="file" name="logo" accept="image/png,image/jpeg" className="block w-full text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-zinc-100 file:px-3 file:py-2 file:text-sm" /></Field>
+                <Field label="Cor principal"><input type="color" name="color" defaultValue={b.color} className={colorInput} /></Field>
+                <Field label="Cor do topo"><input type="color" name="headerColor" defaultValue={b.headerColor} className={colorInput} /></Field>
+              </div>
+            </ActionForm>
+            <div className="mt-2">
+              <ConfirmButton action={deleteReportBrandAction.bind(null, b.id)} variant="ghost" className="text-xs text-red-600" confirm={`Apagar a marca ${b.name}?\nAs campanhas que usavam ela voltam para a marca do Fuzil.`}><Trash2 className="size-3.5" /> Apagar marca</ConfirmButton>
+            </div>
+          </details>
+        ))}
+      </Card>
 
       <Card className="p-5">
         <div className="mb-1 flex items-center gap-2 font-semibold"><Link2 className="size-4 text-brand-500" /> Link para o cliente</div>

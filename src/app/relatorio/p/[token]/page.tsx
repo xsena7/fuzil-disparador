@@ -4,7 +4,12 @@ import { prisma } from "@/lib/db";
 import { ReportView } from "../../report-view";
 
 export const dynamic = "force-dynamic";
-export const metadata: Metadata = { title: "Relatório de envio · Fuzil", robots: { index: false, follow: false } };
+/** Título da aba: com a marca do revendedor, quando a campanha tiver uma. */
+export async function generateMetadata({ params }: { params: Promise<{ token: string }> }): Promise<Metadata> {
+  const { token } = await params;
+  const c = /^[\w-]{16,40}$/.test(token) ? await prisma.campaign.findUnique({ where: { shareToken: token }, select: { reportBrand: { select: { name: true } } } }) : null;
+  return { title: `Relatório de envio · ${c?.reportBrand?.name ?? "Fuzil"}`, robots: { index: false, follow: false } };
+}
 
 /** Link do cliente: o relatório sem login (só abre enquanto o link estiver ligado na campanha). */
 export default async function PublicReportPage({ params }: { params: Promise<{ token: string }> }) {

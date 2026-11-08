@@ -26,7 +26,7 @@ const brl = (v: number) => v.toLocaleString("pt-BR", { style: "currency", curren
 export async function ReportView({ id, workspaceId, publicView = false, expiresAt }: { id: string; workspaceId?: string; publicView?: boolean; expiresAt?: Date | null }) {
   const campaign = await prisma.campaign.findFirst({
     where: { id, ...(workspaceId ? { workspaceId } : {}) },
-    include: { group: { select: { name: true, system: true } }, workspace: { select: { pixKeys: true, reportPrice: true } } },
+    include: { group: { select: { name: true, system: true } }, workspace: { select: { pixKeys: true, reportPrice: true } }, reportBrand: true },
   });
   if (!campaign) notFound();
   const m = await campaignMetrics(id);
@@ -46,20 +46,44 @@ export async function ReportView({ id, workspaceId, publicView = false, expiresA
   // Quem respondeu: as respostas do disparo (mais novas primeiro), num quadro com rolagem
   const replies = await campaignReplies(id);
   const keys = total > 0 ? keysForReport(allKeys, campaign.reportPixKeyId) : [];
+  // Marca do revendedor (se escolhida na campanha): troca logo, nome e cores; o rodapé continua dizendo que foi gerado pelo Fuzil
+  const brand = campaign.reportBrand;
+  const accent = brand?.color ?? "#ff6a1f";
+  const brandCss = brand
+    ? `.rb .text-brand-gradient{background-image:linear-gradient(135deg,${brand.color},color-mix(in srgb,${brand.color} 70%,#fff))}
+.rb .bg-brand-gradient{background-image:none;background-color:${brand.color}}
+.rb .border-orange-200{border-color:color-mix(in srgb,${brand.color} 35%,#fff)}
+.rb .ring-orange-100,.rb .ring-orange-200{--tw-ring-color:color-mix(in srgb,${brand.color} 25%,#fff)}
+.rb .bg-orange-50{background-color:color-mix(in srgb,${brand.color} 10%,#fff)}
+.rb .text-orange-900,.rb .text-orange-700{color:color-mix(in srgb,${brand.color} 75%,#000)}
+.rb .text-orange-200{color:color-mix(in srgb,${brand.color} 40%,#fff)}`
+    : "";
 
   return (
-    <div className="min-h-screen bg-zinc-50 text-zinc-800 print:bg-white">
+    <div
+      className={`min-h-screen bg-zinc-50 text-zinc-800 print:bg-white ${brand ? "rb" : ""}`}
+      style={brand ? ({ "--rb-a": brand.color, "--rb-b": `color-mix(in srgb, ${brand.color} 70%, #fff)` } as React.CSSProperties) : undefined}
+    >
+      {brand && <style>{brandCss}</style>}
       {/* Ao vivo: rápido enquanto envia; no link do cliente continua atualizando (leituras, cliques, respostas) */}
       {campaign.status === "RUNNING" ? <AutoRefresh every={4000} /> : publicView && <AutoRefresh every={15000} />}
       <style>{"@media print { @page { margin: 12mm } .report-card { break-inside: avoid } }"}</style>
 
       {/* Topo escuro com a marca e o número principal */}
-      <header className="relative overflow-hidden bg-[#0b0b0f] text-white print:[print-color-adjust:exact]">
-        <div className="pointer-events-none absolute -right-24 -top-24 size-96 rounded-full bg-[#ff6a1f]/25 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-32 left-1/3 size-80 rounded-full bg-[#ef2d56]/15 blur-3xl" />
+      <header className="relative overflow-hidden bg-[#0b0b0f] text-white print:[print-color-adjust:exact]" style={brand ? { background: brand.headerColor } : undefined}>
+        <div className="pointer-events-none absolute -right-24 -top-24 size-96 rounded-full opacity-25 blur-3xl" style={{ background: accent }} />
+        <div className="pointer-events-none absolute -bottom-32 left-1/3 size-80 rounded-full opacity-15 blur-3xl" style={{ background: brand ? brand.color : "#ef2d56" }} />
         <div className="relative mx-auto max-w-5xl px-5 py-8 sm:px-8">
           <div className="mb-8 flex items-center justify-between gap-3">
-            <Logo className="h-7 w-auto" />
+            {brand ? (
+              <div className="flex min-w-0 items-center gap-3">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                {brand.logoUrl && <img src={brand.logoUrl} alt={brand.name} className="size-12 shrink-0 rounded-xl object-contain" />}
+                <span className="truncate text-xl font-bold tracking-tight">{brand.name}</span>
+              </div>
+            ) : (
+              <Logo className="h-7 w-auto" />
+            )}
             <div className="flex items-center gap-2 print:hidden">
               {!publicView && <Link href={`/campanhas/${id}?etapa=relatorio`} className="rounded-lg px-3 py-2 text-sm text-zinc-300 hover:bg-white/10">Voltar</Link>}
               <PrintButton />
@@ -187,7 +211,7 @@ export async function ReportView({ id, workspaceId, publicView = false, expiresA
         )}
 
         <footer className="flex flex-wrap items-center justify-between gap-2 pt-4 text-xs text-zinc-400">
-          <span>Gerado pelo Fuzil Disparador em {when(new Date())}</span>
+          <span>{brand ? <>Relatório {brand.name} · gerado pelo Fuzil Disparador em {when(new Date())}</> : <>Gerado pelo Fuzil Disparador em {when(new Date())}</>}</span>
           {/* Números ajustados: nada real aparece no relatório (nem os créditos, que mostrariam as enviadas reais) */}
           {!publicView && !r.adjusted && <span>{n(t.credits)} créditos usados{t.optedOut ? ` · ${n(t.optedOut)} descadastraram` : ""}</span>}
         </footer>

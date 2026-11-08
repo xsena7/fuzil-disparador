@@ -96,6 +96,7 @@ model Workspace {
   smsJobs             SmsJob[]
   smsOrders           SmsOrder[]
   campaigns           Campaign[]
+  reportBrands        ReportBrand[]
   contacts            Contact[]
   alerts              Alert[]
   inbound             InboundMessage[]
@@ -422,6 +423,9 @@ model Campaign {
   reportPrice        Float?
   // Qual chave Pix aparece no relatório desta campanha (id da chave; "ALL" = todas; vazio = a primeira)
   reportPixKeyId     String?
+  // Marca do relatório do cliente (revendedor): logo, nome e cores dele no lugar do Fuzil
+  reportBrandId      String?
+  reportBrand        ReportBrand? @relation(fields: [reportBrandId], references: [id], onDelete: SetNull)
   // Números ajustados à mão para o relatório do cliente: { total, sent, read, clicked, replied, failed, noWa } (vazio = números reais)
   reportOverrides    Json?
   shareToken         String?             @unique
@@ -1215,4 +1219,24 @@ model InstagramPost {
   createdAt   DateTime  @default(now())
 
   @@index([status, scheduledAt])
+}
+
+// ---------------------------------------------------------------------------
+// Marca do relatório (revendedor): o relatório do cliente sai com o nome, a logo e as cores dele.
+// No rodapé continua "gerado pelo Fuzil Disparador"; o link é o mesmo do Fuzil.
+// ---------------------------------------------------------------------------
+model ReportBrand {
+  id          String     @id @default(cuid())
+  workspaceId String
+  name        String
+  // URL da logo (pasta de uploads, servida em /media)
+  logoUrl     String?
+  // Cor principal (destaques, botões, gráficos) e cor do topo do relatório
+  color       String     @default("#FF6A2B")
+  headerColor String     @default("#1C1C1E")
+  createdAt   DateTime   @default(now())
+  workspace   Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  campaigns   Campaign[]
+
+  @@index([workspaceId])
 }

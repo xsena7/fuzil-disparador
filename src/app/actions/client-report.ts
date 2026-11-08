@@ -124,3 +124,57 @@ export async function resetReportNumbersAction(id: string): Promise<{ ok?: strin
   revalidatePath(`/campanhas/${c.id}`);
   return { ok: "Pronto! O relatório voltou a mostrar os números reais da campanha." };
 }
+
+// ---------------- Marca do relatório (revendedor) ----------------
+
+const HEX = /^#[0-9a-fA-F]{6}$/;
+
+/** Escolhe a marca que aparece no relatório desta campanha (vazio = Fuzil). */
+export async function setCampaignBrandAction(campaignId: string, _: FormState, form: FormData): Promise<FormState> {
+  const auth = await requireAuth();
+  const brandId = String(form.get("reportBrandId") ?? "") || null;
+  if (brandId && !(await prisma.reportBrand.findFirst({ where: { id: brandId, workspaceId: auth.workspace.id }, select: { id: true } }))) return { error: "Marca não encontrada" };
+  const r = await prisma.campaign.updateMany({ where: { id: campaignId, workspaceId: auth.workspace.id }, data: { reportBrandId: brandId } });
+  if (!r.count) return { error: "Campanha não encontrada" };
+  revalidatePath(`/campanhas/${campaignId}`);
+  return { ok: brandId ? "Marca escolhida. O relatório já sai com ela." : "O relatório volta a sair com a marca do Fuzil." };
+}
+
+/** Cria ou edita uma marca (nome, logo e cores). Com campaignId, já usa a marca nova nesta campanha. */
+export async function saveReportBrandAction(_: FormState, form: FormData): Promise<FormState> {
+  const auth = await requireAuth();
+  const id = String(form.get("id") ?? "");
+  const name = String(form.get("name") ?? "").trim().slice(0, 60);
+  const color = String(form.get("color") ?? "");
+  const headerColor = String(form.get("headerColor") ?? "");
+  if (!name) return { error: "Coloque o nome da marca" };
+  if (!HEX.test(color) || !HEX.test(headerColor)) return { error: "Escolha as duas cores" };
+  let logoUrl: string | undefined;
+  const logo = form.get("logo");
+  if (logo instanceof File && logo.size) {
+    if (!["image/png", "image/jpeg"].includes(logo.type)) return { error: "A logo precisa ser PNG ou JPG" };
+    const { saveUpload } = await import("@/lib/uploads");
+    try {
+      logoUrl = (await saveUpload(logo)).url.replace(/^https?:\/\/[^/]+/, "");
+    } catch (e) {
+      return { error: e instanceof Error ? e.message : "Não consegui salvar a logo" };
+    }
+  }
+  if (id) {
+    const r = await prisma.reportBrand.updateMany({ where: { id, workspaceId: auth.workspace.id }, data: { name, color, headerColor, ...(logoUrl ? { logoUrl } : {}) } });
+    if (!r.count) return { error: "Marca não encontrada" };
+  } else {
+    const brand = await prisma.reportBrand.create({ data: { workspaceId: auth.workspace.id, name, color, headerColor, logoUrl: logoUrl ?? null } });
+    const campaignId = String(form.get("campaignId") ?? "");
+    if (campaignId) await prisma.campaign.updateMany({ where: { id: campaignId, workspaceId: auth.workspace.id }, data: { reportBrandId: brand.id } });
+  }
+  revalidatePath("/campanhas");
+  return { ok: id ? "Marca atualizada" : "Marca criada e escolhida nesta campanha" };
+}
+
+export async function deleteReportBrandAction(id: string) {
+  const auth = await requireAuth();
+  await prisma.reportBrand.deleteMany({ where: { id, workspaceId: auth.workspace.id } });
+  revalidatePath("/campanhas");
+  return { ok: "Marca apagada" };
+}

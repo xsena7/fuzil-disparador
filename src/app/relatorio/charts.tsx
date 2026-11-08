@@ -16,8 +16,8 @@ export function Ring({ value, total, label }: { value: number; total: number; la
       <svg viewBox="0 0 120 120" className="size-full -rotate-90">
         <defs>
           <linearGradient id="ring" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0" stopColor="#ff8a1f" />
-            <stop offset="1" stopColor="#ef2d56" />
+            <stop offset="0" style={{ stopColor: "var(--rb-a, #ff8a1f)" }} />
+            <stop offset="1" style={{ stopColor: "var(--rb-b, #ef2d56)" }} />
           </linearGradient>
         </defs>
         <circle cx="60" cy="60" r={r} fill="none" stroke="rgba(255,255,255,.1)" strokeWidth="10" />
@@ -60,8 +60,8 @@ export function Funnel({ steps }: { steps: FunnelStep[] }) {
                 <span className="truncate text-sm text-zinc-600">{s.label}</span>
                 <div className="order-last col-span-2 h-7 rounded-md bg-zinc-100/70 sm:order-none sm:col-span-1 sm:h-8">
                   <div
-                    className={clsx("h-full rounded-md transition-all duration-700", hover === i ? "bg-[#ea580c]" : "bg-[#f97316]")}
-                    style={{ width: `${w}%`, opacity: 1 - i * 0.09 }}
+                    className={clsx("h-full rounded-md transition-all duration-700", hover === i ? "brightness-90" : "")}
+                    style={{ width: `${w}%`, opacity: 1 - i * 0.09, background: "var(--rb-a, #f97316)" }}
                   />
                 </div>
                 <span className="text-right text-sm tabular-nums">

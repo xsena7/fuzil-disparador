@@ -4,6 +4,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "3.76",
+    date: "08/11/2026",
+    items: ["Relatório do cliente com a sua marca: na aba Relatório da campanha, escolha com qual marca gerar (Fuzil ou uma marca sua, com nome, logo e cores). O relatório sai com a marca escolhida e, embaixo, \"gerado pelo Fuzil Disparador\". Vale só para aquela campanha"],
+  },
+  {
     version: "3.75",
     date: "08/11/2026",
     items: ["[admin] Site: selo oficial Meta Business Partner no rodapé; rodapé agora diz que o Fuzil é Meta Business Partner"],
