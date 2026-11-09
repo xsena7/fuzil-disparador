@@ -4,6 +4,14 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "3.78",
+    date: "09/11/2026",
+    items: [
+      "Conexões: busca de BM do lado de Verificar todas. Vai filtrando enquanto você digita (nome, BM ID ou número), mostra o grupo de cada uma e, ao clicar, abre a BM",
+      "Números BR: erro do SMS24h agora mostra o motivo que eles mandam (antes aparecia só \"erro 400\")",
+    ],
+  },
+  {
     version: "3.77",
     date: "08/11/2026",
     items: ["Números BR: no SMS24h agora dá para escolher o DDD do número (no registro automático e na compra manual). Vazio = qualquer DDD; com DDD o SMS24h cobra 30% a mais. A troca de número pede o mesmo DDD"],

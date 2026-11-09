@@ -18,6 +18,7 @@ import { TestWaba } from "./test-waba";
 import { EmbeddedSignup } from "@/components/embedded-signup";
 import { VerifyAllButton } from "@/components/verify-all-button";
 import { groupDot, groupTag } from "@/lib/group-colors";
+import { BmSearch, type BmSearchItem } from "./bm-search";
 import { PROBLEM_KINDS, READY_GROUP, ensureReadyGroup, isProblemSystem } from "@/lib/bm-problems";
 import { ConnectGuide } from "./connect-guide";
 import { ManualGuide } from "./manual-guide";
@@ -193,6 +194,21 @@ export default async function ConnectionsPage() {
         {businesses.length > 0 && (
           <VerifyAllButton className="px-3 py-1.5 text-xs">Verificar todas</VerifyAllButton>
         )}
+        {businesses.length > 0 && (
+          <BmSearch
+            items={businesses.map((bm): BmSearchItem => {
+              const issues = bm.wabas.flatMap((w) => wabaReadiness({ ...w, usableTemplates: w.templates.length }));
+              return {
+                id: bm.id,
+                name: bm.name,
+                metaId: bm.metaBusinessId,
+                phones: bm.wabas.flatMap((w) => w.phones.filter((p) => !p.invalidReason).map((p) => p.displayPhoneNumber.replace(/\D/g, ""))),
+                groups: bm.groups.filter((g) => !g.group.system?.startsWith("BM:")).map((g) => ({ name: g.group.name, color: g.group.color })),
+                tone: bm.problemAt || !bm.wabas.length || issues.some((i) => i.block) ? "red" : issues.length ? "amber" : "green",
+              };
+            })}
+          />
+        )}
       </div>
       {businesses.length === 0 && <Empty>Nenhuma BM conectada ainda. Use uma das opções acima.</Empty>}
 
@@ -214,7 +230,7 @@ export default async function ConnectionsPage() {
           const w = windows.get(bm.id);
           const phones = bm.wabas.reduce((a, x) => a + x.phones.filter((p) => !p.invalidReason).length, 0);
           return (
-          <details key={bm.id} className="group overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm">
+          <details key={bm.id} id={`bm-${bm.id}`} className="group scroll-mt-20 overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm transition-shadow">
             <summary className="flex cursor-pointer list-none flex-wrap items-center gap-3 px-5 py-4 hover:bg-zinc-50 [&::-webkit-details-marker]:hidden">
               <ChevronRight className="size-4 shrink-0 text-zinc-400 transition-transform group-open:rotate-90" />
               <span

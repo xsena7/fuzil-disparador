@@ -89,6 +89,12 @@ const S24_ERRORS: Record<string, string> = {
   BAD_STATUS: "SMS24h: não dá para mudar o status agora",
   ERROR_SQL: "SMS24h: erro no servidor deles",
   BAD_ACTION: "SMS24h: comando inválido",
+  FORBIDEN_SERVICE: "SMS24h: esse serviço está bloqueado para a sua conta na API. Fale com o suporte do SMS24h para liberar WhatsApp pela API (ou atualize a conta no site deles)",
+  FORBIDDEN_SERVICE: "SMS24h: esse serviço está bloqueado para a sua conta na API. Fale com o suporte do SMS24h para liberar WhatsApp pela API",
+  BAD_SERVICE: "SMS24h: serviço inválido",
+  BANNED: "SMS24h: conta bloqueada temporariamente no SMS24h",
+  WRONG_MAX_PRICE: "SMS24h: preço mudou, tente de novo",
+  NO_NUMBERS_DDD: "SMS24h: sem número com esse DDD agora. Tente outro DDD ou deixe vazio",
 };
 
 async function s24(key: string, params: Record<string, string>): Promise<string> {
@@ -99,7 +105,8 @@ async function s24(key: string, params: Record<string, string>): Promise<string>
   const text = (await res.text()).trim();
   const head = text.split(":")[0];
   if (S24_ERRORS[head]) throw new SmsProviderError(S24_ERRORS[head]);
-  if (!res.ok) throw new SmsProviderError(`SMS24h: erro ${res.status}`);
+  // Erro que ainda não conhecemos: mostra a resposta deles (antes aparecia só "erro 400")
+  if (!res.ok) throw new SmsProviderError(`SMS24h: ${text ? text.slice(0, 160) : `erro ${res.status}`}`);
   return text;
 }
 
