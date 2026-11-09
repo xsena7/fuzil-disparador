@@ -4,6 +4,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "3.80",
+    date: "09/11/2026",
+    items: ["Templates padrão: quando o template não sobe numa BM, o Fuzil espera 1 hora e manda o mesmo template de novo, sozinho, até subir (antes parava depois de 3 tentativas). Erro passageiro da Meta, como muitos pedidos seguidos, nem gera aviso"],
+  },
+  {
     version: "3.79",
     date: "09/11/2026",
     items: [

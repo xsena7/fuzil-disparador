@@ -103,6 +103,11 @@ async function wabasInScope(workspaceId: string, groupId: string | null) {
   return prisma.whatsAppAccount.findMany({ where: { workspaceId, business }, include: { business: true } });
 }
 
+/** Template padrão que deu erro ao subir: tenta de novo depois desse tempo. */
+const ERROR_RETRY_MS = 60 * 60_000;
+/** Erro passageiro da Meta (muitos pedidos, instabilidade): não avisa, só tenta de novo em 1 hora. */
+const transientError = (e?: string | null) => /muitos pedidos|limite de (chamadas|pedidos)|rate.?limit|too many|tente de novo|temporari|instabilidade|indispon/i.test(String(e ?? ""));
+
 /** Depois que a BM é conectada, espera esse tempo antes de mandar os templates padrão. */
 const CONNECT_WAIT_MS = 5 * 60_000;
 
@@ -116,8 +121,10 @@ export async function deployBlueprints(workspaceId?: string) {
     const wabas = await wabasInScope(bp.workspaceId, bp.groupId);
     for (const waba of wabas) {
       const dep = bp.deployments.find((d) => d.wabaId === waba.id);
-      // Erros tentam até 3x
-      if ((dep?.status === "ERROR" && dep.attempts >= 3) || dep?.status === "MARKETING_ON_CREATE") continue;
+      // Deu erro ao subir: espera 1 hora e manda o mesmo template de novo, sozinho e sem limite de tentativas
+      // (não pede demais para a Meta e ninguém precisa mexer em nada)
+      if (dep?.status === "ERROR" && Date.now() - dep.updatedAt.getTime() < ERROR_RETRY_MS) continue;
+      if (dep?.status === "MARKETING_ON_CREATE") continue;
       // BM recém-conectada: espera uns minutos antes de mandar template. A rodada seguinte pega.
       if (Date.now() - waba.createdAt.getTime() < CONNECT_WAIT_MS) continue;
 
@@ -195,13 +202,14 @@ export async function deployBlueprints(workspaceId?: string) {
           create: { blueprintId: bp.id, wabaId: waba.id, status: "ERROR", error: result.error, ...naming },
           update: { status: "ERROR", error: result.error, attempts: burned ? 1 : { increment: 1 }, ...naming },
         });
-        if ((dep?.attempts ?? 0) + 1 >= 3) {
+        // Avisa uma vez só (na 3ª tentativa seguida) e só se não for erro passageiro da Meta; o Fuzil segue tentando a cada 1 hora
+        if ((dep?.attempts ?? 0) + 1 === 3 && !transientError(result.error)) {
           await createAlert({
             workspaceId: bp.workspaceId,
             type: "BLUEPRINT_ERROR",
             severity: "WARNING",
             title: `Template padrão "${bp.name}" não subiu em ${waba.business.name}`,
-            message: result.error,
+            message: `${result.error} O Fuzil tenta de novo sozinho a cada 1 hora.`,
           });
         }
       }

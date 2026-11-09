@@ -104,7 +104,7 @@ export function explainAlert(a: { type: string; severity: AlertSeverity; title: 
     case "TEMPLATE_DELETE_FAILED":
       return { urgency: "URGENTE", meaning: "O template virou MARKETING e o Fuzil NÃO conseguiu excluir ele.", action: "Exclua na mão pelo Gerenciador do WhatsApp dessa BM. O Fuzil já não usa ele nos disparos." };
     case "BLUEPRINT_ERROR":
-      return { urgency: "ATENCAO", meaning: "O template padrão não conseguiu ser criado nessa BM.", action: "Veja o motivo acima. Se for nome repetido ou texto recusado, ajuste em Templates padrão; o Fuzil tenta de novo sozinho." };
+      return { urgency: "ATENCAO", meaning: "O template padrão não conseguiu ser criado nessa BM.", action: "Não precisa fazer nada: o Fuzil manda o mesmo template de novo sozinho a cada 1 hora até subir. Só mexa em Templates padrão se o motivo for o texto recusado pela Meta." };
     case "QUALITY_CHANGE":
       if (!bad) return { urgency: "INFO", meaning: "A qualidade do número melhorou.", action: "Nada." };
       return a.severity === "CRITICAL"
