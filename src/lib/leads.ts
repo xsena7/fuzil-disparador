@@ -6,6 +6,9 @@ import { shortToken } from "./crypto";
 import { canonicalWaId, normalizePhone } from "./phone";
 import { sendChatMessage } from "./chat";
 
+/** Texto pronto da confirmação para quem indicou (já vem preenchido no aquecimento novo). */
+export const LEAD_CONFIRM_EXAMPLE = "Amém! 🙏 {nome} foi cadastrado(a) com sucesso e já vai começar a receber o Minuto de Bênção.";
+
 const PHONE_KEYS = ["telefone", "phone", "whatsapp", "celular", "numero", "número", "tel", "fone"];
 const NAME_KEYS = ["nome", "name", "nome_completo", "full_name"];
 const REF_KEYS = ["indicado_por", "indicadopor", "quem_indicou", "indicador", "referrer", "telefone_indicador", "whatsapp_indicador"];

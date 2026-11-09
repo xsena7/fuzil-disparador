@@ -5,6 +5,7 @@ import { Card, Field } from "@/components/ui";
 import { ActionForm, ConfirmButton } from "@/components/action-form";
 import { disableLeadWebhookAction, enableLeadWebhookAction, saveLeadConfirmAction } from "@/app/actions/campaigns";
 import { CopyLink } from "./copy-link";
+import { LEAD_CONFIRM_EXAMPLE } from "@/lib/leads";
 
 /** Cadastro pelo site: o site manda cada contato para o Fuzil e ele recebe a mensagem na hora. */
 export async function LeadWebhookCard({ campaignId }: { campaignId: string }) {
@@ -46,8 +47,8 @@ export async function LeadWebhookCard({ campaignId }: { campaignId: string }) {
             </p>
           </div>
           <ActionForm action={saveLeadConfirmAction.bind(null, campaignId)} submit="Salvar confirmação" variant="secondary">
-            <Field label="Mensagem para quem indicou (vai para o campo indicado_por)" hint="Só chega se essa pessoa falou com o seu número nas últimas 24h (regra da Meta). {nome} = nome de quem foi cadastrado. Vazio = não manda.">
-              <textarea name="leadConfirmText" defaultValue={c.leadConfirmText ?? ""} rows={3} maxLength={1000} placeholder="Amém! 🙏 {nome} foi cadastrado(a) com sucesso e já vai começar a receber o Minuto de Bênção." className="w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100" />
+            <Field label="Mensagem para quem indicou (vai para o campo indicado_por)" hint={`${c.leadConfirmText === null ? "Exemplo pronto: ajuste se quiser e clique em Salvar confirmação para ativar. " : ""}Só chega se essa pessoa falou com o seu número nas últimas 24h (regra da Meta). {nome} = nome de quem foi cadastrado. Vazio = não manda.`}>
+              <textarea name="leadConfirmText" defaultValue={c.leadConfirmText ?? LEAD_CONFIRM_EXAMPLE} rows={3} maxLength={1000} placeholder="Amém! 🙏 {nome} foi cadastrado(a) com sucesso e já vai começar a receber o Minuto de Bênção." className="w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100" />
             </Field>
           </ActionForm>
           <ConfirmButton action={disableLeadWebhookAction.bind(null, campaignId)} variant="ghost" className="text-xs text-red-600" confirm={"Desligar o cadastro pelo site?\\nO endereço para de funcionar. Se ligar de novo, o endereço muda."}>

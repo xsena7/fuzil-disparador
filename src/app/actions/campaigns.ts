@@ -1,5 +1,6 @@
 "use server";
 
+import { LEAD_CONFIRM_EXAMPLE } from "@/lib/leads";
 import { friendlyError, metaErrorText, translateMetaText } from "@/lib/meta-errors";
 
 import { revalidatePath } from "next/cache";
@@ -39,7 +40,7 @@ export async function createWarmupAction(_: FormState, form: FormData): Promise<
   if (!name) return { error: "Dê um nome ao aquecimento" };
   const lastGroup = await prisma.campaign.findFirst({ where: { workspaceId: auth.workspace.id, groupId: { not: null }, group: usableGroupWhere }, orderBy: { createdAt: "desc" } });
   const { randomBytes } = await import("node:crypto");
-  const c = await prisma.campaign.create({ data: { workspaceId: auth.workspace.id, name, scope: "GROUP", groupId: lastGroup?.groupId, kind: "WARMUP", leadToken: randomBytes(18).toString("base64url") } });
+  const c = await prisma.campaign.create({ data: { workspaceId: auth.workspace.id, name, scope: "GROUP", groupId: lastGroup?.groupId, kind: "WARMUP", leadToken: randomBytes(18).toString("base64url"), leadConfirmText: LEAD_CONFIRM_EXAMPLE } });
   redirect(`/campanhas/${c.id}?etapa=template`);
 }
 
@@ -491,7 +492,7 @@ export async function disableLeadWebhookAction(id: string) {
 export async function saveLeadConfirmAction(id: string, _: FormState, form: FormData): Promise<FormState> {
   await ownCampaign(id);
   const text = String(form.get("leadConfirmText") ?? "").trim().slice(0, 1000);
-  await prisma.campaign.update({ where: { id }, data: { leadConfirmText: text || null } });
+  await prisma.campaign.update({ where: { id }, data: { leadConfirmText: text } });
   revalidatePath(`/campanhas/${id}`);
   return { ok: text ? "Mensagem de confirmação salva." : "Confirmação desligada." };
 }
