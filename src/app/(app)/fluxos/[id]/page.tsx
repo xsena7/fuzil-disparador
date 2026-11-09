@@ -18,7 +18,7 @@ export default async function FlowPage({ params }: { params: Promise<{ id: strin
     prisma.flowRun.groupBy({ by: ["nodeId"], where: { flowId: flow.id, status: { in: ["WAITING_REPLY", "WAITING_TIME"] } }, _count: true }),
     prisma.campaign.findMany({
       where: { workspaceId: ws, funnelId: null, status: { not: "CANCELLED" } },
-      select: { id: true, name: true, status: true, templateName: true, flowId: true },
+      select: { id: true, name: true, status: true, templateName: true, flowId: true, kind: true },
       orderBy: { createdAt: "desc" },
       take: 150,
     }),
@@ -29,7 +29,7 @@ export default async function FlowPage({ params }: { params: Promise<{ id: strin
   const buttonsOf = new Map(
     tpls.map((t) => [t.name, (getComponent(t.components as unknown as TComponent[], "BUTTONS")?.buttons ?? []).filter((b) => b.type === "QUICK_REPLY").map((b) => b.text)]),
   );
-  const campaigns: FlowCampaign[] = camps.map((c) => ({ id: c.id, name: c.name, status: c.status, buttons: (c.templateName && buttonsOf.get(c.templateName)) || [], other: Boolean(c.flowId && c.flowId !== flow.id) }));
+  const campaigns: FlowCampaign[] = camps.map((c) => ({ id: c.id, name: c.kind === "WARMUP" ? `Aquecimento: ${c.name}` : c.name, status: c.status, buttons: (c.templateName && buttonsOf.get(c.templateName)) || [], other: Boolean(c.flowId && c.flowId !== flow.id) }));
 
   // O bloco Disparo mostra as campanhas que usam este fluxo agora (pode ter sido escolhido na campanha)
   const graph = flowGraph(flow.graph);
