@@ -6,7 +6,7 @@ import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { decrypt, encrypt } from "@/lib/crypto";
-import { configureBmAppWebhook, connectWaba, removeFailedPhone, removePendingPhones, syncWaba, wabaToken } from "@/lib/sync";
+import { configureBmAppWebhook, connectWaba, PHONE_REMOVED, removeFailedPhone, removePendingPhones, syncWaba, wabaToken } from "@/lib/sync";
 import { deployBlueprints } from "@/lib/blueprints";
 import { meta } from "@/lib/meta";
 import { env } from "@/lib/env";
@@ -201,6 +201,20 @@ export async function togglePhoneAction(phoneId: string) {
   if (!phone) return;
   await prisma.phoneNumber.update({ where: { id: phoneId }, data: { enabled: !phone.enabled } });
   revalidatePath("/conexoes");
+}
+
+/** Botão Excluir número: tira o número da WABA na Meta e some do Fuzil. */
+export async function deletePhoneAction(phoneId: string): Promise<FormState> {
+  const auth = await requireAuth();
+  if (auth.role === "MEMBER") return { error: "Só o dono ou um admin da conta pode excluir número." };
+  const phone = await prisma.phoneNumber.findFirst({ where: { id: phoneId, waba: { workspaceId: auth.workspace.id } }, include: { waba: true } });
+  if (!phone) return { error: "Número não encontrado" };
+  const r = await meta.deletePhone(wabaToken(phone.waba), phone.phoneNumberId).catch(() => ({ deregistered: false, deleted: false }));
+  if (!r.deleted && !r.deregistered) return { error: "A Meta não deixou excluir esse número agora. Apague no WhatsApp Manager da BM." };
+  await prisma.phoneNumber.update({ where: { id: phone.id }, data: { invalidReason: PHONE_REMOVED, enabled: false } });
+  await syncWaba(phone.wabaId).catch(() => undefined);
+  revalidatePath("/conexoes");
+  return { ok: r.deleted ? "Número excluído da BM." : "Número descadastrado. A Meta não deixou apagar de vez: ele não entra mais no rodízio." };
 }
 
 export async function registerPhoneAction(phoneId: string): Promise<FormState> {

@@ -4,6 +4,14 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "3.81",
+    date: "09/11/2026",
+    items: [
+      "Conexões: botão Excluir número em cada número (sai da conta do WhatsApp na Meta e do Fuzil)",
+      "Conexões: número que ficou pendente por mais de 2 horas sem confirmar sai da BM sozinho (sobra de tentativa com erro)",
+    ],
+  },
+  {
     version: "3.80",
     date: "09/11/2026",
     items: ["Templates padrão: quando o template não sobe numa BM, o Fuzil espera 1 hora e manda o mesmo template de novo, sozinho, até subir (antes parava depois de 3 tentativas). Erro passageiro da Meta, como muitos pedidos seguidos, nem gera aviso"],

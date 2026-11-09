@@ -37,6 +37,7 @@ import {
   deleteBusinessAction,
   saveBusinessNoteAction,
   registerPhoneAction,
+  deletePhoneAction,
   addPhoneAction,
   requestPhoneCodeAction,
   verifyPhoneAction,
@@ -441,6 +442,14 @@ export default async function ConnectionsPage() {
                             <ActionForm action={async () => { "use server"; return registerPhoneAction(p.id); }} submit="Registrar número" variant="secondary" />
                           )}
                           {!p.invalidReason && <ConfirmButton action={togglePhoneAction.bind(null, p.id)}>{p.enabled ? "Tirar do rodízio" : "Colocar no rodízio"}</ConfirmButton>}
+                          <ConfirmButton
+                            action={deletePhoneAction.bind(null, p.id)}
+                            variant="ghost"
+                            className="text-red-600"
+                            confirm={`Excluir o número ${formatPhone(p.displayPhoneNumber.replace(/\D/g, ""))} da BM?\nEle sai da conta do WhatsApp na Meta e do rodízio do Fuzil. Não dá para desfazer.`}
+                          >
+                            <Trash2 className="size-3.5" /> Excluir número
+                          </ConfirmButton>
                         </div>
                         {/* Número ainda não confirmado: digita o código que chegou e o Fuzil confirma e registra */}
                         {p.status && p.status !== "CONNECTED" && !p.isCoexistence && p.invalidReason !== PHONE_DISCARDED && (

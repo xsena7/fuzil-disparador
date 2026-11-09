@@ -101,6 +101,24 @@ export async function syncWaba(wabaRecordId: string) {
       }
     }
     for (const p of real) await upsertPhone(waba.workspaceId, waba.id, p);
+    // Número pendente há mais de 2 horas (entrou na BM e nunca confirmou: sobra de tentativa com erro) sai da BM sozinho.
+    // Não mexe no que está no meio de um registro automático
+    const pending = real.filter((p) => String(p.status ?? "").toUpperCase() === "PENDING");
+    if (pending.length) {
+      const [rows, busy] = await Promise.all([
+        prisma.phoneNumber.findMany({ where: { wabaId: waba.id, phoneNumberId: { in: pending.map((p) => p.id) } }, select: { phoneNumberId: true, createdAt: true } }),
+        prisma.smsJob.findMany({ where: { wabaId: waba.id, status: "RUNNING" }, select: { phoneNumberId: true } }),
+      ]);
+      for (const p of pending) {
+        const row = rows.find((r) => r.phoneNumberId === p.id);
+        if (!row || Date.now() - row.createdAt.getTime() < STALE_PENDING_MS || busy.some((j) => j.phoneNumberId === p.id)) continue;
+        const r = await meta.deletePhone(token, p.id).catch(() => ({ deregistered: false, deleted: false }));
+        if (r.deleted) {
+          real = real.filter((x) => x.id !== p.id);
+          console.log(`[sync] número pendente ${p.display_phone_number} tirado da WABA ${waba.wabaId}`);
+        }
+      }
+    }
     await removeGonePhones(waba.id, real.map((p) => p.id));
     await checkPendingNames(waba.id, token).catch((e) => console.error("[sync] troca de nome", e));
     // Conversas de número de teste são só teste: some tudo
@@ -206,6 +224,8 @@ async function alertRedRemoved(workspaceId: string, wabaRecordId: string, p: Met
 // Número que o registro automático (SMSBear) largou porque o SMS não chegou: some da tela e nunca entra no rodízio
 export const PHONE_DISCARDED = "Número descartado (o SMS não chegou)";
 const TEST_NUMBER = "Número de teste da Meta";
+/** Número que ficou pendente (sem confirmar) por mais que isso sai da BM sozinho. */
+const STALE_PENDING_MS = 2 * 3600_000;
 
 /**
  * Tira da WABA (na Meta) um número que deu erro ao entrar: pelo ID ou, sem ID, procurando pelo número.
