@@ -6,7 +6,7 @@ import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { decrypt, encrypt } from "@/lib/crypto";
-import { configureBmAppWebhook, connectWaba, removeFailedPhone, syncWaba, wabaToken } from "@/lib/sync";
+import { configureBmAppWebhook, connectWaba, removeFailedPhone, removePendingPhones, syncWaba, wabaToken } from "@/lib/sync";
 import { deployBlueprints } from "@/lib/blueprints";
 import { meta } from "@/lib/meta";
 import { env } from "@/lib/env";
@@ -247,6 +247,8 @@ export async function addPhoneAction(wabaRecordId: string, _: FormState, form: F
   let added = false;
   let newId: string | null = null;
   try {
+    // Antes do número novo: tira da BM os que ficaram pendentes (tentativas com erro derrubam a BM)
+    await removePendingPhones(token, waba.wabaId).catch(() => 0);
     const { id } = await meta.addPhone(token, waba.wabaId, "55", digits.slice(2), name);
     added = true;
     newId = id;

@@ -227,6 +227,23 @@ export async function removeFailedPhone(token: string, wabaMetaId: string, opts:
   return removed;
 }
 
+/**
+ * Antes de colocar um número novo: apaga da WABA os números que ficaram pendentes (entraram e nunca confirmaram,
+ * normalmente de uma tentativa que deu erro). Número conectado, banido ou desconectado não é mexido.
+ */
+export async function removePendingPhones(token: string, wabaMetaId: string): Promise<number> {
+  const list = await meta.listPhones(token, wabaMetaId).catch(() => [] as MetaPhone[]);
+  let n = 0;
+  for (const p of list) {
+    const st = String(p.status ?? "").toUpperCase();
+    if (st && st !== "PENDING" && st !== "UNVERIFIED") continue;
+    if (phoneInvalidReason(p) === TEST_NUMBER && !certainTestNumber(p)) continue;
+    const r = await meta.deletePhone(token, p.id).catch(() => ({ deregistered: false, deleted: false }));
+    if (r.deleted) n++;
+  }
+  return n;
+}
+
 /** Número de teste que dá para reconhecer com certeza (para apagar da BM): conta SANDBOX, nome "Test Number" ou +1 555. */
 function certainTestNumber(p: MetaPhone) {
   const digits = p.display_phone_number.replace(/\D/g, "");

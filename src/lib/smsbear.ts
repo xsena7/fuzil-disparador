@@ -7,7 +7,7 @@ import { prisma } from "./db";
 import { env } from "./env";
 import { meta } from "./meta";
 import { friendlyError, metaDetail } from "./meta-errors";
-import { PHONE_DISCARDED, removeFailedPhone, syncWaba, wabaToken } from "./sync";
+import { PHONE_DISCARDED, removeFailedPhone, removePendingPhones, syncWaba, wabaToken } from "./sync";
 import type { Prisma } from "@prisma/client";
 import { createAlert } from "./alerts";
 import { formatPhone } from "./phone";
@@ -98,6 +98,9 @@ async function stepJob(job: JobWithWaba) {
     // Duas etapas na Meta: colocar o número na WABA e pedir o código. O log diz em qual delas a Meta recusou
     let stage = `colocar o número na WABA ${job.waba.name} (nome "${job.verifiedName}")`;
     try {
+      // Antes do número novo: tira da BM os que ficaram pendentes de tentativas com erro
+      const cleaned = await removePendingPhones(metaToken, job.waba.wabaId).catch(() => 0);
+      if (cleaned) await push(job.id, `${cleaned} número(s) pendente(s) de tentativas anteriores tirado(s) da BM antes de colocar o novo.`, "info");
       const { id } = await meta.addPhone(metaToken, job.waba.wabaId, "55", local(order.number), job.verifiedName);
       await prisma.smsJob.update({ where: { id: job.id }, data: { phoneNumberId: id } });
       stage = "pedir o código por SMS (o número já entrou na WABA)";
