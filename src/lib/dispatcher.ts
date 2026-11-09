@@ -302,8 +302,8 @@ export async function runCampaignTick(campaignId: string) {
   const plan = await planSenders(campaign);
   if (!plan.senders.length) {
     const reasons = [...new Set(plan.skipped.map((s) => s.reason))].join("; ");
-    if (campaign.funnelId) {
-      // Envio automático (login do gerador de links): não pausa (senão o funil religa e pausa de novo, sem parar). Fica esperando uma BM do grupo ficar apta
+    if (campaign.funnelId || campaign.leadToken) {
+      // Envio automático (funil ou cadastro pelo site): não pausa (senão o funil religa e pausa de novo, sem parar). Fica esperando uma BM do grupo ficar apta
       const waiting = `Aguardando BM apta no grupo.${reasons ? ` Motivos: ${reasons}` : ""}`;
       if (campaign.pausedReason !== waiting) await prisma.campaign.update({ where: { id: campaign.id }, data: { pausedReason: waiting } });
       const title = `Envio automático "${campaign.name}" sem BM apta`;
@@ -565,8 +565,8 @@ export async function maybeComplete(campaignId: string) {
   if (open > 0) return;
   // Só conclui se ainda estiver rodando (não passa por cima de cancelada/pausada, nem conclui duas vezes)
   const done = await prisma.campaign.updateMany({
-    // Campanha de funil fica sempre aberta esperando os próximos leads
-    where: { id: campaignId, status: "RUNNING", funnelId: null },
+    // Campanha de funil e de cadastro pelo site ficam sempre abertas esperando os próximos leads
+    where: { id: campaignId, status: "RUNNING", funnelId: null, leadToken: null },
     data: { status: "COMPLETED", completedAt: new Date(), pausedReason: null },
   });
   if (!done.count) return;

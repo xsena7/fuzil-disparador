@@ -127,7 +127,8 @@ export async function startCampaignAction(id: string, _: FormState, form: FormDa
   if (!["DRAFT", "SCHEDULED"].includes(c.status)) return { error: "Campanha já iniciada" };
   if (!c.templateName || !c.groupId) return { error: "Escolha o template e o grupo" };
   const total = await prisma.campaignRecipient.count({ where: { campaignId: id, status: "PENDING" } });
-  if (!total) return { error: "Suba a audiência primeiro" };
+  // Cadastro pelo site: pode começar sem ninguém (os contatos chegam depois, um a um)
+  if (!total && !c.leadToken) return { error: "Suba a audiência primeiro (ou ligue o cadastro pelo site)" };
 
   const totalRate = Math.max(1, Math.min(300, Math.round(Number(form.get("totalRate") ?? 30)) || 30));
   const skipRed = form.get("skipRed") === "on";
@@ -450,4 +451,35 @@ export async function testCampaignSendAction(id: string, _: { ok?: string; error
     if (!r.banned && tried.length >= 3) break;
   }
   return { error: last?.error ?? "A Meta recusou.", raw: last?.raw };
+}
+
+
+// ---------------- Cadastro pelo site (webhook) ----------------
+
+/** Liga o cadastro pelo site: gera o endereço que o site chama a cada cadastro. */
+export async function enableLeadWebhookAction(id: string) {
+  const { c } = await ownCampaign(id);
+  if (c.status === "CANCELLED" || c.status === "COMPLETED") return { error: "Campanha encerrada: crie outra para receber cadastros" };
+  if (!c.leadToken) {
+    const { randomBytes } = await import("node:crypto");
+    await prisma.campaign.update({ where: { id }, data: { leadToken: randomBytes(18).toString("base64url") } });
+  }
+  revalidatePath(`/campanhas/${id}`);
+  return { ok: "Cadastro pelo site ligado. Copie o endereço e coloque no seu site." };
+}
+
+export async function disableLeadWebhookAction(id: string) {
+  await ownCampaign(id);
+  await prisma.campaign.update({ where: { id }, data: { leadToken: null } });
+  revalidatePath(`/campanhas/${id}`);
+  return { ok: "Cadastro pelo site desligado. O endereço antigo para de funcionar." };
+}
+
+/** Mensagem para quem indicou ({nome} = nome de quem foi cadastrado). Vazio = não manda. */
+export async function saveLeadConfirmAction(id: string, _: FormState, form: FormData): Promise<FormState> {
+  await ownCampaign(id);
+  const text = String(form.get("leadConfirmText") ?? "").trim().slice(0, 1000);
+  await prisma.campaign.update({ where: { id }, data: { leadConfirmText: text || null } });
+  revalidatePath(`/campanhas/${id}`);
+  return { ok: text ? "Mensagem de confirmação salva." : "Confirmação desligada." };
 }

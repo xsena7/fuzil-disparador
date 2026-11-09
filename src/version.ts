@@ -4,6 +4,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "3.85",
+    date: "09/11/2026",
+    items: ["Campanhas: receber cadastros do seu site (webhook). Na etapa Audiência, ligue o cadastro pelo site e coloque o endereço no seu formulário: cada pessoa cadastrada entra na campanha e recebe a mensagem na hora, e quem indicou (campo indicado_por) recebe uma mensagem de confirmação. A campanha fica sempre aberta esperando os próximos"],
+  },
+  {
     version: "3.84",
     date: "09/11/2026",
     items: ["Métricas: quadro \"Quem clicou em cada botão\" com uma planilha (Excel) por botão: o de link e cada botão de resposta (ex.: Sair), com quantas pessoas clicaram em cada um"],

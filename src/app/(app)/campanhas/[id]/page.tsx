@@ -26,6 +26,7 @@ import { TestSend } from "./test-send";
 import { CampaignName } from "./campaign-name";
 import { Metrics } from "./metrics";
 import { ClientReportStep } from "./client-report";
+import { LeadWebhookCard } from "./lead-webhook";
 import { AutoRefresh } from "./auto-refresh";
 import { templateAliases, templateFamily } from "@/lib/blueprints";
 
@@ -198,7 +199,8 @@ async function ContentStep({ campaignId, locked }: { campaignId: string; locked:
       mapping={(campaign.variableMapping ?? {}) as VariableMapping}
       buttonUrl={campaign.buttonUrl ?? ""}
       mediaUrl={campaign.headerMediaUrl}
-      columns={stats?.headers ?? []}
+      // Cadastro pelo site: as colunas vêm dos campos que o site mandou (além da planilha, se tiver)
+      columns={[...new Set([...(stats?.headers ?? []), ...(sample?.data && typeof sample.data === "object" && !Array.isArray(sample.data) ? Object.keys(sample.data as Record<string, unknown>) : [])])]}
       sample={sample ? { phone: sample.phone, name: sample.name, data: sample.data as Record<string, unknown> } : { phone: "5511999999999", name: "Maria Silva", data: {} }}
       locked={locked}
     />
@@ -210,6 +212,7 @@ async function AudienceStep({ campaignId, fileName, stats, locked }: { campaignI
   return (
     <div className="space-y-6">
       <StepAudience campaignId={campaignId} fileName={fileName} stats={stats} locked={locked} />
+      <LeadWebhookCard campaignId={campaignId} />
       {preview.length > 0 && (
         <Table head={["Nome", "Telefone"]}>
           {preview.map((r) => (
@@ -233,7 +236,7 @@ async function SendStep({ campaignId }: { campaignId: string }) {
   const cost = pending * auth.workspace.creditsPerMessage;
   const insufficient = auth.workspace.creditBalance < cost;
   const editable = ["DRAFT", "SCHEDULED"].includes(campaign.status);
-  const missing = [!campaign.templateName && "template", !campaign.groupId && "grupo de BM", pending === 0 && "audiência"].filter(Boolean);
+  const missing = [!campaign.templateName && "template", !campaign.groupId && "grupo de BM", pending === 0 && !campaign.leadToken && "audiência"].filter(Boolean);
 
   return (
     <div className="space-y-6">
