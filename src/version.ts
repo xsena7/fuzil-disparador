@@ -4,6 +4,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "3.89",
+    date: "09/11/2026",
+    items: ["Aquecimento: o link do site agora é sempre o mesmo. Coloque no site uma vez: cada aquecimento novo pega o link (e a mensagem de confirmação) do anterior sozinho, e o anterior para de receber cadastros"],
+  },
+  {
     version: "3.88",
     date: "09/11/2026",
     items: ["Aquecimento: saiu a etapa Relatório (ela continua nas campanhas normais)"],

@@ -59,7 +59,7 @@ export default async function WarmupPage() {
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="font-semibold text-zinc-900">{c.name}</span>
                     <CampaignStatusBadge s={c.status} />
-                    {c.leadToken ? <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200"><Globe className="size-3" /> Site ligado</span> : <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-xs text-zinc-500">Site desligado</span>}
+                    {c.leadToken ? <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200"><Globe className="size-3" /> Recebendo do site</span> : <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-xs text-zinc-500">Não recebe do site</span>}
                     {!c.flowId && <span className="rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700 ring-1 ring-amber-200">Sem fluxo do Amém</span>}
                   </div>
                   <div className="mt-0.5 text-xs text-zinc-500">

@@ -19,11 +19,14 @@ export async function LeadWebhookCard({ campaignId }: { campaignId: string }) {
         {url && <span className="ml-auto rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200">Ligado · {received.toLocaleString("pt-BR")} contato(s)</span>}
       </div>
       <p className="mb-4 text-sm text-zinc-500">
-        Quem se cadastrar no seu site entra nesta campanha e recebe a mensagem na mesma hora (com a campanha iniciada). A campanha fica sempre aberta esperando os próximos.
+        Quem se cadastrar no seu site entra neste aquecimento e recebe a mensagem na mesma hora (com ele iniciado). Ele fica sempre aberto esperando os próximos.
+      </p>
+      <p className="mb-4 rounded-xl bg-emerald-50 px-3 py-2 text-xs text-emerald-800 ring-1 ring-emerald-200">
+        <b>O link é sempre o mesmo.</b> Coloque no site uma vez só: quando você cria um aquecimento novo, o link passa para ele sozinho (com a mesma mensagem de confirmação) e o anterior para de receber cadastros.
       </p>
       {!url ? (
         <ConfirmButton action={enableLeadWebhookAction.bind(null, campaignId)} variant="primary">
-          <UserPlus className="size-4" /> Ligar cadastro pelo site
+          <UserPlus className="size-4" /> Receber os cadastros do site aqui
         </ConfirmButton>
       ) : (
         <div className="space-y-4">
@@ -51,7 +54,7 @@ export async function LeadWebhookCard({ campaignId }: { campaignId: string }) {
               <textarea name="leadConfirmText" defaultValue={c.leadConfirmText ?? LEAD_CONFIRM_EXAMPLE} rows={3} maxLength={1000} placeholder="Amém! 🙏 {nome} foi cadastrado(a) com sucesso e já vai começar a receber o Minuto de Bênção." className="w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100" />
             </Field>
           </ActionForm>
-          <ConfirmButton action={disableLeadWebhookAction.bind(null, campaignId)} variant="ghost" className="text-xs text-red-600" confirm={"Desligar o cadastro pelo site?\\nO endereço para de funcionar. Se ligar de novo, o endereço muda."}>
+          <ConfirmButton action={disableLeadWebhookAction.bind(null, campaignId)} variant="ghost" className="text-xs text-red-600" confirm={"Desligar o cadastro pelo site?\\nO link para de funcionar e, quando ligar de novo, vem um link NOVO (o site vai precisar trocar). Para só trocar de aquecimento, não precisa desligar: crie o novo que o link passa para ele."}>
             Desligar cadastro pelo site
           </ConfirmButton>
         </div>

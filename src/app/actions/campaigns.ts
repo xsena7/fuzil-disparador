@@ -39,9 +39,30 @@ export async function createWarmupAction(_: FormState, form: FormData): Promise<
   const name = String(form.get("name") ?? "").trim().slice(0, 100);
   if (!name) return { error: "Dê um nome ao aquecimento" };
   const lastGroup = await prisma.campaign.findFirst({ where: { workspaceId: auth.workspace.id, groupId: { not: null }, group: usableGroupWhere }, orderBy: { createdAt: "desc" } });
-  const { randomBytes } = await import("node:crypto");
-  const c = await prisma.campaign.create({ data: { workspaceId: auth.workspace.id, name, scope: "GROUP", groupId: lastGroup?.groupId, kind: "WARMUP", leadToken: randomBytes(18).toString("base64url"), leadConfirmText: LEAD_CONFIRM_EXAMPLE } });
+  const c = await prisma.campaign.create({ data: { workspaceId: auth.workspace.id, name, scope: "GROUP", groupId: lastGroup?.groupId, kind: "WARMUP", leadConfirmText: LEAD_CONFIRM_EXAMPLE } });
+  await takeSiteLink(auth.workspace.id, c.id);
   redirect(`/campanhas/${c.id}?etapa=template`);
+}
+
+/**
+ * O link do site é um só por conta: o aquecimento novo pega o link do anterior (que para de receber),
+ * assim o site nunca precisa trocar o endereço. Sem aquecimento anterior com link, gera um novo.
+ */
+async function takeSiteLink(workspaceId: string, campaignId: string) {
+  const prev = await prisma.campaign.findFirst({
+    where: { workspaceId, kind: "WARMUP", leadToken: { not: null }, id: { not: campaignId } },
+    orderBy: { createdAt: "desc" },
+    select: { id: true, leadToken: true, leadConfirmText: true },
+  });
+  if (prev?.leadToken) {
+    await prisma.$transaction([
+      prisma.campaign.update({ where: { id: prev.id }, data: { leadToken: null } }),
+      prisma.campaign.update({ where: { id: campaignId }, data: { leadToken: prev.leadToken, ...(prev.leadConfirmText ? { leadConfirmText: prev.leadConfirmText } : {}) } }),
+    ]);
+    return;
+  }
+  const { randomBytes } = await import("node:crypto");
+  await prisma.campaign.update({ where: { id: campaignId }, data: { leadToken: randomBytes(18).toString("base64url") } });
 }
 
 export async function duplicateCampaignAction(id: string) {
@@ -474,11 +495,15 @@ export async function enableLeadWebhookAction(id: string) {
   const { c } = await ownCampaign(id);
   if (c.status === "CANCELLED" || c.status === "COMPLETED") return { error: "Campanha encerrada: crie outra para receber cadastros" };
   if (!c.leadToken) {
-    const { randomBytes } = await import("node:crypto");
-    await prisma.campaign.update({ where: { id }, data: { leadToken: randomBytes(18).toString("base64url") } });
+    if (c.kind === "WARMUP") await takeSiteLink(c.workspaceId, id);
+    else {
+      const { randomBytes } = await import("node:crypto");
+      await prisma.campaign.update({ where: { id }, data: { leadToken: randomBytes(18).toString("base64url") } });
+    }
   }
   revalidatePath(`/campanhas/${id}`);
-  return { ok: "Cadastro pelo site ligado. Copie o endereço e coloque no seu site." };
+  revalidatePath("/aquecimento");
+  return { ok: c.kind === "WARMUP" ? "O link do site agora manda os cadastros para este aquecimento." : "Cadastro pelo site ligado. Copie o endereço e coloque no seu site." };
 }
 
 export async function disableLeadWebhookAction(id: string) {
