@@ -4,6 +4,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "3.88",
+    date: "09/11/2026",
+    items: ["Aquecimento: saiu a etapa Relatório (ela continua nas campanhas normais)"],
+  },
+  {
     version: "3.87",
     date: "09/11/2026",
     items: ["Aquecimento: a mensagem de confirmação para quem indicou já vem escrita no campo (antes era só um exemplo apagado que não dava para copiar). É só ajustar se quiser e clicar em Salvar confirmação"],

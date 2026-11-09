@@ -51,7 +51,11 @@ export default async function CampaignPage({ params, searchParams }: { params: P
   // Campanha interna do login do gerador de links: não aparece na lista
   if (campaign.funnelId) redirect("/campanhas");
   const started = !["DRAFT", "SCHEDULED"].includes(campaign.status);
-  const step = (await searchParams).etapa ?? (started ? "metricas" : "template");
+  const warmup = campaign.kind === "WARMUP";
+  // Aquecimento não tem relatório do cliente
+  const steps = warmup ? STEPS.filter((s) => s.key !== "relatorio") : STEPS;
+  const asked = (await searchParams).etapa;
+  const step = asked && steps.some((s) => s.key === asked) ? asked : started ? "metricas" : "template";
 
   return (
     <div className="relative -mx-4 -mb-8 -mt-6 min-h-screen overflow-hidden md:-mx-10 md:-my-9">
@@ -74,7 +78,7 @@ export default async function CampaignPage({ params, searchParams }: { params: P
       </div>
       <div className="flex flex-col md:flex-row">
         <nav data-tour="campaign-steps" className="flex shrink-0 gap-1 overflow-x-auto border-b border-zinc-200/70 p-2 md:block md:w-52 md:space-y-1 md:border-b-0 md:border-r md:p-4">
-          {STEPS.map((s, i) => (
+          {steps.map((s, i) => (
             <Link
               key={s.key}
               href={`/campanhas/${id}?etapa=${s.key}`}
