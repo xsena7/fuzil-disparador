@@ -62,7 +62,8 @@ export async function addLead(token: string, raw: unknown): Promise<LeadResult> 
       select: { id: true },
     });
     if (conv) {
-      const text = campaign.leadConfirmText.replace(/\{nome\}/gi, name ?? "a pessoa").replace(/\{telefone\}/gi, phone);
+      // Aceita {nome} e {{nome}} (o mesmo jeito dos fluxos)
+      const text = campaign.leadConfirmText.replace(/\{\{?\s*nome\s*\}?\}/gi, name ?? "a pessoa").replace(/\{\{?\s*telefone\s*\}?\}/gi, phone);
       confirmed = await sendChatMessage(conv.id, { text, source: "FLOW", campaignId: campaign.id }).then(() => true).catch((e) => {
         console.error("[leads] confirmação", e instanceof Error ? e.message : e);
         return false;
