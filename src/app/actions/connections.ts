@@ -260,13 +260,45 @@ export async function addPhoneAction(wabaRecordId: string, _: FormState, form: F
   // Duas etapas na Meta: colocar o número na WABA e mandar o código. O erro diz em qual a Meta recusou
   let added = false;
   let newId: string | null = null;
-  try {
-    // Antes do número novo: tira da BM os que ficaram pendentes (tentativas com erro derrubam a BM)
-    await removePendingPhones(token, waba.wabaId).catch(() => 0);
+  const tryAdd = async () => {
     const { id } = await meta.addPhone(token, waba.wabaId, "55", digits.slice(2), name);
     added = true;
     newId = id;
     await meta.requestCode(token, id, method);
+  };
+  // "Já existe ou já está em uso em outra conta": o número está em outra WABA
+  const inUse = (e: unknown) => /j[áa] existe|em uso|already (exists|in use|registered)|in use/i.test(metaDetail(e));
+  try {
+    // Antes do número novo: tira da BM os que ficaram pendentes (tentativas com erro derrubam a BM)
+    await removePendingPhones(token, waba.wabaId).catch(() => 0);
+    try {
+      await tryAdd();
+    } catch (first) {
+      if (added || !inUse(first)) throw first;
+      // O número está em outra WABA desta conta do Fuzil? Pendente: tira de lá e tenta de novo. Conectado: avisa onde está
+      const elsewhere = (
+        await prisma.phoneNumber.findMany({
+          where: { waba: { workspaceId: auth.workspace.id }, wabaId: { not: waba.id }, OR: [{ invalidReason: null }, { invalidReason: { not: PHONE_REMOVED } }] },
+          select: { id: true, phoneNumberId: true, displayPhoneNumber: true, status: true, waba: true },
+        })
+      ).filter((p) => p.displayPhoneNumber.replace(/\D/g, "") === digits);
+      const connected = elsewhere.find((p) => p.status === "CONNECTED");
+      if (connected) {
+        const bm = await prisma.businessManager.findUnique({ where: { id: connected.waba.businessId }, select: { name: true } });
+        return { error: `Esse número já está conectado em outra BM sua: ${bm?.name ?? connected.waba.name}. Exclua ele de lá (botão Excluir número) se quiser usar nesta.` };
+      }
+      let freed = false;
+      for (const p of elsewhere) {
+        const r = await removeFailedPhone(wabaToken(p.waba), p.waba.wabaId, { phoneNumberId: p.phoneNumberId }).catch(() => false);
+        if (r) {
+          freed = true;
+          await prisma.phoneNumber.update({ where: { id: p.id }, data: { invalidReason: PHONE_REMOVED, enabled: false } }).catch(() => undefined);
+          await syncWaba(p.waba.id).catch(() => undefined);
+        }
+      }
+      if (!freed) throw first;
+      await tryAdd();
+    }
     await syncWaba(waba.id);
   } catch (err) {
     // Deu erro: o número sai da BM na Meta (número parado com erro na BM costuma derrubar a BM)
@@ -274,8 +306,12 @@ export async function addPhoneAction(wabaRecordId: string, _: FormState, form: F
     await syncWaba(waba.id).catch(() => undefined);
     const tail = removed ? " O número foi tirado da BM." : added ? " Não consegui tirar o número da BM: apague no WhatsApp Manager." : "";
     if (added) return { error: `A Meta recusou mandar o código: ${metaDetail(err)}.${tail}` };
+    if (inUse(err))
+      return {
+        error: `A Meta recusou: esse número já está em outra conta do WhatsApp (outra WABA ou BM, fora do Fuzil ou de outra pessoa). Tire ele de lá no WhatsApp Manager da outra BM, ou use outro número.`,
+      };
     return {
-      error: `A Meta recusou colocar o número na WABA: ${metaDetail(err)}.${tail}${removed ? "" : " Se a BM já tem 2 números (incluindo pendentes), ela está no limite da Meta: apague os números que sobraram no WhatsApp Manager."}`,
+      error: `A Meta recusou colocar o número na WABA: ${metaDetail(err)}.${tail}`,
     };
   }
   // A foto escolhida entra sozinha quando o número ficar conectado

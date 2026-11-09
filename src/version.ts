@@ -4,6 +4,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "3.82",
+    date: "09/11/2026",
+    items: ["Adicionar número: quando a Meta diz que o número já existe em outra conta, o Fuzil procura nas suas outras BMs. Se estiver pendente lá, tira de lá e coloca nesta sozinho; se estiver conectado, avisa em qual BM está. O aviso errado de limite de 2 números saiu"],
+  },
+  {
     version: "3.81",
     date: "09/11/2026",
     items: [
