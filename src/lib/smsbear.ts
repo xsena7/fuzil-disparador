@@ -7,7 +7,7 @@ import { prisma } from "./db";
 import { env } from "./env";
 import { meta } from "./meta";
 import { friendlyError, metaDetail } from "./meta-errors";
-import { PHONE_DISCARDED, syncWaba, wabaToken } from "./sync";
+import { PHONE_DISCARDED, removeFailedPhone, syncWaba, wabaToken } from "./sync";
 import type { Prisma } from "@prisma/client";
 import { createAlert } from "./alerts";
 import { formatPhone } from "./phone";
@@ -37,6 +37,14 @@ async function dropAttempt(job: { id: string; wabaId: string; orderId: string | 
   if (job.orderId) toCancel.push({ id: job.orderId, since: new Date().toISOString(), ...(job.number ? { number: job.number } : {}) });
   if (job.phoneNumberId)
     await prisma.phoneNumber.updateMany({ where: { phoneNumberId: job.phoneNumberId, status: { not: "CONNECTED" } }, data: { invalidReason: PHONE_DISCARDED, enabled: false } });
+  // O número que deu erro sai da BM na Meta (número parado com erro na BM costuma derrubar a BM)
+  if (job.phoneNumberId || job.number) {
+    const waba = await prisma.whatsAppAccount.findUnique({ where: { id: job.wabaId } });
+    if (waba) {
+      const removed = await removeFailedPhone(wabaToken(waba), waba.wabaId, { phoneNumberId: job.phoneNumberId, number: job.number }).catch(() => false);
+      if (removed) why += " O número foi tirado da BM.";
+    }
+  }
   await push(job.id, why, "bad", { toCancel, orderId: null, number: null, phoneNumberId: null, step: "BUY", stepAt: new Date() });
 }
 

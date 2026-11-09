@@ -6,7 +6,7 @@ import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { decrypt, encrypt } from "@/lib/crypto";
-import { configureBmAppWebhook, connectWaba, syncWaba, wabaToken } from "@/lib/sync";
+import { configureBmAppWebhook, connectWaba, removeFailedPhone, syncWaba, wabaToken } from "@/lib/sync";
 import { deployBlueprints } from "@/lib/blueprints";
 import { meta } from "@/lib/meta";
 import { env } from "@/lib/env";
@@ -253,13 +253,13 @@ export async function addPhoneAction(wabaRecordId: string, _: FormState, form: F
     await meta.requestCode(token, id, method);
     await syncWaba(waba.id);
   } catch (err) {
-    if (added) {
-      await syncWaba(waba.id).catch(() => undefined);
-      await setPendingPhoto({ phoneNumberId: newId! }, photo).catch(() => undefined);
-      return { error: `O número entrou na WABA, mas a Meta recusou mandar o código: ${metaDetail(err)}. Tente pedir o código de novo no número, aqui embaixo.` };
-    }
+    // Deu erro: o número sai da BM na Meta (número parado com erro na BM costuma derrubar a BM)
+    const removed = await removeFailedPhone(token, waba.wabaId, { phoneNumberId: newId, number: digits }).catch(() => false);
+    await syncWaba(waba.id).catch(() => undefined);
+    const tail = removed ? " O número foi tirado da BM." : added ? " Não consegui tirar o número da BM: apague no WhatsApp Manager." : "";
+    if (added) return { error: `A Meta recusou mandar o código: ${metaDetail(err)}.${tail}` };
     return {
-      error: `A Meta recusou colocar o número na WABA: ${metaDetail(err)}. Se a BM já tem 2 números (incluindo pendentes), ela está no limite da Meta: apague os números que sobraram no WhatsApp Manager.`,
+      error: `A Meta recusou colocar o número na WABA: ${metaDetail(err)}.${tail}${removed ? "" : " Se a BM já tem 2 números (incluindo pendentes), ela está no limite da Meta: apague os números que sobraram no WhatsApp Manager."}`,
     };
   }
   // A foto escolhida entra sozinha quando o número ficar conectado

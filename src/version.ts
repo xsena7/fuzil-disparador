@@ -4,6 +4,14 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "3.79",
+    date: "09/11/2026",
+    items: [
+      "Conexões: quando a Meta dá erro ao colocar um número na BM (ex.: número já existe no WhatsApp) ou o código não chega, o Fuzil tira o número da BM sozinho. Vale para o registro automático e para o Adicionar número",
+      "Conexões: os números de teste da Meta (BM nova) são apagados da BM sozinhos",
+    ],
+  },
+  {
     version: "3.78",
     date: "09/11/2026",
     items: [

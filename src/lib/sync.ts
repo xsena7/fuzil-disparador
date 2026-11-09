@@ -106,6 +106,13 @@ export async function syncWaba(wabaRecordId: string) {
     // Conversas de número de teste são só teste: some tudo
     const test = phones.filter((p) => phoneInvalidReason(p) === TEST_NUMBER).map((p) => p.id);
     if (test.length) await prisma.phoneNumber.deleteMany({ where: { wabaId: waba.id, phoneNumberId: { in: test } } });
+    // Número de teste da Meta sai da BM (na Meta também), sempre
+    for (const p of phones.filter((x) => phoneInvalidReason(x) === TEST_NUMBER && certainTestNumber(x))) {
+      if (Date.now() - (testDeleteTried.get(p.id) ?? 0) < 86400_000) continue;
+      testDeleteTried.set(p.id, Date.now());
+      const r = await meta.deletePhone(token, p.id).catch(() => ({ deregistered: false, deleted: false }));
+      if (r.deleted) console.log(`[sync] número de teste ${p.display_phone_number} apagado da WABA ${waba.wabaId}`);
+    }
     await refreshBusinessTier(waba.id);
   });
   // Foto de perfil de cada número (para mostrar nos grupos). O link da Meta vence, por isso renova a cada sincronização
@@ -199,6 +206,34 @@ async function alertRedRemoved(workspaceId: string, wabaRecordId: string, p: Met
 // Número que o registro automático (SMSBear) largou porque o SMS não chegou: some da tela e nunca entra no rodízio
 export const PHONE_DISCARDED = "Número descartado (o SMS não chegou)";
 const TEST_NUMBER = "Número de teste da Meta";
+
+/**
+ * Tira da WABA (na Meta) um número que deu erro ao entrar: pelo ID ou, sem ID, procurando pelo número.
+ * Nunca mexe em número já conectado. Número parado na BM com erro costuma derrubar a BM.
+ */
+export async function removeFailedPhone(token: string, wabaMetaId: string, opts: { phoneNumberId?: string | null; number?: string | null }): Promise<boolean> {
+  let ids: string[] = opts.phoneNumberId ? [opts.phoneNumberId] : [];
+  const digits = String(opts.number ?? "").replace(/\D/g, "").replace(/^55/, "");
+  const list = await meta.listPhones(token, wabaMetaId).catch(() => [] as MetaPhone[]);
+  if (!ids.length && digits.length >= 10) ids = list.filter((p) => p.display_phone_number.replace(/\D/g, "").endsWith(digits)).map((p) => p.id);
+  let removed = false;
+  for (const id of ids) {
+    const now = list.find((p) => p.id === id);
+    if (now?.status === "CONNECTED") continue;
+    const r = await meta.deletePhone(token, id).catch(() => ({ deregistered: false, deleted: false }));
+    if (r.deleted) removed = true;
+    else console.error("[sync] não deu para apagar o número que deu erro", id);
+  }
+  return removed;
+}
+
+/** Número de teste que dá para reconhecer com certeza (para apagar da BM): conta SANDBOX, nome "Test Number" ou +1 555. */
+function certainTestNumber(p: MetaPhone) {
+  const digits = p.display_phone_number.replace(/\D/g, "");
+  return String(p.account_mode ?? "").toUpperCase() === "SANDBOX" || /test\s*number|n[úu]mero\s+de\s+teste|^test$/i.test(String(p.verified_name ?? "").trim()) || /^1555\d{7}$/.test(digits);
+}
+// Tenta apagar cada número de teste no máximo uma vez por dia (a Meta às vezes não deixa)
+const testDeleteTried = new Map<string, number>();
 
 /** Números apagados na Meta somem do Fuzil (ficam escondidos, guardando histórico e a contagem do limite). */
 async function removeGonePhones(wabaRecordId: string, metaIds: string[]) {
