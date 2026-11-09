@@ -57,7 +57,8 @@ export default async function CampaignPage({ params, searchParams }: { params: P
     <div className="relative -mx-4 -mb-8 -mt-6 min-h-screen overflow-hidden md:-mx-10 md:-my-9">
       <div className="relative">
       <div className="sticky top-0 z-10 flex flex-wrap items-center gap-3 border-b border-zinc-200/70 bg-white/85 px-4 py-3 backdrop-blur md:px-6">
-        <Link href="/campanhas" className="rounded-full border border-zinc-200 p-1.5 hover:bg-zinc-50"><ArrowLeft className="size-4" /></Link>
+        <Link href={campaign.kind === "WARMUP" ? "/aquecimento" : "/campanhas"} className="rounded-full border border-zinc-200 p-1.5 hover:bg-zinc-50"><ArrowLeft className="size-4" /></Link>
+        {campaign.kind === "WARMUP" && <span className="rounded-full bg-orange-50 px-2.5 py-0.5 text-xs font-semibold text-orange-700 ring-1 ring-orange-200">Aquecimento</span>}
         <CampaignName id={campaign.id} name={campaign.name} />
         <CampaignStatusBadge s={campaign.status} />
         {campaign.pausedReason && <span className="text-xs text-amber-700">{campaign.pausedReason}</span>}
@@ -97,7 +98,7 @@ export default async function CampaignPage({ params, searchParams }: { params: P
             </>
           )}
           {step === "audiencia" && (
-            <AudienceStep campaignId={id} fileName={campaign.audienceFileName} stats={campaign.audienceStats as unknown as AudienceStats | null} locked={started} />
+            <AudienceStep campaignId={id} fileName={campaign.audienceFileName} stats={campaign.audienceStats as unknown as AudienceStats | null} locked={started} warmup={campaign.kind === "WARMUP"} />
           )}
           {step === "envio" && (
             <>
@@ -207,12 +208,13 @@ async function ContentStep({ campaignId, locked }: { campaignId: string; locked:
   );
 }
 
-async function AudienceStep({ campaignId, fileName, stats, locked }: { campaignId: string; fileName: string | null; stats: AudienceStats | null; locked: boolean }) {
+async function AudienceStep({ campaignId, fileName, stats, locked, warmup = false }: { campaignId: string; fileName: string | null; stats: AudienceStats | null; locked: boolean; warmup?: boolean }) {
   const preview = await prisma.campaignRecipient.findMany({ where: { campaignId }, take: 10, orderBy: [{ position: "asc" }, { createdAt: "asc" }] });
   return (
     <div className="space-y-6">
+      {/* Aquecimento: os contatos vêm do site; a planilha é opcional (para quem já está na lista) */}
+      {warmup && <LeadWebhookCard campaignId={campaignId} />}
       <StepAudience campaignId={campaignId} fileName={fileName} stats={stats} locked={locked} />
-      <LeadWebhookCard campaignId={campaignId} />
       {preview.length > 0 && (
         <Table head={["Nome", "Telefone"]}>
           {preview.map((r) => (

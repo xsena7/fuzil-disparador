@@ -40,6 +40,10 @@ export async function LeadWebhookCard({ campaignId }: { campaignId: string }) {
             </ul>
             <pre className="mt-2 overflow-x-auto rounded-lg bg-zinc-900 p-2 text-[11px] text-zinc-100">{`{ "telefone": "11999998888", "nome": "Maria", "indicado_por": "11988887777" }`}</pre>
             <p className="mt-2">Dica: mande um cadastro de teste primeiro. Assim as colunas aparecem em <b>Conteúdo</b> para ligar nas variáveis.</p>
+            <p className="mt-2">
+              <b>Indicação:</b> no fluxo do Amém, mande o link do site com o telefone de quem está indicando, assim:{" "}
+              <code className="rounded bg-white px-1 py-0.5 ring-1 ring-zinc-200">https://seusite.com.br/cadastro?ref={"{{telefone}}"}</code>. O site guarda esse <b>ref</b> e manda como <b>indicado_por</b>.
+            </p>
           </div>
           <ActionForm action={saveLeadConfirmAction.bind(null, campaignId)} submit="Salvar confirmação" variant="secondary">
             <Field label="Mensagem para quem indicou (vai para o campo indicado_por)" hint="Só chega se essa pessoa falou com o seu número nas últimas 24h (regra da Meta). {nome} = nome de quem foi cadastrado. Vazio = não manda.">

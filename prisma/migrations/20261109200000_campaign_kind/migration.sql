@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "Campaign" ADD COLUMN     "kind" TEXT NOT NULL DEFAULT 'CAMPAIGN';
+

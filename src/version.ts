@@ -4,6 +4,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "3.86",
+    date: "09/11/2026",
+    items: ["Aquecimento: nova aba, separada de Campanhas, para os cadastros do seu site (anúncio e indicação). Cada aquecimento já nasce com o endereço do webhook, a mensagem de confirmação para quem indicou e o aviso se falta escolher o fluxo do Amém"],
+  },
+  {
     version: "3.85",
     date: "09/11/2026",
     items: ["Campanhas: receber cadastros do seu site (webhook). Na etapa Audiência, ligue o cadastro pelo site e coloque o endereço no seu formulário: cada pessoa cadastrada entra na campanha e recebe a mensagem na hora, e quem indicou (campo indicado_por) recebe uma mensagem de confirmação. A campanha fica sempre aberta esperando os próximos"],

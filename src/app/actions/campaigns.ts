@@ -32,11 +32,23 @@ export async function createCampaignAction(_: FormState, form: FormData): Promis
   redirect(`/campanhas/${c.id}?etapa=template`);
 }
 
+/** Aquecimento novo: uma campanha da aba Aquecimento, já com o cadastro pelo site ligado. */
+export async function createWarmupAction(_: FormState, form: FormData): Promise<FormState> {
+  const auth = await requireAuth();
+  const name = String(form.get("name") ?? "").trim().slice(0, 100);
+  if (!name) return { error: "Dê um nome ao aquecimento" };
+  const lastGroup = await prisma.campaign.findFirst({ where: { workspaceId: auth.workspace.id, groupId: { not: null }, group: usableGroupWhere }, orderBy: { createdAt: "desc" } });
+  const { randomBytes } = await import("node:crypto");
+  const c = await prisma.campaign.create({ data: { workspaceId: auth.workspace.id, name, scope: "GROUP", groupId: lastGroup?.groupId, kind: "WARMUP", leadToken: randomBytes(18).toString("base64url") } });
+  redirect(`/campanhas/${c.id}?etapa=template`);
+}
+
 export async function duplicateCampaignAction(id: string) {
   const { c } = await ownCampaign(id);
   const copy = await prisma.campaign.create({
     data: {
       workspaceId: c.workspaceId,
+      kind: c.kind,
       scope: c.scope,
       name: `${c.name} (cópia)`,
       groupId: c.groupId,

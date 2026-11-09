@@ -25,7 +25,7 @@ export default async function HomePage() {
       select: { id: true, name: true, groups: { select: { group: { select: { id: true, name: true, color: true, system: true } } } } },
       orderBy: { name: "asc" },
     }),
-    prisma.campaign.findMany({ where: { workspaceId: wsId, funnelId: null, status: { in: ["RUNNING", "SCHEDULED", "PAUSED"] } }, orderBy: { updatedAt: "desc" }, take: 6 }),
+    prisma.campaign.findMany({ where: { workspaceId: wsId, funnelId: null, kind: "CAMPAIGN", status: { in: ["RUNNING", "SCHEDULED", "PAUSED"] } }, orderBy: { updatedAt: "desc" }, take: 6 }),
     prisma.alert.findMany({ where: { workspaceId: wsId }, orderBy: { createdAt: "desc" }, take: 4 }),
     prisma.template.count({ where: { workspaceId: wsId, category: "MARKETING" } }),
     prisma.$queryRaw<Array<{ sent: bigint; delivered: bigint; read: bigint; clicked: bigint; failed: bigint }>>`
@@ -63,7 +63,7 @@ export default async function HomePage() {
   // Primeiros passos (conta nova): some sozinho quando tudo estiver feito
   const [approvedTpl, campaignsCount] = await Promise.all([
     prisma.template.count({ where: { workspaceId: wsId, status: "APPROVED", category: "UTILITY" } }),
-    prisma.campaign.count({ where: { workspaceId: wsId, funnelId: null } }),
+    prisma.campaign.count({ where: { workspaceId: wsId, funnelId: null, kind: "CAMPAIGN" } }),
   ]);
   const steps = [
     { done: businesses.length > 0, title: "Conecte sua BM", text: "Pelo botão, em poucos minutos", href: "/conexoes" },
