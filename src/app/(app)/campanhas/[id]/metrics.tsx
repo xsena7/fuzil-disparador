@@ -95,6 +95,19 @@ export async function Metrics({ campaignId }: { campaignId: string }) {
         <Stat label="Créditos usados" value={n(t.credits)} sub={`Falhas voltam para o saldo${t.skipped ? ` · ${n(t.skipped)} ignorados` : ""}`} />
       </div>
 
+      {/* Quem clicou no link: planilha pronta para o cliente */}
+      <Card className="flex flex-wrap items-center gap-3 border-violet-200 bg-violet-50/40 p-4">
+        <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-violet-100 text-violet-700"><Download className="size-5" /></span>
+        <div className="min-w-0 flex-1">
+          <div className="font-semibold text-zinc-900">Quem clicou no link: {n(t.clicked)} {t.clicked === 1 ? "pessoa" : "pessoas"}</div>
+          <div className="text-xs text-zinc-600">Planilha com nome, telefone, cliques, horário do clique e as colunas da sua lista.</div>
+        </div>
+        <a href={`/api/campaigns/${campaignId}/clicks`} className="inline-flex items-center gap-1.5 rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-violet-700">
+          <Download className="size-4" /> Baixar planilha (Excel)
+        </a>
+        <a href={`/api/campaigns/${campaignId}/export?status=clicked`} className="text-xs font-medium text-zinc-500 hover:text-zinc-800">ou CSV</a>
+      </Card>
+
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         <Stat label="Tempo mediano até entregar" value={duration(m.timing.deliver)} />
         <Stat label="Tempo mediano até ler" value={duration(m.timing.read)} />
@@ -177,17 +190,6 @@ export async function Metrics({ campaignId }: { campaignId: string }) {
           )}
         </div>
       </div>
-
-      <Card className="flex flex-wrap items-center gap-2 p-4">
-        <span className="mr-2 font-medium">Exportar planilha (CSV):</span>
-        {[
-          ["clicked", "Clicaram no link"],
-        ].map(([s, label]) => (
-          <a key={s} href={`/api/campaigns/${campaignId}/export${s ? `?status=${s}` : ""}`} className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 px-3 py-1.5 hover:bg-zinc-50">
-            <Download className="size-3.5" /> {label}
-          </a>
-        ))}
-      </Card>
 
       <p className="text-xs text-zinc-500">
         Leituras só são contadas para quem deixa a confirmação de leitura ligada no WhatsApp. A Meta não informa bloqueios diretamente: eles aparecem como &quot;não entregue&quot; (erro 131026).

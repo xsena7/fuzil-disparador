@@ -4,6 +4,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "3.83",
+    date: "09/11/2026",
+    items: ["Métricas: quadro \"Quem clicou no link\" logo abaixo dos números, com o botão Baixar planilha (Excel): nome, telefone, cliques, horário do primeiro e do último clique e as colunas da sua lista original"],
+  },
+  {
     version: "3.82",
     date: "09/11/2026",
     items: ["Adicionar número: quando a Meta diz que o número já existe em outra conta, o Fuzil procura nas suas outras BMs. Se estiver pendente lá, tira de lá e coloca nesta sozinho; se estiver conectado, avisa em qual BM está. O aviso errado de limite de 2 números saiu"],
