@@ -36,6 +36,14 @@ export async function Metrics({ campaignId }: { campaignId: string }) {
     GROUP BY w.id, w.name, b.name, w."webhookLastAt", w."webhookRejectedAt"`;
   // Mandou bastante e a Meta não confirmou nenhuma entrega: os avisos dessa conta não estão chegando no Fuzil
   const silent = hooks.filter((h) => Number(h.sent) >= 20 && Number(h.confirmed) === 0);
+  // Botões de resposta rápida (ex.: Sair): quantas pessoas tocaram em cada um
+  const buttonClicks = (
+    await prisma.$queryRaw<Array<{ text: string; people: bigint }>>`
+      SELECT trim(i.text) AS text, COUNT(DISTINCT i."recipientId") AS people
+      FROM "InboundMessage" i JOIN "CampaignRecipient" r ON r.id = i."recipientId"
+      WHERE r."campaignId" = ${campaignId} AND i.type IN ('button', 'interactive') AND i.text IS NOT NULL AND trim(i.text) <> ''
+      GROUP BY trim(i.text) ORDER BY people DESC LIMIT 6`
+  ).map((b) => ({ text: b.text, people: Number(b.people) }));
   const campaignRow = await prisma.campaign.findUnique({ where: { id: campaignId }, select: { status: true } });
   const canRetry = ["COMPLETED", "PAUSED"].includes(campaignRow?.status ?? "") && Number(m.totals.failed) > 0;
   const recipients = await prisma.campaignRecipient.findMany({
@@ -95,17 +103,27 @@ export async function Metrics({ campaignId }: { campaignId: string }) {
         <Stat label="Créditos usados" value={n(t.credits)} sub={`Falhas voltam para o saldo${t.skipped ? ` · ${n(t.skipped)} ignorados` : ""}`} />
       </div>
 
-      {/* Quem clicou no link: planilha pronta para o cliente */}
-      <Card className="flex flex-wrap items-center gap-3 border-violet-200 bg-violet-50/40 p-4">
-        <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-violet-100 text-violet-700"><Download className="size-5" /></span>
-        <div className="min-w-0 flex-1">
-          <div className="font-semibold text-zinc-900">Quem clicou no link: {n(t.clicked)} {t.clicked === 1 ? "pessoa" : "pessoas"}</div>
-          <div className="text-xs text-zinc-600">Planilha com nome, telefone, cliques, horário do clique e as colunas da sua lista.</div>
+      {/* Quem clicou em cada botão (link e respostas rápidas, ex.: Sair): uma planilha por botão */}
+      <Card className="border-violet-200 bg-violet-50/40 p-4">
+        <div className="mb-3 flex items-center gap-3">
+          <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-violet-100 text-violet-700"><Download className="size-5" /></span>
+          <div>
+            <div className="font-semibold text-zinc-900">Quem clicou em cada botão</div>
+            <div className="text-xs text-zinc-600">Uma planilha (Excel) por botão: nome, telefone, horário do clique e as colunas da sua lista.</div>
+          </div>
         </div>
-        <a href={`/api/campaigns/${campaignId}/clicks`} className="inline-flex items-center gap-1.5 rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-violet-700">
-          <Download className="size-4" /> Baixar planilha (Excel)
-        </a>
-        <a href={`/api/campaigns/${campaignId}/export?status=clicked`} className="text-xs font-medium text-zinc-500 hover:text-zinc-800">ou CSV</a>
+        <div className="flex flex-wrap gap-2">
+          <a href={`/api/campaigns/${campaignId}/clicks`} className="inline-flex items-center gap-1.5 rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-violet-700">
+            <Download className="size-4" /> Link · {n(t.clicked)} {t.clicked === 1 ? "pessoa" : "pessoas"}
+          </a>
+          {buttonClicks.map((b) => (
+            <a key={b.text} href={`/api/campaigns/${campaignId}/clicks?botao=${encodeURIComponent(b.text)}`} className="inline-flex items-center gap-1.5 rounded-xl border border-violet-300 bg-white px-4 py-2 text-sm font-semibold text-violet-800 hover:bg-violet-50">
+              <Download className="size-4" /> {b.text} · {n(b.people)} {b.people === 1 ? "pessoa" : "pessoas"}
+            </a>
+          ))}
+          <a href={`/api/campaigns/${campaignId}/export?status=clicked`} className="self-center text-xs font-medium text-zinc-500 hover:text-zinc-800">link em CSV</a>
+        </div>
+        {!buttonClicks.length && <p className="mt-2 text-xs text-zinc-500">Os botões de resposta (ex.: Sair) aparecem aqui assim que alguém tocar neles.</p>}
       </Card>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
