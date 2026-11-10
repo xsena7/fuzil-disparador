@@ -4,6 +4,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "3.91",
+    date: "09/11/2026",
+    items: ["Métricas: em \"Quem clicou em cada botão\" aparecem todos os botões do template (ex.: Amém e Sair), mesmo os que ainda não tiveram clique"],
+  },
+  {
     version: "3.90",
     date: "09/11/2026",
     items: ["Fluxos: no bloco Disparo, o aquecimento aparece na lista como \"Aquecimento: nome\" para ficar fácil de achar"],

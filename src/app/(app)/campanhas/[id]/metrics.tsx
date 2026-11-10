@@ -10,6 +10,7 @@ import { QualityBadge } from "@/components/status";
 import { errorTitlePt } from "@/lib/meta-errors-text";
 import { campaignReplies } from "@/lib/campaign-replies";
 import { ReplyList } from "@/app/relatorio/replies";
+import { getComponent, type TComponent } from "@/lib/template-utils";
 
 const RESULT: Record<string, { label: string; cls: string }> = {
   READ: { label: "Lida", cls: "text-emerald-700" },
@@ -37,14 +38,24 @@ export async function Metrics({ campaignId }: { campaignId: string }) {
   // Mandou bastante e a Meta não confirmou nenhuma entrega: os avisos dessa conta não estão chegando no Fuzil
   const silent = hooks.filter((h) => Number(h.sent) >= 20 && Number(h.confirmed) === 0);
   // Botões de resposta rápida (ex.: Sair): quantas pessoas tocaram em cada um
-  const buttonClicks = (
+  const clicked = (
     await prisma.$queryRaw<Array<{ text: string; people: bigint }>>`
       SELECT trim(i.text) AS text, COUNT(DISTINCT i."recipientId") AS people
       FROM "InboundMessage" i JOIN "CampaignRecipient" r ON r.id = i."recipientId"
       WHERE r."campaignId" = ${campaignId} AND i.type IN ('button', 'interactive') AND i.text IS NOT NULL AND trim(i.text) <> ''
       GROUP BY trim(i.text) ORDER BY people DESC LIMIT 6`
   ).map((b) => ({ text: b.text, people: Number(b.people) }));
-  const campaignRow = await prisma.campaign.findUnique({ where: { id: campaignId }, select: { status: true } });
+  const campaignRow = await prisma.campaign.findUnique({ where: { id: campaignId }, select: { status: true, templateName: true, workspaceId: true } });
+  // Todos os botões de resposta do template aparecem (mesmo com 0 cliques), na ordem do template
+  const tpl = campaignRow?.templateName
+    ? await prisma.template.findFirst({ where: { workspaceId: campaignRow.workspaceId, name: campaignRow.templateName }, select: { components: true } })
+    : null;
+  const tplButtons = tpl ? (getComponent(tpl.components as unknown as TComponent[], "BUTTONS")?.buttons ?? []).filter((b) => b.type === "QUICK_REPLY").map((b) => b.text.trim()) : [];
+  const key = (x: string) => x.trim().toLowerCase();
+  const buttonClicks = [
+    ...tplButtons.map((text) => ({ text, people: clicked.filter((c) => key(c.text) === key(text)).reduce((a, c) => a + c.people, 0) })),
+    ...clicked.filter((c) => !tplButtons.some((t) => key(t) === key(c.text))),
+  ];
   const canRetry = ["COMPLETED", "PAUSED"].includes(campaignRow?.status ?? "") && Number(m.totals.failed) > 0;
   const recipients = await prisma.campaignRecipient.findMany({
     where: { campaignId },
