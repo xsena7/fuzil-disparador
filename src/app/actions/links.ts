@@ -41,6 +41,8 @@ export async function signupLinksAction(_: LoginState, form: FormData): Promise<
     .catch(() => null);
   if (!account) return { error: "Já existe uma conta com esse e-mail. Entre com a sua senha." };
   await startLinksSession(account.id, (await headers()).get("user-agent"));
+  const { capiRegistration } = await import("@/lib/meta-capi");
+  await capiRegistration(account.email, "Links");
   return { done: true };
 }
 

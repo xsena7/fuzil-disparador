@@ -12,6 +12,8 @@ export const PLATFORM_KEYS = [
   { key: "META_GRAPH_VERSION", label: "Versão da Graph API", secret: false },
   { key: "INSTAGRAM_ACCOUNT_ID", label: "Instagram: ID da conta do Instagram (Configurações do negócio → Contas do Instagram)", secret: false },
   { key: "INSTAGRAM_TOKEN", label: "Instagram: token com permissão de publicar (vazio = usa o Token do System User)", secret: true },
+  { key: "META_PIXEL_ID", label: "Site: ID do Pixel da Meta (anúncios)", secret: false },
+  { key: "META_CAPI_TOKEN", label: "Site: token da API de Conversões do Pixel", secret: true },
   { key: "RESEND_API_KEY", label: "Chave do Resend (e-mails)", secret: true },
   { key: "EMAIL_FROM", label: "Remetente dos e-mails", secret: false },
   { key: "DISCORD_ERRORS_WEBHOOK", label: "Webhook do Discord para erros do sistema", secret: true },

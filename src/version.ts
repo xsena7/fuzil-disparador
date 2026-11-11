@@ -4,6 +4,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "3.93",
+    date: "11/11/2026",
+    items: ["[admin] Site: Pixel da Meta e API de Conversões (Admin → Plataforma: ID do Pixel e token). Eventos PageView, ViewContent (viu os preços), AddToCart (escolheu pacote/produto), Contact (clicou no WhatsApp) e CompleteRegistration (cadastro no painel ou no site de links), com aviso de cookies"],
+  },
+  {
     version: "3.92",
     date: "11/11/2026",
     items: ["[admin] Site: o número de disparos da equipe (topo e quadro Experiência) vem todo do contador (Admin → Empresa → disparos feitos antes do Fuzil + os do Fuzil) e mostra bilhões"],

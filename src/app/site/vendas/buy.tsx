@@ -110,6 +110,8 @@ export function ProductCard({ product: p, needsDoc = false }: { product: Vitrine
           type="button"
           disabled={out}
           onClick={() => setOpen(true)}
+          data-px="AddToCart"
+          data-px-name={p.name}
           className="mt-4 w-full rounded-2xl bg-brand-gradient px-5 py-3.5 font-semibold text-white shadow-lg shadow-orange-500/25 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
         >
           {out ? "Esgotado" : `Comprar ${qty > 1 ? `${qty} por ${brl(each * qty)}` : "agora"}`}

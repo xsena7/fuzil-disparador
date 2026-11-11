@@ -3,6 +3,8 @@ import Link from "next/link";
 import { Logo } from "@/components/brand";
 import { company, ownerLine } from "@/lib/company";
 import { siteWhatsApp } from "./cta";
+import { MetaPixel } from "@/components/meta-pixel";
+import { env } from "@/lib/env";
 
 export const dynamic = "force-dynamic";
 
@@ -19,8 +21,10 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default function SiteLayout({ children }: { children: React.ReactNode }) {
   const c = company();
+  const pixelId = env.metaPixelId();
   return (
     <div className="min-h-screen bg-white text-[15px] text-zinc-700">
+      {pixelId && <MetaPixel pixelId={pixelId} />}
       <header className="sticky top-0 z-30 border-b border-white/10 bg-[#1C1C1E]/95 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center gap-6 px-5 py-3">
           <Link href="/" className="w-28 shrink-0"><Logo className="w-full" /></Link>

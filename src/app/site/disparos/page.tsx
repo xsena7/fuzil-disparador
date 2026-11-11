@@ -246,6 +246,8 @@ export default async function DisparosPage() {
                 </div>
                 <a
                   href={siteWhatsApp(`Oi! Vim pelo site e quero o pacote ${p.name}`)}
+                  data-px="AddToCart"
+                  data-px-name={`Pacote ${p.name}`}
                   target="_blank"
                   rel="noreferrer"
                   className={`inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold sm:w-auto ${p.best ? "bg-[#25D366] text-white" : "bg-white/10 text-white hover:bg-white/15"}`}

@@ -61,6 +61,8 @@ export async function signupAction(_: FormState, form: FormData): Promise<FormSt
   await createSession(user.id, user.memberships[0].workspaceId);
   const { sendWelcomeEmail } = await import("@/lib/email-templates");
   sendWelcomeEmail(user.email, user.name).catch(() => undefined);
+  const { capiRegistration } = await import("@/lib/meta-capi");
+  await capiRegistration(user.email, "Painel");
   redirect("/");
 }
 
