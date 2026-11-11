@@ -4,6 +4,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "3.95",
+    date: "11/11/2026",
+    items: ["[admin] Site: visual novo em todas as páginas e o site virou páginas de verdade (Como funciona, Soluções, Preços, Sobre, Contato) com menu no celular; a página inicial ficou curta. Guias, erros, perguntas, loja, links e páginas legais no visual escuro"],
+  },
+  {
     version: "3.94",
     date: "11/11/2026",
     items: ["[admin] Site novo no ar (fuzildisparador.com.br e /disparos): visual escuro premium com simulação de disparo, diferenciais, bloco dos 2 bilhões, tecnologia, processo em 3 etapas, soluções (com financeiras e bets +18), pacotes com seleção e botão para o WhatsApp, perguntas e chamada final"],

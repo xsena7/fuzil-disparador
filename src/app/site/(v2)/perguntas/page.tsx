@@ -71,25 +71,25 @@ export default function FaqPage() {
     mainEntity: FAQ.map((f) => ({ "@type": "Question", name: f.q, acceptedAnswer: { "@type": "Answer", text: f.a } })),
   };
   return (
-    <article className="mx-auto max-w-3xl px-5 py-16">
+    <article className="mx-auto max-w-3xl px-5 pb-20 pt-36 sm:pt-40">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      <h1 className="text-3xl font-semibold tracking-tight text-zinc-900 sm:text-4xl">Perguntas frequentes sobre a API oficial do WhatsApp</h1>
-      <p className="mt-3 text-zinc-600">Respostas diretas para as dúvidas mais comuns de quem dispara pelo WhatsApp oficial.</p>
-      <div className="mt-10 divide-y divide-zinc-100 rounded-2xl border border-zinc-200">
+      <h1 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">Perguntas frequentes sobre a API oficial do WhatsApp</h1>
+      <p className="mt-3 text-[var(--gray)]">Respostas diretas para as dúvidas mais comuns de quem dispara pelo WhatsApp oficial.</p>
+      <div className="mt-10 divide-y divide-white/5 rounded-2xl border border-white/10">
         {FAQ.map((f) => (
-          <details key={f.q} className="group px-5 py-4 open:bg-zinc-50/60">
-            <summary className="cursor-pointer list-none font-semibold text-zinc-900 [&::-webkit-details-marker]:hidden">
-              <span className="mr-2 inline-block text-orange-500 transition group-open:rotate-90">›</span>
+          <details key={f.q} className="group px-5 py-4 open:bg-white/[0.03]">
+            <summary className="cursor-pointer list-none font-semibold text-white [&::-webkit-details-marker]:hidden">
+              <span className="mr-2 inline-block text-[#ff8a3d] transition group-open:rotate-90">›</span>
               {f.q}
             </summary>
-            <p className="mt-2 leading-relaxed">{f.a}</p>
-            {f.link && <Link href={f.link.href} className="mt-2 inline-block text-sm font-medium text-orange-600 hover:underline">{f.link.label} →</Link>}
+            <p className="t-muted mt-2 leading-relaxed">{f.a}</p>
+            {f.link && <Link href={f.link.href} className="mt-2 inline-block text-sm font-medium text-[#ff8a3d] hover:underline">{f.link.label} →</Link>}
           </details>
         ))}
       </div>
-      <p className="mt-10 text-center text-sm text-zinc-500">
+      <p className="mt-10 text-center text-sm text-[var(--gray)]">
         Não achou sua dúvida?{" "}
-        <a href={siteWhatsApp("Oi! Tenho uma dúvida sobre o Fuzil Disparador.")} className="font-medium text-orange-600 hover:underline">Fale com a gente no WhatsApp</a>
+        <a href={siteWhatsApp("Oi! Tenho uma dúvida sobre o Fuzil Disparador.")} className="font-medium text-[#ff8a3d] hover:underline">Fale com a gente no WhatsApp</a>
       </p>
     </article>
   );

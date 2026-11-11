@@ -11,18 +11,18 @@ export const metadata: Metadata = {
 
 export default function GuidesIndex() {
   return (
-    <article className="mx-auto max-w-4xl px-5 py-16">
-      <h1 className="text-3xl font-semibold tracking-tight text-zinc-900 sm:text-4xl">Guias da API oficial do WhatsApp</h1>
-      <p className="mt-3 max-w-2xl text-zinc-600">Passo a passo em português simples para conectar BMs, criar templates de utilidade e disparar em escala sem travar conta.</p>
+    <article className="mx-auto max-w-4xl px-5 pb-20 pt-36 sm:pt-40">
+      <h1 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">Guias da API oficial do WhatsApp</h1>
+      <p className="mt-3 max-w-2xl text-[var(--gray)]">Passo a passo em português simples para conectar BMs, criar templates de utilidade e disparar em escala sem travar conta.</p>
       <ul className="mt-10 grid gap-3 sm:grid-cols-2">
         {TUTORIALS.map((t) => (
           <li key={t.slug}>
-            <Link href={`/guias/${t.slug}`} className="flex h-full flex-col rounded-2xl border border-zinc-200 p-5 transition hover:border-orange-300 hover:shadow-sm">
-              <span className="font-semibold text-zinc-900">{t.title}</span>
-              <span className="mt-1 flex-1 text-sm text-zinc-600">{t.summary}</span>
-              <span className="mt-3 flex items-center justify-between text-xs text-zinc-400">
+            <Link href={`/guias/${t.slug}`} className="flex h-full flex-col rounded-2xl border border-white/10 p-5 transition hover:border-[#ff6a00]/50 hover:bg-white/[0.03]">
+              <span className="font-semibold text-white">{t.title}</span>
+              <span className="mt-1 flex-1 text-sm text-[var(--gray)]">{t.summary}</span>
+              <span className="mt-3 flex items-center justify-between text-xs text-white/40">
                 <span className="inline-flex items-center gap-1"><Clock className="size-3.5" /> {t.minutes} min</span>
-                <ArrowRight className="size-4 text-orange-500" />
+                <ArrowRight className="size-4 text-[#ff8a3d]" />
               </span>
             </Link>
           </li>

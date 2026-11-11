@@ -12,7 +12,7 @@ export default async function OrderPage({ params }: { params: Promise<{ token: s
   const o = await publicOrder(token);
   if (!o) notFound();
   return (
-    <div className="min-h-[70vh] bg-ink px-5 py-12 text-zinc-300">
+    <div className="min-h-[70vh] bg-ink px-5 pb-12 pt-32 text-zinc-300">
       <OrderLive token={token} initial={o} shopHref={await sitePath("/vendas")} />
     </div>
   );

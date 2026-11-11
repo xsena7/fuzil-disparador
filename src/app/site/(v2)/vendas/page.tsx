@@ -30,7 +30,7 @@ export default async function VendasPage() {
       <section className="relative overflow-hidden">
         <div className="pointer-events-none absolute -left-32 -top-40 size-[34rem] animate-pulse rounded-full bg-orange-500/25 blur-3xl [animation-duration:6s]" />
         <div className="pointer-events-none absolute -right-24 top-20 size-[28rem] animate-pulse rounded-full bg-rose-600/25 blur-3xl [animation-duration:8s]" />
-        <div className="relative mx-auto max-w-6xl px-5 pb-14 pt-16 md:pt-24">
+        <div className="relative mx-auto max-w-6xl px-5 pb-14 pt-32 md:pt-40">
           <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-orange-200 ring-1 ring-white/15">
             <span className="relative flex size-2"><span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400 opacity-75" /><span className="relative inline-flex size-2 rounded-full bg-emerald-400" /></span>
             {total > 0 ? `${total} BM${total > 1 ? "s" : ""} em estoque agora` : "Estoque sendo reposto"}

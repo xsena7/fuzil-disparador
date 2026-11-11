@@ -75,7 +75,7 @@ export default function PrivacyPage() {
         Você pode pedir confirmação, acesso, correção, anonimização, portabilidade ou exclusão dos seus dados, além de informações sobre
         compartilhamento e revogação de consentimento (LGPD, art. 18). Se você recebeu uma mensagem de um Cliente nosso, pode responder <b>SAIR</b> para
         não receber mais mensagens daquela empresa, ou falar diretamente com a empresa que enviou. Veja também a página de{" "}
-        <a href="/exclusao-de-dados" className="text-brand-600 underline">Exclusão de dados</a>.
+        <a href="/exclusao-de-dados" className="text-[#ff8a3d] underline">Exclusão de dados</a>.
       </p>
 
       <h2>9. Contato</h2>

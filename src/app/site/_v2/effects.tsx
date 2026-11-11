@@ -2,11 +2,13 @@
 
 // Efeitos do site novo, todos leves (CSS + um listener) e desligados com prefers-reduced-motion.
 import { useEffect, useRef } from "react";
+import { usePathname } from "next/navigation";
 
 const reduced = () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 /** Entrada das seções: marca .shown em todo [data-reveal] quando aparece na tela. */
 export function RevealRoot() {
+  const path = usePathname();
   useEffect(() => {
     const els = Array.from(document.querySelectorAll<HTMLElement>(".v2 [data-reveal]"));
     if (reduced() || !("IntersectionObserver" in window)) {
@@ -19,7 +21,8 @@ export function RevealRoot() {
     );
     els.forEach((e) => io.observe(e));
     return () => io.disconnect();
-  }, []);
+    // Roda de novo a cada página (o layout não remonta na navegação)
+  }, [path]);
 
   // Brilho dos cards (.spot) segue o cursor: um listener só para a página toda
   useEffect(() => {

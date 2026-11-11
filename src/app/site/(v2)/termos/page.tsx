@@ -10,7 +10,7 @@ export default function TermsPage() {
     <LegalPage title="Termos de Uso" updated="08/10/2026">
       <p>
         Estes Termos regulam o uso do <b>{c.brand}</b>, software fornecido por {ownerLine()}. Ao criar uma conta ou usar a Plataforma, você concorda
-        com estes Termos e com a nossa <a href="/privacidade" className="text-brand-600 underline">Política de Privacidade</a>.
+        com estes Termos e com a nossa <a href="/privacidade" className="text-[#ff8a3d] underline">Política de Privacidade</a>.
       </p>
 
       <h2>1. O serviço</h2>

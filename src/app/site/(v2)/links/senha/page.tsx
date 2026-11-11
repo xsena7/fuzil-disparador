@@ -6,7 +6,7 @@ export const metadata: Metadata = { title: "Senha nova · Gerador de links", rob
 export default async function LinksResetPage({ searchParams }: { searchParams: Promise<{ t?: string }> }) {
   const { t } = await searchParams;
   return (
-    <section className="bg-ink px-5 py-16 text-white">
+    <section className="bg-ink px-5 pb-16 pt-36 text-white">
       <div className="mx-auto max-w-md">
         {t ? <ResetForm token={t} /> : <p className="text-center text-zinc-400">Link inválido. Peça outro em &quot;Esqueci minha senha&quot;.</p>}
       </div>

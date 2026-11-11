@@ -1,18 +1,20 @@
-// Visual novo do site (dark premium): página inicial e /disparos. As outras páginas ainda usam (atual) até serem redesenhadas.
+// Visual do site público (dark premium): cabeçalho com as páginas do topo, menu do celular e rodapé.
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import { Logo } from "@/components/brand";
 import { company, ownerLine } from "@/lib/company";
 import { siteWhatsApp } from "../cta";
 import { V2_MSG } from "../_v2/content";
+import { RevealRoot } from "../_v2/effects";
+import { MobileNav } from "../_v2/mobile-nav";
 import "../_v2/v2.css";
 
 const NAV = [
-  { href: "/#como-funciona", label: "Como funciona" },
-  { href: "/#solucoes", label: "Soluções" },
-  { href: "/#precos", label: "Preços" },
-  { href: "/#sobre", label: "Sobre" },
-  { href: "/#contato", label: "Contato" },
+  { href: "/como-funciona", label: "Como funciona" },
+  { href: "/solucoes", label: "Soluções" },
+  { href: "/precos", label: "Preços" },
+  { href: "/sobre", label: "Sobre" },
+  { href: "/contato", label: "Contato" },
 ];
 
 export default function V2Layout({ children }: { children: React.ReactNode }) {
@@ -25,14 +27,16 @@ export default function V2Layout({ children }: { children: React.ReactNode }) {
         <div className="mx-auto mt-3 flex max-w-6xl items-center gap-6 rounded-full border border-white/10 bg-[#0d0e12]/70 px-4 py-2.5 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.8)] backdrop-blur-xl sm:mx-4 sm:px-5 lg:mx-auto">
           <Link href="/" className="w-24 shrink-0" aria-label="Fuzil Disparador, início"><Logo className="w-full" /></Link>
           <nav className="ml-auto hidden items-center gap-7 text-sm text-[var(--gray)] md:flex" aria-label="Principal">
-            {NAV.map((n) => <a key={n.href} href={n.href} className="transition-colors hover:text-white">{n.label}</a>)}
+            {NAV.map((n) => <Link key={n.href} href={n.href} className="transition-colors hover:text-white">{n.label}</Link>)}
           </nav>
           <a href={wa} target="_blank" rel="noreferrer" className="ml-auto inline-flex items-center gap-1.5 rounded-full bg-white px-4 py-2 text-sm font-semibold text-black transition hover:bg-white/90 md:ml-0">
             Falar com a equipe <ArrowUpRight className="size-4" />
           </a>
+          <MobileNav items={NAV} wa={wa} />
         </div>
       </header>
 
+      <RevealRoot />
       <main id="conteudo">{children}</main>
 
       <footer className="border-t border-white/10 bg-[#07080a] text-sm text-[var(--gray)]">
@@ -52,7 +56,7 @@ export default function V2Layout({ children }: { children: React.ReactNode }) {
           <div>
             <div className="mb-3 font-medium text-white/85">Serviço</div>
             <ul className="space-y-2">
-              {NAV.slice(0, 3).map((n) => <li key={n.href}><a href={n.href} className="hover:text-white">{n.label}</a></li>)}
+              {NAV.map((n) => <li key={n.href}><Link href={n.href} className="hover:text-white">{n.label}</Link></li>)}
               <li><a href={wa} target="_blank" rel="noreferrer" className="hover:text-white">WhatsApp da equipe</a></li>
             </ul>
           </div>

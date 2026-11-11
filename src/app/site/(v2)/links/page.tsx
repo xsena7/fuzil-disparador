@@ -29,7 +29,7 @@ export default async function PublicLinksPage() {
     return (
       <section className="relative min-h-[80vh] overflow-hidden bg-ink text-white">
         <div className="pointer-events-none absolute inset-0" style={BG} />
-        <div className="relative mx-auto max-w-4xl px-5 py-12 md:py-16">
+        <div className="relative mx-auto max-w-4xl px-5 pb-12 pt-32 md:pb-16 md:pt-36">
           <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
             <div>
               <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-medium text-orange-200">Gerador de links do botão</div>
@@ -58,7 +58,7 @@ export default async function PublicLinksPage() {
   return (
     <section className="relative overflow-hidden bg-ink text-white">
       <div className="pointer-events-none absolute inset-0" style={BG} />
-      <div className="relative mx-auto grid max-w-6xl items-start gap-10 px-5 py-14 md:grid-cols-[1.1fr_1fr] md:py-20">
+      <div className="relative mx-auto grid max-w-6xl items-start gap-10 px-5 pb-14 pt-32 md:grid-cols-[1.1fr_1fr] md:pb-20 md:pt-36">
         <div>
           <div className="mb-5 inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-medium text-orange-200">Gerador de links do botão</div>
           <h1 className="text-4xl font-semibold leading-tight tracking-tight md:text-5xl">
