@@ -16,6 +16,8 @@ import { ensureReadyGroup } from "@/lib/bm-problems";
 import { ensureDefaultGroups } from "@/lib/default-groups";
 import { cookies } from "next/headers";
 import "../app-dark.css";
+import "../app-theme.css";
+import { AppEffects } from "@/components/app-effects";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const auth = await requireAuth();
@@ -31,8 +33,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const mailUnread = me?.financePartner ? await prisma.mailMessage.count({ where: { direction: "IN", readAt: null } }) : 0;
   // Conta nova (sem BM) que ainda não respondeu o convite: pergunta se quer o tour
   const offerTour = !auth.inspecting && !me?.tourState && bms === 0;
-  // Tema escuro (botão no menu): a classe entra antes de pintar a tela, sem piscar o claro
-  const dark = (await cookies()).get("fz_theme")?.value === "dark";
+  // Tema escuro é o padrão (botão no menu troca para o claro): a classe entra antes de pintar a tela, sem piscar
+  const dark = (await cookies()).get("fz_theme")?.value !== "light";
   return (
     <div className="flex min-h-screen">
       {dark && <script dangerouslySetInnerHTML={{ __html: "document.documentElement.classList.add('dk')" }} />}
@@ -66,6 +68,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <CelebrationHost />
       <Tour offer={offerTour} />
       <CursorGlow />
+      <AppEffects />
       <BugReportButton />
     </div>
   );

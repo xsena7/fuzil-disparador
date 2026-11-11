@@ -42,8 +42,8 @@ export function Drawer({
   stripe?: string;
 }) {
   return (
-    <details open={open} className={clsx("group overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm transition hover:shadow-lift open:shadow-lift", (tone || stripe) && ["border-l-[5px]", stripe ?? STRIPE[tone!]], className)}>
-      <summary className="flex cursor-pointer list-none flex-wrap items-center gap-3 px-4 py-3.5 sm:px-5 sm:py-4 transition-colors hover:bg-orange-50/50 group-open:bg-zinc-50/80 [&::-webkit-details-marker]:hidden">
+    <details open={open} className={clsx("fz-card group overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm transition duration-300 hover:shadow-lift open:shadow-lift", (tone || stripe) && ["border-l-[5px]", stripe ?? STRIPE[tone!]], className)}>
+      <summary className="flex cursor-pointer list-none flex-wrap items-center gap-3 px-4 py-3.5 sm:px-5 sm:py-4 transition-colors hover:bg-zinc-50/80 group-open:bg-zinc-50/60 [&::-webkit-details-marker]:hidden">
         <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-zinc-100 text-zinc-500 transition group-open:bg-brand-gradient group-open:text-white group-hover:bg-orange-100 group-hover:text-orange-700">
           <ChevronRight className="size-4 transition-transform group-open:rotate-90" />
         </span>

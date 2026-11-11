@@ -71,7 +71,7 @@ export function Sidebar({ workspace, user, unread, chatUnread = 0, mailUnread = 
     {open && <div className="fixed inset-0 z-40 bg-black/50 md:hidden" onClick={() => setOpen(false)} />}
     <aside
       className={clsx(
-        "dk-off fixed inset-y-0 left-0 z-50 flex h-screen w-64 shrink-0 flex-col bg-ink px-3 py-5 text-zinc-300 transition-transform md:sticky md:top-0 md:translate-x-0",
+        "dk-off fz-side fixed inset-y-0 left-0 z-50 flex h-screen w-64 shrink-0 flex-col bg-ink px-3 py-5 text-zinc-300 transition-transform md:sticky md:top-0 md:translate-x-0",
         open ? "translate-x-0" : "-translate-x-full",
       )}
     >
@@ -106,7 +106,7 @@ export function Sidebar({ workspace, user, unread, chatUnread = 0, mailUnread = 
                     data-tour={href === "/conexoes" ? "nav-conexoes" : undefined}
                     className={clsx(
                       "group relative flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition",
-                      active ? "bg-white/10 font-medium text-white" : "text-zinc-400 hover:bg-white/5 hover:text-zinc-100",
+                      active ? "fz-side-active font-medium text-white" : "text-zinc-400 hover:bg-white/5 hover:text-zinc-100",
                     )}
                   >
                     {active && <span className="absolute inset-y-2 left-0 w-1 rounded-full bg-brand-gradient" />}

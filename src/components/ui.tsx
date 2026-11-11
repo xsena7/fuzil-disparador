@@ -4,14 +4,14 @@ import type { ComponentProps, ReactNode } from "react";
 
 type BtnVariant = "primary" | "secondary" | "danger" | "ghost" | "dark";
 const btn: Record<BtnVariant, string> = {
-  primary: "bg-brand-gradient text-white shadow-sm shadow-orange-500/25 hover:brightness-105 active:brightness-95",
+  primary: "fz-btn-fire text-white hover:-translate-y-px active:translate-y-0 active:scale-[0.98]",
   dark: "bg-ink text-white hover:bg-zinc-800",
-  secondary: "border border-orange-200 bg-orange-50 text-orange-800 shadow-soft hover:border-orange-300 hover:bg-orange-100 hover:text-orange-900",
+  secondary: "border border-zinc-200 bg-white text-zinc-800 shadow-soft hover:border-orange-300 hover:text-orange-700",
   danger: "border border-red-200 bg-red-50 text-red-700 hover:bg-red-100",
-  ghost: "text-zinc-600 hover:bg-orange-50 hover:text-orange-800",
+  ghost: "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900",
 };
 const btnBase =
-  "inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-300 disabled:opacity-50 disabled:pointer-events-none";
+  "inline-flex items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-300 disabled:opacity-50 disabled:pointer-events-none";
 
 export function Button({ variant = "primary", className, ...props }: ComponentProps<"button"> & { variant?: BtnVariant }) {
   return <button className={clsx(btnBase, btn[variant], className)} {...props} />;
@@ -22,18 +22,16 @@ export function LinkButton({ variant = "primary", className, ...props }: Compone
 }
 
 export function Card({ className, ...props }: ComponentProps<"div">) {
-  return <div className={clsx("rounded-2xl border border-zinc-200/70 bg-white shadow-soft", className)} {...props} />;
+  return <div className={clsx("fz-card rounded-2xl border border-zinc-200/70 bg-white shadow-soft", className)} {...props} />;
 }
 
 export function PageHeader({ title, description, actions }: { title: string; description?: ReactNode; actions?: ReactNode }) {
   return (
-    <div data-tour="page-header" className="mb-8 flex flex-wrap items-end justify-between gap-4 animate-fade-up">
-      <div className="flex gap-3.5">
-        <span aria-hidden className="mt-1 h-8 w-1.5 shrink-0 rounded-full bg-brand-gradient" />
-        <div>
-          <h1 className="text-[1.7rem] font-bold leading-tight tracking-tight text-zinc-900">{title}</h1>
-          {description && <p className="mt-1.5 max-w-3xl text-zinc-600">{description}</p>}
-        </div>
+    <div data-tour="page-header" className="fz-head relative mb-9 flex flex-wrap items-end justify-between gap-4 animate-fade-up">
+      <div className="min-w-0">
+        <div className="fz-eyebrow mb-3"><span className="fz-live" /> Fuzil · ao vivo</div>
+        <h1 className="text-[2rem] font-semibold leading-[1.05] tracking-tight text-zinc-900 sm:text-[2.3rem]">{title}</h1>
+        {description && <p className="mt-2.5 max-w-3xl text-[0.95rem] leading-relaxed text-zinc-500">{description}</p>}
       </div>
       {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
     </div>
@@ -70,7 +68,7 @@ export function Field({ label, hint, children }: { label: ReactNode; hint?: Reac
 }
 
 const inputCls =
-  "w-full rounded-xl border border-zinc-200 bg-white px-3.5 py-2.5 text-sm shadow-soft outline-none transition placeholder:text-zinc-400 focus:border-brand-400 focus:ring-4 focus:ring-brand-100 disabled:bg-zinc-50 disabled:text-zinc-500";
+  "fz-input w-full rounded-xl border border-zinc-200 bg-white px-3.5 py-2.5 text-sm shadow-soft outline-none transition placeholder:text-zinc-400 focus:border-brand-400 focus:ring-4 focus:ring-brand-100 disabled:bg-zinc-50 disabled:text-zinc-500";
 
 export function Input({ className, ...props }: ComponentProps<"input">) {
   return <input className={clsx(inputCls, className)} {...props} />;
@@ -83,6 +81,8 @@ export function Select({ className, ...props }: ComponentProps<"select">) {
 }
 
 export type StatTone = "green" | "red" | "brand" | "blue" | "violet" | "pink" | "amber" | "default";
+// Número de destaque: cartão neutro com brilho da cor no canto (o tom aparece na luz, no ícone e na linha do topo)
+const GLOW: Record<StatTone, string> = { green: "16,185,129", red: "244,63,94", brand: "255,106,0", blue: "14,165,233", violet: "139,92,246", pink: "236,72,153", amber: "245,158,11", default: "161,161,170" };
 const STAT: Record<StatTone, { box: string; bar: string; value: string; icon: string }> = {
   green: { box: "border-emerald-200/80 bg-gradient-to-br from-emerald-50 to-white", bar: "bg-emerald-500", value: "text-emerald-700", icon: "bg-emerald-100 text-emerald-700" },
   red: { box: "border-rose-200/80 bg-gradient-to-br from-rose-50 to-white", bar: "bg-rose-500", value: "text-rose-700", icon: "bg-rose-100 text-rose-700" },
@@ -97,14 +97,15 @@ const STAT: Record<StatTone, { box: string; bar: string; value: string; icon: st
 export function Stat({ label, value, sub, tone = "default", icon }: { label: string; value: ReactNode; sub?: ReactNode; tone?: StatTone; icon?: ReactNode }) {
   const t = STAT[tone];
   return (
-    <div className={clsx("relative min-w-0 overflow-hidden rounded-2xl border p-3.5 pt-4 shadow-soft transition hover:-translate-y-0.5 hover:shadow-lift animate-fade-up sm:p-5 sm:pt-6", t.box)}>
-      <span aria-hidden className={clsx("absolute inset-x-0 top-0 h-1", t.bar)} />
-      <div className="flex items-center justify-between gap-2">
-        <div className="text-[11px] font-semibold uppercase tracking-wide text-zinc-600 sm:text-xs">{label}</div>
+    <div className="fz-card fz-stat relative min-w-0 overflow-hidden rounded-2xl border border-zinc-200/70 bg-white p-3.5 pt-4 shadow-soft transition duration-300 hover:-translate-y-0.5 hover:shadow-lift animate-fade-up sm:p-5 sm:pt-5" style={{ ["--tone" as string]: GLOW[tone] }}>
+      <span aria-hidden className={clsx("absolute inset-x-5 top-0 h-px opacity-80", t.bar)} />
+      <span aria-hidden className="fz-stat-glow" />
+      <div className="relative flex items-center justify-between gap-2">
+        <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-500 sm:text-[11px]">{label}</div>
         {icon && <div className={clsx("flex size-7 shrink-0 items-center justify-center rounded-lg sm:size-8", t.icon)}>{icon}</div>}
       </div>
-      <div className={clsx("mt-1.5 break-words text-[1.35rem] font-bold leading-tight tracking-tight tabular-nums sm:mt-2 sm:text-[1.7rem]", t.value)}>{value}</div>
-      {sub && <div className="mt-1 text-[11px] font-medium text-zinc-500 sm:text-xs">{sub}</div>}
+      <div className="fz-num relative mt-2 break-words text-[1.6rem] font-semibold leading-none tracking-tight text-zinc-900 tabular-nums sm:mt-3 sm:text-[2.1rem]">{value}</div>
+      {sub && <div className="relative mt-2 text-[11px] font-medium text-zinc-500 sm:text-xs">{sub}</div>}
     </div>
   );
 }
@@ -121,12 +122,12 @@ export function Empty({ children, icon }: { children: ReactNode; icon?: ReactNod
 /** Tabela padrão. `maxHeight` = altura máxima com barra de rolagem (o cabeçalho fica parado no topo). */
 export function Table({ head, children, maxHeight }: { head: ReactNode[]; children: ReactNode; maxHeight?: string }) {
   return (
-    <div className={clsx("overflow-x-auto rounded-2xl border border-zinc-200/70 bg-white shadow-soft", maxHeight && "overflow-y-auto")} style={maxHeight ? { maxHeight } : undefined}>
+    <div className={clsx("fz-card overflow-x-auto rounded-2xl border border-zinc-200/70 bg-white shadow-soft", maxHeight && "overflow-y-auto")} style={maxHeight ? { maxHeight } : undefined}>
       <table className="w-full text-left text-sm">
-        <thead className={clsx("border-b border-zinc-200 bg-zinc-100 text-xs uppercase tracking-wide text-zinc-700", maxHeight && "sticky top-0 z-10")}>
+        <thead className={clsx("border-b border-zinc-200 bg-zinc-50 text-[11px] uppercase tracking-[0.12em] text-zinc-500", maxHeight && "sticky top-0 z-10")}>
           <tr>{head.map((h, i) => <th key={i} className="px-4 py-3 font-semibold">{h}</th>)}</tr>
         </thead>
-        <tbody className="divide-y divide-zinc-100 [&>tr:nth-child(even)]:bg-zinc-50/50 [&>tr]:transition-colors [&>tr:hover]:bg-orange-50/60">{children}</tbody>
+        <tbody className="divide-y divide-zinc-100 [&>tr]:transition-colors [&>tr:hover]:bg-orange-50/60">{children}</tbody>
       </table>
     </div>
   );

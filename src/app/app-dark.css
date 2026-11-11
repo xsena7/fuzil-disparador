@@ -117,7 +117,7 @@ html.dk .group:hover .group-hover\:bg-orange-100:not(.dk-off *) { background-col
 html.dk .group:hover .group-hover\:text-brand-700:not(.dk-off *) { color: #ffa36b; }
 html.dk .group:hover .group-hover\:text-orange-600:not(.dk-off *) { color: #fb923c; }
 html.dk .group:hover .group-hover\:text-orange-700:not(.dk-off *) { color: #fdba74; }
-html.dk .group[open] .group-open\:bg-zinc-50\/80:not(.dk-off *) { background-color: rgba(17,19,24,0.800); }
+html.dk .group[open] .group-open\:bg-zinc-50\/60:not(.dk-off *) { background-color: rgba(17,19,24,0.600); }
 html.dk .hover\:bg-amber-100:hover:not(.dk-off *) { background-color: rgba(245,158,11,0.160); }
 html.dk .hover\:bg-amber-50:hover:not(.dk-off *) { background-color: rgba(245,158,11,0.100); }
 html.dk .hover\:bg-brand-50:hover:not(.dk-off *) { background-color: rgba(249,115,22,0.100); }
@@ -151,8 +151,7 @@ html.dk .hover\:border-zinc-300:hover:not(.dk-off *) { border-color: rgba(255,25
 html.dk .hover\:ring-brand-300:hover:not(.dk-off *) { --tw-ring-color: rgba(249,115,22,0.450); }
 html.dk .hover\:ring-orange-300:hover:not(.dk-off *) { --tw-ring-color: rgba(249,115,22,0.450); }
 html.dk .hover\:text-brand-600:hover:not(.dk-off *) { color: #ff8a3d; }
-html.dk .hover\:text-orange-800:hover:not(.dk-off *) { color: #fdba74; }
-html.dk .hover\:text-orange-900:hover:not(.dk-off *) { color: #fdba74; }
+html.dk .hover\:text-orange-700:hover:not(.dk-off *) { color: #fdba74; }
 html.dk .hover\:text-red-600:hover:not(.dk-off *) { color: #f87171; }
 html.dk .hover\:text-rose-600:hover:not(.dk-off *) { color: #fb7185; }
 html.dk .hover\:text-zinc-600:hover:not(.dk-off *) { color: #b9bcc4; }

@@ -4,6 +4,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "3.97",
+    date: "11/11/2026",
+    items: ["Plataforma redesenhada no estilo do site: tema escuro como padrão (dá para voltar ao claro no menu), títulos maiores com selo \"ao vivo\", cartões com brilho que segue o mouse e animação de entrada, números de destaque novos, botões arredondados com luz, tabelas e menu lateral refeitos"],
+  },
+  {
     version: "3.96",
     date: "11/11/2026",
     items: ["Visual novo da plataforma, com pegada de tecnologia: grade discreta no fundo, títulos com fonte nova e botões com brilho. E tema escuro: ligue em \"Tema escuro\" no menu (a escolha fica salva)"],
