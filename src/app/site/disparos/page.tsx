@@ -32,8 +32,12 @@ const PACKAGES = [
   { name: "Máximo", from: "100.000", price: "0,16", off: 47, best: true },
 ];
 
-/** "5 milhões" (sempre arredondado para baixo, para nunca passar do número real). */
-const provenSends = (n: number) => (n >= 1_000_000 ? `${Math.floor(n / 1_000_000).toLocaleString("pt-BR")} milhões` : roundDown(n));
+/** "2 bilhões", "5 milhões" (sempre arredondado para baixo, para nunca passar do número real). */
+const provenSends = (n: number) =>
+  n >= 2_000_000_000 ? `${Math.floor(n / 1_000_000_000).toLocaleString("pt-BR")} bilhões`
+  : n >= 1_000_000_000 ? "1 bilhão"
+  : n >= 1_000_000 ? `${Math.floor(n / 1_000_000).toLocaleString("pt-BR")} milhões`
+  : roundDown(n);
 
 const STEPS = [
   { icon: MessageCircle, title: "Chama no WhatsApp", text: "Clica no botão verde e fala com a gente. Conta o que você vende." },
@@ -42,8 +46,9 @@ const STEPS = [
   { icon: Send, title: "A gente dispara", text: "Montamos tudo, disparamos e te mandamos o relatório de quem recebeu, leu e clicou." },
 ];
 
-const WHY = [
-  { icon: Sparkles, title: "Experiência", text: "Mais de 5 milhões de mensagens disparadas pela nossa equipe. A gente sabe o texto, o horário e a lista que funcionam." },
+// O número da Experiência vem do contador (disparos do Fuzil + SITE_PRIOR_SENDS, em Admin → Empresa)
+const whyList = (sent: number) => [
+  { icon: Sparkles, title: "Experiência", text: `${sent >= 10_000 ? `Mais de ${provenSends(sent)} de mensagens disparadas pela nossa equipe. ` : ""}A gente sabe o texto, o horário e a lista que funcionam.` },
   { icon: BadgeCheck, title: "Lista higienizada", text: "Antes de disparar, tiramos números repetidos, inválidos e quem pediu para sair. Você não paga para mandar para ninguém." },
   { icon: BarChart3, title: "Relatório ao vivo", text: "Um link que atualiza sozinho: enviadas, entregues, lidas, cliques e quem respondeu, com nome e número." },
   { icon: Wallet, title: "Só paga o que sair", text: "Mensagem que falhou não entra na conta. O valor final sai do relatório, com os números na sua frente." },
@@ -116,7 +121,7 @@ export default async function DisparosPage() {
         <h2 className="font-display text-center text-3xl text-zinc-900">Por que disparar com a gente</h2>
         <p className="mt-2 text-center text-zinc-500">Você cuida do seu negócio. A gente cuida do disparo.</p>
         <div className="mt-8 grid gap-4 sm:grid-cols-2">
-          {WHY.map((w) => (
+          {whyList(sent).map((w) => (
             <div key={w.title} className="flex gap-4 rounded-2xl border border-zinc-200 bg-white p-6 shadow-soft">
               <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-brand-gradient text-white shadow-sm shadow-orange-500/30"><w.icon className="size-6" /></span>
               <div>

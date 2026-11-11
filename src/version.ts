@@ -4,6 +4,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "3.92",
+    date: "11/11/2026",
+    items: ["[admin] Site: o número de disparos da equipe (topo e quadro Experiência) vem todo do contador (Admin → Empresa → disparos feitos antes do Fuzil + os do Fuzil) e mostra bilhões"],
+  },
+  {
     version: "3.91",
     date: "09/11/2026",
     items: ["Métricas: em \"Quem clicou em cada botão\" aparecem todos os botões do template (ex.: Amém e Sair), mesmo os que ainda não tiveram clique"],
