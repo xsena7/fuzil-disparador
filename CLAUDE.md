@@ -26,6 +26,7 @@ Produção: VM Oracle grátis, Docker Compose (db, app, worker, caddy). O servid
 - Foto de perfil automática do número novo (mulher/homem, escolhida ao adicionar; o worker coloca quando conecta): `src/lib/profile-photos.ts`, fotos padrão em `public/perfil/`, seletor em `src/app/(app)/conexoes/photo-pick.tsx`.
 - Logo: `src/components/brand.tsx`. Gaveta padrão: `src/components/drawer.tsx`.
 - Server actions: `src/app/actions/*.ts`. Telas: `src/app/(app)/*`. Site público: `src/app/site/*`.
+- Pixel da Meta no site (só com cookies aceitos, cookie `fz_px`): `src/components/meta-pixel.tsx` (PageView, ViewContent ao ver #preco, AddToCart em `data-px="AddToCart"`, Contact em link do WhatsApp) + servidor `/api/px` e `src/lib/meta-capi.ts` (mesmo event_id; CompleteRegistration no cadastro do painel e do site de links). ID e token em Admin → Plataforma (`META_PIXEL_ID`, `META_CAPI_TOKEN`); teste com `META_CAPI_TEST_CODE` no servidor.
 - SEO do site: erros da Meta em `/erros` (`src/lib/seo-errors.ts`, usa `meta-errors-text.ts` e `explain.ts`: erro novo traduzido já vira página), guias em `/guias` (mesmo conteúdo de `src/lib/tutorials.ts`, então tutorial não pode ter nada interno), FAQ em `/perguntas`, `src/app/sitemap.ts` e `src/app/robots.ts`.
 
 ## Regras do projeto
