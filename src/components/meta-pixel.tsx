@@ -79,7 +79,7 @@ export function MetaPixel({ pixelId }: { pixelId: string }) {
   // ViewContent quando a seção de preços aparece na tela (uma vez por página)
   useEffect(() => {
     if (consent !== "1") return;
-    const el = document.getElementById("preco");
+    const el = document.getElementById("precos") ?? document.getElementById("preco");
     if (!el || !("IntersectionObserver" in window)) return;
     const io = new IntersectionObserver((entries) => {
       if (entries.some((e) => e.isIntersecting)) {

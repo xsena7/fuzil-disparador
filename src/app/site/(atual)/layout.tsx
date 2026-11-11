@@ -1,4 +1,4 @@
-// Visual atual do site (cabeçalho e rodapé). O redesign fica em (v2) e só substitui depois de aprovado.
+// Visual antigo do site (cabeçalho e rodapé) para as páginas que ainda não foram redesenhadas (loja, guias, erros, legais, links).
 import Link from "next/link";
 import { Logo } from "@/components/brand";
 import { company, ownerLine } from "@/lib/company";
@@ -12,11 +12,10 @@ export default function CurrentSiteLayout({ children }: { children: React.ReactN
         <div className="mx-auto flex max-w-6xl items-center gap-6 px-5 py-3">
           <Link href="/" className="w-28 shrink-0"><Logo className="w-full" /></Link>
           <nav className="ml-auto hidden items-center gap-6 text-sm text-zinc-300 md:flex">
-            <a href="/#por-que" className="hover:text-white">Por que a gente</a>
-            <a href="/#nichos" className="hover:text-white">Para quem é</a>
-            <a href="/#modalidades" className="hover:text-white">Como disparamos</a>
+            <a href="/#diferenciais" className="hover:text-white">Por que a gente</a>
+            <a href="/#solucoes" className="hover:text-white">Para quem é</a>
             <a href="/#como-funciona" className="hover:text-white">Como funciona</a>
-            <a href="/#preco" className="hover:text-white">Preço</a>
+            <a href="/#precos" className="hover:text-white">Preço</a>
             <a href="/#duvidas" className="hover:text-white">Dúvidas</a>
           </nav>
           <a href={siteWhatsApp("Oi! Vi o site e quero fazer um orçamento de disparo.")} target="_blank" rel="noreferrer" className="ml-auto rounded-xl bg-[#25D366] px-4 py-2 text-sm font-semibold text-white shadow-sm md:ml-0">Orçamento</a>
@@ -45,7 +44,7 @@ export default function CurrentSiteLayout({ children }: { children: React.ReactN
             <div className="mb-3 font-medium text-zinc-200">Disparos</div>
             <ul className="space-y-2">
               <li><a href="/#como-funciona" className="hover:text-white">Como funciona</a></li>
-              <li><a href="/#preco" className="hover:text-white">Preço</a></li>
+              <li><a href="/#precos" className="hover:text-white">Preço</a></li>
               <li><a href={siteWhatsApp("Oi! Vi o site e quero fazer um orçamento de disparo.")} target="_blank" rel="noreferrer" className="hover:text-white">Orçamento no WhatsApp</a></li>
               <li><a href={`${c.appUrl}/login`} className="hover:text-white">Área do cliente</a></li>
             </ul>

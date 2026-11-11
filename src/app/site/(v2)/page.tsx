@@ -1,22 +1,19 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
-import { ArrowRight, ArrowDown, BadgeCheck, BarChart3, BellRing, CalendarClock, CreditCard, Filter, Megaphone, MessagesSquare, Radar, Repeat2, Rocket, ShieldCheck, Tag, Wallet, Workflow } from "lucide-react";
+import { ArrowRight, ArrowDown, BadgeCheck, Landmark, Ticket, BarChart3, BellRing, CalendarClock, CreditCard, Filter, Megaphone, MessagesSquare, Radar, Repeat2, Rocket, ShieldCheck, Tag, Wallet, Workflow } from "lucide-react";
 import { company } from "@/lib/company";
 import { totalSent } from "@/lib/site-stats";
-import { siteWhatsApp } from "../../cta";
-import { V2_FAQ, V2_MSG, V2_PACKAGES, provenSends } from "../../_v2/content";
-import { Parallax, RevealRoot } from "../../_v2/effects";
-import { DispatchSim } from "../../_v2/dispatch-sim";
-import { Process } from "../../_v2/process";
-import { Pricing } from "../../_v2/pricing";
-import { Faq } from "../../_v2/faq";
+import { siteWhatsApp } from "../cta";
+import { V2_FAQ, V2_MSG, V2_PACKAGES, provenSends } from "../_v2/content";
+import { Parallax, RevealRoot } from "../_v2/effects";
+import { DispatchSim } from "../_v2/dispatch-sim";
+import { Process } from "../_v2/process";
+import { Pricing } from "../_v2/pricing";
+import { Faq } from "../_v2/faq";
 
 export const dynamic = "force-dynamic";
-// Prévia do redesign: fora do Google até ser aprovada
 export const metadata: Metadata = {
   title: "Fuzil Disparador · Sua mensagem. Nossa operação.",
   description: "Disparos em massa no WhatsApp com execução pela equipe da Fuzil, tecnologia própria e organização em cada etapa.",
-  robots: { index: false, follow: false },
 };
 
 const DIFFS = [
@@ -28,13 +25,15 @@ const DIFFS = [
   { icon: MessagesSquare, title: "Equipe do seu lado", text: "Você fala com gente de verdade no WhatsApp, do orçamento ao relatório final." },
 ];
 
-const SOLUTIONS = [
+const SOLUTIONS: Array<{ icon: typeof Tag; title: string; text: string; adult?: boolean }> = [
   { icon: Tag, title: "Promoções", text: "Cupons, ofertas relâmpago e novidades para quem já é seu cliente." },
   { icon: Rocket, title: "Lançamentos", text: "Abertura de carrinho, lembrete de evento e último dia da oferta." },
   { icon: Megaphone, title: "Avisos", text: "Mudança de horário, novidade importante ou comunicado para toda a base." },
   { icon: CalendarClock, title: "Lembretes", text: "Agendamentos, consultas, eventos e datas que não podem ser esquecidas." },
   { icon: CreditCard, title: "Cobranças", text: "Vencimento, segunda via e confirmação de pagamento onde a pessoa lê." },
   { icon: BellRing, title: "Comunicação com clientes", text: "Pós-venda, pesquisa de satisfação e relacionamento com a sua base." },
+  { icon: Landmark, title: "Financeiras e correspondentes", text: "Consignado, FGTS e crédito para a sua base de clientes." },
+  { icon: Ticket, title: "Bets e sorteios autorizados", text: "Bônus, eventos, sorteios e aviso de ganhador para a sua base.", adult: true },
 ];
 
 const TECH = [
@@ -57,9 +56,7 @@ function Section({ id, eyebrow, title, intro, children, className = "" }: { id?:
   );
 }
 
-export default async function NewHome() {
-  // Desligada no ar até o dono aprovar: só abre com SITE_V2_PREVIEW=1 no servidor
-  if (process.env.SITE_V2_PREVIEW !== "1") notFound();
+export default async function Home() {
   const c = company();
   const wa = siteWhatsApp(V2_MSG);
   const sent = c.priorSends + (await totalSent());
@@ -209,11 +206,11 @@ export default async function NewHome() {
 
       {/* SOLUÇÕES */}
       <Section id="solucoes" eyebrow="Soluções" title={<>Para cada tipo de mensagem, <span className="text-[var(--gray)]">uma operação pronta.</span></>} intro="Atendemos qualquer nicho que fale com a própria base de clientes. Se o seu caso não está aqui, conta pra gente no WhatsApp.">
-        <div className="grid gap-px overflow-hidden rounded-3xl border border-white/10 bg-white/10 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-px overflow-hidden rounded-3xl border border-white/10 bg-white/10 sm:grid-cols-2 lg:grid-cols-4">
           {SOLUTIONS.map((s, k) => (
-            <div key={s.title} data-reveal style={{ ["--d" as string]: `${(k % 3) * 70}ms` }} className="spot bg-[var(--ink)] p-8 transition-colors duration-300 hover:bg-[#0e0f13]">
+            <div key={s.title} data-reveal style={{ ["--d" as string]: `${(k % 4) * 70}ms` }} className="spot bg-[var(--ink)] p-8 transition-colors duration-300 hover:bg-[#0e0f13]">
               <s.icon className="size-6 text-white/70" strokeWidth={1.5} />
-              <h3 className="mt-8 text-lg font-semibold">{s.title}</h3>
+              <h3 className="mt-8 flex flex-wrap items-center gap-2 text-lg font-semibold">{s.title}{s.adult && <span className="rounded-full border border-white/15 px-2 py-0.5 text-[10px] font-bold text-[var(--gray)]">+18</span>}</h3>
               <p className="t-muted mt-2 text-sm leading-relaxed">{s.text}</p>
             </div>
           ))}

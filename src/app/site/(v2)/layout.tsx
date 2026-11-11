@@ -1,4 +1,4 @@
-// Visual novo do site (redesign). Por enquanto só em /novo (prévia, fora do Google) até ser aprovado.
+// Visual novo do site (dark premium): página inicial e /disparos. As outras páginas ainda usam (atual) até serem redesenhadas.
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import { Logo } from "@/components/brand";
@@ -8,11 +8,11 @@ import { V2_MSG } from "../_v2/content";
 import "../_v2/v2.css";
 
 const NAV = [
-  { href: "#como-funciona", label: "Como funciona" },
-  { href: "#solucoes", label: "Soluções" },
-  { href: "#precos", label: "Preços" },
-  { href: "#sobre", label: "Sobre" },
-  { href: "#contato", label: "Contato" },
+  { href: "/#como-funciona", label: "Como funciona" },
+  { href: "/#solucoes", label: "Soluções" },
+  { href: "/#precos", label: "Preços" },
+  { href: "/#sobre", label: "Sobre" },
+  { href: "/#contato", label: "Contato" },
 ];
 
 export default function V2Layout({ children }: { children: React.ReactNode }) {

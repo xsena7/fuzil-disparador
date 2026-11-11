@@ -21,6 +21,7 @@ export const provenSends = (n: number) =>
 
 export const V2_FAQ: Array<[string, string]> = [
   ["Vocês vendem a plataforma?", "Não. A gente vende o disparo feito pela nossa equipe. O sistema é a nossa ferramenta interna: você manda a lista e a mensagem e nós cuidamos de todo o resto."],
+  ["Vocês disparam para o meu nicho?", "Sim: promoções, lançamentos, avisos, lembretes, cobranças, financeiras e correspondentes, bets e sorteios autorizados (+18) e o que mais o seu negócio precisar. Conta no WhatsApp o que você vende."],
   ["Quanto custa?", "É por pacote, e quanto maior o volume, menor o preço por disparo: de R$ 0,30 no Avulso (a partir de 1.000 disparos) até R$ 0,16 no Máximo (a partir de 100.000). Economia de até 47% em relação ao Avulso."],
   ["Quanto tempo eu tenho para usar o pacote?", "1 mês a partir do dia da contratação. Dá para dividir em vários disparos dentro desse prazo."],
   ["Preciso ter conta na Meta, BM ou número?", "Não. A gente usa as nossas contas e números. Você só manda a lista de contatos e a mensagem."],

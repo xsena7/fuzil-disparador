@@ -4,6 +4,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "3.94",
+    date: "11/11/2026",
+    items: ["[admin] Site novo no ar (fuzildisparador.com.br e /disparos): visual escuro premium com simulação de disparo, diferenciais, bloco dos 2 bilhões, tecnologia, processo em 3 etapas, soluções (com financeiras e bets +18), pacotes com seleção e botão para o WhatsApp, perguntas e chamada final"],
+  },
+  {
     version: "3.93",
     date: "11/11/2026",
     items: ["[admin] Site: Pixel da Meta e API de Conversões (Admin → Plataforma: ID do Pixel e token). Eventos PageView, ViewContent (viu os preços), AddToCart (escolheu pacote/produto), Contact (clicou no WhatsApp) e CompleteRegistration (cadastro no painel ou no site de links), com aviso de cookies"],
