@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import { ArrowRight, ArrowDown, BadgeCheck, BarChart3, BellRing, CalendarClock, CreditCard, Filter, Megaphone, MessagesSquare, Radar, Repeat2, Rocket, ShieldCheck, Tag, Wallet, Workflow } from "lucide-react";
 import { company } from "@/lib/company";
 import { totalSent } from "@/lib/site-stats";
@@ -57,6 +58,8 @@ function Section({ id, eyebrow, title, intro, children, className = "" }: { id?:
 }
 
 export default async function NewHome() {
+  // Desligada no ar até o dono aprovar: só abre com SITE_V2_PREVIEW=1 no servidor
+  if (process.env.SITE_V2_PREVIEW !== "1") notFound();
   const c = company();
   const wa = siteWhatsApp(V2_MSG);
   const sent = c.priorSends + (await totalSent());
