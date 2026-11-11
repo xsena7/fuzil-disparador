@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { ArrowRight, BarChart3, BadgeCheck, BellRing, CheckCheck, Sparkles, ClipboardList, Landmark, MessageCircle, Megaphone, Repeat, Rocket, Send, ShieldCheck, Smartphone, Store, Tag, Ticket, Wallet, Workflow, XCircle } from "lucide-react";
 import { company } from "@/lib/company";
 import { roundDown, totalSent } from "@/lib/site-stats";
-import { siteWhatsApp } from "../cta";
+import { siteWhatsApp } from "@/app/site/cta";
 
 // Landing dos anúncios (leads do Facebook): só disparo feito pela equipe, tudo explicado simples, tudo leva ao WhatsApp
 export const dynamic = "force-dynamic";

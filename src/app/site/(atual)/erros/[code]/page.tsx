@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, CheckCircle2 } from "lucide-react";
 import { company } from "@/lib/company";
-import { siteWhatsApp } from "../../cta";
+import { siteWhatsApp } from "@/app/site/cta";
 import { errorGroup, publicError, publicErrors } from "@/lib/seo-errors";
 
 type Props = { params: Promise<{ code: string }> };

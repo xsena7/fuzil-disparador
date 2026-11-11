@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { siteWhatsApp } from "../cta";
+import { siteWhatsApp } from "@/app/site/cta";
 
 export const metadata: Metadata = {
   title: "Perguntas frequentes sobre disparo pela API oficial do WhatsApp | Fuzil Disparador",

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { company, ownerLine } from "@/lib/company";
-import { LegalPage } from "../legal";
+import { LegalPage } from "@/app/site/legal";
 
 export const metadata: Metadata = { title: "Termos de Uso · Fuzil Disparador" };
 

@@ -4,7 +4,7 @@ import Image from "next/image";
 import { notFound } from "next/navigation";
 import { AlertTriangle, ArrowLeft, ArrowRight, Clock, Lightbulb } from "lucide-react";
 import { TUTORIALS, findTutorial } from "@/lib/tutorials";
-import { siteWhatsApp } from "../../cta";
+import { siteWhatsApp } from "@/app/site/cta";
 
 type Props = { params: Promise<{ slug: string }> };
 
