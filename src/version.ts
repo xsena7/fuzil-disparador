@@ -4,6 +4,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "3.96",
+    date: "11/11/2026",
+    items: ["Visual novo da plataforma, com pegada de tecnologia: grade discreta no fundo, títulos com fonte nova e botões com brilho. E tema escuro: ligue em \"Tema escuro\" no menu (a escolha fica salva)"],
+  },
+  {
     version: "3.95",
     date: "11/11/2026",
     items: ["[admin] Site: visual novo em todas as páginas e o site virou páginas de verdade (Como funciona, Soluções, Preços, Sobre, Contato) com menu no celular; a página inicial ficou curta. Guias, erros, perguntas, loja, links e páginas legais no visual escuro"],

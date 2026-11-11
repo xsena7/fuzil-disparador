@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { Bell, Building2, Camera, Flame, GraduationCap, MessagesSquare, Coins, FileText, Home, Layers, LogOut, Mail, Megaphone, Menu, X, Settings, Shield, ShoppingBag, Smartphone, Sparkles, Wallet, Workflow } from "lucide-react";
 import { logoutAction } from "@/app/actions/auth";
 import { Logo } from "./brand";
+import { ThemeToggle } from "./theme-toggle";
 
 const sections = [
   {
@@ -45,7 +46,7 @@ const sections = [
   },
 ];
 
-export function Sidebar({ workspace, user, unread, chatUnread = 0, mailUnread = 0, balance, isSuperAdmin, financePartner = false, version }: { workspace: string; user: string; unread: number; chatUnread?: number; mailUnread?: number; balance: number; isSuperAdmin: boolean; financePartner?: boolean; version: string }) {
+export function Sidebar({ workspace, user, unread, chatUnread = 0, mailUnread = 0, balance, isSuperAdmin, financePartner = false, version, dark = false }: { dark?: boolean; workspace: string; user: string; unread: number; chatUnread?: number; mailUnread?: number; balance: number; isSuperAdmin: boolean; financePartner?: boolean; version: string }) {
   const path = usePathname();
   // No celular o menu fica escondido e abre pelo botão ☰; fecha sozinho ao trocar de página
   const [open, setOpen] = useState(false);
@@ -55,7 +56,7 @@ export function Sidebar({ workspace, user, unread, chatUnread = 0, mailUnread = 
   const all = platform.length ? [...sections, { title: "Plataforma", items: platform }] : sections;
   return (
     <>
-    <div className="fixed inset-x-0 top-0 z-40 flex h-14 items-center gap-3 bg-ink px-4 md:hidden">
+    <div className="dk-off fixed inset-x-0 top-0 z-40 flex h-14 items-center gap-3 bg-ink px-4 md:hidden">
       <button onClick={() => setOpen(true)} aria-label="Abrir menu" className="-ml-1 rounded-lg p-1.5 text-zinc-300 hover:bg-white/10">
         <Menu className="size-6" />
       </button>
@@ -70,7 +71,7 @@ export function Sidebar({ workspace, user, unread, chatUnread = 0, mailUnread = 
     {open && <div className="fixed inset-0 z-40 bg-black/50 md:hidden" onClick={() => setOpen(false)} />}
     <aside
       className={clsx(
-        "fixed inset-y-0 left-0 z-50 flex h-screen w-64 shrink-0 flex-col bg-ink px-3 py-5 text-zinc-300 transition-transform md:sticky md:top-0 md:translate-x-0",
+        "dk-off fixed inset-y-0 left-0 z-50 flex h-screen w-64 shrink-0 flex-col bg-ink px-3 py-5 text-zinc-300 transition-transform md:sticky md:top-0 md:translate-x-0",
         open ? "translate-x-0" : "-translate-x-full",
       )}
     >
@@ -133,6 +134,7 @@ export function Sidebar({ workspace, user, unread, chatUnread = 0, mailUnread = 
           <div className="truncate text-sm font-medium text-zinc-200">{workspace}</div>
           <div className="truncate text-xs text-zinc-500">{user}</div>
         </div>
+        <ThemeToggle initial={dark} />
         <form action={logoutAction}>
           <button className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm text-zinc-400 transition hover:bg-white/5 hover:text-zinc-100">
             <LogOut className="size-4" /> Sair

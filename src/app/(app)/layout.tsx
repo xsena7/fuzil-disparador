@@ -14,6 +14,8 @@ import { Tour } from "@/components/tour";
 import { CelebrationHost } from "@/components/celebration";
 import { ensureReadyGroup } from "@/lib/bm-problems";
 import { ensureDefaultGroups } from "@/lib/default-groups";
+import { cookies } from "next/headers";
+import "../app-dark.css";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const auth = await requireAuth();
@@ -29,11 +31,14 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const mailUnread = me?.financePartner ? await prisma.mailMessage.count({ where: { direction: "IN", readAt: null } }) : 0;
   // Conta nova (sem BM) que ainda não respondeu o convite: pergunta se quer o tour
   const offerTour = !auth.inspecting && !me?.tourState && bms === 0;
+  // Tema escuro (botão no menu): a classe entra antes de pintar a tela, sem piscar o claro
+  const dark = (await cookies()).get("fz_theme")?.value === "dark";
   return (
     <div className="flex min-h-screen">
-      <Sidebar workspace={auth.workspace.name} user={auth.user.email} unread={unread} chatUnread={chatUnread} mailUnread={mailUnread} balance={auth.workspace.creditBalance} isSuperAdmin={auth.user.isSuperAdmin} financePartner={Boolean(me?.financePartner)} version={APP_VERSION} />
+      {dark && <script dangerouslySetInnerHTML={{ __html: "document.documentElement.classList.add('dk')" }} />}
+      <Sidebar workspace={auth.workspace.name} user={auth.user.email} unread={unread} chatUnread={chatUnread} mailUnread={mailUnread} balance={auth.workspace.creditBalance} isSuperAdmin={auth.user.isSuperAdmin} financePartner={Boolean(me?.financePartner)} version={APP_VERSION} dark={dark} />
       {/* Fundo de todas as telas: brilho laranja bem clarinho e a logo do Fuzil apagada (só enfeite) */}
-      <div aria-hidden className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
+      <div aria-hidden className="app-bg pointer-events-none fixed inset-0 z-0 overflow-hidden">
         {/* Degradês simples (sem filtro de desfoque, que deixava o mouse pesado) */}
         <div
           className="absolute inset-0"
@@ -42,6 +47,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               "radial-gradient(620px circle at 88% 0%, rgba(251,146,60,.14), transparent 70%), radial-gradient(520px circle at 32% 62%, rgba(253,186,116,.12), transparent 70%), radial-gradient(480px circle at 72% 100%, rgba(251,113,133,.08), transparent 70%)",
           }}
         />
+        <div className="app-grid absolute inset-0" />
         <Logo className="absolute bottom-10 right-8 w-[min(640px,60vw)] opacity-[.045]" />
       </div>
       <main className="relative z-[1] min-w-0 flex-1 px-4 pb-8 pt-20 md:px-10 md:py-9">
