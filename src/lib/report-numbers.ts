@@ -76,6 +76,8 @@ export function applyOverrides(real: Omit<ReportNumbers, "adjusted">, overrides:
   const sentFactor = live && base.sent && o.sent !== undefined ? o.sent / base.sent : 1;
   const n = { ...real };
   for (const { key } of REPORT_FIELDS) {
+    // Cliques são sempre os reais (nunca ajustados)
+    if (key === "clicked") continue;
     const v = o[key];
     if (v === undefined) continue;
     const b = base[key];
@@ -86,15 +88,17 @@ export function applyOverrides(real: Omit<ReportNumbers, "adjusted">, overrides:
     const factor = b > 0 ? v / b : sentFactor;
     n[key] = Math.max(0, Math.round(v + (real[key] - b) * factor));
   }
-  // Garante a lógica (corta de cima para baixo)
+  // Garante a lógica (corta de cima para baixo), mas os cliques ficam os reais: quem clicou leu, foi enviado e está no público
   n.sent = Math.min(n.sent, n.total);
   n.read = Math.min(n.read, n.sent);
-  n.clicked = Math.min(n.clicked, n.read);
   n.replied = Math.min(n.replied, n.read);
+  n.clicked = real.clicked;
+  n.read = Math.max(n.read, n.clicked);
+  n.sent = Math.max(n.sent, n.read);
+  n.total = Math.max(n.total, n.sent);
   return {
     ...n,
-    // Cliques totais acompanham quem clicou na mesma proporção
-    clicks: o.clicked === undefined ? real.clicks : real.clicked > 0 ? Math.max(n.clicked, Math.round((real.clicks * n.clicked) / real.clicked)) : n.clicked,
+    clicks: real.clicks,
     sentUnread: Math.max(0, n.sent - n.read),
     pending: Math.max(0, n.total - n.sent),
     adjusted: true,

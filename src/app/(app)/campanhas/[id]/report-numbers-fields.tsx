@@ -8,7 +8,6 @@ const FIELDS: Array<{ key: Key; label: string; base?: Key; baseLabel?: string }>
   { key: "total", label: "Público" },
   { key: "sent", label: "Enviadas", base: "total", baseLabel: "do público" },
   { key: "read", label: "Lidas", base: "sent", baseLabel: "das enviadas" },
-  { key: "clicked", label: "Clicaram", base: "read", baseLabel: "das lidas" },
   { key: "replied", label: "Responderam", base: "read", baseLabel: "das lidas" },
 ];
 

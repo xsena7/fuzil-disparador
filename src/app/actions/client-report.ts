@@ -109,7 +109,8 @@ export async function saveReportNumbersAction(id: string, _: FormState, form: Fo
   const v: Record<string, number> = {};
   for (const { key, label } of REPORT_FIELDS) {
     const raw = String(form.get(key) ?? "").replace(/\D/g, "");
-    const n = raw === "" ? real[key] : Number(raw);
+    // Cliques não se ajustam: sempre os reais
+    const n = key === "clicked" || raw === "" ? real[key] : Number(raw);
     if (!Number.isFinite(n) || n < 0 || n > 10_000_000) return { error: `Número inválido em ${label}` };
     v[key] = n;
   }
