@@ -4,6 +4,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "4.08",
+    date: "13/11/2026",
+    items: ["Conexões: números reorganizados. Cada número em um bloco limpo; o que falta confirmar mostra em 2 passos (digite o código / o código não chegou?). Adicionar número ficou em 3 passos: número e nome, como receber o código, foto de perfil"],
+  },
+  {
     version: "4.07",
     date: "13/11/2026",
     items: ["Grupos de BM: depois do template aprovado, a BM sem cartão vai para \"Problemas de pagamento\" antes de \"Sem número\" (antes, quando a Meta não mandava a informação do cartão, ela pulava direto para Sem número). Aviso de pagamento na saúde da conta também conta"],

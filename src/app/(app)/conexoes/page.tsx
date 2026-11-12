@@ -1,3 +1,4 @@
+import clsx from "clsx";
 import { AlertTriangle, CheckCircle2, ChevronRight, CreditCard, KeyRound, MessagesSquare, RefreshCw, Phone, Plus, StickyNote, Trash2 } from "lucide-react";
 import { metaBillingUrl } from "@/lib/meta-links";
 import { requireAuth } from "@/lib/auth";
@@ -422,79 +423,106 @@ export default async function ConnectionsPage() {
                   <div className="divide-y divide-zinc-100 overflow-hidden rounded-xl border border-zinc-200 bg-white">
                     <div className="bg-zinc-100 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-zinc-600">Números</div>
                     {waba.phones.length === 0 && <div className="px-4 py-3 text-zinc-500">Nenhum número nesta WABA.</div>}
-                    {waba.phones.map((p) => (
-                      <div key={p.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
-                        <PhoneAvatar url={p.profilePhotoUrl} />
-                        <div className="min-w-48">
-                          <div className="font-medium">{formatPhone(p.displayPhoneNumber.replace(/\D/g, ""))}</div>
-                          <div className="text-xs text-zinc-600">{p.verifiedName} · Phone ID {p.phoneNumberId}</div>
-                        </div>
-                        <QualityBadge q={p.qualityRating} />
-                        <PhoneStatusBadge s={p.status} />
-                        <Badge color="blue" dot={false}>{tierLabel(p.messagingLimitTier)}</Badge>
-                        {p.isCoexistence && <Badge dot={false}>Coexistência</Badge>}
-                        {p.invalidReason === PHONE_DISCARDED ? (
-                          <Badge color="gray">Sobra do SMSBear: ocupa vaga na Meta. Apague no WhatsApp Manager</Badge>
-                        ) : p.invalidReason ? <Badge color="red">{p.invalidReason}: não entra no rodízio</Badge> : !p.enabled && <Badge color="yellow">Fora do rodízio</Badge>}
-                        <div className="ml-auto flex flex-wrap justify-end gap-2">
-                          {p.status === "CONNECTED" && !p.invalidReason && <ProfileEditor phoneId={p.id} bmName={bm.name} currentName={p.verifiedName} pendingName={p.pendingName} />}
-                          {p.status && p.status !== "CONNECTED" && !p.isCoexistence && (
-                            <ActionForm action={async () => { "use server"; return registerPhoneAction(p.id); }} submit="Registrar número" variant="secondary" />
-                          )}
-                          {!p.invalidReason && <ConfirmButton action={togglePhoneAction.bind(null, p.id)}>{p.enabled ? "Tirar do rodízio" : "Colocar no rodízio"}</ConfirmButton>}
-                          <ConfirmButton
-                            action={deletePhoneAction.bind(null, p.id)}
-                            variant="ghost"
-                            className="text-red-600"
-                            confirm={`Excluir o número ${formatPhone(p.displayPhoneNumber.replace(/\D/g, ""))} da BM?\nEle sai da conta do WhatsApp na Meta e do rodízio do Fuzil. Não dá para desfazer.`}
-                          >
-                            <Trash2 className="size-3.5" /> Excluir número
-                          </ConfirmButton>
-                        </div>
-                        {/* Número ainda não confirmado: digita o código que chegou e o Fuzil confirma e registra */}
-                        {p.status && p.status !== "CONNECTED" && !p.isCoexistence && p.invalidReason !== PHONE_DISCARDED && (
-                          <details className="w-full rounded-xl bg-orange-50/60 px-3 py-2 ring-1 ring-orange-100" open={p.invalidReason === "Número não registrado na API"}>
-                            <summary className="cursor-pointer text-sm font-medium text-orange-900">Confirmar o número pelo código (SMS ou ligação)</summary>
-                            <div className="mt-3 flex flex-wrap items-end gap-3">
-                              <ActionForm action={verifyPhoneAction.bind(null, p.id)} submit="Confirmar e registrar" className="flex flex-wrap items-end gap-2">
-                                <Field label="Código de 6 números">
-                                  <Input name="code" inputMode="numeric" maxLength={7} placeholder="123456" className="w-36" autoComplete="one-time-code" />
-                                </Field>
-                              </ActionForm>
-                              <div className="flex flex-wrap gap-2 text-sm">
-                                <ActionForm action={async () => { "use server"; return requestPhoneCodeAction(p.id, "SMS"); }} submit="Mandar código por SMS" variant="secondary" />
-                                <ActionForm action={async () => { "use server"; return requestPhoneCodeAction(p.id, "VOICE"); }} submit="Receber por ligação" variant="secondary" />
+                    {waba.phones.map((p) => {
+                      const needsCode = Boolean(p.status && p.status !== "CONNECTED" && !p.isCoexistence && p.invalidReason !== PHONE_DISCARDED);
+                      const phoneFmt = formatPhone(p.displayPhoneNumber.replace(/\D/g, ""));
+                      return (
+                        <div key={p.id} className={clsx("px-4 py-4", needsCode && "bg-orange-50/40")}>
+                          {/* Linha 1: quem é o número + ações */}
+                          <div className="flex flex-wrap items-center gap-3">
+                            <PhoneAvatar url={p.profilePhotoUrl} />
+                            <div className="min-w-0 flex-1">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className="font-semibold text-zinc-900">{phoneFmt}</span>
+                                <PhoneStatusBadge s={p.status} />
+                                {p.status === "CONNECTED" && <QualityBadge q={p.qualityRating} />}
+                                {p.status === "CONNECTED" && <Badge color="blue" dot={false}>{tierLabel(p.messagingLimitTier)}</Badge>}
+                                {p.isCoexistence && <Badge dot={false}>Coexistência</Badge>}
+                                {!needsCode && p.invalidReason === PHONE_DISCARDED && <Badge color="gray">Sobra do SMSBear: apague no WhatsApp Manager</Badge>}
+                                {!needsCode && p.invalidReason && p.invalidReason !== PHONE_DISCARDED && <Badge color="red">{p.invalidReason}</Badge>}
+                                {!p.invalidReason && !p.enabled && <Badge color="yellow">Fora do rodízio</Badge>}
+                              </div>
+                              <div className="mt-0.5 truncate text-xs text-zinc-500">{p.verifiedName}<span className="text-zinc-400"> · ID {p.phoneNumberId}</span></div>
+                            </div>
+                            <div className="flex flex-wrap items-center justify-end gap-2">
+                              {p.status === "CONNECTED" && !p.invalidReason && <ProfileEditor phoneId={p.id} bmName={bm.name} currentName={p.verifiedName} pendingName={p.pendingName} />}
+                              {!p.invalidReason && <ConfirmButton action={togglePhoneAction.bind(null, p.id)}>{p.enabled ? "Tirar do rodízio" : "Colocar no rodízio"}</ConfirmButton>}
+                              <ConfirmButton
+                                action={deletePhoneAction.bind(null, p.id)}
+                                variant="ghost"
+                                className="text-red-600"
+                                confirm={`Excluir o número ${phoneFmt} da BM?\nEle sai da conta do WhatsApp na Meta e do rodízio do Fuzil. Não dá para desfazer.`}
+                              >
+                                <Trash2 className="size-3.5" /> Excluir
+                              </ConfirmButton>
+                            </div>
+                          </div>
+                          {/* Número ainda não confirmado: um passo de cada vez */}
+                          {needsCode && (
+                            <div className="mt-3 rounded-2xl border border-orange-200 bg-white p-4">
+                              <div className="mb-3 text-sm font-semibold text-zinc-900">Falta confirmar este número para ele entrar no rodízio</div>
+                              <div className="grid gap-4 md:grid-cols-2">
+                                <div>
+                                  <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-zinc-500"><span className="grid size-5 place-items-center rounded-full bg-brand-gradient text-[11px] text-white">1</span> Digite o código que chegou</div>
+                                  <ActionForm action={verifyPhoneAction.bind(null, p.id)} submit="Confirmar" className="flex flex-wrap items-end gap-2 [&>div]:mt-0">
+                                    <Input name="code" inputMode="numeric" maxLength={7} placeholder="000000" className="w-36 text-center font-mono text-lg tracking-[0.3em]" autoComplete="one-time-code" aria-label="Código de 6 números" />
+                                  </ActionForm>
+                                </div>
+                                <div>
+                                  <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-zinc-500"><span className="grid size-5 place-items-center rounded-full bg-zinc-200 text-[11px] text-zinc-700">2</span> O código não chegou?</div>
+                                  <div className="flex flex-wrap gap-2">
+                                    <ActionForm action={async () => { "use server"; return requestPhoneCodeAction(p.id, "SMS"); }} submit="Mandar de novo por SMS" variant="secondary" className="[&>div]:mt-0" />
+                                    <ActionForm action={async () => { "use server"; return requestPhoneCodeAction(p.id, "VOICE"); }} submit="Receber por ligação" variant="secondary" className="[&>div]:mt-0" />
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="mt-3 flex flex-wrap items-center gap-1 border-t border-zinc-100 pt-3 text-xs text-zinc-500">
+                                Já confirmou o código no WhatsApp Manager?{" "}
+                                <ConfirmButton action={registerPhoneAction.bind(null, p.id)} variant="ghost" className="px-2 py-1 text-xs text-orange-700">Só registrar na API</ConfirmButton>
                               </div>
                             </div>
-                          </details>
-                        )}
-                      </div>
-                    ))}
-                    {/* Número novo direto pelo Fuzil: não precisa entrar no perfil do Facebook */}
-                    <details className="group/add px-4 py-3">
-                      <summary className="flex cursor-pointer list-none items-center gap-2 text-sm font-semibold text-orange-700 [&::-webkit-details-marker]:hidden">
-                        <Plus className="size-4" /> Adicionar número nesta WABA
-                      </summary>
-                      <p className="mt-2 text-sm text-zinc-600">
-                        Sem entrar no Facebook: o Fuzil coloca o número na WABA e a Meta manda um código para ele. O número não pode estar em uso no WhatsApp do celular (apague a conta do WhatsApp nele antes).
-                      </p>
-                      <ActionForm action={addPhoneAction.bind(null, waba.id)} submit="Adicionar e mandar código" className="mt-3 space-y-3">
-                        <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto]">
-                          <Field label="Número com DDD">
-                            <KeepInput name="phone" inputMode="tel" placeholder="11 91234-5678" required />
-                          </Field>
-                          <Field label="Nome de exibição" hint="O nome que aparece no WhatsApp (a Meta analisa)">
-                            <KeepInput name="name" remember={`nome-waba-${waba.id}`} defaultValue={waba.phones.find((x) => x.verifiedName)?.verifiedName ?? bm.name} required maxLength={100} />
-                          </Field>
-                          <Field label="Código por">
-                            <select name="method" className="rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm">
-                              <option value="SMS">SMS</option>
-                              <option value="VOICE">Ligação</option>
-                            </select>
-                          </Field>
+                          )}
                         </div>
-                        <PhotoPick name="photo" photos={photos} allowCustom />
-                      </ActionForm>
+                      );
+                    })}
+                    {/* Número novo direto pelo Fuzil: não precisa entrar no perfil do Facebook */}
+                    <details className="group/add px-4 py-4">
+                      <summary className="flex cursor-pointer list-none items-center gap-2 text-sm font-semibold text-orange-700 [&::-webkit-details-marker]:hidden">
+                        <Plus className="size-4 transition-transform group-open/add:rotate-45" /> Adicionar número nesta WABA
+                      </summary>
+                      <div className="mt-4 rounded-2xl border border-zinc-200 bg-white p-5">
+                        <p className="mb-5 text-sm text-zinc-500">
+                          O Fuzil coloca o número na WABA e a Meta manda um código para ele. O número não pode estar em uso no WhatsApp do celular (apague a conta do WhatsApp nele antes).
+                        </p>
+                        <ActionForm action={addPhoneAction.bind(null, waba.id)} submit="Adicionar e mandar código" className="space-y-6">
+                          <section>
+                            <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-zinc-500"><span className="grid size-5 place-items-center rounded-full bg-brand-gradient text-[11px] text-white">1</span> Número e nome</div>
+                            <div className="grid gap-4 md:grid-cols-2">
+                              <Field label="Número com DDD">
+                                <KeepInput name="phone" inputMode="tel" placeholder="11 91234-5678" required />
+                              </Field>
+                              <Field label="Nome de exibição" hint="O nome que aparece no WhatsApp (a Meta analisa)">
+                                <KeepInput name="name" remember={`nome-waba-${waba.id}`} defaultValue={waba.phones.find((x) => x.verifiedName)?.verifiedName ?? bm.name} required maxLength={100} />
+                              </Field>
+                            </div>
+                          </section>
+                          <section>
+                            <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-zinc-500"><span className="grid size-5 place-items-center rounded-full bg-brand-gradient text-[11px] text-white">2</span> Como receber o código</div>
+                            <div className="flex flex-wrap gap-2">
+                              {[["SMS", "SMS"], ["VOICE", "Ligação"]].map(([v, l], i) => (
+                                <label key={v} className="cursor-pointer">
+                                  <input type="radio" name="method" value={v} defaultChecked={i === 0} className="peer sr-only" />
+                                  <span className="inline-flex rounded-full border border-zinc-200 px-4 py-2 text-sm font-medium text-zinc-600 transition peer-checked:border-orange-400 peer-checked:bg-orange-500/10 peer-checked:text-orange-600 peer-focus-visible:ring-2 peer-focus-visible:ring-brand-300">{l}</span>
+                                </label>
+                              ))}
+                            </div>
+                          </section>
+                          <section>
+                            <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-zinc-500"><span className="grid size-5 place-items-center rounded-full bg-brand-gradient text-[11px] text-white">3</span> Foto de perfil <span className="font-normal normal-case tracking-normal text-zinc-400">(entra quando o número for confirmado)</span></div>
+                            <PhotoPick name="photo" photos={photos} allowCustom label={false} />
+                          </section>
+                        </ActionForm>
+                      </div>
                     </details>
                   </div>
                   </div>

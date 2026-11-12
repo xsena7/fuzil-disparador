@@ -16,7 +16,7 @@ const OPTIONS = [
  * Escolhe a foto de perfil do número novo (mulher, homem, nenhuma ou, com allowCustom, uma foto própria).
  * A última escolha (mulher, homem ou nenhuma) fica lembrada. A foto própria vai no campo `${name}File`.
  */
-export function PhotoPick({ name, photos, compact = false, allowCustom = false }: { name: string; photos: PhotoUrls; compact?: boolean; allowCustom?: boolean }) {
+export function PhotoPick({ name, photos, compact = false, allowCustom = false, label = true }: { name: string; photos: PhotoUrls; compact?: boolean; allowCustom?: boolean; label?: boolean }) {
   const [value, setValue] = useState<string>("female");
   const [preview, setPreview] = useState<string | null>(null);
   useEffect(() => {
@@ -37,7 +37,7 @@ export function PhotoPick({ name, photos, compact = false, allowCustom = false }
   const size = compact ? "size-9" : "size-11";
   return (
     <div>
-      <span className="mb-1 block text-xs text-zinc-500">Foto de perfil (entra sozinha quando o número conectar)</span>
+      {label && <span className="mb-1 block text-xs text-zinc-500">Foto de perfil (entra sozinha quando o número conectar)</span>}
       <input type="hidden" name={name} value={value} />
       <div className="flex flex-wrap gap-2">
         {OPTIONS.map((o) => (
@@ -92,7 +92,7 @@ export function PhotoPick({ name, photos, compact = false, allowCustom = false }
             const f = e.target.files?.[0];
             setPreview(f ? URL.createObjectURL(f) : null);
           }}
-          className="mt-2 block text-xs file:mr-2 file:rounded-lg file:border-0 file:bg-zinc-100 file:px-2 file:py-1 file:text-xs"
+          className="mt-3 block w-full max-w-sm cursor-pointer rounded-xl border border-dashed border-zinc-300 p-2 text-xs text-zinc-500 file:mr-3 file:cursor-pointer file:rounded-lg file:border-0 file:bg-brand-gradient file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white"
         />
       )}
     </div>
