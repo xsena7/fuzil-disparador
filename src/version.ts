@@ -4,6 +4,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "4.05",
+    date: "13/11/2026",
+    items: ["Conexões: a foto escolhida ao adicionar um número (inclusive a sua própria) entra na hora em que você confirma o código, e a mensagem diz se entrou. Se a Meta ainda não aceitar, mostra o motivo e o Fuzil tenta de novo sozinho"],
+  },
+  {
     version: "4.04",
     date: "13/11/2026",
     items: ["Grupos de BM: a foto de perfil trocada em Conexões aparece na hora nos grupos (antes só depois da próxima sincronização). Foto com link vencido mostra o ícone em vez da imagem quebrada"],

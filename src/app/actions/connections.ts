@@ -16,7 +16,7 @@ import { FUZIL_APP_ID, FUZIL_BUSINESS_ID, defaultAppSecret, isPlatformOwner } fr
 
 const errMsg = friendlyError;
 import { metaDetail, metaErrorText } from "@/lib/meta-errors";
-import { customPhotoMark, parsePhoto, setPendingPhoto, squareJpeg } from "@/lib/profile-photos";
+import { applyPhotoNow, customPhotoMark, parsePhoto, setPendingPhoto, squareJpeg } from "@/lib/profile-photos";
 import { saveUpload } from "@/lib/uploads";
 
 /** Conexão manual: ID da conta do WhatsApp (opcional) + token do usuário do sistema da BM. Sem ID, o Fuzil acha as contas pelo token. */
@@ -227,8 +227,9 @@ export async function registerPhoneAction(phoneId: string): Promise<FormState> {
   } catch (err) {
     return { error: errMsg(err) };
   }
+  const pic = await applyPhotoNow(phone.id);
   revalidatePath("/conexoes");
-  return { ok: "Número registrado na Cloud API" };
+  return { ok: `Número registrado na Cloud API${pic.ok ? ". A foto de perfil já foi colocada." : pic.error ? `. A foto ainda não entrou (${pic.error}); o Fuzil tenta de novo sozinho.` : ""}` };
 }
 
 /**
@@ -348,8 +349,12 @@ export async function verifyPhoneAction(phoneId: string, _: FormState, form: For
   } catch (err) {
     return { error: errMsg(err) };
   }
+  // A foto escolhida ao adicionar entra agora (se a Meta ainda não aceitar, o worker tenta de novo a cada 5 min)
+  const pic = await applyPhotoNow(phone.id);
   revalidatePath("/conexoes");
-  return { ok: "Número confirmado e registrado! Ele já entra no rodízio dos disparos." };
+  revalidatePath("/grupos");
+  const photoMsg = pic.ok ? " A foto de perfil já foi colocada." : pic.error ? ` A foto ainda não entrou (${pic.error}); o Fuzil tenta de novo sozinho.` : "";
+  return { ok: `Número confirmado e registrado! Ele já entra no rodízio dos disparos.${photoMsg}` };
 }
 
 export async function updateBusinessAction(businessId: string, form: FormData) {

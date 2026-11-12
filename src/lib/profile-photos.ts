@@ -1,3 +1,4 @@
+import { metaDetail } from "./meta-errors";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { prisma } from "./db";
@@ -62,21 +63,40 @@ export async function applyPendingPhotos() {
     take: 20,
   });
   for (const p of phones) {
-    const kind = parsePhoto(p.pendingPhoto);
-    const own = p.pendingPhoto?.startsWith(FILE_PREFIX) ? path.join(path.resolve(env.uploadDir()), path.basename(p.pendingPhoto.slice(FILE_PREFIX.length))) : null;
-    try {
-      if (kind || own) {
-        const token = wabaToken(p.waba);
-        const buf = own ? await readFile(own) : await photoBuffer(p.waba.workspace, kind!);
-        const handle = await meta.uploadSampleMedia(token, buf, "perfil.jpg", "image/jpeg");
-        await meta.updateBusinessProfile(token, p.phoneNumberId, { profile_picture_handle: handle });
-        const prof = await meta.getBusinessProfile(token, p.phoneNumberId).catch(() => null);
-        if (prof?.profile_picture_url) await prisma.phoneNumber.update({ where: { id: p.id }, data: { profilePhotoUrl: prof.profile_picture_url } });
-      }
-      await prisma.phoneNumber.update({ where: { id: p.id }, data: { pendingPhoto: null, pendingPhotoAt: null } });
-    } catch (err) {
-      // Tenta de novo na próxima rodada (o número pode ter acabado de registrar)
-      console.error(`[perfil] foto automática ${p.displayPhoneNumber}:`, err instanceof Error ? err.message : err);
+    const r = await applyPhotoNow(p.id);
+    if (r.error) console.error(`[perfil] foto automática ${p.displayPhoneNumber}:`, r.error);
+  }
+}
+
+/**
+ * Coloca agora a foto que está esperando nesse número (mulher, homem ou a foto própria escolhida ao adicionar).
+ * Chamado ao confirmar o código (na hora) e pelo worker (de novo, a cada 5 min, se a Meta ainda não aceitou).
+ */
+export async function applyPhotoNow(phoneId: string): Promise<{ ok?: true; skipped?: true; error?: string }> {
+  const p = await prisma.phoneNumber.findUnique({
+    where: { id: phoneId },
+    include: { waba: { include: { workspace: { select: { profilePhotoFemale: true, profilePhotoMale: true } } } } },
+  });
+  if (!p?.pendingPhoto) return { skipped: true };
+  const kind = parsePhoto(p.pendingPhoto);
+  const own = p.pendingPhoto.startsWith(FILE_PREFIX) ? path.join(path.resolve(env.uploadDir()), path.basename(p.pendingPhoto.slice(FILE_PREFIX.length))) : null;
+  try {
+    if (kind || own) {
+      const token = wabaToken(p.waba);
+      const buf = own ? await readFile(own) : await photoBuffer(p.waba.workspace, kind!);
+      const handle = await meta.uploadSampleMedia(token, buf, "perfil.jpg", "image/jpeg");
+      await meta.updateBusinessProfile(token, p.phoneNumberId, { profile_picture_handle: handle });
+      const prof = await meta.getBusinessProfile(token, p.phoneNumberId).catch(() => null);
+      if (prof?.profile_picture_url) await prisma.phoneNumber.update({ where: { id: p.id }, data: { profilePhotoUrl: prof.profile_picture_url } });
     }
+    await prisma.phoneNumber.update({ where: { id: p.id }, data: { pendingPhoto: null, pendingPhotoAt: null } });
+    return { ok: true };
+  } catch (err) {
+    // Foto própria que sumiu do disco: não adianta tentar de novo
+    if (own && (err as NodeJS.ErrnoException)?.code === "ENOENT") {
+      await prisma.phoneNumber.update({ where: { id: p.id }, data: { pendingPhoto: null, pendingPhotoAt: null } });
+      return { error: "a foto escolhida não foi encontrada no servidor (coloque pelo Perfil do WhatsApp)" };
+    }
+    return { error: metaDetail(err) };
   }
 }
