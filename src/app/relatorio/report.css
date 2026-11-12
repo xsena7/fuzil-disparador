@@ -1,0 +1,72 @@
+/* Relatório do cliente: visual escuro e tecnológico. A cor de destaque vem da marca (--rb-a / --rb-b). */
+@font-face {
+  font-family: "Inter Tight";
+  src: url("/fonts/inter-tight.woff2") format("woff2");
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+.rpt {
+  --ink: #090a0d;
+  --line: rgb(255 255 255 / 0.08);
+  --gray: #a4a9b4;
+  --a: var(--rb-a, #ff6a00);
+  --b: var(--rb-b, #ff303d);
+  background: var(--ink);
+  color: #fff;
+  font-family: "Inter Tight", Inter, ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+}
+.rpt .t-muted { color: var(--gray); }
+.rpt .t-num { font-weight: 650; letter-spacing: -0.045em; font-variant-numeric: tabular-nums; }
+.rpt .t-fire {
+  background-image: linear-gradient(100deg, var(--a), var(--b));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.rpt .bg-fire { background-image: linear-gradient(100deg, var(--a), var(--b)); }
+.rpt .eyebrow { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.7rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: var(--gray); }
+.rpt .eyebrow::before { content: ""; width: 1.1rem; height: 1px; background: linear-gradient(90deg, var(--a), transparent); }
+
+/* Superfícies */
+.rpt .rc {
+  position: relative;
+  background: linear-gradient(180deg, rgb(255 255 255 / 0.045), rgb(255 255 255 / 0.015));
+  border: 1px solid var(--line);
+  border-radius: 1.25rem;
+  box-shadow: 0 1px 0 rgb(255 255 255 / 0.05) inset, 0 30px 60px -30px rgb(0 0 0 / 0.8);
+  break-inside: avoid;
+}
+.rpt .rc-hi { border-color: color-mix(in srgb, var(--a) 45%, transparent); box-shadow: 0 1px 0 rgb(255 255 255 / 0.06) inset, 0 24px 60px -24px color-mix(in srgb, var(--a) 55%, transparent); }
+.rpt .glow { position: absolute; border-radius: 999px; pointer-events: none; filter: blur(60px); }
+.rpt .grid-bg {
+  background-image: linear-gradient(rgb(255 255 255 / 0.035) 1px, transparent 1px), linear-gradient(90deg, rgb(255 255 255 / 0.035) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(ellipse 80% 70% at 50% 0%, #000 30%, transparent 75%);
+}
+.rpt .btn-fire {
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; border-radius: 999px; padding: 0.6rem 1.2rem; font-weight: 600; font-size: 0.875rem; color: #fff; white-space: nowrap;
+  background-image: linear-gradient(100deg, var(--a), var(--b));
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 0.14) inset, 0 10px 26px -12px color-mix(in srgb, var(--a) 80%, transparent);
+  transition: transform 0.2s;
+}
+.rpt .btn-fire:hover { transform: translateY(-1px); }
+.rpt .btn-ghost { display: inline-flex; align-items: center; gap: 0.4rem; border-radius: 999px; padding: 0.6rem 1rem; font-size: 0.875rem; color: #e4e4e7; border: 1px solid rgb(255 255 255 / 0.14); }
+.rpt .btn-ghost:hover { background: rgb(255 255 255 / 0.06); }
+
+/* Entrada suave */
+@keyframes rpt-rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+.rpt .rise { animation: rpt-rise 0.7s cubic-bezier(.2,.7,.2,1) backwards; }
+@keyframes rpt-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+.rpt .pulse { animation: rpt-pulse 1.6s infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .rpt .rise, .rpt .pulse { animation: none !important; }
+}
+@media print {
+  @page { margin: 10mm; }
+  .rpt .glow { display: none; }
+}

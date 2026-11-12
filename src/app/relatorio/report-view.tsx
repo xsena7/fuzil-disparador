@@ -8,7 +8,8 @@ import { Countdown } from "@/components/countdown";
 import { keysForReport, parsePixKeys } from "@/lib/pix-keys";
 import { reportNumbers } from "@/lib/report-numbers";
 import { campaignReplies } from "@/lib/campaign-replies";
-import { Funnel, PixCopy, PrintButton, Ring } from "./charts";
+import { CountUp, Funnel, PixCopy, PrintButton, Ring } from "./charts";
+import "./report.css";
 import { ReplyList } from "./replies";
 
 const n = (v: number) => v.toLocaleString("pt-BR");
@@ -49,174 +50,161 @@ export async function ReportView({ id, workspaceId, publicView = false, expiresA
   const keys = total > 0 ? keysForReport(allKeys, campaign.reportPixKeyId) : [];
   // Marca do revendedor (se escolhida na campanha): troca logo, nome e cores; o rodapé continua dizendo que foi gerado pelo Fuzil
   const brand = campaign.reportBrand;
-  const accent = brand?.color ?? "#ff6a1f";
-  const brandCss = brand
-    ? `.rb .text-brand-gradient{background-image:linear-gradient(135deg,${brand.color},color-mix(in srgb,${brand.color} 70%,#fff))}
-.rb .bg-brand-gradient{background-image:none;background-color:${brand.color}}
-.rb .border-orange-200{border-color:color-mix(in srgb,${brand.color} 35%,#fff)}
-.rb .ring-orange-100,.rb .ring-orange-200{--tw-ring-color:color-mix(in srgb,${brand.color} 25%,#fff)}
-.rb .bg-orange-50{background-color:color-mix(in srgb,${brand.color} 10%,#fff)}
-.rb .text-orange-900,.rb .text-orange-700{color:color-mix(in srgb,${brand.color} 75%,#000)}
-.rb .text-orange-200{color:color-mix(in srgb,${brand.color} 40%,#fff)}`
-    : "";
+  const vars = (brand
+    ? { "--rb-a": brand.color, "--rb-b": `color-mix(in srgb, ${brand.color} 65%, #fff)` }
+    : { "--rb-a": "#ff6a00", "--rb-b": "#ff303d" }) as React.CSSProperties;
+  const stats = [
+    { k: "Público", v: r.total, s: "contatos na lista" },
+    { k: "Enviadas", v: r.sent, s: `${pct(r.sent, r.total)} do público`, hi: true },
+    { k: "Lidas", v: r.read, s: `${pct(r.read, r.sent)} das enviadas` },
+    { k: "Cliques", v: r.clicked, s: `${pct(r.clicked, r.sent)} das enviadas` },
+    { k: "Respostas", v: r.replied, s: `${pct(r.replied, r.sent)} das enviadas` },
+  ];
 
   return (
-    <div
-      className={`min-h-screen bg-zinc-50 text-zinc-800 print:bg-white ${brand ? "rb" : ""}`}
-      style={brand ? ({ "--rb-a": brand.color, "--rb-b": `color-mix(in srgb, ${brand.color} 70%, #fff)` } as React.CSSProperties) : undefined}
-    >
-      {brand && <style>{brandCss}</style>}
+    <div className="rpt relative min-h-screen overflow-x-clip" style={vars}>
       {/* Ao vivo: rápido enquanto envia; no link do cliente continua atualizando (leituras, cliques, respostas) */}
       {campaign.status === "RUNNING" ? <AutoRefresh every={4000} /> : publicView && <AutoRefresh every={15000} />}
-      <style>{"@media print { @page { margin: 12mm } .report-card { break-inside: avoid } }"}</style>
 
-      {/* Topo escuro com a marca e o número principal */}
-      <header className="relative overflow-hidden bg-[#0b0b0f] text-white print:[print-color-adjust:exact]" style={brand ? { background: brand.headerColor } : undefined}>
-        <div className="pointer-events-none absolute -right-24 -top-24 size-96 rounded-full opacity-25 blur-3xl" style={{ background: accent }} />
-        <div className="pointer-events-none absolute -bottom-32 left-1/3 size-80 rounded-full opacity-15 blur-3xl" style={{ background: brand ? brand.color : "#ef2d56" }} />
-        <div className="relative mx-auto max-w-5xl px-5 py-8 sm:px-8">
-          <div className="mb-8 flex items-center justify-between gap-3">
-            {brand ? (
-              <div className="flex min-w-0 items-center gap-3">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                {brand.logoUrl && <img src={brand.logoUrl} alt={brand.name} className="size-12 shrink-0 rounded-xl object-contain" />}
-                <span className="truncate text-xl font-bold tracking-tight">{brand.name}</span>
-              </div>
-            ) : (
-              <Logo className="h-7 w-auto" />
-            )}
-            <div className="flex items-center gap-2 print:hidden">
-              {!publicView && <Link href={`/campanhas/${id}?etapa=relatorio`} className="rounded-lg px-3 py-2 text-sm text-zinc-300 hover:bg-white/10">Voltar</Link>}
-              <PrintButton />
+      {/* Fundo: grade e luz na cor da marca */}
+      <div className="grid-bg pointer-events-none absolute inset-x-0 top-0 h-[640px]" />
+      <div className="glow -top-40 right-[-10%] size-[560px] opacity-30" style={{ background: "var(--a)" }} />
+      <div className="glow left-[-10%] top-72 size-[420px] opacity-15" style={{ background: "var(--b)" }} />
+
+      <div className="relative mx-auto max-w-5xl px-5 pb-12 pt-6 sm:px-8">
+        {/* Barra de cima: marca e ações */}
+        <div className="mb-10 flex items-center justify-between gap-3 rounded-full border border-white/10 bg-black/30 py-2 pl-4 pr-2 backdrop-blur" style={brand?.headerColor ? { background: `color-mix(in srgb, ${brand.headerColor} 70%, transparent)` } : undefined}>
+          {brand ? (
+            <div className="flex min-w-0 items-center gap-2.5">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              {brand.logoUrl && <img src={brand.logoUrl} alt={brand.name} className="size-8 shrink-0 rounded-lg object-contain" />}
+              <span className="truncate font-semibold tracking-tight">{brand.name}</span>
             </div>
-          </div>
-          <div className="flex flex-col gap-8 sm:flex-row sm:items-center">
-            <div className="min-w-0 flex-1">
-              <div className="mb-2 flex flex-wrap items-center gap-2 text-xs">
-                <span className="rounded-full bg-white/10 px-2.5 py-1 font-medium">Relatório de envio</span>
-                <span className="flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1 font-medium">
-                  <span className={`size-1.5 rounded-full ${campaign.status === "RUNNING" ? "animate-pulse bg-emerald-400" : campaign.status === "COMPLETED" ? "bg-emerald-400" : "bg-amber-400"}`} />
-                  {STATUS[campaign.status] ?? campaign.status}
-                </span>
-                {linkExp && (
-                  <span className="flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1 font-medium text-orange-200 print:hidden">
-                    <span className="size-1.5 animate-pulse rounded-full bg-emerald-400" /> Ao vivo · sai do ar em <Countdown to={linkExp.toISOString()} done="instantes" />
-                  </span>
-                )}
-              </div>
-              <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">{campaign.name}</h1>
-              <dl className="mt-5 grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-4">
-                {[
-                  ["Template", campaign.templateName ?? "—"],
-                  ...(publicView ? [] : [["Origem", origin]]),
-                  ["Início", when(t.firstSent ?? campaign.startedAt)],
-                  ["Duração", duration(elapsed)],
-                ].map(([k, v]) => (
-                  <div key={k} className="min-w-0">
-                    <dt className="text-[11px] uppercase tracking-wide text-zinc-500">{k}</dt>
-                    <dd className="truncate font-medium text-zinc-100" title={v}>{v}</dd>
-                  </div>
-                ))}
-              </dl>
-            </div>
-            <Ring value={r.sent} total={r.total} label="enviadas" />
+          ) : (
+            <Logo className="h-6 w-auto" />
+          )}
+          <div className="flex items-center gap-2 print:hidden">
+            {!publicView && <Link href={`/campanhas/${id}?etapa=relatorio`} className="btn-ghost">Voltar</Link>}
+            <PrintButton />
           </div>
         </div>
-      </header>
 
-      {linkExp && (
-        <div className="border-b border-orange-200 bg-orange-50 print:hidden">
-          <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-center gap-x-2 gap-y-1 px-5 py-3 text-sm text-orange-900 sm:px-8">
-            <span className="size-2 animate-pulse rounded-full bg-emerald-500" />
+        {/* Topo: nome da campanha e o anel das enviadas */}
+        <header className="rise flex flex-col gap-8 sm:flex-row sm:items-center">
+          <div className="min-w-0 flex-1">
+            <div className="mb-4 flex flex-wrap items-center gap-2 text-xs">
+              <span className="eyebrow">Relatório de envio</span>
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 font-medium">
+                <span className={`size-1.5 rounded-full ${campaign.status === "RUNNING" ? "pulse bg-emerald-400" : campaign.status === "COMPLETED" ? "bg-emerald-400" : "bg-amber-400"}`} />
+                {STATUS[campaign.status] ?? campaign.status}
+              </span>
+            </div>
+            <h1 className="t-num text-[clamp(2.2rem,5vw,3.6rem)] leading-[1.02]">{campaign.name}</h1>
+            <dl className="mt-7 grid grid-cols-2 gap-x-6 gap-y-4 text-sm sm:grid-cols-4">
+              {[
+                ["Template", campaign.templateName ?? "—"],
+                ...(publicView ? [] : [["Origem", origin]]),
+                ["Início", when(t.firstSent ?? campaign.startedAt)],
+                ["Duração", duration(elapsed)],
+              ].map(([k, v]) => (
+                <div key={k} className="min-w-0 border-l border-white/10 pl-3">
+                  <dt className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--gray)]">{k}</dt>
+                  <dd className="mt-0.5 truncate font-medium text-zinc-100" title={v}>{v}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+          <Ring value={r.sent} total={r.total} label="enviadas" />
+        </header>
+
+        {/* Link do cliente no ar: contagem até sair */}
+        {linkExp && (
+          <div className="rise mt-8 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 rounded-2xl border border-emerald-400/20 bg-emerald-400/[0.06] px-4 py-3 text-sm text-emerald-100 print:hidden" style={{ animationDelay: "80ms" }}>
+            <span className="pulse size-2 rounded-full bg-emerald-400" />
             Relatório ao vivo. Este link sai do ar em
-            <b className="rounded-lg bg-white px-2 py-0.5 font-mono text-base text-orange-700 ring-1 ring-orange-200">
+            <b className="rounded-lg bg-black/30 px-2 py-0.5 font-mono text-base text-white ring-1 ring-white/10">
               <Countdown to={linkExp.toISOString()} done="instantes" />
             </b>
           </div>
-        </div>
-      )}
+        )}
 
-      <main className="mx-auto max-w-5xl space-y-5 px-5 py-8 sm:px-8">
-
-        {/* Números do disparo (os mesmos do valor e do funil) */}
-        <section className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-          {[
-            { k: "Público", v: r.total, s: "contatos na lista" },
-            { k: "Enviadas", v: r.sent, s: pct(r.sent, r.total) + " do público", hi: true },
-            { k: "Lidas", v: r.read, s: pct(r.read, r.sent) + " das enviadas" },
-            { k: "Cliques", v: r.clicked, s: pct(r.clicked, r.sent) + " das enviadas" },
-            { k: "Respostas", v: r.replied, s: pct(r.replied, r.sent) + " das enviadas" },
-          ].map((x) => (
-            <div key={x.k} className={`report-card rounded-2xl border bg-white p-4 shadow-sm ${x.hi ? "border-orange-200 ring-1 ring-orange-100" : "border-zinc-200"}`}>
-              <div className="text-xs font-medium text-zinc-500">{x.k}</div>
-              <div className={`mt-1 text-2xl font-bold tabular-nums ${x.hi ? "text-brand-gradient" : "text-zinc-900"}`}>{n(x.v)}</div>
-              <div className="mt-0.5 text-[11px] text-zinc-500">{x.s}</div>
-            </div>
-          ))}
-        </section>
-
-        {keys.length ? (
-          <section className="report-card overflow-hidden rounded-2xl border border-orange-200 bg-white shadow-sm">
-            <div className="p-5 sm:p-6">
-              <h2 className="font-semibold text-zinc-900">Valor desta campanha</h2>
-              <p className="mt-1 text-sm text-zinc-500">
-                {n(r.sent)} mensagens enviadas × {brl(price)} por mensagem
-              </p>
-              <div className="mt-3 text-4xl font-bold tracking-tight text-brand-gradient">{brl(total)}</div>
-              <div className={`mt-5 grid gap-4 ${keys.length > 1 ? "md:grid-cols-2" : "max-w-xl"}`}>
-                {keys.map((k) => (
-                  <div key={k.id} className="rounded-xl bg-zinc-50 p-4 ring-1 ring-zinc-200">
-                    <div className="mb-2 text-xs font-medium text-zinc-500">{keys.length > 1 ? "Chave Pix" : "Pague por Pix com esta chave"}</div>
-                    <PixCopy code={k.key} label="Copiar chave Pix" />
-                    <p className="mt-2 text-xs text-zinc-500">
-                      Recebedor: <b className="text-zinc-700">{k.name}</b>
-                      {k.bank && <> · Banco: <b className="text-zinc-700">{k.bank}</b></>}
-                    </p>
-                  </div>
-                ))}
+        <main className="mt-8 space-y-5">
+          {/* Números do disparo (os mesmos do valor e do funil) */}
+          <section className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+            {stats.map((x, i) => (
+              <div key={x.k} className={`rc rise overflow-hidden p-4 sm:p-5 ${x.hi ? "rc-hi" : ""}`} style={{ animationDelay: `${120 + i * 60}ms` }}>
+                {x.hi && <div className="glow -right-10 -top-10 size-28 opacity-40" style={{ background: "var(--a)" }} />}
+                <div className="relative text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--gray)]">{x.k}</div>
+                <CountUp value={x.v} className={`t-num relative mt-2 block text-3xl ${x.hi ? "t-fire" : "text-white"}`} />
+                <div className="relative mt-1 text-[11px] text-[var(--gray)]">{x.s}</div>
               </div>
-            </div>
+            ))}
           </section>
-        ) : (
-          !publicView &&
-          price > 0 &&
-          !allKeys.length && (
-            <p className="rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-800 ring-1 ring-amber-200 print:hidden">
-              Valor desta campanha: <b>{brl(total)}</b>. Cadastre sua chave Pix em Configurações para o cliente poder pagar direto pelo relatório.
-            </p>
-          )
-        )}
 
-        <section className="report-card rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-6">
-          <h2 className="font-semibold text-zinc-900">Funil da campanha</h2>
-          <p className="mb-2 text-sm text-zinc-500">De quem estava na lista até quem respondeu. Passe o mouse em cada etapa.</p>
-          <Funnel
-            steps={[
-              { key: "total", label: "Público", value: r.total, hint: "Contatos válidos da lista (sem repetidos e sem descadastrados)." },
-              { key: "sent", label: "Enviadas", value: r.sent, hint: "A Meta aceitou a mensagem." },
-              { key: "read", label: "Lidas", value: r.read, hint: "A pessoa abriu (só conta quem deixa a confirmação de leitura ligada)." },
-              { key: "clicked", label: "Clicaram", value: r.clicked, hint: "Clicaram no botão do link." },
-              { key: "replied", label: "Responderam", value: r.replied, hint: "Mandaram alguma mensagem de volta." },
-            ]}
-          />
-        </section>
+          {keys.length ? (
+            <section className="rc rc-hi rise overflow-hidden" style={{ animationDelay: "420ms" }}>
+              <div className="glow -right-20 -top-24 size-72 opacity-25" style={{ background: "var(--a)" }} />
+              <div className="relative grid gap-6 p-6 sm:p-8 md:grid-cols-[1fr_1.3fr] md:items-center">
+                <div>
+                  <div className="eyebrow">Valor desta campanha</div>
+                  <div className="t-num t-fire mt-3 text-5xl sm:text-6xl">{brl(total)}</div>
+                  <p className="mt-2 text-sm text-[var(--gray)]">{n(r.sent)} mensagens enviadas × {brl(price)} por mensagem</p>
+                </div>
+                <div className="space-y-3">
+                  {keys.map((k) => (
+                    <div key={k.id} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                      <div className="mb-2 text-xs font-medium text-[var(--gray)]">{keys.length > 1 ? "Chave Pix" : "Pague por Pix com esta chave"}</div>
+                      <PixCopy code={k.key} label="Copiar chave Pix" />
+                      <p className="mt-2 text-xs text-[var(--gray)]">
+                        Recebedor: <b className="text-zinc-200">{k.name}</b>
+                        {k.bank && <> · Banco: <b className="text-zinc-200">{k.bank}</b></>}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </section>
+          ) : (
+            !publicView &&
+            price > 0 &&
+            !allKeys.length && (
+              <p className="rounded-2xl border border-amber-400/20 bg-amber-400/[0.06] px-4 py-3 text-sm text-amber-100 print:hidden">
+                Valor desta campanha: <b>{brl(total)}</b>. Cadastre sua chave Pix em Configurações para o cliente poder pagar direto pelo relatório.
+              </p>
+            )
+          )}
 
-        {replies.length > 0 && (
-          <section className="report-card rounded-2xl border border-zinc-200 bg-white shadow-sm">
-            <div className="p-5 pb-3 sm:p-6 sm:pb-3">
-              <h2 className="font-semibold text-zinc-900">Quem respondeu</h2>
-              <p className="text-sm text-zinc-500">As respostas que chegaram deste disparo, das mais novas para as mais antigas.</p>
-            </div>
-            <ReplyList replies={replies} />
+          <section className="rc rise p-6 sm:p-8" style={{ animationDelay: "480ms" }}>
+            <div className="eyebrow">Funil da campanha</div>
+            <p className="mb-3 mt-2 text-sm text-[var(--gray)]">De quem estava na lista até quem respondeu. Passe o mouse em cada etapa.</p>
+            <Funnel
+              steps={[
+                { key: "total", label: "Público", value: r.total, hint: "Contatos válidos da lista (sem repetidos e sem descadastrados)." },
+                { key: "sent", label: "Enviadas", value: r.sent, hint: "A Meta aceitou a mensagem." },
+                { key: "read", label: "Lidas", value: r.read, hint: "A pessoa abriu (só conta quem deixa a confirmação de leitura ligada)." },
+                { key: "clicked", label: "Clicaram", value: r.clicked, hint: "Clicaram no botão do link." },
+                { key: "replied", label: "Responderam", value: r.replied, hint: "Mandaram alguma mensagem de volta." },
+              ]}
+            />
           </section>
-        )}
 
-        <footer className="flex flex-wrap items-center justify-between gap-2 pt-4 text-xs text-zinc-400">
-          <span>{brand ? <>Relatório {brand.name} · gerado pelo Fuzil Disparador em {when(new Date())}</> : <>Gerado pelo Fuzil Disparador em {when(new Date())}</>}</span>
-          {/* Números ajustados: nada real aparece no relatório (nem os créditos, que mostrariam as enviadas reais) */}
-          {!publicView && !r.adjusted && <span>{n(t.credits)} créditos usados{t.optedOut ? ` · ${n(t.optedOut)} descadastraram` : ""}</span>}
-        </footer>
-      </main>
+          {replies.length > 0 && (
+            <section className="rc rise overflow-hidden" style={{ animationDelay: "540ms" }}>
+              <div className="p-6 pb-4 sm:p-8 sm:pb-4">
+                <div className="eyebrow">Quem respondeu</div>
+                <p className="mt-2 text-sm text-[var(--gray)]">As respostas que chegaram deste disparo, das mais novas para as mais antigas.</p>
+              </div>
+              <ReplyList replies={replies} />
+            </section>
+          )}
+
+          <footer className="flex flex-wrap items-center justify-between gap-2 border-t border-white/10 pt-5 text-xs text-zinc-500">
+            <span>{brand ? <>Relatório {brand.name} · gerado pelo Fuzil Disparador em {when(new Date())}</> : <>Gerado pelo Fuzil Disparador em {when(new Date())}</>}</span>
+            {/* Números ajustados: nada real aparece no relatório (nem os créditos, que mostrariam as enviadas reais) */}
+            {!publicView && !r.adjusted && <span>{n(t.credits)} créditos usados{t.optedOut ? ` · ${n(t.optedOut)} descadastraram` : ""}</span>}
+          </footer>
+        </main>
+      </div>
     </div>
   );
 }
