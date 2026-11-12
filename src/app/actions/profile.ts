@@ -105,6 +105,9 @@ export async function saveProfileAction(phoneId: string, _: FormState, form: For
           try {
             if (!handles.has(token)) handles.set(token, meta.uploadSampleMedia(token, pic.buf, "perfil.jpg", pic.mime));
             await meta.updateBusinessProfile(token, p.phoneNumberId, { profile_picture_handle: await handles.get(token)! });
+            // Guarda o link novo da foto na hora (os Grupos e Conexões mostram daqui; antes só aparecia na próxima sincronização)
+            const prof = await meta.getBusinessProfile(token, p.phoneNumberId).catch(() => null);
+            if (prof?.profile_picture_url) await prisma.phoneNumber.update({ where: { id: p.id }, data: { profilePhotoUrl: prof.profile_picture_url } });
           } catch (err) {
             handles.delete(token);
             failed.push(`foto: ${metaDetail(err)}`);
@@ -116,6 +119,7 @@ export async function saveProfileAction(phoneId: string, _: FormState, form: For
     );
   }
   revalidatePath("/conexoes");
+  revalidatePath("/grupos");
   if (!targets.length) return { error: "Nenhum número conectado para receber o perfil." };
   if (!errors.length) return { ok: ok === 1 ? "Perfil do WhatsApp atualizado! Pode levar alguns minutos para aparecer no celular." : `Perfil atualizado em ${ok} números! Pode levar alguns minutos para aparecer no celular.` };
   return { error: `${targets.length === 1 ? "Não deu para salvar tudo" : `Atualizado em ${ok} de ${targets.length}`}. ${errors.slice(0, 5).join(" | ")}${errors.length > 5 ? ` (+${errors.length - 5})` : ""}` };

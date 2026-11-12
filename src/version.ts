@@ -4,6 +4,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "4.04",
+    date: "13/11/2026",
+    items: ["Grupos de BM: a foto de perfil trocada em Conexões aparece na hora nos grupos (antes só depois da próxima sincronização). Foto com link vencido mostra o ícone em vez da imagem quebrada"],
+  },
+  {
     version: "4.03",
     date: "13/11/2026",
     items: ["[admin] Site e loja: o botão do WhatsApp coloca o 55 do Brasil sozinho quando o número foi salvo só com DDD (antes o link abria como número de outro país)"],

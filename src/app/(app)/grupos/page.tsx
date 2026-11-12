@@ -1,4 +1,5 @@
-import { CheckCircle2, ImageOff, Plus, Trash2 } from "lucide-react";
+import { PhotoAvatar } from "@/components/photo-avatar";
+import { CheckCircle2, Plus, Trash2 } from "lucide-react";
 import { formatPhone } from "@/lib/phone";
 import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
@@ -238,14 +239,7 @@ function PhoneChip({ p }: { p: { displayPhoneNumber: string; verifiedName: strin
   const on = p.enabled && p.status === "CONNECTED";
   return (
     <div className={`flex min-w-0 items-center gap-2 rounded-xl border bg-white py-1 pl-1 pr-2.5 ${on ? "border-zinc-200" : "border-zinc-200 opacity-60"}`} title={on ? "Conectado" : "Não está conectado"}>
-      {p.profilePhotoUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={p.profilePhotoUrl} alt="" referrerPolicy="no-referrer" className="size-8 shrink-0 rounded-full object-cover ring-1 ring-zinc-200" />
-      ) : (
-        <span className="grid size-8 shrink-0 place-items-center rounded-full bg-zinc-100 text-zinc-400" title="Sem foto de perfil">
-          <ImageOff className="size-3.5" />
-        </span>
-      )}
+      <PhotoAvatar url={p.profilePhotoUrl} />
       <span className="min-w-0 leading-tight">
         <span className="block truncate text-xs font-semibold text-zinc-800">{p.verifiedName || "Sem nome"}</span>
         <span className="block truncate text-[11px] tabular-nums text-zinc-500">
