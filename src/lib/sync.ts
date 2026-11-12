@@ -39,7 +39,10 @@ export async function syncWaba(wabaRecordId: string) {
   };
   await step(async () => {
     const info = await meta.getWaba(token, waba.wabaId);
-    const hasPaymentMethod = await meta.wabaHasPayment(token, waba.wabaId);
+    const payment = await meta.wabaHasPayment(token, waba.wabaId);
+    // Campo omitido pela Meta: em BM que ainda não disparou é "sem cartão" (vai para Problemas de pagamento antes de Sem número).
+    // Em BM que já disparou não afirma nada (ex.: linha de crédito de parceiro paga sem cartão próprio)
+    const hasPaymentMethod = payment === undefined ? (waba.business.firstSentAt ? null : false) : payment;
     const healthIssues = (info.health_status?.entities ?? []).flatMap((e) =>
       (e.errors ?? []).map((er) => ({ entity: e.entity_type ?? "", id: e.id ?? "", code: er.error_code ?? null, text: translateMetaText(er.error_description) ?? "", fix: translateMetaText(er.possible_solution) ?? "" })),
     );

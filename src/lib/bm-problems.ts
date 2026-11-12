@@ -236,7 +236,7 @@ export async function checkBusinessAfterSync(wabaRecordId: string) {
     reason = pendingTemplates ? `${pendingTemplates} template(s) em análise na Meta` : "Nenhum template de utilidade aprovado";
     fix = pendingTemplates ? "Espere a Meta aprovar (costuma levar de minutos a 24h). A BM volta sozinha para o grupo quando aprovar." : "Crie um template de utilidade (ou ative um Template padrão para essa BM).";
     kind = "TEMPLATE";
-  } else if (waba.hasPaymentMethod === false) {
+  } else if (waba.hasPaymentMethod === false || health.some((h) => /payment|funding|pagamento|cart[aã]o|forma de pag/i.test(`${h.text ?? ""} ${h.fix ?? ""}`))) {
     // Prioridade 2: sem cartão (antes do número). Ordem: template em análise → pagamento → sem número → prontas
     reason = `Sem forma de pagamento (cartão) na WABA ${waba.name}`;
     fix = problemFix(null, "PAYMENT");

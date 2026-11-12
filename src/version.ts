@@ -4,6 +4,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "4.07",
+    date: "13/11/2026",
+    items: ["Grupos de BM: depois do template aprovado, a BM sem cartão vai para \"Problemas de pagamento\" antes de \"Sem número\" (antes, quando a Meta não mandava a informação do cartão, ela pulava direto para Sem número). Aviso de pagamento na saúde da conta também conta"],
+  },
+  {
     version: "4.06",
     date: "13/11/2026",
     items: ["Grupos de BM: em \"Prontas para disparo\", cada BM mostra uma etiqueta com o grupo de disparo em que ela já está (ou \"Sem grupo de disparo\")"],
