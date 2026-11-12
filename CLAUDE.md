@@ -11,7 +11,7 @@ Next.js 15 (App Router, server actions, `useActionState`) · Prisma 6 + Postgres
 Produção: VM Oracle grátis, Docker Compose (db, app, worker, caddy). O servidor puxa a branch `claude/fuzil-disparador-bm-manager-cfasqv` a cada 1 min (`deploy/auto-update.sh`) e remonta tudo.
 
 ## Onde fica cada coisa
-- Disparo: `src/lib/dispatcher.ts` (rodízio, créditos, estorno, retry). Créditos: `src/lib/credits.ts`. Apagar os números que dispararam depois de concluir (`Campaign.deleteSendersAfterHours`/`sendersDeletedAt`): `src/lib/sender-cleanup.ts` (worker a cada 5 min; pula BM de outra campanha ativa).
+- Disparo: `src/lib/dispatcher.ts` (rodízio, créditos, estorno, retry). Créditos: `src/lib/credits.ts`. Apagar os números que dispararam depois de concluir (`Campaign.deleteSendersAfterHours`/`sendersDeletedAt`): `src/lib/sender-cleanup.ts` (worker a cada 5 min; pula BM de outra campanha ativa). Só admins: `Campaign.autoDeleteFailures` = número com X falhas na campanha sai do rodízio e é excluído (força) — `autoDeleteFailingForCampaign`, chamado no fim de cada tick do dispatcher e pelo worker a cada 1 min.
 - Meta Graph API: `src/lib/meta.ts`. Sincronização de WABA/números/templates: `src/lib/sync.ts`. Webhook: `src/lib/webhook.ts`.
 - Chat: `src/lib/chat.ts`, `src/app/(app)/chat/`. Templates padrão (com versões numeradas): `src/lib/blueprints.ts`.
 - BMs com problema (grupos automáticos por tipo: Banidas, Pagamento, Template em análise, Qualidade baixa e desconhecido; entram e saem sozinhas): `src/lib/bm-problems.ts`. O que falta para disparar: `src/lib/readiness.ts`.

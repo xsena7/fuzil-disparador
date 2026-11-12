@@ -524,6 +524,13 @@ export async function runCampaignTick(campaignId: string) {
     await settle(sendable.map((r) => r.id), "Estorno de falhas");
   }
 
+  // Opção da campanha (admins do Fuzil): número que já falhou X envios nesta campanha sai do rodízio e é excluído da BM.
+  // Sem esperar: a exclusão na Meta tenta de novo algumas vezes e não pode segurar o disparo
+  if (campaign.autoDeleteFailures) {
+    const { autoDeleteFailingForCampaign } = await import("./sender-cleanup");
+    void autoDeleteFailingForCampaign(campaign.id).catch((e) => console.error("[dispatcher] número com falha", e));
+  }
+
   // Template com problema numa WABA: tira os números dela da campanha; só pausa se não sobrar nenhum
   for (const [wabaId, reason] of fatalWabas) {
     const out = plan.senders.filter((x) => x.wabaId === wabaId);

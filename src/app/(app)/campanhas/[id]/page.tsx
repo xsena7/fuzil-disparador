@@ -7,12 +7,13 @@ import { prisma } from "@/lib/db";
 import { trackedUrlBase } from "@/lib/env";
 import { planSenders } from "@/lib/dispatcher";
 import { formatLimit } from "@/lib/limits";
+import { formatPhone } from "@/lib/phone";
 import type { TComponent, VariableMapping } from "@/lib/template-utils";
 import { Badge, Card, Stat, Table, Td } from "@/components/ui";
 import { CampaignStatusBadge } from "@/components/status";
 import { ConfirmButton } from "@/components/action-form";
 import {
-  activateWarmupAction, cancelCampaignAction, deleteCampaignAction, deleteSendersNowAction, saveDeleteSendersAction, duplicateCampaignAction, forceWarmupSendAction, pauseCampaignAction, resumeCampaignAction,
+  activateWarmupAction, cancelCampaignAction, deleteCampaignAction, deleteSendersNowAction, saveAutoDeleteFailuresAction, saveDeleteSendersAction, duplicateCampaignAction, forceWarmupSendAction, pauseCampaignAction, resumeCampaignAction,
   retryFailedAction, saveAutoReplyAction, saveContentStepAction, saveTemplateStepAction, startCampaignAction,
 } from "@/app/actions/campaigns";
 import { ActionForm } from "@/components/action-form";
@@ -121,6 +122,7 @@ export default async function CampaignPage({ params, searchParams }: { params: P
               <AutoRefresh every={campaign.status === "RUNNING" ? 3000 : 8000} live />
               <SendDiagnosis campaignId={id} />
               <Metrics campaignId={id} />
+              {auth.user.isSuperAdmin && campaign.kind !== "WARMUP" && <FailLimitCard campaignId={id} limit={campaign.autoDeleteFailures} />}
               {campaign.kind !== "WARMUP" && <DeleteSendersCard campaignId={id} />}
               <FlowCard campaignId={id} workspaceId={auth.workspace.id} />
               <AutoReplyCard campaignId={id} />
@@ -215,6 +217,34 @@ async function ContentStep({ campaignId, locked }: { campaignId: string; locked:
       sample={sample ? { phone: sample.phone, name: sample.name, data: sample.data as Record<string, unknown> } : { phone: "5511999999999", name: "Maria Silva", data: {} }}
       locked={locked}
     />
+  );
+}
+
+/** Só admins do Fuzil: excluir da BM o número que falhar X envios nesta campanha (dá para ligar com a campanha rodando). */
+async function FailLimitCard({ campaignId, limit }: { campaignId: string; limit: number | null }) {
+  const top = await prisma.$queryRaw<Array<{ display: string; n: bigint }>>`
+    SELECT p."displayPhoneNumber" AS display, COUNT(*) AS n FROM "CampaignRecipient" r JOIN "PhoneNumber" p ON p.id = r."senderId"
+    WHERE r."campaignId" = ${campaignId} AND r.status = 'FAILED' GROUP BY p."displayPhoneNumber" ORDER BY n DESC LIMIT 3`;
+  return (
+    <Card className="mt-6 border-red-200 p-5">
+      <div className="flex flex-wrap items-center gap-2">
+        <Trash2 className="size-4 text-red-500" />
+        <span className="font-semibold text-zinc-900">Excluir número que falhar muito</span>
+        <span className="rounded-full bg-zinc-900 px-2 py-0.5 text-[10px] font-semibold text-white">só admins do Fuzil</span>
+        <span className={clsx("rounded-full px-2.5 py-0.5 text-xs font-medium ring-1", limit ? "bg-red-50 text-red-700 ring-red-200" : "bg-zinc-100 text-zinc-600 ring-zinc-200")}>{limit ? `Ligado: ${limit.toLocaleString("pt-BR")} falhas` : "Desligado"}</span>
+      </div>
+      <ActionForm action={saveAutoDeleteFailuresAction.bind(null, campaignId)} submit="Salvar" variant="secondary" className="mt-3 flex flex-wrap items-center gap-3 [&>div]:mt-0">
+        <label className="flex flex-wrap items-center gap-2 text-sm">
+          <input type="checkbox" name="autoDelFail" defaultChecked={limit !== null} />
+          Excluir da BM o número que falhar
+          <input name="autoDelFailN" inputMode="numeric" defaultValue={limit ?? 250} className="w-20 rounded-lg border border-zinc-200 bg-white px-2 py-1 text-center text-sm" />
+          envios nesta campanha
+        </label>
+      </ActionForm>
+      {top.length > 0 && (
+        <p className="mt-3 text-xs text-zinc-500">Mais falhas agora: {top.map((t) => `${formatPhone(t.display.replace(/\D/g, ""))} (${Number(t.n).toLocaleString("pt-BR")})`).join(" · ")}</p>
+      )}
+    </Card>
   );
 }
 
@@ -364,6 +394,7 @@ async function SendStep({ campaignId }: { campaignId: string }) {
             defaultTotal={campaign.totalRatePerSecond}
             skipRed={campaign.skipRedQuality}
             deleteSendersHours={campaign.deleteSendersAfterHours}
+            failLimit={auth.user.isSuperAdmin ? campaign.autoDeleteFailures : undefined}
             insufficient={insufficient}
             pending={pending}
             senders={plan.senders.length}

@@ -453,6 +453,8 @@ model Campaign {
   // Apagar da BM (na Meta) os números que dispararam, X horas depois de concluir (null = não apaga)
   deleteSendersAfterHours Int?
   sendersDeletedAt        DateTime?
+  // Só admins do Fuzil: número que falhar X envios nesta campanha nas últimas 24h é excluído da BM sozinho (null = desligado)
+  autoDeleteFailures      Int?
 }
 
 enum RecipientStatus {

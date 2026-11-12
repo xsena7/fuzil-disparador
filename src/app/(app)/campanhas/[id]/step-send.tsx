@@ -31,6 +31,7 @@ export function StepSendForm({
   senders,
   capacity,
   deleteSendersHours = null,
+  failLimit,
 }: {
   action: (s: FormState, f: FormData) => Promise<FormState>;
   defaultTotal: number | null;
@@ -44,6 +45,8 @@ export function StepSendForm({
   capacity: number | null;
   /** Apagar os números que dispararam X horas depois de terminar (null = não apaga) */
   deleteSendersHours?: number | null;
+  /** Só admins do Fuzil (undefined = não mostra): excluir o número que falhar X envios nesta campanha */
+  failLimit?: number | null;
 }) {
   const [state, formAction, busy] = useActionState(action, undefined);
   useEffect(() => { if (state?.error) toast("error", state.error); }, [state]);
@@ -120,6 +123,18 @@ export function StepSendForm({
       </div>
 
       <label className="flex items-center gap-2"><input type="checkbox" name="skipRed" defaultChecked={skipRed} /> Não usar números com qualidade vermelha</label>
+      {failLimit !== undefined && (
+        <div className="rounded-xl border border-red-200 bg-red-50/50 p-3">
+          <label className="flex flex-wrap items-center gap-2 text-sm">
+            <input type="checkbox" name="autoDelFail" defaultChecked={failLimit !== null} />
+            Excluir da BM o número que falhar
+            <input name="autoDelFailN" inputMode="numeric" defaultValue={failLimit ?? 250} className="w-20 rounded-lg border border-zinc-200 bg-white px-2 py-1 text-center text-sm" />
+            envios nesta campanha
+            <span className="rounded-full bg-zinc-900 px-2 py-0.5 text-[10px] font-semibold text-white">só admins do Fuzil</span>
+          </label>
+          <p className="mt-1 text-xs text-zinc-500">Conta as falhas de cada número nesta campanha. Chegou no limite: sai do rodízio na hora e é excluído da BM na Meta (o Fuzil força, tentando de novo).</p>
+        </div>
+      )}
       <Field label="Depois que terminar" hint="Apaga das BMs (na Meta) os números que dispararam. Número apagado não recebe mais respostas: o fluxo e o chat dele param. Número que outra campanha ativa usa não é apagado.">
         <select name="deleteSenders" defaultValue={deleteSendersHours === null ? "" : String(deleteSendersHours)} className="w-full max-w-md rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm">
           <option value="">Não apagar os números</option>

@@ -73,6 +73,7 @@ export async function duplicateCampaignAction(id: string) {
       kind: c.kind,
       scope: c.scope,
       deleteSendersAfterHours: c.deleteSendersAfterHours,
+      autoDeleteFailures: c.autoDeleteFailures,
       name: `${c.name} (cópia)`,
       groupId: c.groupId,
       templateName: c.templateName,
@@ -167,6 +168,8 @@ export async function startCampaignAction(id: string, _: FormState, form: FormDa
 
   const totalRate = Math.max(1, Math.min(300, Math.round(Number(form.get("totalRate") ?? 30)) || 30));
   const delHours = parseDeleteHours(form.get("deleteSenders"));
+  // Só admins do Fuzil: excluir o número que falhar X envios nesta campanha
+  const autoDel = auth.user.isSuperAdmin ? parseFailLimit(form) : c.autoDeleteFailures;
   const skipRed = form.get("skipRed") === "on";
   const plan = await planSenders({ ...c, skipRedQuality: skipRed });
   // Cadastro pelo site (aquecimento) pode ligar sem número apto: fica esperando e manda sozinho quando um número ficar pronto
@@ -191,6 +194,7 @@ export async function startCampaignAction(id: string, _: FormState, form: FormDa
       totalRatePerSecond: totalRate,
       skipRedQuality: skipRed,
       deleteSendersAfterHours: delHours,
+      autoDeleteFailures: autoDel,
       status: future ? "SCHEDULED" : "RUNNING",
       scheduledAt: future ? scheduledAt : null,
       startedAt: future ? null : new Date(),
@@ -231,6 +235,23 @@ export async function forceWarmupSendAction(id: string) {
   if (!before) return { ok: "Aquecimento ativo. Não tem ninguém na fila agora: cada cadastro do site sai na hora." };
   if (after < before) return { ok: `Enviando: ${before - after} de ${before} já saíram da fila. O resto sai em seguida.` };
   return { error: `Aquecimento ativo, mas a fila ainda não saiu. ${now?.pausedReason ?? "Veja o quadro acima das métricas para saber o motivo."}` };
+}
+
+/** Checkbox "autoDelFail" + número "autoDelFailN" (padrão 250). */
+function parseFailLimit(form: FormData): number | null {
+  if (form.get("autoDelFail") !== "on") return null;
+  const n = Math.round(Number(String(form.get("autoDelFailN") ?? "250").replace(/\D/g, "")) || 250);
+  return Math.max(1, Math.min(100_000, n));
+}
+
+/** Só admins do Fuzil: liga/desliga o "excluir o número que falhar X envios nesta campanha". */
+export async function saveAutoDeleteFailuresAction(id: string, _: FormState, form: FormData): Promise<FormState> {
+  const { auth } = await ownCampaign(id);
+  if (!auth.user.isSuperAdmin) return { error: "Só os admins do Fuzil podem mudar isso." };
+  const n = parseFailLimit(form);
+  await prisma.campaign.update({ where: { id }, data: { autoDeleteFailures: n } });
+  revalidatePath(`/campanhas/${id}`);
+  return { ok: n ? `Número que falhar ${n} envios nesta campanha vai ser excluído da BM sozinho.` : "Desligado: nenhum número é excluído por falha." };
 }
 
 /** "" = não apaga; "0", "1", "6", "24" = horas depois de concluir. */

@@ -38,6 +38,7 @@ html.dk .bg-pink-100:not(.dk-off *) { background-color: rgba(236,72,153,0.160); 
 html.dk .bg-pink-50:not(.dk-off *) { background-color: rgba(236,72,153,0.100); }
 html.dk .bg-red-100:not(.dk-off *) { background-color: rgba(239,68,68,0.160); }
 html.dk .bg-red-50:not(.dk-off *) { background-color: rgba(239,68,68,0.100); }
+html.dk .bg-red-50\/50:not(.dk-off *) { background-color: rgba(239,68,68,0.050); }
 html.dk .bg-rose-100:not(.dk-off *) { background-color: rgba(244,63,94,0.160); }
 html.dk .bg-rose-50:not(.dk-off *) { background-color: rgba(244,63,94,0.100); }
 html.dk .bg-rose-50\/50:not(.dk-off *) { background-color: rgba(244,63,94,0.050); }
