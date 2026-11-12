@@ -7,6 +7,7 @@ import { siteWhatsApp } from "../cta";
 import { V2_MSG } from "../_v2/content";
 import { RevealRoot } from "../_v2/effects";
 import { MobileNav } from "../_v2/mobile-nav";
+import { WaClickTracker } from "../_v2/wa-click";
 import "../_v2/v2.css";
 
 const NAV = [
@@ -37,6 +38,7 @@ export default function V2Layout({ children }: { children: React.ReactNode }) {
       </header>
 
       <RevealRoot />
+      <WaClickTracker />
       <main id="conteudo">{children}</main>
 
       <footer className="border-t border-white/10 bg-[#07080a] text-sm text-[var(--gray)]">

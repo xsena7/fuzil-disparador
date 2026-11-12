@@ -25,6 +25,7 @@ import { PasswordInput } from "@/components/password-input";
 import { adminBlockLinksAccountAction, adminDeleteLinkAction } from "@/app/actions/links";
 import { testMercadoPagoAction, testSyncPayAction } from "@/app/actions/market";
 import { Trash2 } from "lucide-react";
+import { SiteClicksPanel } from "./site-clicks";
 
 export const dynamic = "force-dynamic";
 
@@ -113,6 +114,8 @@ export default async function AdminPage() {
           </Table>
         </Drawer>
       )}
+
+      <SiteClicksPanel />
 
       <Drawer title="Empresa e site" tone={companyOk ? "green" : "amber"} meta={<span>{companyOk ? `${company().legalName} · CNPJ ${company().cnpj}` : "Falta razão social ou endereço"}</span>}>
         <p className="mb-4 text-sm text-zinc-500">

@@ -1251,3 +1251,16 @@ model ReportBrand {
 
   @@index([workspaceId])
 }
+
+// Cliques no botão do WhatsApp do site público (contagem anônima por dia, página, botão e origem; não guarda quem clicou)
+model SiteClick {
+  id     String   @id @default(cuid())
+  day    DateTime @db.Date
+  page   String
+  button String
+  source String
+  count  Int      @default(0)
+
+  @@unique([day, page, button, source])
+  @@index([day])
+}

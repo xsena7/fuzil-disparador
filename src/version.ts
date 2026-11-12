@@ -4,6 +4,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "3.98",
+    date: "12/11/2026",
+    items: ["[admin] Admin: quadro \"Cliques no WhatsApp do site\" com quantos cliques o botão do WhatsApp teve (hoje, 7 e 30 dias, gráfico de 14 dias), de onde veio (anúncio pelo utm, Instagram, Google, direto), qual botão e em qual página. Conta todo mundo, aceitando ou não os cookies"],
+  },
+  {
     version: "3.97",
     date: "11/11/2026",
     items: ["Plataforma redesenhada no estilo do site: tema escuro como padrão (dá para voltar ao claro no menu), títulos maiores com selo \"ao vivo\", cartões com brilho que segue o mouse e animação de entrada, números de destaque novos, botões arredondados com luz, tabelas e menu lateral refeitos"],
