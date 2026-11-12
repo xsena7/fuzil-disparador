@@ -4,6 +4,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "3.99",
+    date: "12/11/2026",
+    items: ["Campanhas e Aquecimento: quando tem gente na fila, as Métricas mostram na hora por que não está enviando (não iniciado, pausado e o motivo, sem saldo, esperando nova tentativa ou quais números do grupo estão fora e por quê)"],
+  },
+  {
     version: "3.98",
     date: "12/11/2026",
     items: ["[admin] Admin: quadro \"Cliques no WhatsApp do site\" com quantos cliques o botão do WhatsApp teve (hoje, 7 e 30 dias, gráfico de 14 dias), de onde veio (anúncio pelo utm, Instagram, Google, direto), qual botão e em qual página. Conta todo mundo, aceitando ou não os cookies"],

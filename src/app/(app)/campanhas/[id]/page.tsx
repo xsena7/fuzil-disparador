@@ -115,6 +115,7 @@ export default async function CampaignPage({ params, searchParams }: { params: P
             <>
               {/* Entregas, leituras, cliques e respostas continuam chegando depois do envio: atualiza sempre */}
               <AutoRefresh every={campaign.status === "RUNNING" ? 3000 : 8000} live />
+              <SendDiagnosis campaignId={id} />
               <Metrics campaignId={id} />
               <FlowCard campaignId={id} workspaceId={auth.workspace.id} />
               <AutoReplyCard campaignId={id} />
@@ -210,6 +211,40 @@ async function ContentStep({ campaignId, locked }: { campaignId: string; locked:
       locked={locked}
     />
   );
+}
+
+/** "Por que não está enviando?": aparece quando tem gente na fila e mostra o motivo na hora (status, saldo, BMs aptas). */
+async function SendDiagnosis({ campaignId }: { campaignId: string }) {
+  const c = await prisma.campaign.findUniqueOrThrow({ where: { id: campaignId }, include: { workspace: { select: { creditBalance: true, creditsPerMessage: true, blockedAt: true } } } });
+  const pending = await prisma.campaignRecipient.count({ where: { campaignId, status: "PENDING" } });
+  if (!pending) return null;
+  const nextRetry = await prisma.campaignRecipient.findFirst({ where: { campaignId, status: "PENDING", retryAt: { gt: new Date() } }, orderBy: { retryAt: "asc" }, select: { retryAt: true } });
+  const dueNow = await prisma.campaignRecipient.count({ where: { campaignId, status: "PENDING", OR: [{ retryAt: null }, { retryAt: { lte: new Date() } }] } });
+  const box = (tone: "amber" | "red" | "green", title: string, body: React.ReactNode) => (
+    <Card className={clsx("mb-5 border-l-[5px] p-4", tone === "red" ? "border-l-red-500" : tone === "amber" ? "border-l-amber-400" : "border-l-emerald-500")}>
+      <div className="text-sm font-semibold text-zinc-900">{title}</div>
+      <div className="mt-1 text-sm text-zinc-600">{body}</div>
+    </Card>
+  );
+  const fila = `${pending.toLocaleString("pt-BR")} na fila`;
+  if (c.status === "DRAFT" || c.status === "SCHEDULED")
+    return box("amber", `${fila}: ainda não foi iniciado`, <>Nada sai enquanto não iniciar. Vá em <Link href={`/campanhas/${campaignId}?etapa=envio`} className="font-semibold text-brand-600 underline">4. Envio</Link> e clique em Iniciar.</>);
+  if (c.status === "PAUSED")
+    return box("red", `${fila}: está pausado`, <>{c.pausedReason ? <>Motivo: <b>{c.pausedReason}</b>. </> : null}Resolva e clique em <b>Retomar</b> lá em cima.</>);
+  if (c.status !== "RUNNING") return box("amber", `${fila}: o envio foi encerrado`, "Campanha concluída ou cancelada: quem ficou na fila não recebe. Duplique para mandar de novo.");
+  if (c.workspace.blockedAt) return box("red", `${fila}: conta bloqueada`, "A conta está bloqueada pelo administrador.");
+  if (c.workspace.creditsPerMessage > 0 && c.workspace.creditBalance < c.workspace.creditsPerMessage) return box("red", `${fila}: sem saldo`, "Adicione créditos para o envio continuar.");
+  if (!dueNow && nextRetry?.retryAt)
+    return box("amber", `${fila}: esperando a nova tentativa`, `Esses números deram erro temporário e o Fuzil tenta de novo sozinho às ${nextRetry.retryAt.toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" })}.`);
+  const plan = await planSenders(c);
+  if (!c.groupId) return box("red", `${fila}: sem grupo de BMs`, <>Escolha o grupo em <Link href={`/campanhas/${campaignId}?etapa=template`} className="font-semibold text-brand-600 underline">1. Template</Link>.</>);
+  if (!plan.senders.length) {
+    const reasons = [...new Map(plan.skipped.map((s) => [`${s.display}: ${s.reason}`, s])).keys()].slice(0, 12);
+    return box("red", `${fila}: nenhum número do grupo está apto agora`, reasons.length ? (
+      <ul className="mt-1 list-disc space-y-0.5 pl-5">{reasons.map((r) => <li key={r}>{r}</li>)}</ul>
+    ) : "O grupo não tem nenhum número conectado. Adicione uma BM com número ao grupo do envio.");
+  }
+  return box("green", `${fila}: ${plan.senders.length} número(s) apto(s), enviando`, `O Fuzil manda em poucos segundos (${plan.senders.map((x) => x.display).slice(0, 4).join(", ")}${plan.senders.length > 4 ? "…" : ""}). Se continuar parado por mais de 1 minuto, avise o suporte.`);
 }
 
 async function AudienceStep({ campaignId, fileName, stats, locked, warmup = false }: { campaignId: string; fileName: string | null; stats: AudienceStats | null; locked: boolean; warmup?: boolean }) {
