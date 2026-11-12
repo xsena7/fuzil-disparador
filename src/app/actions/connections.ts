@@ -209,12 +209,21 @@ export async function deletePhoneAction(phoneId: string): Promise<FormState> {
   if (auth.role === "MEMBER") return { error: "Só o dono ou um admin da conta pode excluir número." };
   const phone = await prisma.phoneNumber.findFirst({ where: { id: phoneId, waba: { workspaceId: auth.workspace.id } }, include: { waba: true } });
   if (!phone) return { error: "Número não encontrado" };
-  const r = await meta.deletePhone(wabaToken(phone.waba), phone.phoneNumberId).catch(() => ({ deregistered: false, deleted: false }));
-  if (!r.deleted && !r.deregistered) return { error: "A Meta não deixou excluir esse número agora. Apague no WhatsApp Manager da BM." };
+  let token: string;
+  try {
+    token = wabaToken(phone.waba);
+  } catch {
+    return { error: "O Fuzil está sem acesso a essa conta do WhatsApp (token). Reconecte a BM em Conexões." };
+  }
+  const r = await meta.deletePhone(token, phone.phoneNumberId).catch((e) => ({ deregistered: false, deleted: false, error: e as unknown, gone: false }));
+  const why = r.error ? metaDetail(r.error) : "";
+  if (!r.deleted && !r.gone && !r.deregistered) return { error: `A Meta não deixou excluir: ${why || "sem motivo"}. Se continuar, apague no WhatsApp Manager da BM.` };
   await prisma.phoneNumber.update({ where: { id: phone.id }, data: { invalidReason: PHONE_REMOVED, enabled: false } });
   await syncWaba(phone.wabaId).catch(() => undefined);
   revalidatePath("/conexoes");
-  return { ok: r.deleted ? "Número excluído da BM." : "Número descadastrado. A Meta não deixou apagar de vez: ele não entra mais no rodízio." };
+  revalidatePath("/grupos");
+  if (r.deleted || r.gone) return { ok: r.gone ? "Esse número já não existia na Meta: tirei do Fuzil." : "Número excluído da BM." };
+  return { ok: `Número descadastrado e fora do rodízio. A Meta não deixou apagar de vez${why ? ` (${why})` : ""}: apague no WhatsApp Manager se quiser liberar a vaga.` };
 }
 
 export async function registerPhoneAction(phoneId: string): Promise<FormState> {
@@ -265,6 +274,8 @@ export async function addPhoneAction(wabaRecordId: string, _: FormState, form: F
     const { id } = await meta.addPhone(token, waba.wabaId, "55", digits.slice(2), name);
     added = true;
     newId = id;
+    // Número que já foi excluído antes e está voltando: deixa de ficar escondido
+    await prisma.phoneNumber.updateMany({ where: { phoneNumberId: id, invalidReason: PHONE_REMOVED }, data: { invalidReason: null, enabled: true } });
     await meta.requestCode(token, id, method);
   };
   // "Já existe ou já está em uso em outra conta": o número está em outra WABA

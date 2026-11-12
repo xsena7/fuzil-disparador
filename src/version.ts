@@ -4,6 +4,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "4.09",
+    date: "13/11/2026",
+    items: ["Conexões: \"Excluir número\" corrigido. O número excluído não volta mais a aparecer na próxima sincronização (quando a Meta só descadastra), número que já não existe na Meta sai do Fuzil, e quando a Meta recusa aparece o motivo de verdade"],
+  },
+  {
     version: "4.08",
     date: "13/11/2026",
     items: ["Conexões: números reorganizados. Cada número em um bloco limpo; o que falta confirmar mostra em 2 passos (digite o código / o código não chegou?). Adicionar número ficou em 3 passos: número e nome, como receber o código, foto de perfil"],

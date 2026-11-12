@@ -233,10 +233,14 @@ export const meta = {
   },
 
   /** Tira o número da conta do WhatsApp: descadastra da Cloud API e tenta apagar da WABA (a Meta nem sempre deixa apagar). */
-  async deletePhone(token: string, phoneNumberId: string): Promise<{ deregistered: boolean; deleted: boolean }> {
+  async deletePhone(token: string, phoneNumberId: string): Promise<{ deregistered: boolean; deleted: boolean; error?: unknown; gone?: boolean }> {
     const deregistered = await graph<{ success: boolean }>(token, "POST", `${phoneNumberId}/deregister`, { body: {} }).then(() => true).catch(() => false);
-    const deleted = await graph<{ success: boolean }>(token, "DELETE", phoneNumberId).then(() => true).catch(() => false);
-    return { deregistered, deleted };
+    let error: unknown;
+    const deleted = await graph<{ success: boolean }>(token, "DELETE", phoneNumberId).then(() => true).catch((e) => ((error = e), false));
+    // O número já não existe na Meta (apagado antes no WhatsApp Manager): conta como excluído
+    const msg = error instanceof Error ? error.message : "";
+    const gone = !deleted && /does not exist|cannot be loaded|unsupported delete request|nonexisting field|not found/i.test(msg);
+    return { deregistered, deleted, error, gone };
   },
 
   registerPhone(token: string, phoneNumberId: string, pin: string) {

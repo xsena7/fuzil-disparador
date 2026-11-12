@@ -349,7 +349,10 @@ export async function upsertPhone(workspaceId: string, wabaRecordId: string, p: 
     nameStatus: p.name_status,
     throughputLevel: p.throughput?.level,
     isCoexistence: Boolean(p.is_on_biz_app),
-    invalidReason: existing?.invalidReason === PHONE_DISCARDED && p.status !== "CONNECTED" ? PHONE_DISCARDED : phoneInvalidReason(p),
+    // Descartado (sobra do SMSBear) ou excluído pelo botão: continua escondido enquanto não voltar a ficar conectado
+    // (a Meta às vezes só descadastra e o número continua aparecendo na lista dela)
+    invalidReason:
+      (existing?.invalidReason === PHONE_DISCARDED || existing?.invalidReason === PHONE_REMOVED) && p.status !== "CONNECTED" ? existing.invalidReason : phoneInvalidReason(p),
     lastSyncedAt: new Date(),
   };
   if (!existing) {
