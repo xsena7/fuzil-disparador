@@ -161,7 +161,7 @@ export default async function GroupsPage() {
                 <Stat label="Números ativos" value={`${s.activePhones}/${s.phones}`} />
                 <Stat label="Qualidade" value={<span className="flex gap-2 text-base"><Badge color="green">{s.quality.GREEN}</Badge><Badge color="yellow">{s.quality.YELLOW}</Badge><Badge color="red">{s.quality.RED}</Badge></span>} />
               </div>
-              <div className="mb-5 grid gap-3 md:grid-cols-2">
+              <div className="mb-5 grid gap-4 md:grid-cols-2">
                 {g.members.map((m) => {
                   const w = windows.get(m.businessId);
                   const bm = businesses.find((b) => b.id === m.businessId);
@@ -169,7 +169,7 @@ export default async function GroupsPage() {
                   const activeNow = phones.filter((p) => p.enabled && p.status === "CONNECTED").length;
                   const a = apt.get(m.businessId);
                   return w ? (
-                    <div key={m.businessId}>
+                    <div key={m.businessId} className="flex flex-col rounded-2xl border border-zinc-200 bg-white p-4 shadow-soft">
                       <div className="mb-1.5 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-sm font-medium">
                         {aptDot(m.businessId)}
                         <span className="min-w-0 truncate">{m.business.name}</span>
@@ -194,8 +194,9 @@ export default async function GroupsPage() {
                           {phones.map((p) => <PhoneChip key={p.id} p={p} />)}
                         </div>
                       )}
-                      <LimitWindow w={w} compact />
-                      <div className="mt-2">
+                      <div className="mb-3"><LimitWindow w={w} compact /></div>
+                      {/* Ação desta BM: fica no rodapé do cartão dela */}
+                      <div className="mt-auto border-t border-zinc-100 pt-3">
                         <SendToGroup
                           businessId={m.businessId}
                           groups={regular.filter((x) => x.id !== g.id).map((x) => ({ id: x.id, name: x.name, color: x.color }))}

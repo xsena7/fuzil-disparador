@@ -4,6 +4,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "4.10",
+    date: "13/11/2026",
+    items: ["Grupos de BM: cada BM do grupo fica num cartão próprio, com o \"Mandar para o grupo\" no rodapé do cartão dela (antes não dava para saber se o botão era da BM de cima ou de baixo)"],
+  },
+  {
     version: "4.09",
     date: "13/11/2026",
     items: ["Conexões: \"Excluir número\" corrigido. O número excluído não volta mais a aparecer na próxima sincronização (quando a Meta só descadastra), número que já não existe na Meta sai do Fuzil, e quando a Meta recusa aparece o motivo de verdade"],
