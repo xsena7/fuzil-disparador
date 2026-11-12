@@ -12,7 +12,7 @@ import { Badge, Card, Stat, Table, Td } from "@/components/ui";
 import { CampaignStatusBadge } from "@/components/status";
 import { ConfirmButton } from "@/components/action-form";
 import {
-  cancelCampaignAction, deleteCampaignAction, duplicateCampaignAction, pauseCampaignAction, resumeCampaignAction,
+  activateWarmupAction, cancelCampaignAction, deleteCampaignAction, duplicateCampaignAction, forceWarmupSendAction, pauseCampaignAction, resumeCampaignAction,
   retryFailedAction, saveAutoReplyAction, saveContentStepAction, saveTemplateStepAction, startCampaignAction,
 } from "@/app/actions/campaigns";
 import { ActionForm } from "@/components/action-form";
@@ -28,6 +28,7 @@ import { Metrics } from "./metrics";
 import { ClientReportStep } from "./client-report";
 import { LeadWebhookCard } from "./lead-webhook";
 import { AutoRefresh } from "./auto-refresh";
+import { NavActive } from "@/components/nav-active";
 import { templateAliases, templateFamily } from "@/lib/blueprints";
 
 import { usableGroupWhere } from "@/lib/bm-problems";
@@ -62,14 +63,17 @@ export default async function CampaignPage({ params, searchParams }: { params: P
       <div className="relative">
       <div className="sticky top-0 z-10 flex flex-wrap items-center gap-3 border-b border-zinc-200/70 bg-white/85 px-4 py-3 backdrop-blur md:px-6">
         <Link href={campaign.kind === "WARMUP" ? "/aquecimento" : "/campanhas"} className="rounded-full border border-zinc-200 p-1.5 hover:bg-zinc-50"><ArrowLeft className="size-4" /></Link>
+        {campaign.kind === "WARMUP" && <NavActive href="/aquecimento" />}
         {campaign.kind === "WARMUP" && <span className="rounded-full bg-orange-50 px-2.5 py-0.5 text-xs font-semibold text-orange-700 ring-1 ring-orange-200">Aquecimento</span>}
         <CampaignName id={campaign.id} name={campaign.name} />
         <CampaignStatusBadge s={campaign.status} />
         {campaign.pausedReason && <span className="text-xs text-amber-700">{campaign.pausedReason}</span>}
         {campaign.scheduledAt && campaign.status === "SCHEDULED" && <Badge color="blue" dot={false}>Agendada para {campaign.scheduledAt.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}</Badge>}
         <div className="ml-auto flex flex-wrap gap-2">
+          {campaign.kind === "WARMUP" && ["DRAFT", "SCHEDULED"].includes(campaign.status) && <ConfirmButton action={activateWarmupAction.bind(null, id)} variant="primary"><Zap className="size-4" /> Ativar aquecimento</ConfirmButton>}
+          {campaign.kind === "WARMUP" && ["RUNNING", "PAUSED"].includes(campaign.status) && <ConfirmButton action={forceWarmupSendAction.bind(null, id)} variant="primary"><Zap className="size-4" /> Forçar envio da fila</ConfirmButton>}
           {campaign.status === "RUNNING" && <ConfirmButton action={pauseCampaignAction.bind(null, id)}><Pause className="size-4" /> Pausar</ConfirmButton>}
-          {campaign.status === "PAUSED" && <ConfirmButton action={resumeCampaignAction.bind(null, id)} variant="primary"><Play className="size-4" /> Retomar</ConfirmButton>}
+          {campaign.status === "PAUSED" && campaign.kind !== "WARMUP" && <ConfirmButton action={resumeCampaignAction.bind(null, id)} variant="primary"><Play className="size-4" /> Retomar</ConfirmButton>}
           {["COMPLETED", "PAUSED"].includes(campaign.status) && <ConfirmButton action={retryFailedAction.bind(null, id)} confirm="Reenviar para quem falhou por erro temporário? (não inclui números sem WhatsApp/bloqueados)"><RotateCcw className="size-4" /> Reenviar falhas</ConfirmButton>}
           <ConfirmButton action={duplicateCampaignAction.bind(null, id)}><Copy className="size-4" /> Duplicar</ConfirmButton>
           {["RUNNING", "PAUSED", "SCHEDULED"].includes(campaign.status) && <ConfirmButton action={cancelCampaignAction.bind(null, id)} variant="danger" confirm="Cancelar a campanha? Os pendentes não serão enviados."><XCircle className="size-4" /> Cancelar</ConfirmButton>}
@@ -228,9 +232,9 @@ async function SendDiagnosis({ campaignId }: { campaignId: string }) {
   );
   const fila = `${pending.toLocaleString("pt-BR")} na fila`;
   if (c.status === "DRAFT" || c.status === "SCHEDULED")
-    return box("amber", `${fila}: ainda não foi iniciado`, <>Nada sai enquanto não iniciar. Vá em <Link href={`/campanhas/${campaignId}?etapa=envio`} className="font-semibold text-brand-600 underline">4. Envio</Link> e clique em Iniciar.</>);
+    return box("amber", `${fila}: ${c.kind === "WARMUP" ? "o aquecimento está desligado (rascunho)" : "ainda não foi iniciado"}`, c.kind === "WARMUP" ? <>Clique em <b>Ativar aquecimento</b> lá em cima: ele manda a fila na hora e fica ligado para os próximos cadastros.</> : <>Nada sai enquanto não iniciar. Vá em <Link href={`/campanhas/${campaignId}?etapa=envio`} className="font-semibold text-brand-600 underline">4. Envio</Link> e clique em Iniciar.</>);
   if (c.status === "PAUSED")
-    return box("red", `${fila}: está pausado`, <>{c.pausedReason ? <>Motivo: <b>{c.pausedReason}</b>. </> : null}Resolva e clique em <b>Retomar</b> lá em cima.</>);
+    return box("red", `${fila}: está pausado`, <>{c.pausedReason ? <>Motivo: <b>{c.pausedReason}</b>. </> : null}Resolva e clique em <b>{c.kind === "WARMUP" ? "Forçar envio da fila" : "Retomar"}</b> lá em cima.</>);
   if (c.status !== "RUNNING") return box("amber", `${fila}: o envio foi encerrado`, "Campanha concluída ou cancelada: quem ficou na fila não recebe. Duplique para mandar de novo.");
   if (c.workspace.blockedAt) return box("red", `${fila}: conta bloqueada`, "A conta está bloqueada pelo administrador.");
   if (c.workspace.creditsPerMessage > 0 && c.workspace.creditBalance < c.workspace.creditsPerMessage) return box("red", `${fila}: sem saldo`, "Adicione créditos para o envio continuar.");

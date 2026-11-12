@@ -45,7 +45,7 @@ export async function Metrics({ campaignId }: { campaignId: string }) {
       WHERE r."campaignId" = ${campaignId} AND i.type IN ('button', 'interactive') AND i.text IS NOT NULL AND trim(i.text) <> ''
       GROUP BY trim(i.text) ORDER BY people DESC LIMIT 6`
   ).map((b) => ({ text: b.text, people: Number(b.people) }));
-  const campaignRow = await prisma.campaign.findUnique({ where: { id: campaignId }, select: { status: true, templateName: true, workspaceId: true } });
+  const campaignRow = await prisma.campaign.findUnique({ where: { id: campaignId }, select: { status: true, templateName: true, workspaceId: true, kind: true } });
   // Todos os botões de resposta do template aparecem (mesmo com 0 cliques), na ordem do template
   const tpl = campaignRow?.templateName
     ? await prisma.template.findFirst({ where: { workspaceId: campaignRow.workspaceId, name: campaignRow.templateName }, select: { components: true } })
@@ -70,14 +70,14 @@ export async function Metrics({ campaignId }: { campaignId: string }) {
 
   return (
     <div className="space-y-6">
-      <Link href={`/campanhas/${campaignId}?etapa=relatorio`} className="flex items-center gap-3 rounded-2xl bg-[#0b0b0f] px-4 py-3 text-white shadow-sm transition hover:opacity-95">
+      {campaignRow?.kind !== "WARMUP" && <Link href={`/campanhas/${campaignId}?etapa=relatorio`} className="flex items-center gap-3 rounded-2xl bg-[#0b0b0f] px-4 py-3 text-white shadow-sm transition hover:opacity-95">
         <span className="grid size-9 place-items-center rounded-xl bg-brand-gradient"><FileBarChart className="size-5" /></span>
         <span className="flex-1">
           <span className="block font-semibold">Relatório do cliente</span>
           <span className="block text-xs text-zinc-400">Resultados, valor a pagar e o seu Pix, num link para mandar ao cliente.</span>
         </span>
         <span className="text-sm font-medium text-orange-300">Abrir →</span>
-      </Link>
+      </Link>}
       <div>
         <div className="mb-1 flex justify-between text-xs text-zinc-500">
           <span>{n(t.total - t.pending)} de {n(t.total)} processados</span>

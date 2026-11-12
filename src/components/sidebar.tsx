@@ -50,6 +50,14 @@ export function Sidebar({ workspace, user, unread, chatUnread = 0, mailUnread = 
   const path = usePathname();
   // No celular o menu fica escondido e abre pelo botão ☰; fecha sozinho ao trocar de página
   const [open, setOpen] = useState(false);
+  // Item acendido por uma tela (ex.: aquecimento abre em /campanhas/<id> mas acende "Aquecimento")
+  const [navOverride, setNavOverride] = useState<string | null>(null);
+  useEffect(() => {
+    setNavOverride((window as unknown as { __fzNav?: string | null }).__fzNav ?? null);
+    const on = (e: Event) => setNavOverride((e as CustomEvent<string | null>).detail);
+    window.addEventListener("fz-nav", on);
+    return () => window.removeEventListener("fz-nav", on);
+  }, []);
   useEffect(() => setOpen(false), [path]);
   // Financeiro: só para os sócios (fixos no banco)
   const platform = [...(isSuperAdmin ? [{ href: "/admin", label: "Admin", icon: Shield }, { href: "/instagram", label: "Instagram", icon: Camera }] : []), ...(financePartner ? [{ href: "/financeiro", label: "Financeiro", icon: Wallet }, { href: "/vendas", label: "Vendas", icon: ShoppingBag }, { href: "/emails", label: "E-mails", icon: Mail }] : [])];
@@ -98,7 +106,7 @@ export function Sidebar({ workspace, user, unread, chatUnread = 0, mailUnread = 
             <div className="mb-1.5 px-3 text-[11px] font-medium uppercase tracking-wider text-zinc-600">{section.title}</div>
             <div className="space-y-0.5">
               {section.items.map(({ href, label, icon: Icon }) => {
-                const active = href === "/" ? path === "/" : path === href || path.startsWith(`${href}/`);
+                const active = navOverride ? href === navOverride : href === "/" ? path === "/" : path === href || path.startsWith(`${href}/`);
                 return (
                   <Link
                     key={href}

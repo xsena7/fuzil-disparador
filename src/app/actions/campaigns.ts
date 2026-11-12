@@ -167,7 +167,8 @@ export async function startCampaignAction(id: string, _: FormState, form: FormDa
   const totalRate = Math.max(1, Math.min(300, Math.round(Number(form.get("totalRate") ?? 30)) || 30));
   const skipRed = form.get("skipRed") === "on";
   const plan = await planSenders({ ...c, skipRedQuality: skipRed });
-  if (!plan.senders.length) return { error: "Nenhum número apto para enviar com esse template neste grupo" };
+  // Cadastro pelo site (aquecimento) pode ligar sem número apto: fica esperando e manda sozinho quando um número ficar pronto
+  if (!plan.senders.length && !c.leadToken) return { error: "Nenhum número apto para enviar com esse template neste grupo" };
 
   const cost = total * auth.workspace.creditsPerMessage;
   if (auth.workspace.creditBalance < cost && form.get("ignoreBalance") !== "on") {
@@ -195,6 +196,38 @@ export async function startCampaignAction(id: string, _: FormState, form: FormDa
   });
   if (!future) await announceStart(id);
   redirect(`/campanhas/${id}?etapa=metricas`);
+}
+
+/** Aquecimento: liga (ou religa) e já tenta mandar a fila na hora. Não precisa ter número apto: espera e manda sozinho. */
+export async function activateWarmupAction(id: string) {
+  const { c } = await ownCampaign(id);
+  if (c.kind !== "WARMUP") return { error: "Só para aquecimento" };
+  if (!c.templateName || !c.groupId) return { error: "Escolha o template e o grupo em 1. Template antes de ativar" };
+  if (["COMPLETED", "CANCELLED"].includes(c.status)) return { error: "Este aquecimento foi encerrado. Duplique para ativar outro." };
+  await prisma.campaign.update({
+    where: { id },
+    data: { status: "RUNNING", startedAt: c.startedAt ?? new Date(), scheduledAt: null, pausedReason: null, excludedSenders: [], totalRatePerSecond: c.totalRatePerSecond || 30 },
+  });
+  return forceWarmupSendAction(id);
+}
+
+/** Aquecimento ativo: manda a fila agora (zera as esperas de nova tentativa e roda o envio na hora). */
+export async function forceWarmupSendAction(id: string) {
+  const { c } = await ownCampaign(id);
+  if (c.kind !== "WARMUP") return { error: "Só para aquecimento" };
+  if (c.status === "PAUSED") await prisma.campaign.update({ where: { id }, data: { status: "RUNNING", pausedReason: null, excludedSenders: [] } });
+  else if (c.status !== "RUNNING") return { error: "Ative o aquecimento primeiro" };
+  await prisma.campaignRecipient.updateMany({ where: { campaignId: id, status: "PENDING", retryAt: { not: null } }, data: { retryAt: null } });
+  const before = await prisma.campaignRecipient.count({ where: { campaignId: id, status: "PENDING" } });
+  const { runCampaignTick } = await import("@/lib/dispatcher");
+  await runCampaignTick(id).catch((e) => console.error("[warmup] forçar envio", e));
+  const after = await prisma.campaignRecipient.count({ where: { campaignId: id, status: "PENDING" } });
+  const now = await prisma.campaign.findUnique({ where: { id }, select: { status: true, pausedReason: true } });
+  revalidatePath(`/campanhas/${id}`);
+  revalidatePath("/aquecimento");
+  if (!before) return { ok: "Aquecimento ativo. Não tem ninguém na fila agora: cada cadastro do site sai na hora." };
+  if (after < before) return { ok: `Enviando: ${before - after} de ${before} já saíram da fila. O resto sai em seguida.` };
+  return { error: `Aquecimento ativo, mas a fila ainda não saiu. ${now?.pausedReason ?? "Veja o quadro acima das métricas para saber o motivo."}` };
 }
 
 export async function pauseCampaignAction(id: string) {

@@ -4,6 +4,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "4.00",
+    date: "12/11/2026",
+    items: ["Aquecimento: botão \"Ativar aquecimento\" (liga mesmo sem número pronto e já manda a fila) e \"Forçar envio da fila\" quando ele está ativo. Dentro do aquecimento o menu acende Aquecimento (não Campanhas) e o cartão do relatório do cliente saiu das Métricas"],
+  },
+  {
     version: "3.99",
     date: "12/11/2026",
     items: ["Campanhas e Aquecimento: quando tem gente na fila, as Métricas mostram na hora por que não está enviando (não iniciado, pausado e o motivo, sem saldo, esperando nova tentativa ou quais números do grupo estão fora e por quê)"],
