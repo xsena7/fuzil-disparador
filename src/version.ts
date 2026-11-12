@@ -4,6 +4,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "4.18",
+    date: "13/11/2026",
+    items: ["Relatório do cliente: o botão \"Baixar planilha de cliques\" aparece sempre que tiver clique, com os cliques reais (antes sumia quando os números do relatório eram ajustados)"],
+  },
+  {
     version: "4.17",
     date: "13/11/2026",
     items: ["[admin] Campanhas: saiu a opção de apagar os números quando a campanha termina (fica só a exclusão do número que falhar X envios, só para admins)"],

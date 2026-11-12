@@ -48,6 +48,8 @@ export async function ReportView({ id, workspaceId, publicView = false, expiresA
   const allKeys = parsePixKeys(ws.pixKeys);
   // Quem respondeu: as respostas do disparo (mais novas primeiro), num quadro com rolagem
   const replies = await campaignReplies(id);
+  // Planilha de cliques: sempre os cliques reais (o dono não ajusta cliques)
+  const realClicked = await prisma.campaignRecipient.count({ where: { campaignId: id, clickCount: { gt: 0 } } });
   const keys = total > 0 ? keysForReport(allKeys, campaign.reportPixKeyId) : [];
   // Marca do revendedor (se escolhida na campanha): troca logo, nome e cores; o rodapé continua dizendo que foi gerado pelo Fuzil
   const brand = campaign.reportBrand;
@@ -142,13 +144,13 @@ export async function ReportView({ id, workspaceId, publicView = false, expiresA
             ))}
           </section>
 
-          {/* Quem clicou: o próprio cliente baixa a planilha (só cliques). No link público só enquanto ele estiver no ar */}
-          {r.clicked > 0 && !r.adjusted && (publicView ? Boolean(linkExp && campaign.shareToken) : true) && (
+          {/* Quem clicou: o próprio cliente baixa a planilha com os cliques reais. No link público só enquanto ele estiver no ar */}
+          {realClicked > 0 && (publicView ? Boolean(linkExp && campaign.shareToken) : true) && (
             <section className="rc rise flex flex-wrap items-center gap-4 p-5 sm:p-6 print:hidden" style={{ animationDelay: "400ms" }}>
               <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-fire text-white shadow-lg"><MousePointerClick className="size-5" /></span>
               <div className="min-w-[12rem] flex-1">
                 <div className="font-semibold">Quem clicou no link</div>
-                <div className="text-sm text-[var(--gray)]">{n(r.clicked)} pessoa{r.clicked === 1 ? "" : "s"} · nome, telefone e horário de cada clique, numa planilha Excel</div>
+                <div className="text-sm text-[var(--gray)]">{n(realClicked)} pessoa{realClicked === 1 ? "" : "s"} · nome, telefone e horário de cada clique, numa planilha Excel</div>
               </div>
               <a href={publicView ? `/api/relatorio/${campaign.shareToken}/cliques` : `/api/campaigns/${id}/clicks`} className="btn-fire">
                 <Download className="size-4" /> Baixar planilha de cliques
