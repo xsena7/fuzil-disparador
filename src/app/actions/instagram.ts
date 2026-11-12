@@ -107,3 +107,21 @@ export async function retryFailedInstagramAction(kind: "FEED" | "STORY", day?: s
   revalidatePath("/instagram");
   return { ok: `${failed.length} ${kind === "STORY" ? "story(s)" : "post(s)"} de volta na fila: sai um a cada 2 minutos, começando agora` };
 }
+
+/** Pausa todas as publicações (feed e stories). */
+export async function pauseInstagramAction() {
+  await requireSuperAdmin();
+  const { pauseInstagram } = await import("@/lib/instagram");
+  await pauseInstagram();
+  revalidatePath("/instagram");
+  return { ok: "Publicações pausadas. Nada sai até você retomar." };
+}
+
+/** Retoma: a fila anda em dias inteiros, mantendo os horários e o intervalo (não solta tudo de uma vez). */
+export async function resumeInstagramAction() {
+  await requireSuperAdmin();
+  const { resumeInstagram } = await import("@/lib/instagram");
+  const r = await resumeInstagram();
+  revalidatePath("/instagram");
+  return { ok: r.length ? `Retomado. ${r.join(" · ")}` : "Retomado. Não tinha nada na fila." };
+}

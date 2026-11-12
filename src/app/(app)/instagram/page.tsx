@@ -1,17 +1,17 @@
-import { CalendarClock, CheckCircle2, ClipboardCheck, GalleryHorizontal, Image as ImageIcon, ExternalLink, Images, LayoutGrid, RotateCcw, Send, Smartphone, Upload, XCircle } from "lucide-react";
+import { CalendarClock, CheckCircle2, ClipboardCheck, GalleryHorizontal, Image as ImageIcon, ExternalLink, Images, LayoutGrid, Pause, Play, RotateCcw, Send, Smartphone, Upload, XCircle } from "lucide-react";
 import Link from "next/link";
 import clsx from "clsx";
 import { requireSuperAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { cachedSetting } from "@/lib/settings-cache";
-import { instagramStatus } from "@/lib/instagram";
+import { instagramPausedAt, instagramStatus } from "@/lib/instagram";
 import { FUZIL_BUSINESS_ID } from "@/lib/onboarding";
 import { Drawer } from "@/components/drawer";
 import { ActionForm, ConfirmButton } from "@/components/action-form";
 import { Empty, Field, Input, PageHeader } from "@/components/ui";
 import { PasswordInput } from "@/components/password-input";
 import { adminSavePlatformAction } from "@/app/actions/misc";
-import { cancelAllInstagramAction, cancelInstagramDayAction, cancelInstagramPostAction, confirmInstagramBatchAction, discardInstagramBatchAction, importInstagramZipAction, publishInstagramNowAction, rescheduleInstagramPostAction, retryFailedInstagramAction } from "@/app/actions/instagram";
+import { cancelAllInstagramAction, cancelInstagramDayAction, cancelInstagramPostAction, confirmInstagramBatchAction, discardInstagramBatchAction, importInstagramZipAction, publishInstagramNowAction, rescheduleInstagramPostAction, retryFailedInstagramAction, pauseInstagramAction, resumeInstagramAction } from "@/app/actions/instagram";
 
 export const dynamic = "force-dynamic";
 
@@ -151,9 +151,10 @@ const nextOf = (items: P[]) => (items[0] ? when(items[0].scheduledAt) : null);
 export default async function InstagramPage({ searchParams }: { searchParams: Promise<{ aba?: string }> }) {
   await requireSuperAdmin();
   const aba = (await searchParams).aba === "stories" ? "stories" : "feed";
-  const [st, posts] = await Promise.all([
+  const [st, posts, pausedAt] = await Promise.all([
     instagramStatus(),
     prisma.instagramPost.findMany({ where: { OR: [{ status: { not: "CANCELLED" } }, { createdAt: { gt: new Date(Date.now() - 7 * 86400_000) } }] }, orderBy: { scheduledAt: "asc" }, take: 500 }),
+    instagramPausedAt(),
   ]);
   const isStory = (p: P) => p.kind === "STORY";
   const drafts = posts.filter((p) => p.status === "DRAFT");
@@ -169,7 +170,21 @@ export default async function InstagramPage({ searchParams }: { searchParams: Pr
   ];
   return (
     <div className="mx-auto max-w-5xl space-y-4">
-      <PageHeader title="Instagram" description="Suba o .zip e o Fuzil publica sozinho, no dia e na hora, pela API oficial do Instagram." />
+      <PageHeader
+        title="Instagram"
+        description="Suba o .zip e o Fuzil publica sozinho, no dia e na hora, pela API oficial do Instagram."
+        actions={pausedAt ? null : <ConfirmButton action={pauseInstagramAction} confirm="Pausar todas as publicações (feed e stories)? Nada sai até você retomar."><Pause className="size-4" /> Pausar publicações</ConfirmButton>}
+      />
+      {pausedAt && (
+        <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
+          <Pause className="size-5 text-amber-600" />
+          <div className="min-w-[14rem] flex-1 text-sm text-amber-900">
+            <b>Publicações pausadas</b> desde {pausedAt.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}. Nada do feed nem dos stories sai até retomar.
+            <span className="block text-xs text-amber-800">Ao retomar, a fila anda em dias inteiros: mesmos horários e mesmo intervalo, sem soltar tudo de uma vez.</span>
+          </div>
+          <ConfirmButton action={resumeInstagramAction} variant="primary" confirm="Retomar as publicações? A fila anda para os próximos dias, nos mesmos horários."><Play className="size-4" /> Retomar publicações</ConfirmButton>
+        </div>
+      )}
 
       <Drawer
         title="Conta do Instagram"

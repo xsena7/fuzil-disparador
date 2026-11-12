@@ -9,6 +9,8 @@ import { env } from "./env";
 import { graph, MetaError } from "./meta";
 import { createAlert } from "./alerts";
 import { platformOwnerId } from "./onboarding";
+import { decrypt } from "./crypto";
+import { savePlatformSetting } from "./platform-settings";
 
 const TZ_OFFSET_H = 3; // Brasília (sem horário de verão)
 const MAX_SLIDES = 10; // limite do carrossel no Instagram
@@ -298,6 +300,45 @@ export async function instagramTick() {
     where: { status: "PUBLISHING", scheduledAt: { lt: new Date(Date.now() - 15 * 60_000) } },
     data: { status: "FAILED", error: "A publicação foi interrompida. Confira no Instagram se saiu antes de tentar de novo" },
   });
+  // Pausado no Admin (ex.: Instagram trocado de conta): nada sai até retomar
+  if (await instagramPausedAt()) return;
   const due = await prisma.instagramPost.findMany({ where: { status: "SCHEDULED", scheduledAt: { lte: new Date() } }, orderBy: { scheduledAt: "asc" }, take: 3, select: { id: true } });
   for (const p of due) await publishPost(p.id);
+}
+
+/** Desde quando as publicações estão pausadas (null = rodando). Lido direto do banco: vale para o worker na hora. */
+export async function instagramPausedAt(): Promise<Date | null> {
+  const r = await prisma.platformSetting.findUnique({ where: { key: "INSTAGRAM_PAUSED_AT" } });
+  if (!r) return null;
+  try {
+    const d = new Date(decrypt(r.value));
+    return Number.isNaN(d.getTime()) ? null : d;
+  } catch {
+    return null;
+  }
+}
+
+export async function pauseInstagram() {
+  if (!(await instagramPausedAt())) await savePlatformSetting("INSTAGRAM_PAUSED_AT", new Date().toISOString());
+}
+
+/**
+ * Retoma: empurra a fila em dias inteiros (mesmo horário do dia e mesmo intervalo entre os posts), o mínimo para o
+ * primeiro que ficou para trás cair no futuro. Assim nada sai tudo de uma vez. Feed e stories andam cada um o seu.
+ */
+export async function resumeInstagram(): Promise<string[]> {
+  const out: string[] = [];
+  const soon = Date.now() + 2 * 60_000;
+  for (const kind of ["FEED", "STORY"] as const) {
+    const first = await prisma.instagramPost.findFirst({ where: { kind, status: "SCHEDULED" }, orderBy: { scheduledAt: "asc" }, select: { scheduledAt: true } });
+    if (!first) continue;
+    const late = soon - first.scheduledAt.getTime();
+    const days = late > 0 ? Math.ceil(late / 86_400_000) : 0;
+    if (days > 0) await prisma.$executeRaw`UPDATE "InstagramPost" SET "scheduledAt" = "scheduledAt" + make_interval(days => ${days}::int) WHERE kind = ${kind} AND status = 'SCHEDULED'`;
+    const next = new Date(first.scheduledAt.getTime() + days * 86_400_000);
+    const when = next.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", weekday: "short", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+    out.push(`${kind === "FEED" ? "Feed" : "Stories"}: ${days ? `andou ${days} dia${days > 1 ? "s" : ""}, ` : ""}próximo ${when}`);
+  }
+  await savePlatformSetting("INSTAGRAM_PAUSED_AT", "");
+  return out;
 }

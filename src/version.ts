@@ -4,6 +4,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "4.02",
+    date: "12/11/2026",
+    items: ["[admin] Instagram: botão \"Pausar publicações\" (feed e stories param). Ao retomar, a fila anda em dias inteiros, nos mesmos horários e com o mesmo intervalo entre os posts, sem soltar tudo de uma vez"],
+  },
+  {
     version: "4.01",
     date: "12/11/2026",
     items: ["[admin] Instagram: story que falhou mostra o motivo e tem o botão \"publicar de novo\" (e \"publicar agora\" nos agendados); na gaveta do dia, \"Publicar de novo os que falharam\" volta todos para a fila, um a cada 2 minutos. No feed, o botão vira \"Publicar de novo\" quando falhou"],
