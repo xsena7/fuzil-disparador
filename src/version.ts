@@ -4,6 +4,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "4.14",
+    date: "13/11/2026",
+    items: ["Relatório do cliente: \"Público\" virou \"Enviadas\" (e as porcentagens dizem \"das enviadas\"); \"Entregues\" continua logo depois. As Métricas não mudam"],
+  },
+  {
     version: "4.13",
     date: "13/11/2026",
     items: ["Relatório do cliente: o próprio cliente baixa a planilha de quem clicou no link (nome, telefone e horário de cada clique) pelo botão \"Baixar planilha de cliques\", enquanto o link estiver no ar. E o relatório agora diz \"Entregues\" no lugar de \"Enviadas\" (as Métricas continuam iguais)"],

@@ -55,8 +55,8 @@ export async function ReportView({ id, workspaceId, publicView = false, expiresA
     ? { "--rb-a": brand.color, "--rb-b": `color-mix(in srgb, ${brand.color} 65%, #fff)` }
     : { "--rb-a": "#ff6a00", "--rb-b": "#ff303d" }) as React.CSSProperties;
   const stats = [
-    { k: "Público", v: r.total, s: "contatos na lista" },
-    { k: "Entregues", v: r.sent, s: `${pct(r.sent, r.total)} do público`, hi: true },
+    { k: "Enviadas", v: r.total, s: "mensagens enviadas" },
+    { k: "Entregues", v: r.sent, s: `${pct(r.sent, r.total)} das enviadas`, hi: true },
     { k: "Lidas", v: r.read, s: `${pct(r.read, r.sent)} das entregues` },
     { k: "Cliques", v: r.clicked, s: `${pct(r.clicked, r.sent)} das entregues` },
     { k: "Respostas", v: r.replied, s: `${pct(r.replied, r.sent)} das entregues` },
@@ -191,10 +191,10 @@ export async function ReportView({ id, workspaceId, publicView = false, expiresA
 
           <section className="rc rise p-6 sm:p-8" style={{ animationDelay: "480ms" }}>
             <div className="eyebrow">Funil da campanha</div>
-            <p className="mb-3 mt-2 text-sm text-[var(--gray)]">De quem estava na lista até quem respondeu. Passe o mouse em cada etapa.</p>
+            <p className="mb-3 mt-2 text-sm text-[var(--gray)]">Das mensagens enviadas até quem respondeu. Passe o mouse em cada etapa.</p>
             <Funnel
               steps={[
-                { key: "total", label: "Público", value: r.total, hint: "Contatos válidos da lista (sem repetidos e sem descadastrados)." },
+                { key: "total", label: "Enviadas", value: r.total, hint: "Mensagens enviadas para a lista (sem repetidos e sem descadastrados)." },
                 { key: "sent", label: "Entregues", value: r.sent, hint: "Mensagens entregues pela Meta para os contatos." },
                 { key: "read", label: "Lidas", value: r.read, hint: "A pessoa abriu (só conta quem deixa a confirmação de leitura ligada)." },
                 { key: "clicked", label: "Clicaram", value: r.clicked, hint: "Clicaram no botão do link." },

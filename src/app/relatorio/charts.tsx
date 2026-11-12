@@ -83,7 +83,7 @@ export function Funnel({ steps }: { steps: FunnelStep[] }) {
         <div className="inline-flex rounded-full border border-white/10 bg-white/[0.03] p-0.5 text-xs font-medium">
           {(["total", "prev"] as const).map((b) => (
             <button key={b} type="button" onClick={() => setBase(b)} className={clsx("rounded-full px-3.5 py-1.5 transition", base === b ? "bg-white text-black" : "text-[var(--gray)] hover:text-white")}>
-              {b === "total" ? "% do público" : "% da etapa anterior"}
+              {b === "total" ? "% das enviadas" : "% da etapa anterior"}
             </button>
           ))}
         </div>
@@ -113,7 +113,7 @@ export function Funnel({ steps }: { steps: FunnelStep[] }) {
               {hover === i && (
                 <div className="pointer-events-none absolute left-0 top-full z-10 mt-1.5 w-64 rounded-xl border border-white/10 bg-[#15171c] px-3.5 py-2.5 text-xs text-zinc-200 shadow-2xl sm:left-[10rem]">
                   <div className="mb-1 font-semibold text-white">{s.label}: {n(s.value)}</div>
-                  {i > 0 && <div>{pc(s.value, steps[0].value)} do público · {pc(s.value, prev)} da etapa anterior</div>}
+                  {i > 0 && <div>{pc(s.value, steps[0].value)} das enviadas · {pc(s.value, prev)} da etapa anterior</div>}
                   {i > 0 && lost > 0 && <div className="text-[var(--gray)]">{n(lost)} ficaram na etapa &quot;{steps[i - 1].label}&quot;</div>}
                   <div className="mt-1 text-[var(--gray)]">{s.hint}</div>
                 </div>
