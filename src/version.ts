@@ -4,6 +4,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "4.06",
+    date: "13/11/2026",
+    items: ["Grupos de BM: em \"Prontas para disparo\", cada BM mostra uma etiqueta com o grupo de disparo em que ela já está (ou \"Sem grupo de disparo\")"],
+  },
+  {
     version: "4.05",
     date: "13/11/2026",
     items: ["Conexões: a foto escolhida ao adicionar um número (inclusive a sua própria) entra na hora em que você confirma o código, e a mensagem diz se entrou. Se a Meta ainda não aceitar, mostra o motivo e o Fuzil tenta de novo sozinho"],

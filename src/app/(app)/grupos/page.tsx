@@ -170,9 +170,20 @@ export default async function GroupsPage() {
                   const a = apt.get(m.businessId);
                   return w ? (
                     <div key={m.businessId}>
-                      <div className="mb-1.5 flex items-center gap-2 truncate text-sm font-medium">
+                      <div className="mb-1.5 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-sm font-medium">
                         {aptDot(m.businessId)}
-                        <span className="truncate">{m.business.name}</span>
+                        <span className="min-w-0 truncate">{m.business.name}</span>
+                        {/* Em quais grupos de disparo a BM já está (no automático "Prontas" mostra todos; nos outros, os demais) */}
+                        {(() => {
+                          const others = (bm?.groups ?? []).filter((x) => !x.group.system && x.group.id !== g.id);
+                          if (others.length)
+                            return others.map((x) => (
+                              <span key={x.group.id} className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 ring-inset ${groupTag(x.group.color)}`}>
+                                <span className={`size-1.5 rounded-full ${groupDot(x.group.color)}`} /> {x.group.name}
+                              </span>
+                            ));
+                          return g.system === READY_GROUP ? <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-[11px] font-medium text-zinc-500 ring-1 ring-inset ring-zinc-500/15">Sem grupo de disparo</span> : null;
+                        })()}
                       </div>
                       <div className="mb-2 text-xs text-zinc-500">
                         {activeNow} de {phones.length} número{phones.length === 1 ? "" : "s"} ativo{activeNow === 1 ? "" : "s"}
