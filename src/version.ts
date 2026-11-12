@@ -4,6 +4,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "4.13",
+    date: "13/11/2026",
+    items: ["Relatório do cliente: o próprio cliente baixa a planilha de quem clicou no link (nome, telefone e horário de cada clique) pelo botão \"Baixar planilha de cliques\", enquanto o link estiver no ar. E o relatório agora diz \"Entregues\" no lugar de \"Enviadas\" (as Métricas continuam iguais)"],
+  },
+  {
     version: "4.12",
     date: "13/11/2026",
     items: ["Relatório do cliente redesenhado no estilo do site: escuro e tecnológico, com brilho na cor da marca, números que sobem animados, anel e funil com luz, valor e Pix em destaque. A marca do revendedor continua trocando logo e cores, e o Salvar em PDF mantém o visual"],

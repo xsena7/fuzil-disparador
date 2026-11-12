@@ -10,6 +10,7 @@ import { reportNumbers } from "@/lib/report-numbers";
 import { campaignReplies } from "@/lib/campaign-replies";
 import { CountUp, Funnel, PixCopy, PrintButton, Ring } from "./charts";
 import "./report.css";
+import { Download, MousePointerClick } from "lucide-react";
 import { ReplyList } from "./replies";
 
 const n = (v: number) => v.toLocaleString("pt-BR");
@@ -55,10 +56,10 @@ export async function ReportView({ id, workspaceId, publicView = false, expiresA
     : { "--rb-a": "#ff6a00", "--rb-b": "#ff303d" }) as React.CSSProperties;
   const stats = [
     { k: "Público", v: r.total, s: "contatos na lista" },
-    { k: "Enviadas", v: r.sent, s: `${pct(r.sent, r.total)} do público`, hi: true },
-    { k: "Lidas", v: r.read, s: `${pct(r.read, r.sent)} das enviadas` },
-    { k: "Cliques", v: r.clicked, s: `${pct(r.clicked, r.sent)} das enviadas` },
-    { k: "Respostas", v: r.replied, s: `${pct(r.replied, r.sent)} das enviadas` },
+    { k: "Entregues", v: r.sent, s: `${pct(r.sent, r.total)} do público`, hi: true },
+    { k: "Lidas", v: r.read, s: `${pct(r.read, r.sent)} das entregues` },
+    { k: "Cliques", v: r.clicked, s: `${pct(r.clicked, r.sent)} das entregues` },
+    { k: "Respostas", v: r.replied, s: `${pct(r.replied, r.sent)} das entregues` },
   ];
 
   return (
@@ -114,7 +115,7 @@ export async function ReportView({ id, workspaceId, publicView = false, expiresA
               ))}
             </dl>
           </div>
-          <Ring value={r.sent} total={r.total} label="enviadas" />
+          <Ring value={r.sent} total={r.total} label="entregues" />
         </header>
 
         {/* Link do cliente no ar: contagem até sair */}
@@ -141,6 +142,20 @@ export async function ReportView({ id, workspaceId, publicView = false, expiresA
             ))}
           </section>
 
+          {/* Quem clicou: o próprio cliente baixa a planilha (só cliques). No link público só enquanto ele estiver no ar */}
+          {r.clicked > 0 && !r.adjusted && (publicView ? Boolean(linkExp && campaign.shareToken) : true) && (
+            <section className="rc rise flex flex-wrap items-center gap-4 p-5 sm:p-6 print:hidden" style={{ animationDelay: "400ms" }}>
+              <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-fire text-white shadow-lg"><MousePointerClick className="size-5" /></span>
+              <div className="min-w-[12rem] flex-1">
+                <div className="font-semibold">Quem clicou no link</div>
+                <div className="text-sm text-[var(--gray)]">{n(r.clicked)} pessoa{r.clicked === 1 ? "" : "s"} · nome, telefone e horário de cada clique, numa planilha Excel</div>
+              </div>
+              <a href={publicView ? `/api/relatorio/${campaign.shareToken}/cliques` : `/api/campaigns/${id}/clicks`} className="btn-fire">
+                <Download className="size-4" /> Baixar planilha de cliques
+              </a>
+            </section>
+          )}
+
           {keys.length ? (
             <section className="rc rc-hi rise overflow-hidden" style={{ animationDelay: "420ms" }}>
               <div className="glow -right-20 -top-24 size-72 opacity-25" style={{ background: "var(--a)" }} />
@@ -148,7 +163,7 @@ export async function ReportView({ id, workspaceId, publicView = false, expiresA
                 <div>
                   <div className="eyebrow">Valor desta campanha</div>
                   <div className="t-num t-fire mt-3 text-5xl sm:text-6xl">{brl(total)}</div>
-                  <p className="mt-2 text-sm text-[var(--gray)]">{n(r.sent)} mensagens enviadas × {brl(price)} por mensagem</p>
+                  <p className="mt-2 text-sm text-[var(--gray)]">{n(r.sent)} mensagens entregues × {brl(price)} por mensagem</p>
                 </div>
                 <div className="space-y-3">
                   {keys.map((k) => (
@@ -180,7 +195,7 @@ export async function ReportView({ id, workspaceId, publicView = false, expiresA
             <Funnel
               steps={[
                 { key: "total", label: "Público", value: r.total, hint: "Contatos válidos da lista (sem repetidos e sem descadastrados)." },
-                { key: "sent", label: "Enviadas", value: r.sent, hint: "A Meta aceitou a mensagem." },
+                { key: "sent", label: "Entregues", value: r.sent, hint: "Mensagens entregues pela Meta para os contatos." },
                 { key: "read", label: "Lidas", value: r.read, hint: "A pessoa abriu (só conta quem deixa a confirmação de leitura ligada)." },
                 { key: "clicked", label: "Clicaram", value: r.clicked, hint: "Clicaram no botão do link." },
                 { key: "replied", label: "Responderam", value: r.replied, hint: "Mandaram alguma mensagem de volta." },
