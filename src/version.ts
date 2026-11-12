@@ -4,6 +4,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "4.15",
+    date: "13/11/2026",
+    items: ["Campanhas: opção de apagar sozinho os números que dispararam depois que a campanha terminar (na hora, 1h, 6h ou 24h depois), escolhida no Envio ou nas Métricas, e botão \"Apagar agora\" na campanha concluída. Número que outra campanha ativa ou o aquecimento usa não é apagado; o resultado chega em Alertas"],
+  },
+  {
     version: "4.14",
     date: "13/11/2026",
     items: ["Relatório do cliente: \"Público\" virou \"Enviadas\" (e as porcentagens dizem \"das enviadas\"); \"Entregues\" continua logo depois. As Métricas não mudam"],

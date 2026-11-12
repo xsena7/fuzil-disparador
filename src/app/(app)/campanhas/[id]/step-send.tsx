@@ -30,6 +30,7 @@ export function StepSendForm({
   pending,
   senders,
   capacity,
+  deleteSendersHours = null,
 }: {
   action: (s: FormState, f: FormData) => Promise<FormState>;
   defaultTotal: number | null;
@@ -41,6 +42,8 @@ export function StepSendForm({
   senders: number;
   /** Quantas mensagens as BMs ainda aceitam nas próximas 24h (null = sem limite) */
   capacity: number | null;
+  /** Apagar os números que dispararam X horas depois de terminar (null = não apaga) */
+  deleteSendersHours?: number | null;
 }) {
   const [state, formAction, busy] = useActionState(action, undefined);
   useEffect(() => { if (state?.error) toast("error", state.error); }, [state]);
@@ -117,6 +120,15 @@ export function StepSendForm({
       </div>
 
       <label className="flex items-center gap-2"><input type="checkbox" name="skipRed" defaultChecked={skipRed} /> Não usar números com qualidade vermelha</label>
+      <Field label="Depois que terminar" hint="Apaga das BMs (na Meta) os números que dispararam. Número apagado não recebe mais respostas: o fluxo e o chat dele param. Número que outra campanha ativa usa não é apagado.">
+        <select name="deleteSenders" defaultValue={deleteSendersHours === null ? "" : String(deleteSendersHours)} className="w-full max-w-md rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm">
+          <option value="">Não apagar os números</option>
+          <option value="0">Apagar os números que dispararam assim que terminar</option>
+          <option value="1">Apagar os números 1 hora depois</option>
+          <option value="6">Apagar os números 6 horas depois</option>
+          <option value="24">Apagar os números 24 horas depois</option>
+        </select>
+      </Field>
       {insufficient && <label className="flex items-center gap-2 text-amber-700"><input type="checkbox" name="ignoreBalance" /> Enviar até acabar o saldo (pausa automaticamente)</label>}
       <label className="flex items-center gap-2"><input type="checkbox" checked={schedule} onChange={(e) => setSchedule(e.target.checked)} /> Agendar envio</label>
       {schedule && (

@@ -7,6 +7,7 @@ import { deployBlueprints } from "../lib/blueprints";
 import { marketTick } from "../lib/market";
 import { creditTick } from "../lib/credit-purchase";
 import { instagramTick } from "../lib/instagram";
+import { sweepSenderCleanup } from "../lib/sender-cleanup";
 import { recheckInvites, reingestStockMailbox } from "../lib/market-inbox";
 import { startSettingsRefresh } from "../lib/platform-settings";
 import { checkLimitAlerts } from "../lib/limit-alerts";
@@ -96,6 +97,7 @@ async function main() {
   void every(20_000, "vendas", marketTick);
   void every(20_000, "recargas", creditTick);
   void every(60_000, "instagram", instagramTick);
+  void every(5 * 60_000, "apagar-numeros", sweepSenderCleanup);
   void every(10 * 60_000, "vendas-convites", recheckInvites);
   void every(2 * 60_000, "vendas-estoque", reingestStockMailbox);
   await dispatchLoop();

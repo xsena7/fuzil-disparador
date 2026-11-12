@@ -450,6 +450,9 @@ model Campaign {
 
   @@unique([funnelId, funnelStep])
   @@index([workspaceId, status])
+  // Apagar da BM (na Meta) os números que dispararam, X horas depois de concluir (null = não apaga)
+  deleteSendersAfterHours Int?
+  sendersDeletedAt        DateTime?
 }
 
 enum RecipientStatus {
