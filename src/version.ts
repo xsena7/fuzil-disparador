@@ -4,6 +4,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "4.11",
+    date: "13/11/2026",
+    items: ["Relatório do cliente: o valor e o Pix só aparecem quando você preenche o valor por mensagem na campanha (em branco, não aparece; o valor das Configurações virou só lembrete). Botão \"Não mostrar valor\" para tirar de uma campanha"],
+  },
+  {
     version: "4.10",
     date: "13/11/2026",
     items: ["Grupos de BM: cada BM do grupo fica num cartão próprio, com o \"Mandar para o grupo\" no rodapé do cartão dela (antes não dava para saber se o botão era da BM de cima ou de baixo)"],

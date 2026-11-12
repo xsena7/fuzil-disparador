@@ -74,11 +74,11 @@ export default async function SettingsPage() {
         <Card className="p-5">
           <div className="mb-1 font-semibold">Cobrança no relatório do cliente</div>
           <p className="mb-4 text-sm text-zinc-500">
-            O relatório de cada campanha calcula sozinho <b>mensagens enviadas × valor por mensagem</b> e mostra a sua chave Pix, com botão de copiar, para o cliente pagar. Dá para cadastrar várias chaves e escolher qual aparece em cada campanha.
+            Na campanha em que você preencher o valor, o relatório calcula sozinho <b>mensagens enviadas × valor por mensagem</b> e mostra a sua chave Pix, com botão de copiar, para o cliente pagar. Dá para cadastrar várias chaves e escolher qual aparece em cada campanha.
           </p>
           <ActionForm action={savePixSettingsAction} submit="Salvar cobrança">
             <div className="grid gap-4 md:grid-cols-2">
-              <Field label="Valor por mensagem enviada (R$)" hint="Ex.: 0,25. Dá para mudar em cada campanha.">
+              <Field label="Seu valor de sempre por mensagem (R$)" hint="Só lembrete: o relatório só mostra valor quando você preenche o valor na campanha.">
                 <Input name="reportPrice" defaultValue={ws.reportPrice != null ? String(ws.reportPrice).replace(".", ",") : ""} placeholder="0,25" inputMode="decimal" />
               </Field>
             </div>

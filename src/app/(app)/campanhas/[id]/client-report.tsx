@@ -7,7 +7,7 @@ import { parsePixKeys } from "@/lib/pix-keys";
 import { realReportNumbers, reportNumbers } from "@/lib/report-numbers";
 import { ReportNumbersFields } from "./report-numbers-fields";
 import { ActionForm, ConfirmButton } from "@/components/action-form";
-import { deleteReportBrandAction, resetReportNumbersAction, saveCampaignPriceAction, saveReportBrandAction, saveReportNumbersAction, setCampaignBrandAction, shareReportAction, unshareReportAction } from "@/app/actions/client-report";
+import { clearCampaignPriceAction, deleteReportBrandAction, resetReportNumbersAction, saveCampaignPriceAction, saveReportBrandAction, saveReportNumbersAction, setCampaignBrandAction, shareReportAction, unshareReportAction } from "@/app/actions/client-report";
 import { CopyLink } from "./copy-link";
 import { Countdown } from "@/components/countdown";
 
@@ -22,7 +22,8 @@ export async function ClientReportStep({ campaignId, workspaceId, canAdjust = fa
   // Enviadas do relatório (as ajustadas em Métricas, se você ajustou)
   const [rn, real] = await Promise.all([reportNumbers(campaignId, c.reportOverrides), realReportNumbers(campaignId)]);
   const sent = rn.sent;
-  const price = c.reportPrice ?? ws.reportPrice ?? 0;
+  // Só aparece no relatório se o valor foi preenchido nesta campanha
+  const price = c.reportPrice ?? 0;
   const keys = parsePixKeys(ws.pixKeys);
   const total = Math.round(sent * price * 100) / 100;
   const alive = c.shareToken && c.shareExpiresAt && c.shareExpiresAt > new Date();
@@ -41,13 +42,20 @@ export async function ClientReportStep({ campaignId, workspaceId, canAdjust = fa
       <Card className="p-5">
         <div className="mb-3 flex items-center gap-2 font-semibold"><QrCode className="size-4 text-brand-500" /> Valor a cobrar</div>
         <div className="mb-4 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-          <span className="text-3xl font-bold tracking-tight text-brand-gradient">{brl(total)}</span>
-          <span className="text-sm text-zinc-500">{sent.toLocaleString("pt-BR")} enviadas × {brl(price)}</span>
+          {price > 0 ? (
+            <>
+              <span className="text-3xl font-bold tracking-tight text-brand-gradient">{brl(total)}</span>
+              <span className="text-sm text-zinc-500">{sent.toLocaleString("pt-BR")} enviadas × {brl(price)}</span>
+              <ConfirmButton action={clearCampaignPriceAction.bind(null, campaignId)} variant="ghost" className="text-xs text-zinc-500" confirm="Tirar o valor e o Pix do relatório desta campanha?">Não mostrar valor</ConfirmButton>
+            </>
+          ) : (
+            <span className="rounded-full bg-zinc-100 px-3 py-1 text-sm font-medium text-zinc-600 ring-1 ring-zinc-200">Sem valor: o relatório não mostra valor nem Pix</span>
+          )}
           {rn.adjusted && canAdjust && <span className="rounded-full bg-orange-50 px-2 py-0.5 text-xs font-medium text-orange-700 ring-1 ring-orange-200">com os números ajustados abaixo</span>}
         </div>
         <ActionForm action={saveCampaignPriceAction.bind(null, campaignId)} submit="Salvar" variant="secondary">
           <div className="grid gap-4 md:grid-cols-2">
-            <Field label="Valor por mensagem nesta campanha (R$)" hint={ws.reportPrice != null ? `Em branco = o padrão das Configurações (${brl(ws.reportPrice)})` : "Em branco = sem cobrança. Dá para definir um padrão em Configurações"}>
+            <Field label="Valor por mensagem nesta campanha (R$)" hint={`Em branco = o relatório não mostra valor nem Pix.${ws.reportPrice != null ? ` Seu valor de sempre: ${brl(ws.reportPrice)}` : ""}`}>
               <Input name="reportPrice" defaultValue={c.reportPrice != null ? String(c.reportPrice).replace(".", ",") : ""} placeholder={ws.reportPrice != null ? String(ws.reportPrice).replace(".", ",") : "0,25"} inputMode="decimal" />
             </Field>
             {keys.length > 0 && (

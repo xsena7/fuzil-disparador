@@ -40,7 +40,8 @@ export async function ReportView({ id, workspaceId, publicView = false, expiresA
   const linkExp = (expiresAt ?? (campaign.shareToken && campaign.shareExpiresAt && campaign.shareExpiresAt > new Date() ? campaign.shareExpiresAt : null));
   // Cobrança: enviadas × valor por mensagem (o da campanha ou o padrão da conta) e o Pix com o valor
   const ws = campaign.workspace;
-  const price = campaign.reportPrice ?? ws.reportPrice ?? 0;
+  // Só cobra se o valor foi preenchido nesta campanha (em branco = o relatório não mostra valor nem Pix)
+  const price = campaign.reportPrice ?? 0;
   const total = Math.round(r.sent * price * 100) / 100;
   const allKeys = parsePixKeys(ws.pixKeys);
   // Quem respondeu: as respostas do disparo (mais novas primeiro), num quadro com rolagem

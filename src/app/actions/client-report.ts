@@ -64,7 +64,15 @@ export async function saveCampaignPriceAction(id: string, _: FormState, form: Fo
   const pixKeyId = String(form.get("reportPixKeyId") ?? "").slice(0, 20) || null;
   await prisma.campaign.update({ where: { id: c.id }, data: { reportPrice: price, reportPixKeyId: pixKeyId } });
   revalidatePath(`/campanhas/${c.id}`);
-  return { ok: "Salvo! O relatório do cliente já mostra o valor e a chave Pix escolhida." };
+  return { ok: price ? "Salvo! O relatório do cliente já mostra o valor e a chave Pix escolhida." : "Salvo sem valor: o relatório não mostra valor nem Pix." };
+}
+
+/** Tira o valor (e o Pix) do relatório desta campanha. */
+export async function clearCampaignPriceAction(id: string) {
+  const c = await ownCampaign(id);
+  await prisma.campaign.update({ where: { id: c.id }, data: { reportPrice: null } });
+  revalidatePath(`/campanhas/${c.id}`);
+  return { ok: "Pronto: o relatório desta campanha não mostra mais valor nem Pix." };
 }
 
 const LINK_HOURS = 12;
