@@ -6,7 +6,7 @@ import { env } from "./env";
 import { randomToken } from "./crypto";
 import { emailLayout, sendEmail } from "./email";
 import { createAlert } from "./alerts";
-import { platformOwnerId, SUPPORT_WHATSAPP } from "./onboarding";
+import { platformOwnerId, SUPPORT_WHATSAPP, waNumber } from "./onboarding";
 import { buildGuidePdf } from "./market-pdf";
 import { normalizeBmName } from "./market-invite";
 import { recordCompanyIncome } from "./finance-auto";
@@ -42,7 +42,7 @@ export const siteUrl = () => `https://${(process.env.SITE_DOMAIN || "fuzildispar
 export const orderUrl = (token: string) => `${siteUrl()}/vendas/pedido/${token}`;
 
 export function supportLink(text: string) {
-  const n = env.marketWhatsapp() || SUPPORT_WHATSAPP;
+  const n = waNumber(env.marketWhatsapp()) || SUPPORT_WHATSAPP;
   return `https://wa.me/${n}?text=${encodeURIComponent(text)}`;
 }
 

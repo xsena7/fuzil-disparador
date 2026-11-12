@@ -4,6 +4,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "4.03",
+    date: "13/11/2026",
+    items: ["[admin] Site e loja: o botão do WhatsApp coloca o 55 do Brasil sozinho quando o número foi salvo só com DDD (antes o link abria como número de outro país)"],
+  },
+  {
     version: "4.02",
     date: "12/11/2026",
     items: ["[admin] Instagram: botão \"Pausar publicações\" (feed e stories param). Ao retomar, a fila anda em dias inteiros, nos mesmos horários e com o mesmo intervalo entre os posts, sem soltar tudo de uma vez"],

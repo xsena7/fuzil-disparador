@@ -8,6 +8,12 @@ export const FUZIL_BUSINESS_ID = process.env.META_BUSINESS_ID || "10450969451853
 // WhatsApp do Fuzil para o cliente pedir a aprovação do acesso ao app
 export const SUPPORT_WHATSAPP = "5562994790340";
 
+/** Número para link do WhatsApp (wa.me): só dígitos e com o 55 do Brasil (sem ele, 62... vira número da Indonésia). */
+export function waNumber(raw: string | null | undefined): string {
+  const d = (raw ?? "").replace(/\D/g, "").replace(/^0+/, "");
+  return d.length === 10 || d.length === 11 ? `55${d}` : d;
+}
+
 export function supportWhatsAppLink(text: string) {
   return `https://wa.me/${SUPPORT_WHATSAPP}?text=${encodeURIComponent(text)}`;
 }
