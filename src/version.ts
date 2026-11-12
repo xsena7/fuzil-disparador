@@ -4,14 +4,14 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "4.17",
+    date: "13/11/2026",
+    items: ["[admin] Campanhas: saiu a opção de apagar os números quando a campanha termina (fica só a exclusão do número que falhar X envios, só para admins)"],
+  },
+  {
     version: "4.16",
     date: "13/11/2026",
     items: ["[admin] Campanhas: opção \"Excluir da BM o número que falhar 250 envios nesta campanha\" (o número dá para mudar), no Envio e nas Métricas, só para os admins do Fuzil. Conta as falhas de cada número na campanha; chegou no limite, ele sai do rodízio na hora e é excluído da BM na Meta (o Fuzil força, tentando de novo). O aviso chega em Alertas"],
-  },
-  {
-    version: "4.15",
-    date: "13/11/2026",
-    items: ["Campanhas: opção de apagar sozinho os números que dispararam depois que a campanha terminar (na hora, 1h, 6h ou 24h depois), escolhida no Envio ou nas Métricas, e botão \"Apagar agora\" na campanha concluída. Número que outra campanha ativa ou o aquecimento usa não é apagado; o resultado chega em Alertas"],
   },
   {
     version: "4.14",

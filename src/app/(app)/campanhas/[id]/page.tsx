@@ -13,7 +13,7 @@ import { Badge, Card, Stat, Table, Td } from "@/components/ui";
 import { CampaignStatusBadge } from "@/components/status";
 import { ConfirmButton } from "@/components/action-form";
 import {
-  activateWarmupAction, cancelCampaignAction, deleteCampaignAction, deleteSendersNowAction, saveAutoDeleteFailuresAction, saveDeleteSendersAction, duplicateCampaignAction, forceWarmupSendAction, pauseCampaignAction, resumeCampaignAction,
+  activateWarmupAction, cancelCampaignAction, deleteCampaignAction, saveAutoDeleteFailuresAction, duplicateCampaignAction, forceWarmupSendAction, pauseCampaignAction, resumeCampaignAction,
   retryFailedAction, saveAutoReplyAction, saveContentStepAction, saveTemplateStepAction, startCampaignAction,
 } from "@/app/actions/campaigns";
 import { ActionForm } from "@/components/action-form";
@@ -123,7 +123,6 @@ export default async function CampaignPage({ params, searchParams }: { params: P
               <SendDiagnosis campaignId={id} />
               <Metrics campaignId={id} />
               {auth.user.isSuperAdmin && campaign.kind !== "WARMUP" && <FailLimitCard campaignId={id} limit={campaign.autoDeleteFailures} />}
-              {campaign.kind !== "WARMUP" && <DeleteSendersCard campaignId={id} />}
               <FlowCard campaignId={id} workspaceId={auth.workspace.id} />
               <AutoReplyCard campaignId={id} />
             </>
@@ -248,51 +247,6 @@ async function FailLimitCard({ campaignId, limit }: { campaignId: string; limit:
   );
 }
 
-/** Apagar os números que dispararam: agenda (X horas depois de terminar), muda a escolha ou apaga agora. */
-async function DeleteSendersCard({ campaignId }: { campaignId: string }) {
-  const c = await prisma.campaign.findUniqueOrThrow({ where: { id: campaignId }, select: { status: true, completedAt: true, deleteSendersAfterHours: true, sendersDeletedAt: true } });
-  const senders = await prisma.campaignRecipient.findMany({ where: { campaignId, sentAt: { not: null }, senderId: { not: null } }, distinct: ["senderId"], select: { senderId: true } });
-  if (!senders.length && !c.deleteSendersAfterHours) return null;
-  const finished = ["COMPLETED", "CANCELLED"].includes(c.status);
-  const h = c.deleteSendersAfterHours;
-  const when = h !== null && c.completedAt ? new Date(c.completedAt.getTime() + h * 3600_000) : null;
-  const status = c.sendersDeletedAt
-    ? `Números apagados em ${c.sendersDeletedAt.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}`
-    : h === null
-      ? "Os números não vão ser apagados"
-      : when
-        ? `Vai apagar ${when.getTime() <= Date.now() ? "nos próximos minutos" : `em ${when.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}`}`
-        : `Vai apagar ${h ? `${h}h depois que` : "assim que"} a campanha terminar`;
-  return (
-    <Card className="mt-6 p-5">
-      <div className="flex flex-wrap items-center gap-2">
-        <Trash2 className="size-4 text-red-500" />
-        <span className="font-semibold text-zinc-900">Apagar os números que dispararam</span>
-        <span className={clsx("rounded-full px-2.5 py-0.5 text-xs font-medium ring-1", c.sendersDeletedAt ? "bg-zinc-100 text-zinc-600 ring-zinc-200" : h === null ? "bg-zinc-100 text-zinc-600 ring-zinc-200" : "bg-red-50 text-red-700 ring-red-200")}>{status}</span>
-      </div>
-      <p className="mt-1 text-sm text-zinc-500">{senders.length} número(s) dispararam nesta campanha. Apagados, eles saem das BMs na Meta e não recebem mais respostas. Número que outra campanha ativa (ou o aquecimento) usa fica.</p>
-      {!c.sendersDeletedAt && (
-        <div className="mt-3 flex flex-wrap items-end gap-3">
-          <ActionForm action={saveDeleteSendersAction.bind(null, campaignId)} submit="Salvar" variant="secondary" className="flex flex-wrap items-end gap-2 [&>div]:mt-0">
-            <select name="deleteSenders" defaultValue={h === null ? "" : String(h)} className="rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm">
-              <option value="">Não apagar</option>
-              <option value="0">Apagar assim que terminar</option>
-              <option value="1">1 hora depois</option>
-              <option value="6">6 horas depois</option>
-              <option value="24">24 horas depois</option>
-            </select>
-          </ActionForm>
-          {finished && senders.length > 0 && (
-            <ConfirmButton action={deleteSendersNowAction.bind(null, campaignId)} variant="danger" confirm={`Apagar agora os ${senders.length} números que dispararam esta campanha?\nEles saem das BMs na Meta e não recebem mais respostas. Não dá para desfazer.`}>
-              <Trash2 className="size-4" /> Apagar agora
-            </ConfirmButton>
-          )}
-        </div>
-      )}
-    </Card>
-  );
-}
-
 /** "Por que não está enviando?": aparece quando tem gente na fila e mostra o motivo na hora (status, saldo, BMs aptas). */
 async function SendDiagnosis({ campaignId }: { campaignId: string }) {
   const c = await prisma.campaign.findUniqueOrThrow({ where: { id: campaignId }, include: { workspace: { select: { creditBalance: true, creditsPerMessage: true, blockedAt: true } } } });
@@ -393,7 +347,6 @@ async function SendStep({ campaignId }: { campaignId: string }) {
             action={startCampaignAction.bind(null, campaignId)}
             defaultTotal={campaign.totalRatePerSecond}
             skipRed={campaign.skipRedQuality}
-            deleteSendersHours={campaign.deleteSendersAfterHours}
             failLimit={auth.user.isSuperAdmin ? campaign.autoDeleteFailures : undefined}
             insufficient={insufficient}
             pending={pending}

@@ -72,7 +72,6 @@ export async function duplicateCampaignAction(id: string) {
       workspaceId: c.workspaceId,
       kind: c.kind,
       scope: c.scope,
-      deleteSendersAfterHours: c.deleteSendersAfterHours,
       autoDeleteFailures: c.autoDeleteFailures,
       name: `${c.name} (cópia)`,
       groupId: c.groupId,
@@ -167,7 +166,6 @@ export async function startCampaignAction(id: string, _: FormState, form: FormDa
   if (!total && !c.leadToken) return { error: "Suba a audiência primeiro (ou ligue o cadastro pelo site)" };
 
   const totalRate = Math.max(1, Math.min(300, Math.round(Number(form.get("totalRate") ?? 30)) || 30));
-  const delHours = parseDeleteHours(form.get("deleteSenders"));
   // Só admins do Fuzil: excluir o número que falhar X envios nesta campanha
   const autoDel = auth.user.isSuperAdmin ? parseFailLimit(form) : c.autoDeleteFailures;
   const skipRed = form.get("skipRed") === "on";
@@ -193,7 +191,6 @@ export async function startCampaignAction(id: string, _: FormState, form: FormDa
       ratePerSecond: 0,
       totalRatePerSecond: totalRate,
       skipRedQuality: skipRed,
-      deleteSendersAfterHours: delHours,
       autoDeleteFailures: autoDel,
       status: future ? "SCHEDULED" : "RUNNING",
       scheduledAt: future ? scheduledAt : null,
@@ -252,36 +249,6 @@ export async function saveAutoDeleteFailuresAction(id: string, _: FormState, for
   await prisma.campaign.update({ where: { id }, data: { autoDeleteFailures: n } });
   revalidatePath(`/campanhas/${id}`);
   return { ok: n ? `Número que falhar ${n} envios nesta campanha vai ser excluído da BM sozinho.` : "Desligado: nenhum número é excluído por falha." };
-}
-
-/** "" = não apaga; "0", "1", "6", "24" = horas depois de concluir. */
-function parseDeleteHours(v: FormDataEntryValue | null): number | null {
-  const s = String(v ?? "");
-  return ["0", "1", "6", "24"].includes(s) ? Number(s) : null;
-}
-
-/** Muda (ou desliga) o "apagar os números que dispararam depois que terminar". */
-export async function saveDeleteSendersAction(id: string, _: FormState, form: FormData): Promise<FormState> {
-  const { auth, c } = await ownCampaign(id);
-  if (auth.role === "MEMBER" && !auth.user.isSuperAdmin) return { error: "Só o dono ou um admin da conta pode mudar isso." };
-  if (c.sendersDeletedAt) return { error: "Os números desta campanha já foram apagados." };
-  const h = parseDeleteHours(form.get("deleteSenders"));
-  await prisma.campaign.update({ where: { id }, data: { deleteSendersAfterHours: h } });
-  revalidatePath(`/campanhas/${id}`);
-  return { ok: h === null ? "Os números não vão ser apagados." : `Os números que dispararam vão ser apagados ${h ? `${h}h depois que` : "assim que"} a campanha terminar.` };
-}
-
-/** Apaga agora os números que dispararam (campanha concluída ou cancelada). */
-export async function deleteSendersNowAction(id: string) {
-  const { auth, c } = await ownCampaign(id);
-  if (auth.role === "MEMBER" && !auth.user.isSuperAdmin) return { error: "Só o dono ou um admin da conta pode apagar números." };
-  if (!["COMPLETED", "CANCELLED"].includes(c.status)) return { error: "Só depois que a campanha terminar." };
-  if (c.sendersDeletedAt) return { error: "Os números desta campanha já foram apagados." };
-  const { deleteCampaignSenders } = await import("@/lib/sender-cleanup");
-  const r = await deleteCampaignSenders(id);
-  revalidatePath(`/campanhas/${id}`);
-  revalidatePath("/conexoes");
-  return { ok: `${r.deleted} número(s) apagado(s).${r.kept ? ` ${r.kept} ficaram (outra campanha ativa usa a BM).` : ""}${r.failed ? ` ${r.failed} a Meta não deixou apagar.` : ""}` };
 }
 
 export async function pauseCampaignAction(id: string) {
