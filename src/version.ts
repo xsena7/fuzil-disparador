@@ -4,6 +4,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "4.01",
+    date: "12/11/2026",
+    items: ["[admin] Instagram: story que falhou mostra o motivo e tem o botão \"publicar de novo\" (e \"publicar agora\" nos agendados); na gaveta do dia, \"Publicar de novo os que falharam\" volta todos para a fila, um a cada 2 minutos. No feed, o botão vira \"Publicar de novo\" quando falhou"],
+  },
+  {
     version: "4.00",
     date: "12/11/2026",
     items: ["Aquecimento: botão \"Ativar aquecimento\" (liga mesmo sem número pronto e já manda a fila) e \"Forçar envio da fila\" quando ele está ativo. Dentro do aquecimento o menu acende Aquecimento (não Campanhas) e o cartão do relatório do cliente saiu das Métricas"],

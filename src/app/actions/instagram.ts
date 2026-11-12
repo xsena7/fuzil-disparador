@@ -88,3 +88,22 @@ export async function cancelInstagramDayAction(kind: "FEED" | "STORY", day: stri
   revalidatePath("/instagram");
   return { ok: `${r.count} ${kind === "STORY" ? "stories cancelados" : "posts cancelados"}` };
 }
+
+/** Publica de novo os que falharam (feed ou stories): volta para a fila, um a cada 2 minutos a partir de agora. */
+export async function retryFailedInstagramAction(kind: "FEED" | "STORY", day?: string) {
+  await requireSuperAdmin();
+  let range = {};
+  const m = day?.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (m) {
+    const from = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3], 3));
+    range = { scheduledAt: { gte: from, lt: new Date(from.getTime() + 86400_000) } };
+  }
+  const failed = await prisma.instagramPost.findMany({ where: { kind, status: "FAILED", ...range }, orderBy: { scheduledAt: "asc" }, select: { id: true } });
+  if (!failed.length) return { error: "Nenhum com falha" };
+  const now = Date.now();
+  for (const [i, p] of failed.entries()) {
+    await prisma.instagramPost.update({ where: { id: p.id }, data: { status: "SCHEDULED", error: null, scheduledAt: new Date(now + i * 2 * 60_000) } });
+  }
+  revalidatePath("/instagram");
+  return { ok: `${failed.length} ${kind === "STORY" ? "story(s)" : "post(s)"} de volta na fila: sai um a cada 2 minutos, começando agora` };
+}

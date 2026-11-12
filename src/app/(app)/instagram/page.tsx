@@ -1,4 +1,4 @@
-import { CalendarClock, CheckCircle2, ClipboardCheck, GalleryHorizontal, Image as ImageIcon, ExternalLink, Images, LayoutGrid, Send, Smartphone, Upload, XCircle } from "lucide-react";
+import { CalendarClock, CheckCircle2, ClipboardCheck, GalleryHorizontal, Image as ImageIcon, ExternalLink, Images, LayoutGrid, RotateCcw, Send, Smartphone, Upload, XCircle } from "lucide-react";
 import Link from "next/link";
 import clsx from "clsx";
 import { requireSuperAdmin } from "@/lib/auth";
@@ -11,7 +11,7 @@ import { ActionForm, ConfirmButton } from "@/components/action-form";
 import { Empty, Field, Input, PageHeader } from "@/components/ui";
 import { PasswordInput } from "@/components/password-input";
 import { adminSavePlatformAction } from "@/app/actions/misc";
-import { cancelAllInstagramAction, cancelInstagramDayAction, cancelInstagramPostAction, confirmInstagramBatchAction, discardInstagramBatchAction, importInstagramZipAction, publishInstagramNowAction, rescheduleInstagramPostAction } from "@/app/actions/instagram";
+import { cancelAllInstagramAction, cancelInstagramDayAction, cancelInstagramPostAction, confirmInstagramBatchAction, discardInstagramBatchAction, importInstagramZipAction, publishInstagramNowAction, rescheduleInstagramPostAction, retryFailedInstagramAction } from "@/app/actions/instagram";
 
 export const dynamic = "force-dynamic";
 
@@ -50,7 +50,12 @@ function DayDrawer({ day, items, kind, queue, children }: { day: string; items: 
       open={isToday}
     >
       {queue && (
-        <div className="mb-3 flex justify-end">
+        <div className="mb-3 flex flex-wrap justify-end gap-2">
+          {failed > 0 && (
+            <ConfirmButton action={retryFailedInstagramAction.bind(null, kind, day)} variant="primary" className="text-xs" confirm={`Publicar de novo ${failed === 1 ? "o que falhou" : `os ${failed} que falharam`} em ${label}? Sai um a cada 2 minutos.`}>
+              <RotateCcw className="size-3.5" /> Publicar de novo {failed === 1 ? "o que falhou" : `os ${failed} que falharam`}
+            </ConfirmButton>
+          )}
           <ConfirmButton action={cancelInstagramDayAction.bind(null, kind, day)} variant="ghost" className="text-xs text-rose-600" confirm={`Cancelar ${kind === "STORY" ? "todos os stories" : "os posts"} de ${label}? Nada desse dia vai ser publicado.`}>
             <XCircle className="size-3.5" /> Cancelar o dia
           </ConfirmButton>
@@ -80,9 +85,19 @@ function StoryDays({ items, actions = false }: { items: P[]; actions?: boolean }
                   {p.images[0].endsWith(".mp4") && <span className="absolute left-1 top-1 rounded bg-black/60 px-1 text-[10px] font-semibold text-white">▶ vídeo</span>}
                 </a>
                 <div className="mt-1 text-xs font-medium text-zinc-700">{hour(p.scheduledAt)}</div>
-                {p.status === "FAILED" && <div className="text-[10px] leading-tight text-rose-600" title={p.error ?? ""}>Falhou</div>}
+                {p.status === "FAILED" && <div className="line-clamp-3 text-[10px] leading-tight text-rose-600" title={p.error ?? ""}>Falhou{p.error ? `: ${p.error}` : ""}</div>}
                 {actions && (
-                  <ConfirmButton action={cancelInstagramPostAction.bind(null, p.id)} variant="ghost" className="px-1 py-0 text-[11px] text-zinc-400" confirm={`Cancelar o story das ${hour(p.scheduledAt)}?`}>cancelar</ConfirmButton>
+                  <div className="mt-1 flex flex-col items-center gap-0.5">
+                    <ConfirmButton
+                      action={publishInstagramNowAction.bind(null, p.id)}
+                      variant={p.status === "FAILED" ? "primary" : "ghost"}
+                      className={p.status === "FAILED" ? "whitespace-nowrap px-2.5 py-0.5 text-[11px]" : "whitespace-nowrap px-1 py-0 text-[11px] text-zinc-500"}
+                      confirm={`${p.status === "FAILED" ? "Publicar de novo" : "Publicar agora"} o story das ${hour(p.scheduledAt)}?`}
+                    >
+                      {p.status === "FAILED" ? "republicar" : "publicar agora"}
+                    </ConfirmButton>
+                    <ConfirmButton action={cancelInstagramPostAction.bind(null, p.id)} variant="ghost" className="px-1 py-0 text-[11px] text-zinc-400" confirm={`Cancelar o story das ${hour(p.scheduledAt)}?`}>cancelar</ConfirmButton>
+                  </div>
                 )}
               </div>
             ))}
@@ -122,7 +137,7 @@ function FeedCard({ p, review = false }: { p: P; review?: boolean }) {
         </ActionForm>
         {!review && (
           <>
-            <ConfirmButton action={publishInstagramNowAction.bind(null, p.id)} className="text-xs" confirm={`Publicar o post ${p.number} agora no Instagram?`}><Send className="size-3.5" /> Publicar agora</ConfirmButton>
+            <ConfirmButton action={publishInstagramNowAction.bind(null, p.id)} className="text-xs" confirm={`${p.status === "FAILED" ? "Publicar de novo" : "Publicar agora"} o post ${p.number} no Instagram?`} variant={p.status === "FAILED" ? "primary" : "secondary"}><Send className="size-3.5" /> {p.status === "FAILED" ? "Publicar de novo" : "Publicar agora"}</ConfirmButton>
             <ConfirmButton action={cancelInstagramPostAction.bind(null, p.id)} variant="ghost" className="text-xs text-zinc-500" confirm={`Cancelar o post ${p.number}?`}><XCircle className="size-3.5" /> Cancelar</ConfirmButton>
           </>
         )}
