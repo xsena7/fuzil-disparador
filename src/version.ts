@@ -4,6 +4,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "4.21",
+    date: "13/11/2026",
+    items: ["Campanhas: número que falha 15 vezes seguidas sem conseguir enviar nada (ex.: apagado, banido ou desconectado direto na Meta) sai da campanha sozinho, com aviso em Alertas. O erro de \"número não existe mais na Meta\" também tira o número na hora. Antes o Fuzil continuava tentando por ele e acumulava falhas"],
+  },
+  {
     version: "4.20",
     date: "13/11/2026",
     items: ["Grupos de BM: os grupos de problema (Template em análise, Pagamento, Sem número, Qualidade baixa e BMs com problema) mostram o limite de cada BM e o total disponível do grupo, igual aos outros grupos. Banidas não mostra"],

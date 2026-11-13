@@ -25,6 +25,10 @@ import { flagBusinessProblem, kindForCode, problemFix } from "./bm-problems";
 export const TICK_MS = 2000;
 const DEFAULT_RATE = 20; // msgs/s por número
 const MAX_ATTEMPTS = 3;
+/** Falhas seguidas (sem nenhum envio) que tiram o número da campanha. */
+const DEAD_STREAK = 15;
+/** Falhas que são do contato, não do número que disparou: não contam na trava. */
+const CONTACT_SIDE_CODES = [131026, 131049, 131047, 131050, 130472];
 const PHONE_STATUS_PT: Record<string, string> = { BANNED: "Número banido", RESTRICTED: "Número restrito", FLAGGED: "Número sinalizado pela Meta", DISCONNECTED: "Número desconectado", DELETED: "Número apagado", RATE_LIMITED: "Número limitado pela Meta", PENDING: "Número não registrado", UNVERIFIED: "Número não verificado" };
 const TEMPLATE_STATUS_PT: Record<string, string> = { PENDING: "em análise", REJECTED: "rejeitado", PAUSED: "pausado pela Meta", DISABLED: "desativado pela Meta", IN_APPEAL: "em recurso" };
 const BAD_PHONE_STATUS = new Set(["BANNED", "RESTRICTED", "FLAGGED", "DISCONNECTED", "DELETED", "UNVERIFIED"]);
@@ -262,6 +266,9 @@ async function sendOne(sender: Sender, campaign: Campaign, r: CampaignRecipient)
     if (err instanceof MetaError) {
       const title = `${metaErrorText(err.code, err.message, err.details)} [template ${sender.template.name}]`;
       if (err.code !== null && SENDER_FATAL_CODES.has(err.code)) return { kind: "sender_fatal", code: err.code, title };
+      // O número não existe mais na Meta (apagado ou descadastrado direto no WhatsApp Manager): é o número, não o contato
+      if (err.code === 100 && /does not exist|cannot be loaded|missing permissions|unsupported post request/i.test(`${err.message} ${err.details ?? ""}`))
+        return { kind: "sender_fatal", code: err.code, title };
       if (err.code !== null && TEMPLATE_FATAL_CODES.has(err.code)) return { kind: "template_fatal", code: err.code, title };
       if ((err.code !== null && RETRYABLE_CODES.has(err.code)) || err.httpStatus >= 500) return { kind: "retry", code: err.code };
       return { kind: "failed", code: err.code, title, detail: translateMetaText(err.details) ?? undefined };
@@ -300,6 +307,37 @@ export async function runCampaignTick(campaignId: string) {
   }
 
   const plan = await planSenders(campaign);
+  // Trava: número que falhou as últimas 15 tentativas desta campanha sem enviar nada (por erro do número, não do contato)
+  // sai da campanha. Pega número morto que a Meta ainda não marcou (ex.: apagado direto no WhatsApp Manager)
+  if (plan.senders.length) {
+    const dead = await prisma.$queryRaw<Array<{ senderId: string; code: number | null }>>`
+      SELECT "senderId", MAX("errorCode") AS code FROM (
+        SELECT "senderId", status, "errorCode",
+          ROW_NUMBER() OVER (PARTITION BY "senderId" ORDER BY COALESCE("sentAt", "failedAt") DESC) AS rn
+        FROM "CampaignRecipient"
+        WHERE "campaignId" = ${campaign.id} AND "senderId" = ANY(${plan.senders.map((x) => x.phoneId)})
+          AND ("sentAt" IS NOT NULL OR "failedAt" IS NOT NULL)
+      ) t
+      WHERE rn <= ${DEAD_STREAK}
+      GROUP BY "senderId"
+      HAVING COUNT(*) >= ${DEAD_STREAK}
+        AND BOOL_AND(status = 'FAILED' AND ("errorCode" IS NULL OR NOT ("errorCode" = ANY(${CONTACT_SIDE_CODES}))))`;
+    for (const d of dead) {
+      const sender = plan.senders.find((x) => x.phoneId === d.senderId);
+      if (!sender) continue;
+      plan.senders = plan.senders.filter((x) => x.phoneId !== d.senderId);
+      await prisma.campaign.update({ where: { id: campaign.id }, data: { excludedSenders: { push: d.senderId } } });
+      await createAlert({
+        workspaceId: campaign.workspaceId,
+        type: "SENDER_REMOVED",
+        severity: "WARNING",
+        title: `Número ${sender.display} (${sender.businessName}) retirado da campanha "${campaign.name}"`,
+        message: `${DEAD_STREAK} falhas seguidas sem enviar nenhuma mensagem${d.code ? ` (último erro: ${metaErrorLabel(d.code)})` : ""}. O número pode ter sido apagado, banido ou desconectado na Meta.`,
+      }).catch(() => undefined);
+    }
+    // Sobrou nenhum: a próxima rodada mostra o motivo (números retirados por erro)
+    if (!plan.senders.length) return;
+  }
   if (!plan.senders.length) {
     const reasons = [...new Set(plan.skipped.map((s) => s.reason))].join("; ");
     if (campaign.funnelId || campaign.leadToken) {
@@ -423,6 +461,9 @@ export async function runCampaignTick(campaignId: string) {
     });
     return true;
   };
+  // Falhas seguidas de cada número nesta rodada (zera quando ele consegue enviar)
+  const failStreak = new Map<string, number>();
+  const sentBySender = new Set<string>();
   // Pausou ou cancelou no meio do lote: para de enviar e devolve o resto
   let stopped = false;
   const watch = setInterval(() => {
@@ -457,6 +498,8 @@ export async function runCampaignTick(campaignId: string) {
                 switch (out.kind) {
                   case "sent": {
                     sentWamid = out.wamid;
+                    sentBySender.add(sender.phoneId);
+                    failStreak.delete(sender.phoneId);
                     sentByBm.set(sender.businessId, (sentByBm.get(sender.businessId) ?? 0) + 1);
                     const data = { status: "SENT" as const, wamid: out.wamid, senderId: sender.phoneId, sentAt: new Date(), creditsCharged: price, errorCode: null, errorTitle: null };
                     // Já saiu pela Meta: insiste em gravar, senão a recuperação mandaria de novo
@@ -496,13 +539,21 @@ export async function runCampaignTick(campaignId: string) {
                     fatalWabas.set(sender.wabaId, out.title);
                     await releaseRecipients([r.id]);
                     break;
-                  case "failed":
+                  case "failed": {
                     if (await hitLimit(sender, out.code, r)) break;
                     await prisma.campaignRecipient.update({
                       where: { id: r.id },
                       data: { status: "FAILED", senderId: sender.phoneId, failedAt: new Date(), errorCode: out.code, errorTitle: out.title, errorDetail: out.detail },
                     });
+                    // Trava nesta mesma rodada: muitas falhas do número e nenhum envio → sai da campanha agora (não espera a próxima)
+                    if (out.code === null || !CONTACT_SIDE_CODES.includes(out.code)) {
+                      const streak = (failStreak.get(sender.phoneId) ?? 0) + 1;
+                      failStreak.set(sender.phoneId, streak);
+                      if (streak >= DEAD_STREAK && !sentBySender.has(sender.phoneId) && !fatalSenders.has(sender.phoneId))
+                        fatalSenders.set(sender.phoneId, `${DEAD_STREAK} falhas seguidas sem enviar nenhuma mensagem (último erro: ${out.title}). O número pode ter sido apagado, banido ou desconectado na Meta.`);
+                    }
                     break;
+                  }
                 }
               } catch (e) {
                 // Erro inesperado (ex.: banco caiu um instante): não perde o crédito nem envia duas vezes
