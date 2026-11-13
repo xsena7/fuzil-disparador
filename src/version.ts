@@ -4,6 +4,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "4.19",
+    date: "13/11/2026",
+    items: ["Relatório do cliente: mostra sempre \"Concluída\" (não aparece mais pausada, cancelada ou enviando)"],
+  },
+  {
     version: "4.18",
     date: "13/11/2026",
     items: ["Relatório do cliente: o botão \"Baixar planilha de cliques\" aparece sempre que tiver clique, com os cliques reais. E os cliques do relatório são sempre os reais: o ajuste de números não mexe mais neles (Clicaram saiu do ajuste)"],

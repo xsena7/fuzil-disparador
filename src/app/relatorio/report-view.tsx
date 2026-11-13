@@ -17,8 +17,6 @@ const n = (v: number) => v.toLocaleString("pt-BR");
 const when = (d: Date | null | undefined) =>
   d ? d.toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo" }) : "—";
 
-const STATUS: Record<string, string> = { RUNNING: "Enviando", COMPLETED: "Concluída", PAUSED: "Pausada", SCHEDULED: "Agendada", CANCELLED: "Cancelada", DRAFT: "Rascunho" };
-
 const brl = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
 /**
@@ -98,8 +96,9 @@ export async function ReportView({ id, workspaceId, publicView = false, expiresA
             <div className="mb-4 flex flex-wrap items-center gap-2 text-xs">
               <span className="eyebrow">Relatório de envio</span>
               <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 font-medium">
-                <span className={`size-1.5 rounded-full ${campaign.status === "RUNNING" ? "pulse bg-emerald-400" : campaign.status === "COMPLETED" ? "bg-emerald-400" : "bg-amber-400"}`} />
-                {STATUS[campaign.status] ?? campaign.status}
+                {/* Relatório é sempre de campanha concluída: não mostra pausada, cancelada etc. */}
+                <span className="size-1.5 rounded-full bg-emerald-400" />
+                Concluída
               </span>
             </div>
             <h1 className="t-num text-[clamp(2.2rem,5vw,3.6rem)] leading-[1.02]">{campaign.name}</h1>
