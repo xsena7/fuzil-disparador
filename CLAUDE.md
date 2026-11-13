@@ -8,7 +8,7 @@ SaaS para gerenciar BMs do WhatsApp e disparar templates de utilidade em escala 
 
 ## Stack
 Next.js 15 (App Router, server actions, `useActionState`) · Prisma 6 + Postgres · Tailwind 4 · worker em `src/worker/index.ts` (empacotado com esbuild em `dist/worker.mjs`).
-Produção: VM Oracle grátis, Docker Compose (db, app, worker, caddy). O servidor puxa a branch `claude/fuzil-disparador-bm-manager-cfasqv` a cada 1 min (`deploy/auto-update.sh`) e remonta tudo.
+Produção: VM Oracle grátis, Docker Compose (db, app, worker, caddy). O servidor puxa a branch `claude/fuzil-disparador-bm-manager-cfasqv` a cada 1 min (`deploy/auto-update.sh`, tudo dentro de `main()`): espera 2 min sem commit novo, monta a imagem antes de trocar (falhou = a antiga segue), só reinicia o Caddy se o Caddyfile mudou, cria swap e roda o vigia (reinicia serviço parado ou painel `unhealthy`, saúde em `/api/health`).
 
 ## Onde fica cada coisa
 - Disparo: `src/lib/dispatcher.ts` (rodízio, créditos, estorno, retry; trava `DEAD_STREAK`: número com 15 falhas seguidas sem envio, fora as do contato, sai da campanha). Créditos: `src/lib/credits.ts`. Só admins (`src/lib/sender-cleanup.ts`): `Campaign.autoDeleteFailures` = número com X falhas na campanha sai do rodízio e é excluído (força) — `autoDeleteFailingForCampaign`, chamado no fim de cada tick do dispatcher e pelo worker a cada 1 min.

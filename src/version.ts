@@ -4,6 +4,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "4.22",
+    date: "13/11/2026",
+    items: ["[admin] Servidor mais estável: atualização junta commits seguidos numa montagem só, monta a versão nova antes de parar a antiga (se falhar, a antiga segue no ar), não reinicia o HTTPS sem precisar, cria memória de reserva (swap) e tem um vigia que reinicia sozinho o que parar ou travar (checagem em /api/health)"],
+  },
+  {
     version: "4.21",
     date: "13/11/2026",
     items: ["Campanhas: número que falha 15 vezes seguidas sem conseguir enviar nada (ex.: apagado, banido ou desconectado direto na Meta) sai da campanha sozinho, com aviso em Alertas. O erro de \"número não existe mais na Meta\" também tira o número na hora. Antes o Fuzil continuava tentando por ele e acumulava falhas"],
