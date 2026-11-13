@@ -1,5 +1,5 @@
 import clsx from "clsx";
-import { AlertTriangle, CheckCircle2, ChevronRight, CreditCard, KeyRound, MessagesSquare, RefreshCw, Phone, Plus, StickyNote, Trash2 } from "lucide-react";
+import { AlertTriangle, CheckCircle2, ChevronRight, CreditCard, KeyRound, MessagesSquare, RefreshCw, Phone, Plug, Plus, StickyNote, Trash2 } from "lucide-react";
 import { metaBillingUrl } from "@/lib/meta-links";
 import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
@@ -446,6 +446,9 @@ export default async function ConnectionsPage() {
                             </div>
                             <div className="flex flex-wrap items-center justify-end gap-2">
                               {p.status === "CONNECTED" && !p.invalidReason && <ProfileEditor phoneId={p.id} bmName={bm.name} currentName={p.verifiedName} pendingName={p.pendingName} />}
+                              {p.status && p.status !== "CONNECTED" && !p.isCoexistence && p.invalidReason !== PHONE_DISCARDED && (
+                                <ConfirmButton action={registerPhoneAction.bind(null, p.id)} variant="primary"><Plug className="size-4" /> Registrar número</ConfirmButton>
+                              )}
                               {!p.invalidReason && <ConfirmButton action={togglePhoneAction.bind(null, p.id)}>{p.enabled ? "Tirar do rodízio" : "Colocar no rodízio"}</ConfirmButton>}
                               <ConfirmButton
                                 action={deletePhoneAction.bind(null, p.id)}
@@ -476,10 +479,9 @@ export default async function ConnectionsPage() {
                                   </div>
                                 </div>
                               </div>
-                              <div className="mt-3 flex flex-wrap items-center gap-1 border-t border-zinc-100 pt-3 text-xs text-zinc-500">
-                                Já confirmou o código no WhatsApp Manager?{" "}
-                                <ConfirmButton action={registerPhoneAction.bind(null, p.id)} variant="ghost" className="px-2 py-1 text-xs text-orange-700">Só registrar na API</ConfirmButton>
-                              </div>
+                              <p className="mt-3 border-t border-zinc-100 pt-3 text-xs text-zinc-500">
+                                Já confirmou o código no WhatsApp Manager? É só clicar em <b>Registrar número</b> lá em cima.
+                              </p>
                             </div>
                           )}
                         </div>
