@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import clsx from "clsx";
 import {
   Archive,
+  CheckCheck,
   ArrowLeft,
   MessagesSquare,
   CheckCircle2,
@@ -25,7 +26,7 @@ import {
   X,
   Zap,
 } from "lucide-react";
-import { markConversationReadAction, setConversationStatusAction, startConversationAction } from "@/app/actions/chat";
+import { markAllReadAction, markConversationReadAction, setConversationStatusAction, startConversationAction } from "@/app/actions/chat";
 import { formatPhone } from "@/lib/phone";
 import { MessageList, type ChatMsg } from "./bubble";
 import { Composer, TemplatePicker, templateForm, type ChatTemplateLite, type QuickReply } from "./composer";
@@ -398,6 +399,21 @@ export function ChatApp({
                 </button>
               ))}
             </div>
+            {(phone ? unreadByPhone[phone] ?? 0 : totalUnread) > 0 && (
+              <button
+                onClick={async () => {
+                  const r = await markAllReadAction(phone || undefined);
+                  if (r?.error) return;
+                  setConvs((prev) => prev?.map((c) => (!phone || c.phoneId === phone ? { ...c, unread: 0 } : c)) ?? prev);
+                  setUnreadByPhone((u) => (phone ? { ...u, [phone]: 0 } : {}));
+                  router.refresh();
+                }}
+                title={phone ? "Marcar como lidas as conversas deste número" : "Marcar todas as conversas como lidas"}
+                className="flex h-9 shrink-0 items-center gap-1.5 rounded-xl bg-zinc-100 px-2.5 text-xs font-semibold text-zinc-600 transition hover:text-zinc-900"
+              >
+                <CheckCheck className="size-4" /> Ler tudo
+              </button>
+            )}
             <button
               onClick={() => setShowClosed(!showClosed)}
               title={showClosed ? "Voltar para as abertas" : "Ver finalizadas"}

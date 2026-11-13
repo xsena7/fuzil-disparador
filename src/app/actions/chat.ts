@@ -3,6 +3,7 @@
 import { friendlyError } from "@/lib/meta-errors";
 
 import { requireAuth } from "@/lib/auth";
+import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 import { saveUpload } from "@/lib/uploads";
 import { markConversationRead, sendChatMessage, sendChatTemplate, type TemplateExtras } from "@/lib/chat";
@@ -112,6 +113,21 @@ export async function markConversationReadAction(conversationId: string): Promis
     const { conv } = await ownConversation(conversationId);
     await markConversationRead(conv.id);
     return { ok: true };
+  } catch (e) {
+    return { error: errMsg(e) };
+  }
+}
+
+/** "Ler tudo": zera as não lidas de todas as conversas da conta (ou só as de um número, se vier). */
+export async function markAllReadAction(phoneId?: string): Promise<Result & { count?: number }> {
+  try {
+    const auth = await requireAuth();
+    const r = await prisma.conversation.updateMany({
+      where: { workspaceId: auth.workspace.id, unread: { gt: 0 }, ...(phoneId ? { phoneId } : {}) },
+      data: { unread: 0 },
+    });
+    revalidatePath("/", "layout");
+    return { ok: true, count: r.count };
   } catch (e) {
     return { error: errMsg(e) };
   }

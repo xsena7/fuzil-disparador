@@ -4,6 +4,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "4.24",
+    date: "13/11/2026",
+    items: ["Chat: botão \"Ler tudo\" ao lado das finalizadas zera as conversas não lidas (de todos os números, ou só do número escolhido no filtro)"],
+  },
+  {
     version: "4.23",
     date: "13/11/2026",
     items: ["Conexões: o botão \"Registrar número\" voltou grande e laranja, ao lado do número que ainda não está conectado"],
