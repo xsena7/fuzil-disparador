@@ -4,6 +4,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "4.20",
+    date: "13/11/2026",
+    items: ["Grupos de BM: os grupos de problema (Template em análise, Pagamento, Sem número, Qualidade baixa e BMs com problema) mostram o limite de cada BM e o total disponível do grupo, igual aos outros grupos. Banidas não mostra"],
+  },
+  {
     version: "4.19",
     date: "13/11/2026",
     items: ["Relatório do cliente: mostra sempre \"Concluída\" (não aparece mais pausada, cancelada ou enviando)"],

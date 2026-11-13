@@ -48,7 +48,7 @@ export default async function GroupsPage() {
   // Aparecem sempre (mesmo vazios); o grupo é criado de verdade quando a primeira BM entra nele
   const problemGroups = Object.values(PROBLEM_KINDS).map((k) => {
     const g = groups.find((x) => x.system === k.system);
-    return { id: g?.id ?? k.system, name: g?.name ?? k.name, color: g?.color ?? k.color, description: g?.description ?? k.description, members: g?.members ?? [] };
+    return { id: g?.id ?? k.system, system: k.system, name: g?.name ?? k.name, color: g?.color ?? k.color, description: g?.description ?? k.description, members: g?.members ?? [] };
   });
   // "Prontas para disparo" é automático, mas aparece junto dos grupos comuns (as BMs entram e saem sozinhas)
   // O automático vem primeiro
@@ -96,7 +96,17 @@ export default async function GroupsPage() {
           stripe={groupStripe(problems.color)}
           title={<span className="flex items-center gap-2"><span className={`size-2.5 shrink-0 rounded-full ${groupDot(problems.color)}`} />{problems.name}</span>}
           subtitle={problems.description ?? "Saíram sozinhas dos grupos de disparo. Voltam sozinhas quando o problema sumir."}
-          meta={<span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1 ${groupTag(problems.color)}`}>{problems.members.length} BM(s)</span>}
+          meta={
+            <>
+              {problems.system !== PROBLEM_KINDS.BANNED.system && problems.members.length > 0 && (() => {
+                const ws = problems.members.map((m) => windows.get(m.businessId)).filter((w): w is NonNullable<typeof w> => Boolean(w));
+                const lim = ws.reduce((a, w) => a + (Number.isFinite(w.limit) ? w.limit : 0), 0);
+                const av = ws.reduce((a, w) => a + (Number.isFinite(w.available) ? w.available : 0), 0);
+                return <span className="text-xs text-zinc-600"><b className="text-zinc-900">{formatLimit(av)}</b> disponíveis de {formatLimit(lim)}</span>;
+              })()}
+              <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1 ${groupTag(problems.color)}`}>{problems.members.length} BM(s)</span>
+            </>
+          }
           bodyClassName="divide-y divide-zinc-100"
         >
           {problems.members.length === 0 && <div className="px-5 py-4 text-sm text-zinc-500">Nenhuma BM aqui agora. Se alguma tiver esse problema, o Fuzil coloca ela aqui sozinho.</div>}
@@ -111,6 +121,7 @@ export default async function GroupsPage() {
                   {b.problemPrevGroups.length > 0 && ` · volta para: ${groups.filter((g) => b.problemPrevGroups.includes(g.id)).map((g) => g.name).join(", ") || "—"}`}
                   {b.problemKind !== "MANUAL" && " · volta sozinha quando o problema sumir"}
                 </div>
+                {problems.system !== PROBLEM_KINDS.BANNED.system && windows.get(b.id) && <div className="mt-3 max-w-xl"><LimitWindow w={windows.get(b.id)!} compact /></div>}
               </div>
               <div className="flex flex-col items-end gap-2">
                 <ConfirmButton action={restoreBusinessAction.bind(null, b.id)} confirm={`Já resolveu o problema da BM ${b.name}?\nEla volta para os grupos de disparo.`}>
