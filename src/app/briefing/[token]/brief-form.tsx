@@ -19,12 +19,41 @@ const fromSource = (s: VarSource | undefined, fallback: Kind): VarState => {
   return { kind: fallback, value: "" };
 };
 
+/** Trecho da mensagem em volta da variável, para o cliente entender onde ela entra. */
+function around(text: string | undefined, name: string) {
+  if (!text) return "";
+  const tag = `{{${name}}}`;
+  if (!text.includes(tag)) return "";
+  // Outras variáveis viram "___" antes de cortar (senão o trecho mostra pedaços de {{2}})
+  const flat = text.split(tag)[0].replace(/\{\{\s*\w+\s*\}\}/g, "___").replace(/\s+/g, " ");
+  const rest = text.split(tag).slice(1).join(tag).replace(/\{\{\s*\w+\s*\}\}/g, "___").replace(/\s+/g, " ");
+  const bw = flat.split(" ");
+  const aw = rest.split(" ");
+  const before = bw.slice(-7).join(" ");
+  const after = aw.slice(0, 8).join(" ");
+  return `${bw.length > 7 ? "…" : ""}${before}[${name}]${after}${aw.length > 8 ? "…" : ""}`;
+}
+
+/** Exemplo que foi colocado ao criar o template (ignora o "exemplo 1" automático). */
+function exampleOf(comp: TComponent | undefined, i: number, key: "body_text" | "header_text") {
+  const ex = comp?.example?.[key] as unknown;
+  const v = key === "body_text" ? (ex as string[][] | undefined)?.[0]?.[i] : (ex as string[] | undefined)?.[i];
+  return v && !/^exemplo \d+$/i.test(v.trim()) ? v.trim() : "";
+}
+
 const EXAMPLE: Record<Exclude<Kind, "fixed" | "col">, string> = { firstName: "Maria", name: "Maria Silva" };
 
-function VarField({ prefix, i, label, v, onChange }: { prefix: string; i: number; label: string; v: VarState; onChange: (v: VarState) => void }) {
+function VarField({ prefix, i, label, v, onChange, context, example }: { prefix: string; i: number; label: string; v: VarState; onChange: (v: VarState) => void; context?: string; example?: string }) {
+  const [pre, post] = (context ?? "").split(/\[[\w]+\]/);
   return (
     <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-3">
       <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-400">{label}</div>
+      {context && (
+        <p className="mb-2 rounded-lg bg-black/30 px-2.5 py-1.5 text-xs leading-relaxed text-zinc-400">
+          Na mensagem: {pre}<span className="rounded bg-orange-500/20 px-1 font-semibold text-orange-300">aqui</span>{post}
+        </p>
+      )}
+      {example && <p className="mb-2 text-xs text-zinc-400">Exemplo: <span className="font-medium text-zinc-200">{example}</span></p>}
       <input type="hidden" name={`${prefix}${i}_kind`} value={v.kind} />
       <div className="mb-2 flex flex-wrap gap-1.5">
         {([
@@ -43,11 +72,15 @@ function VarField({ prefix, i, label, v, onChange }: { prefix: string; i: number
           name={`${prefix}${i}_value`}
           value={v.value}
           onChange={(e) => onChange({ ...v, value: e.target.value })}
-          placeholder={v.kind === "fixed" ? "Escreva o texto que vai aqui" : "Nome da coluna, igual está na planilha (ex.: cidade)"}
+          placeholder={v.kind === "fixed" ? (example ? `Ex.: ${example}` : "Escreva o texto que vai aqui") : "Nome da coluna, igual está na planilha (ex.: cidade)"}
           className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white outline-none placeholder:text-zinc-600 focus:border-orange-400"
         />
       )}
-      {(v.kind === "firstName" || v.kind === "name") && <p className="text-xs text-zinc-500">Usa a coluna de nome da sua planilha (cada pessoa recebe o próprio nome).</p>}
+      <p className="mt-1.5 text-xs text-zinc-500">
+        {v.kind === "fixed" && "Todo mundo recebe esse mesmo texto."}
+        {v.kind === "col" && "Cada pessoa recebe o que estiver nessa coluna da planilha (ex.: valor, cidade, data)."}
+        {(v.kind === "firstName" || v.kind === "name") && "Usa a coluna de nome da sua planilha (cada pessoa recebe o próprio nome)."}
+      </p>
     </div>
   );
 }
@@ -70,7 +103,8 @@ export function BriefForm({ token, components, shape, initial }: { token: string
   }, [state]);
 
   const headerC = components.find((c) => c.type === "HEADER");
-  const bodyText = components.find((c) => c.type === "BODY")?.text ?? "";
+  const bodyC = components.find((c) => c.type === "BODY");
+  const bodyText = bodyC?.text ?? "";
   const footer = components.find((c) => c.type === "FOOTER")?.text;
   const buttons = components.find((c) => c.type === "BUTTONS")?.buttons ?? [];
   const needsMedia = Boolean(shape.headerFormat && ["IMAGE", "VIDEO", "DOCUMENT"].includes(shape.headerFormat));
@@ -135,13 +169,13 @@ export function BriefForm({ token, components, shape, initial }: { token: string
           {header.length > 0 && (
             <div className="space-y-3">
               <div className="text-sm font-semibold">Título da mensagem</div>
-              {header.map((v, i) => <VarField key={i} prefix="h" i={i} label={`Variável {{${shape.headerVars[i]}}} do título`} v={v} onChange={(nv) => setHeader(header.map((x, j) => (j === i ? nv : x)))} />)}
+              {header.map((v, i) => <VarField key={i} prefix="h" i={i} label={`Variável {{${shape.headerVars[i]}}} do título`} context={around(headerC?.text, shape.headerVars[i])} example={exampleOf(headerC, i, "header_text")} v={v} onChange={(nv) => setHeader(header.map((x, j) => (j === i ? nv : x)))} />)}
             </div>
           )}
           {body.length > 0 && (
             <div className="space-y-3">
               <div className="text-sm font-semibold">O que vai em cada parte da mensagem</div>
-              {body.map((v, i) => <VarField key={i} prefix="b" i={i} label={`Variável {{${shape.bodyVars[i]}}}`} v={v} onChange={(nv) => setBody(body.map((x, j) => (j === i ? nv : x)))} />)}
+              {body.map((v, i) => <VarField key={i} prefix="b" i={i} label={`Variável {{${shape.bodyVars[i]}}}`} context={around(bodyC?.text, shape.bodyVars[i])} example={exampleOf(bodyC, i, "body_text")} v={v} onChange={(nv) => setBody(body.map((x, j) => (j === i ? nv : x)))} />)}
             </div>
           )}
 
