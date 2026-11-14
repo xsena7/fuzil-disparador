@@ -30,6 +30,7 @@ import { ClientReportStep } from "./client-report";
 import { LeadWebhookCard } from "./lead-webhook";
 import { AutoRefresh } from "./auto-refresh";
 import { NavActive } from "@/components/nav-active";
+import { applyBriefPhotoAction } from "@/app/actions/briefs";
 import { templateAliases, templateFamily } from "@/lib/blueprints";
 
 import { usableGroupWhere } from "@/lib/bm-problems";
@@ -111,6 +112,7 @@ export default async function CampaignPage({ params, searchParams }: { params: P
           )}
           {step === "envio" && (
             <>
+              {campaign.briefId && <BriefPhotoCard campaignId={id} briefId={campaign.briefId} />}
               <SendStep campaignId={id} />
               <TestSend campaignId={id} />
             </>
@@ -216,6 +218,29 @@ async function ContentStep({ campaignId, locked }: { campaignId: string; locked:
       sample={sample ? { phone: sample.phone, name: sample.name, data: sample.data as Record<string, unknown> } : { phone: "5511999999999", name: "Maria Silva", data: {} }}
       locked={locked}
     />
+  );
+}
+
+/** Campanha importada do link do cliente: a foto de perfil que ele mandou, com o botão para colocar nos números do grupo. */
+async function BriefPhotoCard({ campaignId, briefId }: { campaignId: string; briefId: string }) {
+  const b = await prisma.campaignBrief.findUnique({ where: { id: briefId }, select: { profilePhoto: true, label: true, notes: true } });
+  if (!b) return null;
+  return (
+    <Card className="mb-5 flex flex-wrap items-center gap-4 p-4">
+      {b.profilePhoto ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={`/media/${b.profilePhoto}`} alt="" className="size-14 rounded-full object-cover ring-2 ring-orange-300" />
+      ) : null}
+      <div className="min-w-[12rem] flex-1">
+        <div className="font-semibold text-zinc-900">Campanha montada pelo cliente (link “{b.label}”)</div>
+        <div className="text-sm text-zinc-500">{b.profilePhoto ? "Ele mandou esta foto de perfil para os números." : "Ele não mandou foto de perfil."}{b.notes ? ` Observação: ${b.notes}` : ""}</div>
+      </div>
+      {b.profilePhoto && (
+        <ConfirmButton action={applyBriefPhotoAction.bind(null, campaignId)} variant="primary" confirm="Colocar essa foto de perfil em todos os números conectados do grupo desta campanha?">
+          Colocar a foto nos números do grupo
+        </ConfirmButton>
+      )}
+    </Card>
   );
 }
 

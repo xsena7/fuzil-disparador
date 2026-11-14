@@ -1,11 +1,26 @@
 import { createCampaignAction } from "@/app/actions/campaigns";
 import { ActionForm } from "@/components/action-form";
 import { Card, Field, Input, PageHeader } from "@/components/ui";
+import { requireAuth } from "@/lib/auth";
+import { prisma } from "@/lib/db";
+import { BriefsPanel } from "../briefs-panel";
 
-export default function NewCampaignPage() {
+export const dynamic = "force-dynamic";
+
+export default async function NewCampaignPage() {
+  const auth = await requireAuth();
+  // Tem campanha que o cliente mandou pelo link? Mostra para importar pronta (só escolher o grupo)
+  const received = await prisma.campaignBrief.count({ where: { workspaceId: auth.workspace.id, status: "SUBMITTED" } });
   return (
     <div className="mx-auto max-w-xl">
       <PageHeader title="Nova campanha" />
+      {received > 0 && (
+        <div className="mb-4">
+          <div className="mb-2 text-sm font-semibold text-zinc-800">Importar uma campanha pronta que o cliente mandou</div>
+          <BriefsPanel workspaceId={auth.workspace.id} onlyReceived />
+          <div className="mb-2 mt-6 text-sm font-semibold text-zinc-800">Ou criar do zero</div>
+        </div>
+      )}
       <Card className="p-5" data-tour="new-campaign">
         <ActionForm action={createCampaignAction} submit="Continuar">
           <Field label="Nome da campanha" hint="Ex.: FELIPE 07/10 16H"><Input name="name" required autoFocus /></Field>

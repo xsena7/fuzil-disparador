@@ -96,6 +96,7 @@ model Workspace {
   smsJobs             SmsJob[]
   smsOrders           SmsOrder[]
   campaigns           Campaign[]
+  briefs              CampaignBrief[]
   reportBrands        ReportBrand[]
   contacts            Contact[]
   alerts              Alert[]
@@ -452,6 +453,8 @@ model Campaign {
   @@index([workspaceId, status])
   // Só admins do Fuzil: número que falhar X envios nesta campanha nas últimas 24h é excluído da BM sozinho (null = desligado)
   autoDeleteFailures      Int?
+  // Campanha importada de um link do cliente (traz a foto de perfil que ele mandou)
+  briefId                 String?
 }
 
 enum RecipientStatus {
@@ -1265,4 +1268,34 @@ model SiteClick {
 
   @@unique([day, page, button, source])
   @@index([day])
+}
+
+// Link que o dono manda para o cliente preencher a campanha (um template por link): nome, variáveis, imagem,
+// link do botão, base de contatos e foto de perfil. Depois o dono importa como campanha pronta e só escolhe o grupo.
+model CampaignBrief {
+  id                 String    @id @default(cuid())
+  workspaceId        String
+  workspace          Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  token              String    @unique
+  label              String
+  templateName       String
+  templateLanguage   String
+  // OPEN = esperando o cliente · SUBMITTED = cliente enviou · IMPORTED = virou campanha
+  status             String    @default("OPEN")
+  campaignName       String?
+  variableMapping    Json?
+  buttonUrl          String?
+  headerMediaUrl     String?
+  headerMediaType    String?
+  headerMediaName    String?
+  audienceFile       String?
+  audienceFileName   String?
+  audienceRows       Int?
+  profilePhoto       String?
+  notes              String?
+  submittedAt        DateTime?
+  importedCampaignId String?
+  createdAt          DateTime  @default(now())
+
+  @@index([workspaceId, status])
 }

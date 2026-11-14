@@ -4,6 +4,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: "4.25",
+    date: "14/11/2026",
+    items: ["Campanhas: link para o cliente montar a campanha. Você gera um link por template padrão e manda para o cliente; ele preenche o nome da campanha, as variáveis, a imagem, o link do botão, a planilha de contatos e a foto de perfil, e envia. A campanha aparece em Campanhas para importar: é só escolher o grupo e ela já vem pronta na etapa Envio (com botão para colocar a foto nos números do grupo)"],
+  },
+  {
     version: "4.24",
     date: "13/11/2026",
     items: ["Chat: botão \"Ler tudo\" ao lado das finalizadas zera as conversas não lidas (de todos os números, ou só do número escolhido no filtro)"],

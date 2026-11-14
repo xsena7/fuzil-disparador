@@ -8,6 +8,7 @@ import { Badge, Empty, LinkButton, PageHeader } from "@/components/ui";
 import { CampaignStatusBadge } from "@/components/status";
 import { deleteFolderAction, renameFolderAction } from "@/app/actions/campaigns";
 import { CampaignRowMenu, FolderMenu } from "./row-menu";
+import { BriefsPanel } from "./briefs-panel";
 
 export const dynamic = "force-dynamic";
 
@@ -105,6 +106,8 @@ export default async function CampaignsPage() {
         description="Disparos de templates de utilidade distribuídos entre os números de um grupo de BM. Use o menu ⋮ para guardar campanhas em pastas ou excluir."
         actions={<LinkButton href="/campanhas/nova"><Plus className="size-4" /> Criar campanha</LinkButton>}
       />
+
+      <BriefsPanel workspaceId={auth.workspace.id} />
 
       {campaigns.length === 0 && <Empty icon={<Send className="size-5" />}>Nenhuma campanha ainda. Crie a primeira!</Empty>}
 
