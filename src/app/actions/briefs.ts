@@ -74,7 +74,7 @@ export async function submitBriefAction(token: string, _: FormState, form: FormD
   const data: Prisma.CampaignBriefUpdateInput = { campaignName, variableMapping: mapping as unknown as Prisma.InputJsonValue, notes: String(form.get("notes") ?? "").trim().slice(0, 2000) || null };
 
   // Link do botão (vai pelo redirecionador do Fuzil, que conta os cliques)
-  if (shape.urlButtons.some((b) => b.tracked)) {
+  if (shape.urlButtons.some((b) => b.tracked || (b.dynamic && b.url.includes("{{")))) {
     const url = String(form.get("buttonUrl") ?? "").trim();
     if (!/^https?:\/\/\S+\.\S+/.test(url)) return { error: "Cole o link do botão completo (começando com https://)" };
     data.buttonUrl = url;

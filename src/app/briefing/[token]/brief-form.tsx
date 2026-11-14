@@ -74,7 +74,8 @@ export function BriefForm({ token, components, shape, initial }: { token: string
   const footer = components.find((c) => c.type === "FOOTER")?.text;
   const buttons = components.find((c) => c.type === "BUTTONS")?.buttons ?? [];
   const needsMedia = Boolean(shape.headerFormat && ["IMAGE", "VIDEO", "DOCUMENT"].includes(shape.headerFormat));
-  const tracked = shape.urlButtons.some((b) => b.tracked);
+  // Botão com link variável é sempre o link do Fuzil (conta os cliques): o cliente diz para onde vai
+  const tracked = shape.urlButtons.some((b) => b.tracked || (b.dynamic && b.url.includes("{{")));
 
   // Prévia da mensagem com o que o cliente está preenchendo
   const show = (v: VarState) => (v.kind === "fixed" ? v.value || "…" : v.kind === "col" ? `[${v.value || "coluna"}]` : EXAMPLE[v.kind]);
