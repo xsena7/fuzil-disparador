@@ -87,7 +87,6 @@ function VarField({ prefix, i, label, v, onChange, context, example }: { prefix:
 
 export function BriefForm({ token, components, shape, initial }: { token: string; components: TComponent[]; shape: TemplateShape; initial: BriefInitial }) {
   const [state, formAction, pending] = useActionState(submitBriefAction.bind(null, token), undefined);
-  const [tab, setTab] = useState<"camp" | "photo">("camp");
   const [name, setName] = useState(initial.campaignName);
   const [header, setHeader] = useState<VarState[]>(shape.headerVars.map((_, i) => fromSource(initial.mapping.header?.[i], "fixed")));
   const [body, setBody] = useState<VarState[]>(shape.bodyVars.map((_, i) => fromSource(initial.mapping.body?.[i], i === 0 ? "firstName" : "fixed")));
@@ -98,8 +97,6 @@ export function BriefForm({ token, components, shape, initial }: { token: string
   const [done, setDone] = useState(false);
   useEffect(() => {
     if (state?.ok) setDone(true);
-    // Erro da aba Campanha: volta para ela (a mensagem aparece embaixo do botão Enviar)
-    else if (state?.error && !/foto de perfil/i.test(state.error)) setTab("camp");
   }, [state]);
 
   const headerC = components.find((c) => c.type === "HEADER");
@@ -142,17 +139,10 @@ export function BriefForm({ token, components, shape, initial }: { token: string
     >
       <div className="min-w-0">
         <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">Monte sua campanha</h1>
-        <p className="mt-2 text-zinc-400">Preencha as duas abas e clique em Enviar. A nossa equipe recebe tudo pronto para disparar.</p>
+        <p className="mt-2 text-zinc-400">Preencha tudo e clique em Enviar. A nossa equipe recebe tudo pronto para disparar.</p>
         {initial.submitted && <p className="mt-3 rounded-xl border border-emerald-400/20 bg-emerald-400/[0.05] px-3 py-2 text-sm text-emerald-200">Você já enviou esta campanha. Se mudar algo e enviar de novo, a gente recebe a versão nova.</p>}
 
-        <div className="mt-6 inline-flex rounded-full border border-white/10 bg-white/[0.03] p-1 text-sm">
-          {([["camp", "1. Campanha"], ["photo", "2. Foto de perfil"]] as const).map(([k, l]) => (
-            <button key={k} type="button" onClick={() => setTab(k)} className={clsx("rounded-full px-4 py-2 font-medium transition", tab === k ? "bg-white text-black" : "text-zinc-400 hover:text-white")}>{l}</button>
-          ))}
-        </div>
-
-        {/* Aba 1: campanha (fica montada escondida para os arquivos não se perderem ao trocar de aba) */}
-        <div className={clsx("mt-6 space-y-5", tab !== "camp" && "hidden")}>
+        <div className="mt-6 space-y-5">
           <label className="block">
             <span className="mb-1.5 block text-sm font-semibold">Nome da campanha</span>
             <input name="campaignName" value={name} onChange={(e) => setName(e.target.value)} required maxLength={100} placeholder="Ex.: Black Friday clientes antigos" className="w-full rounded-xl border border-white/10 bg-black/30 px-3.5 py-3 text-white outline-none placeholder:text-zinc-600 focus:border-orange-400" />
@@ -200,23 +190,24 @@ export function BriefForm({ token, components, shape, initial }: { token: string
             <span className="mb-1.5 block text-sm font-semibold">Observações (opcional)</span>
             <textarea name="notes" defaultValue={initial.notes} rows={3} placeholder="Horário que prefere, algum cuidado com a lista..." className="w-full rounded-xl border border-white/10 bg-black/30 px-3.5 py-3 text-white outline-none placeholder:text-zinc-600 focus:border-orange-400" />
           </label>
-          <button type="button" onClick={() => setTab("photo")} className="rounded-full border border-white/15 px-5 py-2.5 text-sm font-medium hover:bg-white/5">Próximo: foto de perfil →</button>
-        </div>
 
-        {/* Aba 2: foto de perfil */}
-        <div className={clsx("mt-6 space-y-4", tab !== "photo" && "hidden")}>
-          <p className="text-sm text-zinc-400">A foto que aparece no WhatsApp dos números que vão disparar a sua campanha. Quadrada fica melhor.</p>
-          <label className="flex cursor-pointer flex-col items-center gap-3 rounded-3xl border border-dashed border-white/15 p-8 text-center hover:border-orange-400/60">
-            {photo ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={photo} alt="" className="size-32 rounded-full object-cover ring-2 ring-orange-400" />
-            ) : (
-              <UserCircle2 className="size-20 text-zinc-600" />
-            )}
-            <span className="text-sm font-medium">{photo ? "Trocar foto" : initial.hasPhoto ? "Já enviada · clique para trocar" : "Escolher a foto de perfil"}</span>
-            <input type="file" name="profilePhoto" accept="image/jpeg,image/png" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; setPhoto(f ? URL.createObjectURL(f) : null); }} />
-          </label>
-          <p className="text-xs text-zinc-500">Opcional. Sem foto, a gente usa a foto padrão.</p>
+          {/* Foto de perfil dos números que vão disparar */}
+          <div>
+            <span className="mb-1.5 flex items-center gap-2 text-sm font-semibold"><UserCircle2 className="size-4 text-orange-400" /> Foto de perfil do WhatsApp (opcional)</span>
+            <label className="flex cursor-pointer items-center gap-4 rounded-2xl border border-dashed border-white/15 p-4 hover:border-orange-400/60">
+              {photo ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={photo} alt="" className="size-16 shrink-0 rounded-full object-cover ring-2 ring-orange-400" />
+              ) : (
+                <UserCircle2 className="size-16 shrink-0 text-zinc-600" />
+              )}
+              <span className="text-sm">
+                <span className="block font-medium">{photo ? "Trocar foto" : initial.hasPhoto ? "Já enviada · clique para trocar" : "Escolher a foto de perfil"}</span>
+                <span className="block text-xs text-zinc-500">A foto que aparece nos números que vão disparar. Quadrada fica melhor. Sem foto, a gente usa a padrão.</span>
+              </span>
+              <input type="file" name="profilePhoto" accept="image/jpeg,image/png" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; setPhoto(f ? URL.createObjectURL(f) : null); }} />
+            </label>
+          </div>
         </div>
 
         <div className="mt-8 flex flex-wrap items-center gap-3 border-t border-white/10 pt-6">
@@ -231,11 +222,24 @@ export function BriefForm({ token, components, shape, initial }: { token: string
       {/* Prévia */}
       <aside className="lg:sticky lg:top-6 lg:self-start">
         <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-500">Prévia da mensagem</div>
-        <div className="rounded-3xl border border-white/10 bg-[#0b141a] p-4">
+        <div className="overflow-hidden rounded-3xl border border-white/10 bg-[#0b141a]">
+          <div className="flex items-center gap-3 bg-[#202c33] px-4 py-3">
+            {photo ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={photo} alt="" className="size-10 rounded-full object-cover" />
+            ) : (
+              <UserCircle2 className="size-10 text-zinc-500" />
+            )}
+            <div className="leading-tight">
+              <div className="text-sm font-semibold text-zinc-100">Atendimento Maria</div>
+              <div className="text-[11px] text-zinc-400">online</div>
+            </div>
+          </div>
+          <div className="p-4">
           <div className="max-w-[92%] overflow-hidden rounded-2xl rounded-tl-sm bg-[#1f2c33] text-[13px] leading-snug text-zinc-100">
             {needsMedia && (media && shape.headerFormat === "IMAGE" ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={media} alt="" className="aspect-video w-full object-cover" />
+              <img src={media} alt="" className="max-h-80 w-full object-cover" />
             ) : (
               <div className="grid aspect-video w-full place-items-center bg-black/30 text-xs text-zinc-500">{shape.headerFormat === "IMAGE" ? "imagem" : shape.headerFormat === "VIDEO" ? "vídeo" : "PDF"}</div>
             ))}
@@ -247,6 +251,7 @@ export function BriefForm({ token, components, shape, initial }: { token: string
             {buttons.map((b, i) => <div key={i} className="border-t border-white/10 py-2 text-center text-[13px] font-medium text-sky-300">{b.text}</div>)}
           </div>
           {name && <div className="mt-3 text-xs text-zinc-500">Campanha: <b className="text-zinc-300">{name}</b></div>}
+          </div>
         </div>
       </aside>
     </form>

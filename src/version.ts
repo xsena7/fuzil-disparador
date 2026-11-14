@@ -6,7 +6,7 @@ export const CHANGELOG: Array<{ version: string; date: string; items: string[] }
   {
     version: "4.26",
     date: "14/11/2026",
-    items: ["Link do cliente: cada variável mostra o trecho da mensagem onde ela entra, o exemplo do template e uma explicação de cada opção (texto, nome ou coluna da planilha)"],
+    items: ["Link do cliente: cada variável mostra o trecho da mensagem onde ela entra, o exemplo do template e uma explicação de cada opção (texto, nome ou coluna da planilha)", "Link do cliente: a foto de perfil fica na mesma página (sem abas) e a prévia mostra a conversa como no WhatsApp, com a foto, o nome e a mensagem com imagem"],
   },
   {
     version: "4.25",
